@@ -9,18 +9,21 @@
 // - caricamento personaggio
 // - caricamento dungeon.json
 // - posizione iniziale X=10 Y=1
-// - movimento con WASD / frecce
-// - movimento cliccando una casella adiacente
-// - controllo muri e celle percorribili
+// - movimento WASD / frecce
+// - movimento tramite click su casella adiacente
+// - controllo muri
 // - salvataggio posizione
-// - visualizzazione token personale
+// - token personale
+// - token degli altri giocatori online
+// - Supabase Realtime Presence
+// - Supabase Realtime Broadcast
 // - statistiche del personaggio
-// - caricamento e salvataggio delle note
+// - caricamento e salvataggio note
 //
 // ============================================================
 
 
-console.log("DUNGEON.JS CARICATO");
+console.log("DUNGEON.JS MULTIPLAYER CARICATO");
 
 
 // ============================================================
@@ -38,8 +41,7 @@ const MAP_COLUMNS = 23;
 const MAP_ROWS = 23;
 
 
-// Offset della matrice cells di dungeon.json
-// rispetto alla mappa visibile.
+// Offset corretto JSON -> mappa visibile
 
 const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
@@ -54,6 +56,25 @@ const INITIAL_PLAYER_Y = 1;
 
 
 // ============================================================
+// MULTIPLAYER
+// ============================================================
+//
+// Per ora tutti i giocatori dentro dungeon.html
+// partecipano allo stesso piano.
+//
+// Quando aggiungeremo più piani basterà cambiare
+// questo nome, ad esempio:
+//
+// palazzo-eterno-dungeon-1
+// palazzo-eterno-dungeon-2
+//
+// ============================================================
+
+const DUNGEON_CHANNEL_NAME =
+    "palazzo-eterno-dungeon-1";
+
+
+// ============================================================
 // VARIABILI
 // ============================================================
 
@@ -61,12 +82,43 @@ let dungeonData = null;
 
 let character = null;
 
+let currentUser = null;
+
 let playerX = null;
 let playerY = null;
 
 let tokenElement = null;
 
 let movementLocked = false;
+
+
+// ============================================================
+// REALTIME
+// ============================================================
+
+let dungeonChannel = null;
+
+let realtimeReady = false;
+
+
+// ============================================================
+// TOKEN DEGLI ALTRI GIOCATORI
+// ============================================================
+//
+// character_id -> elemento IMG
+//
+// ============================================================
+
+const otherPlayerTokens =
+    new Map();
+
+
+// ============================================================
+// DATI DEGLI ALTRI GIOCATORI
+// ============================================================
+
+const otherPlayers =
+    new Map();
 
 
 // ============================================================
@@ -94,12 +146,6 @@ document.addEventListener(
             // ------------------------------------------------
             // NOTE
             // ------------------------------------------------
-            //
-            // Vengono inizializzate PRIMA della mappa.
-            //
-            // Così continuano a funzionare anche nel caso
-            // in cui dungeon.json abbia un problema.
-            //
 
             setupNotes();
 
@@ -123,6 +169,13 @@ document.addEventListener(
             // ------------------------------------------------
 
             setupMovement();
+
+
+            // ------------------------------------------------
+            // MULTIPLAYER
+            // ------------------------------------------------
+
+            await setupRealtimeMultiplayer();
 
 
         } catch (error) {
@@ -180,9 +233,7 @@ async function loadDungeon() {
     );
 
 
-    if (
-        !dungeonData.cells
-    ) {
+    if (!dungeonData.cells) {
 
         throw new Error(
             "Il file dungeon.json non contiene la matrice cells."
@@ -221,7 +272,7 @@ async function loadCharacter() {
 
 
     // --------------------------------------------------------
-    // AUTENTICAZIONE
+    // UTENTE
     // --------------------------------------------------------
 
     const {
@@ -250,9 +301,13 @@ async function loadCharacter() {
     }
 
 
+    currentUser =
+        user;
+
+
     console.log(
         "Utente autenticato:",
-        user.id
+        currentUser.id
     );
 
 
@@ -269,7 +324,7 @@ async function loadCharacter() {
             .select("*")
             .eq(
                 "user_id",
-                user.id
+                currentUser.id
             )
             .maybeSingle();
 
@@ -325,14 +380,14 @@ function updateCharacterPanel() {
     }
 
 
-    // --------------------------------------------------------
-    // NOME
-    // --------------------------------------------------------
-
     const name =
         character.nome ||
         "Avventuriero";
 
+
+    // --------------------------------------------------------
+    // NOME
+    // --------------------------------------------------------
 
     const nameHeader =
         document.getElementById(
@@ -387,7 +442,7 @@ function updateCharacterPanel() {
 
 
     // --------------------------------------------------------
-    // TOKEN
+    // TOKEN NELLA SCHEDA
     // --------------------------------------------------------
 
     const tokenImage =
@@ -411,17 +466,6 @@ function updateCharacterPanel() {
         tokenImage.alt =
             "Token di " +
             name;
-
-
-        tokenImage.onerror =
-            () => {
-
-                console.error(
-                    "Impossibile caricare il token:",
-                    tokenFile
-                );
-
-            };
 
     }
 
@@ -550,10 +594,6 @@ function updateCharacterPanel() {
         ) / 100;
 
 
-    // --------------------------------------------------------
-    // VISUALIZZAZIONE
-    // --------------------------------------------------------
-
     setText(
         "attack-display",
         attack
@@ -593,7 +633,7 @@ function updateCharacterPanel() {
 
 
 // ============================================================
-// FUNZIONE SET TEXT
+// SET TEXT
 // ============================================================
 
 function setText(
@@ -651,13 +691,6 @@ async function initializePlayer() {
             );
 
 
-        console.log(
-            "Posizione già presente:",
-            playerX,
-            playerY
-        );
-
-
         showToken(
             playerX,
             playerY
@@ -675,13 +708,8 @@ async function initializePlayer() {
 
 
     // --------------------------------------------------------
-    // PRIMA ENTRATA
+    // PRIMO INGRESSO
     // --------------------------------------------------------
-
-    console.log(
-        "Prima entrata nel dungeon."
-    );
-
 
     playerX =
         INITIAL_PLAYER_X;
@@ -690,17 +718,6 @@ async function initializePlayer() {
     playerY =
         INITIAL_PLAYER_Y;
 
-
-    console.log(
-        "Posizione iniziale:",
-        playerX,
-        playerY
-    );
-
-
-    // --------------------------------------------------------
-    // SALVATAGGIO
-    // --------------------------------------------------------
 
     const {
         error
@@ -737,15 +754,6 @@ async function initializePlayer() {
         playerY;
 
 
-    console.log(
-        "Posizione iniziale salvata."
-    );
-
-
-    // --------------------------------------------------------
-    // TOKEN
-    // --------------------------------------------------------
-
     showToken(
         playerX,
         playerY
@@ -755,6 +763,814 @@ async function initializePlayer() {
     setMessage(
         "Usa WASD o le frecce per muoverti."
     );
+
+}
+
+
+// ============================================================
+// REALTIME MULTIPLAYER
+// ============================================================
+
+async function setupRealtimeMultiplayer() {
+
+    console.log(
+        "Avvio multiplayer..."
+    );
+
+
+    if (
+        !character ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // CREAZIONE CANALE
+    // --------------------------------------------------------
+
+    dungeonChannel =
+        db.channel(
+            DUNGEON_CHANNEL_NAME,
+            {
+
+                config: {
+
+                    presence: {
+
+                        key:
+                            character.id
+
+                    }
+
+                }
+
+            }
+        );
+
+
+    // ========================================================
+    // PRESENCE SYNC
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "sync"
+        },
+        () => {
+
+            console.log(
+                "Presence sincronizzata."
+            );
+
+
+            syncOnlinePlayers();
+
+
+            // Quando entra un nuovo giocatore,
+            // tutti gli utenti già presenti
+            // reinviano la loro posizione corrente.
+
+            broadcastMyState();
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE JOIN
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "join"
+        },
+        ({
+            newPresences
+        }) => {
+
+            console.log(
+                "Nuovo giocatore:",
+                newPresences
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE LEAVE
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "leave"
+        },
+        ({
+            leftPresences
+        }) => {
+
+            console.log(
+                "Giocatore uscito:",
+                leftPresences
+            );
+
+
+            // Presence sync si occuperà
+            // anche di rimuovere le pedine.
+
+        }
+    );
+
+
+    // ========================================================
+    // MOVIMENTO DEGLI ALTRI GIOCATORI
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "player-move"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            // Ignora il nostro stesso movimento.
+
+            if (
+                data.character_id ===
+                character.id
+            ) {
+
+                return;
+
+            }
+
+
+            updateRemotePlayer(
+                data
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // STATO COMPLETO
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "player-state"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            if (
+                data.character_id ===
+                character.id
+            ) {
+
+                return;
+
+            }
+
+
+            updateRemotePlayer(
+                data
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // SUBSCRIBE
+    // ========================================================
+
+    dungeonChannel.subscribe(
+        async status => {
+
+            console.log(
+                "Stato Realtime:",
+                status
+            );
+
+
+            if (
+                status !==
+                "SUBSCRIBED"
+            ) {
+
+                return;
+
+            }
+
+
+            realtimeReady =
+                true;
+
+
+            // ------------------------------------------------
+            // REGISTRA PRESENZA
+            // ------------------------------------------------
+
+            const presenceData = {
+
+                user_id:
+                    currentUser.id,
+
+                character_id:
+                    character.id,
+
+                nome:
+                    character.nome ||
+                    "Avventuriero",
+
+                token:
+                    character.token ||
+                    "token_1.png",
+
+                x:
+                    playerX,
+
+                y:
+                    playerY,
+
+                online_at:
+                    new Date()
+                        .toISOString()
+
+            };
+
+
+            const trackResult =
+                await dungeonChannel.track(
+                    presenceData
+                );
+
+
+            console.log(
+                "Presence registrata:",
+                trackResult
+            );
+
+
+            // ------------------------------------------------
+            // INVIA POSIZIONE
+            // ------------------------------------------------
+
+            broadcastMyState();
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// SINCRONIZZA GIOCATORI ONLINE
+// ============================================================
+
+function syncOnlinePlayers() {
+
+    if (!dungeonChannel) {
+
+        return;
+
+    }
+
+
+    const presenceState =
+        dungeonChannel
+            .presenceState();
+
+
+    console.log(
+        "Giocatori online:",
+        presenceState
+    );
+
+
+    const onlineCharacterIds =
+        new Set();
+
+
+    // --------------------------------------------------------
+    // LEGGI TUTTE LE PRESENZE
+    // --------------------------------------------------------
+
+    Object.values(
+        presenceState
+    ).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    if (
+                        !presence.character_id
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    // Il nostro personaggio
+                    // viene già disegnato separatamente.
+
+                    if (
+                        presence.character_id ===
+                        character.id
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    onlineCharacterIds.add(
+                        presence.character_id
+                    );
+
+
+                    updateRemotePlayer(
+                        presence
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // RIMUOVI CHI NON È PIÙ ONLINE
+    // --------------------------------------------------------
+
+    for (
+        const [
+            characterId,
+            token
+        ]
+        of otherPlayerTokens
+    ) {
+
+        if (
+            !onlineCharacterIds.has(
+                characterId
+            )
+        ) {
+
+            token.remove();
+
+
+            otherPlayerTokens.delete(
+                characterId
+            );
+
+
+            otherPlayers.delete(
+                characterId
+            );
+
+
+            console.log(
+                "Rimossa pedina offline:",
+                characterId
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CREA / AGGIORNA GIOCATORE REMOTO
+// ============================================================
+
+function updateRemotePlayer(
+    data
+) {
+
+    if (
+        !data ||
+        !data.character_id
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        data.character_id ===
+        character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const x =
+        Number(
+            data.x
+        );
+
+
+    const y =
+        Number(
+            data.y
+        );
+
+
+    if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y)
+    ) {
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // SALVA DATI LOCALI
+    // --------------------------------------------------------
+
+    otherPlayers.set(
+        data.character_id,
+        {
+
+            character_id:
+                data.character_id,
+
+            user_id:
+                data.user_id,
+
+            nome:
+                data.nome ||
+                "Giocatore",
+
+            token:
+                data.token ||
+                "token_1.png",
+
+            x:
+                x,
+
+            y:
+                y
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // DISEGNA TOKEN
+    // --------------------------------------------------------
+
+    showRemoteToken(
+        data.character_id
+    );
+
+}
+
+
+// ============================================================
+// MOSTRA TOKEN REMOTO
+// ============================================================
+
+function showRemoteToken(
+    characterId
+) {
+
+    const player =
+        otherPlayers.get(
+            characterId
+        );
+
+
+    if (!player) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            image,
+            container
+        } =
+            getMapContainer();
+
+
+        const mapRect =
+            image.getBoundingClientRect();
+
+
+        const containerRect =
+            container.getBoundingClientRect();
+
+
+        const cellWidth =
+            mapRect.width /
+            MAP_COLUMNS;
+
+
+        const cellHeight =
+            mapRect.height /
+            MAP_ROWS;
+
+
+        // ----------------------------------------------------
+        // CREA O RECUPERA TOKEN
+        // ----------------------------------------------------
+
+        let token =
+            otherPlayerTokens.get(
+                characterId
+            );
+
+
+        if (!token) {
+
+            token =
+                document.createElement(
+                    "img"
+                );
+
+
+            token.className =
+                "dungeon-player-token dungeon-other-player-token";
+
+
+            token.style.position =
+                "absolute";
+
+
+            token.style.objectFit =
+                "contain";
+
+
+            token.style.boxSizing =
+                "border-box";
+
+
+            token.style.zIndex =
+                "90";
+
+
+            token.style.pointerEvents =
+                "none";
+
+
+            container.appendChild(
+                token
+            );
+
+
+            otherPlayerTokens.set(
+                characterId,
+                token
+            );
+
+        }
+
+
+        // ----------------------------------------------------
+        // IMMAGINE
+        // ----------------------------------------------------
+
+        token.src =
+            "immagini/token/" +
+            player.token;
+
+
+        token.alt =
+            "Token di " +
+            player.nome;
+
+
+        token.title =
+            player.nome;
+
+
+        // ----------------------------------------------------
+        // DIMENSIONI
+        // ----------------------------------------------------
+
+        const tokenSize =
+            Math.min(
+                cellWidth,
+                cellHeight
+            ) * 0.92;
+
+
+        token.style.width =
+            `${tokenSize}px`;
+
+
+        token.style.height =
+            `${tokenSize}px`;
+
+
+        // ----------------------------------------------------
+        // POSIZIONE
+        // ----------------------------------------------------
+
+        const centerX =
+            (
+                player.x +
+                0.5
+            ) *
+            cellWidth;
+
+
+        const centerY =
+            (
+                player.y +
+                0.5
+            ) *
+            cellHeight;
+
+
+        const offsetX =
+            mapRect.left -
+            containerRect.left;
+
+
+        const offsetY =
+            mapRect.top -
+            containerRect.top;
+
+
+        token.style.left =
+            `${
+                offsetX +
+                centerX -
+                tokenSize / 2
+            }px`;
+
+
+        token.style.top =
+            `${
+                offsetY +
+                centerY -
+                tokenSize / 2
+            }px`;
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore token remoto:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// INVIA STATO PERSONAGGIO
+// ============================================================
+
+function broadcastMyState() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
+    dungeonChannel.send({
+
+        type:
+            "broadcast",
+
+        event:
+            "player-state",
+
+        payload: {
+
+            user_id:
+                currentUser.id,
+
+            character_id:
+                character.id,
+
+            nome:
+                character.nome ||
+                "Avventuriero",
+
+            token:
+                character.token ||
+                "token_1.png",
+
+            x:
+                playerX,
+
+            y:
+                playerY
+
+        }
+
+    });
+
+}
+
+
+// ============================================================
+// INVIA MOVIMENTO
+// ============================================================
+
+function broadcastMovement() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
+    dungeonChannel.send({
+
+        type:
+            "broadcast",
+
+        event:
+            "player-move",
+
+        payload: {
+
+            user_id:
+                currentUser.id,
+
+            character_id:
+                character.id,
+
+            nome:
+                character.nome ||
+                "Avventuriero",
+
+            token:
+                character.token ||
+                "token_1.png",
+
+            x:
+                playerX,
+
+            y:
+                playerY
+
+        }
+
+    });
 
 }
 
@@ -775,10 +1591,6 @@ function isWalkable(
     }
 
 
-    // --------------------------------------------------------
-    // LIMITI MAPPA VISIBILE
-    // --------------------------------------------------------
-
     if (
         x < 0 ||
         y < 0 ||
@@ -792,7 +1604,7 @@ function isWalkable(
 
 
     // --------------------------------------------------------
-    // CONVERSIONE COORDINATE MAPPA -> JSON
+    // MAPPA -> JSON
     // --------------------------------------------------------
 
     const jsonX =
@@ -805,13 +1617,10 @@ function isWalkable(
         GRID_OFFSET_Y;
 
 
-    // --------------------------------------------------------
-    // CONTROLLO MATRICE
-    // --------------------------------------------------------
-
     if (
         !dungeonData.cells[jsonY] ||
-        dungeonData.cells[jsonY][jsonX] === undefined
+        dungeonData.cells[jsonY][jsonX] ===
+        undefined
     ) {
 
         return false;
@@ -821,7 +1630,8 @@ function isWalkable(
 
     const value =
         Number(
-            dungeonData.cells[jsonY][jsonX]
+            dungeonData
+                .cells[jsonY][jsonX]
         );
 
 
@@ -835,10 +1645,6 @@ function isWalkable(
 
     }
 
-
-    // --------------------------------------------------------
-    // BIT DEL DUNGEON
-    // --------------------------------------------------------
 
     const bits =
         dungeonData.cell_bit ||
@@ -885,30 +1691,31 @@ function isWalkable(
         8388608;
 
 
-    // --------------------------------------------------------
-    // CELLE CONSENTITE
-    // --------------------------------------------------------
+    return (
 
-    const walkable =
-        (
-            (value & ROOM) !== 0 ||
-            (value & CORRIDOR) !== 0 ||
-            (value & APERTURE) !== 0 ||
-            (value & ARCH) !== 0 ||
-            (value & DOOR) !== 0 ||
-            (value & PORTCULLIS) !== 0 ||
-            (value & STAIR_DOWN) !== 0 ||
-            (value & STAIR_UP) !== 0
-        );
+        (value & ROOM) !== 0 ||
 
+        (value & CORRIDOR) !== 0 ||
 
-    return walkable;
+        (value & APERTURE) !== 0 ||
+
+        (value & ARCH) !== 0 ||
+
+        (value & DOOR) !== 0 ||
+
+        (value & PORTCULLIS) !== 0 ||
+
+        (value & STAIR_DOWN) !== 0 ||
+
+        (value & STAIR_UP) !== 0
+
+    );
 
 }
 
 
 // ============================================================
-// CONFIGURAZIONE MOVIMENTO
+// MOVIMENTO
 // ============================================================
 
 function setupMovement() {
@@ -918,19 +1725,11 @@ function setupMovement() {
     );
 
 
-    // --------------------------------------------------------
-    // TASTIERA
-    // --------------------------------------------------------
-
     document.addEventListener(
         "keydown",
         handleMovementKey
     );
 
-
-    // --------------------------------------------------------
-    // CLICK SULLA MAPPA
-    // --------------------------------------------------------
 
     const image =
         document.getElementById(
@@ -955,25 +1754,28 @@ function setupMovement() {
 
 
 // ============================================================
-// MOVIMENTO DA TASTIERA
+// MOVIMENTO TASTIERA
 // ============================================================
 
 function handleMovementKey(
     event
 ) {
 
-    // Se stiamo scrivendo nelle note,
-    // WASD e frecce devono continuare a scrivere normalmente.
-
     const activeElement =
         document.activeElement;
 
 
+    // Se stiamo scrivendo nelle note,
+    // non muovere il personaggio.
+
     if (
         activeElement &&
         (
-            activeElement.tagName === "TEXTAREA" ||
-            activeElement.tagName === "INPUT"
+            activeElement.tagName ===
+            "TEXTAREA" ||
+
+            activeElement.tagName ===
+            "INPUT"
         )
     ) {
 
@@ -1029,8 +1831,6 @@ function handleMovementKey(
     }
 
 
-    // Impedisce alle frecce di scorrere la pagina.
-
     event.preventDefault();
 
 
@@ -1043,7 +1843,7 @@ function handleMovementKey(
 
 
 // ============================================================
-// MOVIMENTO CON CLICK
+// MOVIMENTO CLICK
 // ============================================================
 
 function handleMapClick(
@@ -1087,10 +1887,6 @@ function handleMapClick(
         MAP_ROWS;
 
 
-    // --------------------------------------------------------
-    // COORDINATE CLICCATE
-    // --------------------------------------------------------
-
     const clickX =
         event.clientX -
         rect.left;
@@ -1115,10 +1911,6 @@ function handleMapClick(
         );
 
 
-    // --------------------------------------------------------
-    // DEVE ESSERE UNA CASELLA ADIACENTE
-    // --------------------------------------------------------
-
     const dx =
         targetX -
         playerX;
@@ -1128,6 +1920,9 @@ function handleMapClick(
         targetY -
         playerY;
 
+
+    // Solo movimento ortogonale
+    // verso una casella adiacente.
 
     const distance =
         Math.abs(dx) +
@@ -1160,9 +1955,7 @@ async function movePlayer(
     dy
 ) {
 
-    if (
-        movementLocked
-    ) {
+    if (movementLocked) {
 
         return;
 
@@ -1189,18 +1982,8 @@ async function movePlayer(
         dy;
 
 
-    console.log(
-        "Tentativo movimento:",
-        playerX,
-        playerY,
-        "->",
-        targetX,
-        targetY
-    );
-
-
     // --------------------------------------------------------
-    // CONTROLLO MURO
+    // MURO
     // --------------------------------------------------------
 
     if (
@@ -1209,11 +1992,6 @@ async function movePlayer(
             targetY
         )
     ) {
-
-        console.log(
-            "Movimento bloccato."
-        );
-
 
         setMessage(
             "Non puoi andare in quella direzione."
@@ -1238,7 +2016,7 @@ async function movePlayer(
 
 
     // --------------------------------------------------------
-    // MOVIMENTO VISIVO
+    // MOVIMENTO LOCALE
     // --------------------------------------------------------
 
     playerX =
@@ -1256,17 +2034,23 @@ async function movePlayer(
 
 
     // --------------------------------------------------------
-    // SALVATAGGIO SU SUPABASE
+    // MULTIPLAYER
+    // --------------------------------------------------------
+    //
+    // Gli altri giocatori vedono immediatamente
+    // il movimento.
+    //
+
+    broadcastMovement();
+
+
+    // --------------------------------------------------------
+    // DATABASE
     // --------------------------------------------------------
 
     const success =
         await savePlayerPosition();
 
-
-    // --------------------------------------------------------
-    // SE IL SALVATAGGIO FALLISCE
-    // TORNIAMO ALLA POSIZIONE PRECEDENTE
-    // --------------------------------------------------------
 
     if (!success) {
 
@@ -1284,6 +2068,11 @@ async function movePlayer(
         );
 
 
+        // Comunica agli altri che siamo tornati indietro.
+
+        broadcastMovement();
+
+
         setMessage(
             "Errore durante il salvataggio della posizione."
         );
@@ -1298,23 +2087,12 @@ async function movePlayer(
     }
 
 
-    // --------------------------------------------------------
-    // AGGIORNA PERSONAGGIO LOCALE
-    // --------------------------------------------------------
-
     character.dungeon_x =
         playerX;
 
 
     character.dungeon_y =
         playerY;
-
-
-    console.log(
-        "Nuova posizione:",
-        playerX,
-        playerY
-    );
 
 
     setMessage(
@@ -1353,7 +2131,8 @@ async function savePlayerPosition() {
                         playerY,
 
                     updated_at:
-                        new Date().toISOString()
+                        new Date()
+                            .toISOString()
 
                 })
                 .eq(
@@ -1436,7 +2215,8 @@ function getMapContainer() {
 
 
     if (
-        style.position === "static"
+        style.position ===
+        "static"
     ) {
 
         container.style.position =
@@ -1456,20 +2236,13 @@ function getMapContainer() {
 
 
 // ============================================================
-// MOSTRA TOKEN
+// MOSTRA TOKEN PERSONALE
 // ============================================================
 
 function showToken(
     x,
     y
 ) {
-
-    console.log(
-        "Visualizzazione token:",
-        x,
-        y
-    );
-
 
     try {
 
@@ -1480,10 +2253,6 @@ function showToken(
             getMapContainer();
 
 
-        // ----------------------------------------------------
-        // RIMUOVI TOKEN PRECEDENTE
-        // ----------------------------------------------------
-
         if (tokenElement) {
 
             tokenElement.remove();
@@ -1493,10 +2262,6 @@ function showToken(
 
         }
 
-
-        // ----------------------------------------------------
-        // DIMENSIONI MAPPA
-        // ----------------------------------------------------
 
         const mapRect =
             image.getBoundingClientRect();
@@ -1515,10 +2280,6 @@ function showToken(
             mapRect.height /
             MAP_ROWS;
 
-
-        // ----------------------------------------------------
-        // CREA TOKEN
-        // ----------------------------------------------------
 
         const token =
             document.createElement(
@@ -1553,10 +2314,6 @@ function showToken(
             "Personaggio";
 
 
-        // ----------------------------------------------------
-        // DIMENSIONI
-        // ----------------------------------------------------
-
         const tokenSize =
             Math.min(
                 cellWidth,
@@ -1584,6 +2341,9 @@ function showToken(
             "border-box";
 
 
+        // Il proprio token rimane sopra
+        // quelli degli altri.
+
         token.style.zIndex =
             "100";
 
@@ -1592,27 +2352,21 @@ function showToken(
             "none";
 
 
-        // ----------------------------------------------------
-        // CENTRO DELLA CASELLA
-        // ----------------------------------------------------
-
         const centerX =
             (
-                x + 0.5
+                x +
+                0.5
             ) *
             cellWidth;
 
 
         const centerY =
             (
-                y + 0.5
+                y +
+                0.5
             ) *
             cellHeight;
 
-
-        // ----------------------------------------------------
-        // OFFSET MAPPA
-        // ----------------------------------------------------
 
         const offsetX =
             mapRect.left -
@@ -1624,15 +2378,11 @@ function showToken(
             containerRect.top;
 
 
-        // ----------------------------------------------------
-        // POSIZIONE
-        // ----------------------------------------------------
-
         token.style.left =
             `${
                 offsetX +
                 centerX -
-                (tokenSize / 2)
+                tokenSize / 2
             }px`;
 
 
@@ -1640,13 +2390,9 @@ function showToken(
             `${
                 offsetY +
                 centerY -
-                (tokenSize / 2)
+                tokenSize / 2
             }px`;
 
-
-        // ----------------------------------------------------
-        // INSERIMENTO
-        // ----------------------------------------------------
 
         container.appendChild(
             token
@@ -1655,12 +2401,6 @@ function showToken(
 
         tokenElement =
             token;
-
-
-        console.log(
-            "Token creato:",
-            token.src
-        );
 
 
     } catch (error) {
@@ -1698,11 +2438,10 @@ function setupNotes() {
         );
 
 
-    if (!textarea || !saveButton) {
-
-        console.warn(
-            "Campo note o pulsante salva non trovato."
-        );
+    if (
+        !textarea ||
+        !saveButton
+    ) {
 
         return;
 
@@ -1710,18 +2449,12 @@ function setupNotes() {
 
 
     // --------------------------------------------------------
-    // CARICAMENTO NOTE
+    // CARICAMENTO
     // --------------------------------------------------------
 
     textarea.value =
         character.notes ||
         "";
-
-
-    console.log(
-        "Note caricate:",
-        character.notes
-    );
 
 
     // --------------------------------------------------------
@@ -1754,18 +2487,10 @@ async function saveNotes() {
         );
 
 
-    if (!textarea) {
-
-        return;
-
-    }
-
-
-    if (!character) {
-
-        console.error(
-            "Personaggio non caricato."
-        );
+    if (
+        !textarea ||
+        !character
+    ) {
 
         return;
 
@@ -1784,12 +2509,6 @@ async function saveNotes() {
     }
 
 
-    console.log(
-        "Salvataggio note:",
-        notes
-    );
-
-
     const {
         data,
         error
@@ -1802,7 +2521,8 @@ async function saveNotes() {
                     notes,
 
                 updated_at:
-                    new Date().toISOString()
+                    new Date()
+                        .toISOString()
 
             })
             .eq(
@@ -1843,12 +2563,6 @@ async function saveNotes() {
 
     textarea.value =
         character.notes;
-
-
-    console.log(
-        "Note salvate su Supabase:",
-        data
-    );
 
 
     if (message) {
@@ -1899,6 +2613,7 @@ function setMessage(
         element.textContent =
             text;
 
+
         element.style.color =
             "";
 
@@ -1931,6 +2646,7 @@ function showError(
         element.textContent =
             text;
 
+
         element.style.color =
             "#d66";
 
@@ -1955,6 +2671,29 @@ if (logoutButton) {
         "click",
         async () => {
 
+            // ------------------------------------------------
+            // ABBANDONA PRESENCE
+            // ------------------------------------------------
+
+            if (dungeonChannel) {
+
+                try {
+
+                    await dungeonChannel
+                        .untrack();
+
+                } catch (error) {
+
+                    console.error(
+                        "Errore untrack:",
+                        error
+                    );
+
+                }
+
+            }
+
+
             await db
                 .auth
                 .signOut();
@@ -1977,6 +2716,10 @@ window.addEventListener(
     "resize",
     () => {
 
+        // ----------------------------------------------------
+        // NOSTRO TOKEN
+        // ----------------------------------------------------
+
         if (
             playerX !== null &&
             playerY !== null
@@ -1986,6 +2729,40 @@ window.addEventListener(
                 playerX,
                 playerY
             );
+
+        }
+
+
+        // ----------------------------------------------------
+        // TOKEN DEGLI ALTRI
+        // ----------------------------------------------------
+
+        for (
+            const characterId
+            of otherPlayers.keys()
+        ) {
+
+            showRemoteToken(
+                characterId
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// USCITA DALLA PAGINA
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (dungeonChannel) {
+
+            dungeonChannel.untrack();
 
         }
 
