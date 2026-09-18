@@ -7,12 +7,13 @@
 //
 // - controlla autenticazione
 // - controlla ruolo master
-// - NON crea una pedina per il Master
+// - nessuna pedina del Master
 // - visualizza tutta la mappa
 // - visualizza tutti i giocatori online
-// - riceve i movimenti in tempo reale
+// - riceve movimenti in tempo reale
 // - permette di cliccare sulle pedine
 // - mostra la scheda del personaggio
+// - chat realtime del piano
 //
 // ============================================================
 
@@ -41,8 +42,7 @@ const MAP_ROWS =
     23;
 
 
-// Deve essere esattamente lo stesso
-// canale utilizzato da dungeon.js.
+// Stesso canale di dungeon.js
 
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
@@ -68,7 +68,7 @@ const onlinePlayers =
     new Map();
 
 
-// character_id -> elemento IMG
+// character_id -> token
 
 const playerTokens =
     new Map();
@@ -89,6 +89,8 @@ document.addEventListener(
             setupModal();
 
             setupLogout();
+
+            setupMasterChat();
 
             setupMap();
 
@@ -184,11 +186,6 @@ async function checkMasterAccess() {
         "master"
     ) {
 
-        console.warn(
-            "Accesso Master negato."
-        );
-
-
         window.location.href =
             "scheda.html";
 
@@ -259,7 +256,7 @@ async function setupRealtime() {
 
 
     // ========================================================
-    // PRESENCE SYNC
+    // PRESENCE
     // ========================================================
 
     dungeonChannel.on(
@@ -345,6 +342,53 @@ async function setupRealtime() {
 
 
     // ========================================================
+    // CHAT DEL PIANO
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event:
+                "floor-chat"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            // Se per qualche motivo Supabase rimanda
+            // il nostro messaggio allo stesso client,
+            // non lo duplichiamo.
+
+            if (
+                data.master_user_id &&
+                data.master_user_id ===
+                currentUser.id
+            ) {
+
+                return;
+
+            }
+
+
+            appendMasterChatMessage(
+                data,
+                false
+            );
+
+        }
+    );
+
+
+    // ========================================================
     // SUBSCRIBE
     // ========================================================
 
@@ -371,6 +415,11 @@ async function setupRealtime() {
                 );
 
 
+                setMasterChatConnected(
+                    true
+                );
+
+
                 updateOnlineCounter();
 
             }
@@ -380,11 +429,18 @@ async function setupRealtime() {
                 status ===
                 "CHANNEL_ERROR" ||
                 status ===
-                "TIMED_OUT"
+                "TIMED_OUT" ||
+                status ===
+                "CLOSED"
             ) {
 
                 realtimeReady =
                     false;
+
+
+                setMasterChatConnected(
+                    false
+                );
 
 
                 showMessage(
@@ -429,15 +485,6 @@ function syncPresencePlayers() {
             presences.forEach(
                 presence => {
 
-                    /*
-                       Il Master non fa track(),
-                       quindi qui dovrebbero esserci
-                       solamente i personaggi.
-
-                       Ignoriamo comunque qualsiasi
-                       presenza senza character_id.
-                    */
-
                     if (
                         !presence.character_id
                     ) {
@@ -462,10 +509,6 @@ function syncPresencePlayers() {
         }
     );
 
-
-    // --------------------------------------------------------
-    // RIMUOVI CHI È USCITO
-    // --------------------------------------------------------
 
     for (
         const characterId
@@ -676,10 +719,6 @@ function renderPlayerToken(
         MAP_ROWS;
 
 
-    // ========================================================
-    // CREA TOKEN
-    // ========================================================
-
     let token =
         playerTokens.get(
             characterId
@@ -726,10 +765,6 @@ function renderPlayerToken(
     }
 
 
-    // ========================================================
-    // IMMAGINE
-    // ========================================================
-
     token.src =
         "immagini/token/" +
         player.token;
@@ -743,10 +778,6 @@ function renderPlayerToken(
     token.title =
         player.nome;
 
-
-    // ========================================================
-    // DIMENSIONE
-    // ========================================================
 
     const tokenSize =
         Math.min(
@@ -763,10 +794,6 @@ function renderPlayerToken(
     token.style.height =
         `${tokenSize}px`;
 
-
-    // ========================================================
-    // POSIZIONE
-    // ========================================================
 
     const centerX =
         (
@@ -813,7 +840,7 @@ function renderPlayerToken(
 
 
 // ============================================================
-// RIDISEGNA TUTTE LE PEDINE
+// RIDISEGNA TOKEN
 // ============================================================
 
 function renderAllTokens() {
@@ -1071,6 +1098,448 @@ function updateOnlineCounter() {
 
 
 // ============================================================
+// CHAT MASTER - SETUP
+// ============================================================
+
+function setupMasterChat() {
+
+    const form =
+        document.getElementById(
+            "master-chat-form"
+        );
+
+
+    const input =
+        document.getElementById(
+            "master-chat-input"
+        );
+
+
+    if (
+        !form ||
+        !input
+    ) {
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            await sendMasterChatMessage();
+
+        }
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key ===
+                "Enter" &&
+                !event.shiftKey
+            ) {
+
+                event.preventDefault();
+
+
+                form.requestSubmit();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// STATO CHAT
+// ============================================================
+
+function setMasterChatConnected(
+    connected
+) {
+
+    const input =
+        document.getElementById(
+            "master-chat-input"
+        );
+
+
+    const button =
+        document.getElementById(
+            "master-chat-send"
+        );
+
+
+    const status =
+        document.getElementById(
+            "master-chat-status"
+        );
+
+
+    if (input) {
+
+        input.disabled =
+            !connected;
+
+    }
+
+
+    if (button) {
+
+        button.disabled =
+            !connected;
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            connected
+                ? "Online"
+                : "Disconnessa";
+
+
+        status.classList.toggle(
+            "is-online",
+            connected
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// INVIA MESSAGGIO MASTER
+// ============================================================
+
+async function sendMasterChatMessage() {
+
+    const input =
+        document.getElementById(
+            "master-chat-input"
+        );
+
+
+    const feedback =
+        document.getElementById(
+            "master-chat-feedback"
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    const text =
+        input.value
+            .trim();
+
+
+    if (!text) {
+
+        return;
+
+    }
+
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady
+    ) {
+
+        if (feedback) {
+
+            feedback.textContent =
+                "Chat non connessa.";
+
+        }
+
+
+        return;
+
+    }
+
+
+    const payload = {
+
+        message_id:
+            `master-${Date.now()}`,
+
+        character_id:
+            null,
+
+        master_user_id:
+            currentUser.id,
+
+        nome:
+            "MASTER",
+
+        text,
+
+        sent_at:
+            new Date()
+                .toISOString()
+
+    };
+
+
+    // Mostra subito il messaggio al Master.
+
+    appendMasterChatMessage(
+        payload,
+        true
+    );
+
+
+    input.value =
+        "";
+
+
+    if (feedback) {
+
+        feedback.textContent =
+            "";
+
+    }
+
+
+    const result =
+        await dungeonChannel.send({
+
+            type:
+                "broadcast",
+
+            event:
+                "floor-chat",
+
+            payload
+
+        });
+
+
+    if (
+        result !== "ok" &&
+        result !== undefined
+    ) {
+
+        console.warn(
+            "Invio chat Master:",
+            result
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// MOSTRA MESSAGGIO CHAT
+// ============================================================
+
+function appendMasterChatMessage(
+    data,
+    isMaster = false
+) {
+
+    const container =
+        document.getElementById(
+            "master-chat-messages"
+        );
+
+
+    if (
+        !container ||
+        !data
+    ) {
+
+        return;
+
+    }
+
+
+    const empty =
+        container.querySelector(
+            ".master-chat-empty"
+        );
+
+
+    if (empty) {
+
+        empty.remove();
+
+    }
+
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+
+    message.className =
+        "master-chat-message" +
+        (
+            isMaster ||
+            data.nome ===
+            "MASTER"
+                ? " is-master"
+                : ""
+        );
+
+
+    const meta =
+        document.createElement(
+            "div"
+        );
+
+
+    meta.className =
+        "master-chat-meta";
+
+
+    const author =
+        document.createElement(
+            "strong"
+        );
+
+
+    author.textContent =
+        data.nome ||
+        "Giocatore";
+
+
+    const time =
+        document.createElement(
+            "span"
+        );
+
+
+    time.textContent =
+        formatChatTime(
+            data.sent_at
+        );
+
+
+    meta.appendChild(
+        author
+    );
+
+
+    meta.appendChild(
+        time
+    );
+
+
+    const body =
+        document.createElement(
+            "div"
+        );
+
+
+    body.className =
+        "master-chat-body";
+
+
+    body.textContent =
+        String(
+            data.text ||
+            ""
+        );
+
+
+    message.appendChild(
+        meta
+    );
+
+
+    message.appendChild(
+        body
+    );
+
+
+    container.appendChild(
+        message
+    );
+
+
+    const messages =
+        container.querySelectorAll(
+            ".master-chat-message"
+        );
+
+
+    if (
+        messages.length >
+        100
+    ) {
+
+        messages[0].remove();
+
+    }
+
+
+    container.scrollTop =
+        container.scrollHeight;
+
+}
+
+
+// ============================================================
+// ORARIO CHAT
+// ============================================================
+
+function formatChatTime(
+    value
+) {
+
+    const date =
+        value
+            ? new Date(value)
+            : new Date();
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    return date.toLocaleTimeString(
+        "it-IT",
+        {
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
+        }
+    );
+
+}
+
+
+// ============================================================
 // APRI SCHEDA PERSONAGGIO
 // ============================================================
 
@@ -1209,10 +1678,6 @@ function fillCharacterSheet(
         );
 
 
-    // --------------------------------------------------------
-    // IDENTITÀ
-    // --------------------------------------------------------
-
     setText(
         "master-character-name",
         character.nome ||
@@ -1258,10 +1723,6 @@ function fillCharacterSheet(
     }
 
 
-    // --------------------------------------------------------
-    // ATTRIBUTI
-    // --------------------------------------------------------
-
     setText(
         "master-forza",
         forza
@@ -1297,10 +1758,6 @@ function fillCharacterSheet(
         fortuna
     );
 
-
-    // --------------------------------------------------------
-    // SECONDARIE
-    // --------------------------------------------------------
 
     const attack =
         Math.ceil(
