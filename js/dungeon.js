@@ -219,7 +219,7 @@ const DUNGEON_EVENTS = {
 // ============================================================
 
 const TRAP_COOLDOWN_ENABLED =
-    false;
+    true;
 
 const TRAP_COOLDOWN_MS =
     60 *
@@ -4080,6 +4080,86 @@ async function triggerTrapEvent(
 
 
     // ========================================================
+    // COOLDOWN GLOBALE
+    // ========================================================
+
+    if (
+        TRAP_COOLDOWN_ENABLED
+    ) {
+
+        const {
+            data: canTrigger,
+            error: cooldownError
+        } =
+            await db.rpc(
+                "try_trigger_trap",
+                {
+
+                    p_trap_id:
+                        dungeonEvent.id,
+
+                    p_character_id:
+                        character.id
+
+                }
+            );
+
+
+        if (
+            cooldownError
+        ) {
+
+            console.error(
+                "Errore controllo cooldown trappola:",
+                cooldownError
+            );
+
+
+            dungeonEventModalOpen =
+                false;
+
+
+            showError(
+                "Errore durante il controllo della trappola."
+            );
+
+
+            return;
+
+        }
+
+
+        // ----------------------------------------------------
+        // TRAPPOLA ANCORA IN COOLDOWN
+        // ----------------------------------------------------
+
+        if (
+            canTrigger !== true
+        ) {
+
+            console.log(
+                "Trappola in cooldown:",
+                dungeonEvent.id
+            );
+
+
+            dungeonEventModalOpen =
+                false;
+
+
+            setMessage(
+                "La trappola è già stata attivata e per ora è inattiva."
+            );
+
+
+            return;
+
+        }
+
+    }
+
+
+    // ========================================================
     // STATISTICHE
     // ========================================================
 
@@ -4167,15 +4247,20 @@ async function triggerTrapEvent(
     console.log(
         "TRAPPOLA:",
         {
+            trap:
+                dungeonEvent.id,
+
             oldHealth,
+
             damage,
+
             newHealth
         }
     );
 
 
     // ========================================================
-    // SALVA SEMPRE LA NUOVA VITA
+    // SALVA LA NUOVA VITA
     // ========================================================
 
     const {
@@ -4201,7 +4286,9 @@ async function triggerTrapEvent(
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         console.error(
             "Errore aggiornamento vita:",
@@ -4287,7 +4374,6 @@ async function triggerTrapEvent(
     );
 
 }
-
 
 // ============================================================
 // MORTE DEL PERSONAGGIO
