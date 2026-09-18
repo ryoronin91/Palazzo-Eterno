@@ -4,24 +4,29 @@
 // ============================================================
 //
 // Gestisce:
+//
 // - autenticazione Supabase
 // - caricamento personaggio
 // - caricamento dungeon.json
-// - scelta casuale della posizione iniziale
-// - salvataggio della posizione su Supabase
-// - visualizzazione del token
-// - visualizzazione della scheda personaggio
+// - posizione iniziale X=10 Y=1
+// - movimento con WASD / frecce
+// - movimento cliccando una casella adiacente
+// - controllo muri e celle percorribili
+// - salvataggio posizione
+// - visualizzazione token personale
+// - statistiche del personaggio
+// - caricamento e salvataggio delle note
 //
 // ============================================================
+
 
 console.log("DUNGEON.JS CARICATO");
 
 
 // ============================================================
-// CONFIGURAZIONE
+// SUPABASE
 // ============================================================
 
-// Usiamo direttamente il client creato da config.js
 const db = supabaseClient;
 
 
@@ -29,14 +34,23 @@ const db = supabaseClient;
 // CONFIGURAZIONE MAPPA
 // ============================================================
 
-// La mappa visualizzata è 23 x 23 caselle.
 const MAP_COLUMNS = 23;
 const MAP_ROWS = 23;
 
-// La matrice "cells" del JSON contiene una cornice
-// aggiuntiva rispetto alla mappa visibile.
-const GRID_OFFSET_X = 3;
+
+// Offset della matrice cells di dungeon.json
+// rispetto alla mappa visibile.
+
+const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
+
+
+// ============================================================
+// POSIZIONE INIZIALE
+// ============================================================
+
+const INITIAL_PLAYER_X = 10;
+const INITIAL_PLAYER_Y = 1;
 
 
 // ============================================================
@@ -44,12 +58,15 @@ const GRID_OFFSET_Y = 4;
 // ============================================================
 
 let dungeonData = null;
+
 let character = null;
 
 let playerX = null;
 let playerY = null;
 
 let tokenElement = null;
+
+let movementLocked = false;
 
 
 // ============================================================
@@ -64,13 +81,49 @@ document.addEventListener(
             "Pagina dungeon pronta."
         );
 
+
         try {
 
-            await loadDungeon();
+            // ------------------------------------------------
+            // PERSONAGGIO
+            // ------------------------------------------------
 
             await loadCharacter();
 
+
+            // ------------------------------------------------
+            // NOTE
+            // ------------------------------------------------
+            //
+            // Vengono inizializzate PRIMA della mappa.
+            //
+            // Così continuano a funzionare anche nel caso
+            // in cui dungeon.json abbia un problema.
+            //
+
+            setupNotes();
+
+
+            // ------------------------------------------------
+            // MAPPA
+            // ------------------------------------------------
+
+            await loadDungeon();
+
+
+            // ------------------------------------------------
+            // POSIZIONE
+            // ------------------------------------------------
+
             await initializePlayer();
+
+
+            // ------------------------------------------------
+            // MOVIMENTO
+            // ------------------------------------------------
+
+            setupMovement();
+
 
         } catch (error) {
 
@@ -79,71 +132,13 @@ document.addEventListener(
                 error
             );
 
+
             showError(
                 error.message ||
                 "Errore durante il caricamento del dungeon."
             );
+
         }
-
-    }
-);
-
-
-// ============================================================
-// LOGOUT
-// ============================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        const logoutButton =
-            document.getElementById(
-                "logout-button"
-            );
-
-
-        if (!logoutButton) {
-
-            return;
-        }
-
-
-        logoutButton.addEventListener(
-            "click",
-            async () => {
-
-                try {
-
-                    const {
-                        error
-                    } =
-                        await db.auth.signOut();
-
-
-                    if (error) {
-
-                        throw error;
-                    }
-
-
-                    window.location.href =
-                        "login.html";
-
-                } catch (error) {
-
-                    console.error(
-                        "Errore logout:",
-                        error
-                    );
-
-                    showError(
-                        "Impossibile effettuare il logout."
-                    );
-                }
-
-            }
-        );
 
     }
 );
@@ -171,6 +166,7 @@ async function loadDungeon() {
         throw new Error(
             "Impossibile caricare dungeon.json"
         );
+
     }
 
 
@@ -184,6 +180,17 @@ async function loadDungeon() {
     );
 
 
+    if (
+        !dungeonData.cells
+    ) {
+
+        throw new Error(
+            "Il file dungeon.json non contiene la matrice cells."
+        );
+
+    }
+
+
     console.log(
         "Griglia visibile:",
         MAP_COLUMNS,
@@ -192,22 +199,13 @@ async function loadDungeon() {
     );
 
 
-    if (
-        !dungeonData.cells
-    ) {
-
-        throw new Error(
-            "Il file dungeon.json non contiene la matrice cells."
-        );
-    }
-
-
     console.log(
         "Matrice interna:",
         dungeonData.cells[0].length,
         "x",
         dungeonData.cells.length
     );
+
 }
 
 
@@ -217,8 +215,13 @@ async function loadDungeon() {
 
 async function loadCharacter() {
 
+    console.log(
+        "Caricamento personaggio..."
+    );
+
+
     // --------------------------------------------------------
-    // Controllo autenticazione
+    // AUTENTICAZIONE
     // --------------------------------------------------------
 
     const {
@@ -233,30 +236,28 @@ async function loadCharacter() {
     if (authError) {
 
         throw authError;
+
     }
 
 
     if (!user) {
 
-        console.error(
-            "Nessun utente autenticato."
-        );
-
         window.location.href =
             "login.html";
 
         return;
+
     }
 
 
     console.log(
-        "Utente:",
+        "Utente autenticato:",
         user.id
     );
 
 
     // --------------------------------------------------------
-    // Recuperiamo il personaggio
+    // PERSONAGGIO
     // --------------------------------------------------------
 
     const {
@@ -276,23 +277,23 @@ async function loadCharacter() {
     if (error) {
 
         throw error;
+
     }
 
 
     if (!data) {
 
-        console.error(
-            "Nessun personaggio trovato."
-        );
-
         alert(
             "Non hai ancora creato un personaggio."
         );
 
+
         window.location.href =
             "personaggio.html";
 
+
         return;
+
     }
 
 
@@ -301,309 +302,298 @@ async function loadCharacter() {
 
 
     console.log(
-        "Personaggio:",
+        "Personaggio caricato:",
         character
     );
 
 
+    updateCharacterPanel();
+
+}
+
+
+// ============================================================
+// AGGIORNA SCHEDA PERSONAGGIO
+// ============================================================
+
+function updateCharacterPanel() {
+
+    if (!character) {
+
+        return;
+
+    }
+
+
     // --------------------------------------------------------
-    // Mostra il nome nell'header
+    // NOME
     // --------------------------------------------------------
 
-    const nameElement =
+    const name =
+        character.nome ||
+        "Avventuriero";
+
+
+    const nameHeader =
         document.getElementById(
             "character-name"
         );
 
 
-    if (nameElement) {
-
-        nameElement.textContent =
-            character.nome ||
-            character.name ||
-            "Avventuriero";
-    }
-
-
-    // --------------------------------------------------------
-    // Aggiorna la scheda
-    // --------------------------------------------------------
-
-    populateCharacterSheet();
-}
-
-
-// ============================================================
-// RIEMPI SCHEDA PERSONAGGIO
-// ============================================================
-
-function populateCharacterSheet() {
-
-    if (!character) {
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // Nome
-    // --------------------------------------------------------
-
-    setText(
-        "sheet-name",
-        character.nome ||
-        character.name ||
-        "Avventuriero"
-    );
-
-
-    // --------------------------------------------------------
-    // Razza
-    // --------------------------------------------------------
-
-    setText(
-        "sheet-razza",
-        character.razza ||
-        "-"
-    );
-
-
-    // --------------------------------------------------------
-    // Classe
-    // --------------------------------------------------------
-
-    setText(
-        "sheet-classe",
-        character.classe ||
-        "-"
-    );
-
-
-    // --------------------------------------------------------
-    // Livello
-    // --------------------------------------------------------
-
-    setText(
-        "sheet-livello",
-        character.livello ??
-        "-"
-    );
-
-
-    // --------------------------------------------------------
-    // PF
-    // --------------------------------------------------------
-
-    const hp =
-        character.hp ??
-        "-";
-
-
-    const hpMax =
-        character.hp_max ??
-        "-";
-
-
-    let hpText = "-";
-
-
-    if (
-        hp !== "-" &&
-        hpMax !== "-"
-    ) {
-
-        hpText =
-            `${hp} / ${hpMax}`;
-
-    } else if (
-        hp !== "-"
-    ) {
-
-        hpText =
-            String(hp);
-
-    }
-
-
-    setText(
-        "sheet-hp",
-        hpText
-    );
-
-
-    // --------------------------------------------------------
-    // Classe Armatura
-    // --------------------------------------------------------
-
-    setText(
-        "sheet-ca",
-        character.ca ??
-        "-"
-    );
-
-
-    // --------------------------------------------------------
-    // Caratteristiche
-    // --------------------------------------------------------
-
-    setAbility(
-        "forza",
-        character.forza
-    );
-
-
-    setAbility(
-        "destrezza",
-        character.destrezza
-    );
-
-
-    setAbility(
-        "costituzione",
-        character.costituzione
-    );
-
-
-    setAbility(
-        "intelligenza",
-        character.intelligenza
-    );
-
-
-    setAbility(
-        "saggezza",
-        character.saggezza
-    );
-
-
-    setAbility(
-        "carisma",
-        character.carisma
-    );
-
-
-    // --------------------------------------------------------
-    // Razza + classe
-    // --------------------------------------------------------
-
-    const race =
-        character.razza ||
-        "";
-
-
-    const className =
-        character.classe ||
-        "";
-
-
-    let raceClassText =
-        "";
-
-
-    if (
-        race &&
-        className
-    ) {
-
-        raceClassText =
-            `${race} • ${className}`;
-
-    } else {
-
-        raceClassText =
-            race ||
-            className ||
-            "-";
-    }
-
-
-    setText(
-        "character-class-race",
-        raceClassText
-    );
-
-
-    // --------------------------------------------------------
-    // Messaggio scheda
-    // --------------------------------------------------------
-
-    setText(
-        "character-sheet-message",
-        "Personaggio definitivo"
-    );
-}
-
-
-// ============================================================
-// IMPOSTA CARATTERISTICA
-// ============================================================
-
-function setAbility(
-    name,
-    value
-) {
-
-    const numericValue =
-        Number(value);
-
-
-    setText(
-        `sheet-${name}`,
-        value ??
-        "-"
-    );
-
-
-    if (
-        !Number.isFinite(
-            numericValue
-        )
-    ) {
-
-        setText(
-            `mod-${name}`,
-            "-"
+    const namePanel =
+        document.getElementById(
+            "character-name-panel"
         );
 
-        return;
+
+    if (nameHeader) {
+
+        nameHeader.textContent =
+            name;
+
     }
 
 
-    const modifier =
-        Math.floor(
+    if (namePanel) {
+
+        namePanel.textContent =
+            name;
+
+    }
+
+
+    // --------------------------------------------------------
+    // LIVELLO
+    // --------------------------------------------------------
+
+    const level =
+        Number(
+            character.livello
+        ) || 1;
+
+
+    const levelElement =
+        document.getElementById(
+            "character-level"
+        );
+
+
+    if (levelElement) {
+
+        levelElement.textContent =
+            level;
+
+    }
+
+
+    // --------------------------------------------------------
+    // TOKEN
+    // --------------------------------------------------------
+
+    const tokenImage =
+        document.getElementById(
+            "character-token"
+        );
+
+
+    if (tokenImage) {
+
+        const tokenFile =
+            character.token ||
+            "token_1.png";
+
+
+        tokenImage.src =
+            "immagini/token/" +
+            tokenFile;
+
+
+        tokenImage.alt =
+            "Token di " +
+            name;
+
+
+        tokenImage.onerror =
+            () => {
+
+                console.error(
+                    "Impossibile caricare il token:",
+                    tokenFile
+                );
+
+            };
+
+    }
+
+
+    // --------------------------------------------------------
+    // ATTRIBUTI
+    // --------------------------------------------------------
+
+    const forza =
+        Number(
+            character.forza
+        ) || 1;
+
+
+    const resistenza =
+        Number(
+            character.resistenza
+        ) || 1;
+
+
+    const costituzione =
+        Number(
+            character.costituzione
+        ) || 1;
+
+
+    const intelligenza =
+        Number(
+            character.intelligenza
+        ) || 1;
+
+
+    const destrezza =
+        Number(
+            character.destrezza
+        ) || 1;
+
+
+    const fortuna =
+        Number(
+            character.fortuna
+        ) || 1;
+
+
+    setText(
+        "forza-display",
+        forza
+    );
+
+
+    setText(
+        "resistenza-display",
+        resistenza
+    );
+
+
+    setText(
+        "costituzione-display",
+        costituzione
+    );
+
+
+    setText(
+        "intelligenza-display",
+        intelligenza
+    );
+
+
+    setText(
+        "destrezza-display",
+        destrezza
+    );
+
+
+    setText(
+        "fortuna-display",
+        fortuna
+    );
+
+
+    // --------------------------------------------------------
+    // STATISTICHE SECONDARIE
+    // --------------------------------------------------------
+
+    const attack =
+        Math.ceil(
+            forza / 2
+        );
+
+
+    const defense =
+        7 +
+        Math.ceil(
+            resistenza / 2
+        );
+
+
+    const health =
+        5 *
+        Math.ceil(
+            costituzione / 2
+        );
+
+
+    const mana =
+        5 *
+        Math.ceil(
+            intelligenza / 2
+        );
+
+
+    const movement =
+        4 +
+        Math.ceil(
+            destrezza / 2
+        );
+
+
+    const critical =
+        Math.round(
             (
-                numericValue -
-                10
-            ) / 2
-        );
+                fortuna *
+                (50 / 30)
+            ) *
+            100
+        ) / 100;
 
 
-    let modifierText;
+    // --------------------------------------------------------
+    // VISUALIZZAZIONE
+    // --------------------------------------------------------
 
-
-    if (
-        modifier >= 0
-    ) {
-
-        modifierText =
-            `+${modifier}`;
-
-    } else {
-
-        modifierText =
-            String(modifier);
-    }
+    setText(
+        "attack-display",
+        attack
+    );
 
 
     setText(
-        `mod-${name}`,
-        modifierText
+        "defense-display",
+        defense
     );
+
+
+    setText(
+        "health-display",
+        health
+    );
+
+
+    setText(
+        "mana-display",
+        mana
+    );
+
+
+    setText(
+        "movement-display",
+        movement
+    );
+
+
+    setText(
+        "critical-display",
+        critical + "%"
+    );
+
 }
 
 
 // ============================================================
-// IMPOSTA TESTO
+// FUNZIONE SET TEXT
 // ============================================================
 
 function setText(
@@ -620,13 +610,15 @@ function setText(
     if (element) {
 
         element.textContent =
-            String(value);
+            value;
+
     }
+
 }
 
 
 // ============================================================
-// INIZIALIZZAZIONE DEL GIOCATORE
+// INIZIALIZZAZIONE GIOCATORE
 // ============================================================
 
 async function initializePlayer() {
@@ -637,18 +629,21 @@ async function initializePlayer() {
 
 
     // --------------------------------------------------------
-    // Posizione già salvata?
+    // POSIZIONE GIÀ SALVATA
     // --------------------------------------------------------
 
     if (
-        character.dungeon_x != null &&
-        character.dungeon_y != null
+        character.dungeon_x !== null &&
+        character.dungeon_x !== undefined &&
+        character.dungeon_y !== null &&
+        character.dungeon_y !== undefined
     ) {
 
         playerX =
             Number(
                 character.dungeon_x
             );
+
 
         playerY =
             Number(
@@ -670,16 +665,17 @@ async function initializePlayer() {
 
 
         setMessage(
-            "Sei rientrato nel dungeon."
+            "Usa WASD o le frecce per muoverti."
         );
 
 
         return;
+
     }
 
 
     // --------------------------------------------------------
-    // Prima entrata
+    // PRIMA ENTRATA
     // --------------------------------------------------------
 
     console.log(
@@ -687,37 +683,27 @@ async function initializePlayer() {
     );
 
 
-    const position =
-        findRandomWalkableCell();
-
-
-    if (!position) {
-
-        throw new Error(
-            "Non è stata trovata nessuna cella percorribile."
-        );
-    }
-
-
     playerX =
-        position.x;
+        INITIAL_PLAYER_X;
+
 
     playerY =
-        position.y;
+        INITIAL_PLAYER_Y;
 
 
     console.log(
-        "Nuova posizione:",
-        position
+        "Posizione iniziale:",
+        playerX,
+        playerY
     );
 
 
     // --------------------------------------------------------
-    // Salva posizione
+    // SALVATAGGIO
     // --------------------------------------------------------
 
     const {
-        error: saveError
+        error
     } =
         await db
             .from("characters")
@@ -736,19 +722,28 @@ async function initializePlayer() {
             );
 
 
-    if (saveError) {
+    if (error) {
 
-        throw saveError;
+        throw error;
+
     }
 
 
+    character.dungeon_x =
+        playerX;
+
+
+    character.dungeon_y =
+        playerY;
+
+
     console.log(
-        "Posizione salvata su Supabase."
+        "Posizione iniziale salvata."
     );
 
 
     // --------------------------------------------------------
-    // Mostra token
+    // TOKEN
     // --------------------------------------------------------
 
     showToken(
@@ -758,167 +753,648 @@ async function initializePlayer() {
 
 
     setMessage(
-        "Sei entrato nel dungeon."
+        "Usa WASD o le frecce per muoverti."
     );
+
 }
 
 
 // ============================================================
-// TROVA UNA CELLA PERCORRIBILE
+// CONTROLLO CELLA PERCORRIBILE
 // ============================================================
 
-function findRandomWalkableCell() {
+function isWalkable(
+    x,
+    y
+) {
 
-    const walkableCells = [];
+    if (!dungeonData) {
 
-    const cells =
-        dungeonData.cells;
-
-
-    // --------------------------------------------------------
-    // Scansione della matrice
-    // --------------------------------------------------------
-
-    for (
-        let jsonY = 0;
-        jsonY < cells.length;
-        jsonY++
-    ) {
-
-        for (
-            let jsonX = 0;
-            jsonX < cells[jsonY].length;
-            jsonX++
-        ) {
-
-            const value =
-                Number(
-                    cells[jsonY][jsonX]
-                );
-
-
-            if (
-                !Number.isFinite(
-                    value
-                )
-            ) {
-
-                continue;
-            }
-
-
-            // ------------------------------------------------
-            // BIT DEL JSON
-            //
-            // ROOM     = 2
-            // CORRIDOR = 4
-            // ------------------------------------------------
-
-            const isRoom =
-                (
-                    value & 2
-                ) !== 0;
-
-
-            const isCorridor =
-                (
-                    value & 4
-                ) !== 0;
-
-
-            if (
-                !isRoom &&
-                !isCorridor
-            ) {
-
-                continue;
-            }
-
-
-            // ------------------------------------------------
-            // Conversione coordinate JSON
-            // → coordinate mappa
-            // ------------------------------------------------
-
-            const mapX =
-                jsonX -
-                GRID_OFFSET_X;
-
-
-            const mapY =
-                jsonY -
-                GRID_OFFSET_Y;
-
-
-            // ------------------------------------------------
-            // Controlliamo che la cella appartenga
-            // effettivamente alla mappa visibile.
-            // ------------------------------------------------
-
-            if (
-                mapX < 0 ||
-                mapY < 0 ||
-                mapX >= MAP_COLUMNS ||
-                mapY >= MAP_ROWS
-            ) {
-
-                continue;
-            }
-
-
-            walkableCells.push({
-
-                x:
-                    mapX,
-
-                y:
-                    mapY,
-
-                type:
-                    isRoom
-                        ? "room"
-                        : "corridor"
-
-            });
-
-        }
+        return false;
 
     }
 
 
-    console.log(
-        "Celle percorribili trovate:",
-        walkableCells.length
-    );
-
+    // --------------------------------------------------------
+    // LIMITI MAPPA VISIBILE
+    // --------------------------------------------------------
 
     if (
-        walkableCells.length === 0
+        x < 0 ||
+        y < 0 ||
+        x >= MAP_COLUMNS ||
+        y >= MAP_ROWS
     ) {
 
-        return null;
+        return false;
+
     }
 
 
     // --------------------------------------------------------
-    // Scelta casuale
+    // CONVERSIONE COORDINATE MAPPA -> JSON
     // --------------------------------------------------------
 
-    const randomIndex =
-        Math.floor(
-            Math.random() *
-            walkableCells.length
+    const jsonX =
+        x +
+        GRID_OFFSET_X;
+
+
+    const jsonY =
+        y +
+        GRID_OFFSET_Y;
+
+
+    // --------------------------------------------------------
+    // CONTROLLO MATRICE
+    // --------------------------------------------------------
+
+    if (
+        !dungeonData.cells[jsonY] ||
+        dungeonData.cells[jsonY][jsonX] === undefined
+    ) {
+
+        return false;
+
+    }
+
+
+    const value =
+        Number(
+            dungeonData.cells[jsonY][jsonX]
         );
 
 
-    return walkableCells[
-        randomIndex
-    ];
+    if (
+        !Number.isFinite(
+            value
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // BIT DEL DUNGEON
+    // --------------------------------------------------------
+
+    const bits =
+        dungeonData.cell_bit ||
+        {};
+
+
+    const ROOM =
+        bits.room ||
+        2;
+
+
+    const CORRIDOR =
+        bits.corridor ||
+        4;
+
+
+    const APERTURE =
+        bits.aperture ||
+        32;
+
+
+    const ARCH =
+        bits.arch ||
+        65536;
+
+
+    const DOOR =
+        bits.door ||
+        131072;
+
+
+    const PORTCULLIS =
+        bits.portcullis ||
+        2097152;
+
+
+    const STAIR_DOWN =
+        bits.stair_down ||
+        4194304;
+
+
+    const STAIR_UP =
+        bits.stair_up ||
+        8388608;
+
+
+    // --------------------------------------------------------
+    // CELLE CONSENTITE
+    // --------------------------------------------------------
+
+    const walkable =
+        (
+            (value & ROOM) !== 0 ||
+            (value & CORRIDOR) !== 0 ||
+            (value & APERTURE) !== 0 ||
+            (value & ARCH) !== 0 ||
+            (value & DOOR) !== 0 ||
+            (value & PORTCULLIS) !== 0 ||
+            (value & STAIR_DOWN) !== 0 ||
+            (value & STAIR_UP) !== 0
+        );
+
+
+    return walkable;
+
 }
 
 
 // ============================================================
-// TROVA IL CONTENITORE DELLA MAPPA
+// CONFIGURAZIONE MOVIMENTO
+// ============================================================
+
+function setupMovement() {
+
+    console.log(
+        "Movimento attivato."
+    );
+
+
+    // --------------------------------------------------------
+    // TASTIERA
+    // --------------------------------------------------------
+
+    document.addEventListener(
+        "keydown",
+        handleMovementKey
+    );
+
+
+    // --------------------------------------------------------
+    // CLICK SULLA MAPPA
+    // --------------------------------------------------------
+
+    const image =
+        document.getElementById(
+            "dungeon-image"
+        );
+
+
+    if (image) {
+
+        image.style.cursor =
+            "pointer";
+
+
+        image.addEventListener(
+            "click",
+            handleMapClick
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// MOVIMENTO DA TASTIERA
+// ============================================================
+
+function handleMovementKey(
+    event
+) {
+
+    // Se stiamo scrivendo nelle note,
+    // WASD e frecce devono continuare a scrivere normalmente.
+
+    const activeElement =
+        document.activeElement;
+
+
+    if (
+        activeElement &&
+        (
+            activeElement.tagName === "TEXTAREA" ||
+            activeElement.tagName === "INPUT"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    let dx = 0;
+    let dy = 0;
+
+
+    switch (
+        event.key.toLowerCase()
+    ) {
+
+        case "w":
+        case "arrowup":
+
+            dy = -1;
+
+            break;
+
+
+        case "s":
+        case "arrowdown":
+
+            dy = 1;
+
+            break;
+
+
+        case "a":
+        case "arrowleft":
+
+            dx = -1;
+
+            break;
+
+
+        case "d":
+        case "arrowright":
+
+            dx = 1;
+
+            break;
+
+
+        default:
+
+            return;
+
+    }
+
+
+    // Impedisce alle frecce di scorrere la pagina.
+
+    event.preventDefault();
+
+
+    movePlayer(
+        dx,
+        dy
+    );
+
+}
+
+
+// ============================================================
+// MOVIMENTO CON CLICK
+// ============================================================
+
+function handleMapClick(
+    event
+) {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    const image =
+        document.getElementById(
+            "dungeon-image"
+        );
+
+
+    if (!image) {
+
+        return;
+
+    }
+
+
+    const rect =
+        image.getBoundingClientRect();
+
+
+    const cellWidth =
+        rect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        MAP_ROWS;
+
+
+    // --------------------------------------------------------
+    // COORDINATE CLICCATE
+    // --------------------------------------------------------
+
+    const clickX =
+        event.clientX -
+        rect.left;
+
+
+    const clickY =
+        event.clientY -
+        rect.top;
+
+
+    const targetX =
+        Math.floor(
+            clickX /
+            cellWidth
+        );
+
+
+    const targetY =
+        Math.floor(
+            clickY /
+            cellHeight
+        );
+
+
+    // --------------------------------------------------------
+    // DEVE ESSERE UNA CASELLA ADIACENTE
+    // --------------------------------------------------------
+
+    const dx =
+        targetX -
+        playerX;
+
+
+    const dy =
+        targetY -
+        playerY;
+
+
+    const distance =
+        Math.abs(dx) +
+        Math.abs(dy);
+
+
+    if (
+        distance !== 1
+    ) {
+
+        return;
+
+    }
+
+
+    movePlayer(
+        dx,
+        dy
+    );
+
+}
+
+
+// ============================================================
+// MUOVI GIOCATORE
+// ============================================================
+
+async function movePlayer(
+    dx,
+    dy
+) {
+
+    if (
+        movementLocked
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    const targetX =
+        playerX +
+        dx;
+
+
+    const targetY =
+        playerY +
+        dy;
+
+
+    console.log(
+        "Tentativo movimento:",
+        playerX,
+        playerY,
+        "->",
+        targetX,
+        targetY
+    );
+
+
+    // --------------------------------------------------------
+    // CONTROLLO MURO
+    // --------------------------------------------------------
+
+    if (
+        !isWalkable(
+            targetX,
+            targetY
+        )
+    ) {
+
+        console.log(
+            "Movimento bloccato."
+        );
+
+
+        setMessage(
+            "Non puoi andare in quella direzione."
+        );
+
+
+        return;
+
+    }
+
+
+    movementLocked =
+        true;
+
+
+    const previousX =
+        playerX;
+
+
+    const previousY =
+        playerY;
+
+
+    // --------------------------------------------------------
+    // MOVIMENTO VISIVO
+    // --------------------------------------------------------
+
+    playerX =
+        targetX;
+
+
+    playerY =
+        targetY;
+
+
+    showToken(
+        playerX,
+        playerY
+    );
+
+
+    // --------------------------------------------------------
+    // SALVATAGGIO SU SUPABASE
+    // --------------------------------------------------------
+
+    const success =
+        await savePlayerPosition();
+
+
+    // --------------------------------------------------------
+    // SE IL SALVATAGGIO FALLISCE
+    // TORNIAMO ALLA POSIZIONE PRECEDENTE
+    // --------------------------------------------------------
+
+    if (!success) {
+
+        playerX =
+            previousX;
+
+
+        playerY =
+            previousY;
+
+
+        showToken(
+            playerX,
+            playerY
+        );
+
+
+        setMessage(
+            "Errore durante il salvataggio della posizione."
+        );
+
+
+        movementLocked =
+            false;
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // AGGIORNA PERSONAGGIO LOCALE
+    // --------------------------------------------------------
+
+    character.dungeon_x =
+        playerX;
+
+
+    character.dungeon_y =
+        playerY;
+
+
+    console.log(
+        "Nuova posizione:",
+        playerX,
+        playerY
+    );
+
+
+    setMessage(
+        "Posizione: X " +
+        playerX +
+        " • Y " +
+        playerY
+    );
+
+
+    movementLocked =
+        false;
+
+}
+
+
+// ============================================================
+// SALVA POSIZIONE
+// ============================================================
+
+async function savePlayerPosition() {
+
+    try {
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    dungeon_x:
+                        playerX,
+
+                    dungeon_y:
+                        playerY,
+
+                    updated_at:
+                        new Date().toISOString()
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Errore salvataggio posizione:",
+                error
+            );
+
+
+            return false;
+
+        }
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio posizione:",
+            error
+        );
+
+
+        return false;
+
+    }
+
+}
+
+
+// ============================================================
+// MAPPA
 // ============================================================
 
 function getMapContainer() {
@@ -929,85 +1405,53 @@ function getMapContainer() {
         );
 
 
-    if (image) {
+    if (!image) {
 
-        const container =
-            image.parentElement;
+        throw new Error(
+            "Immagine della mappa non trovata."
+        );
 
-
-        if (container) {
-
-            const style =
-                window.getComputedStyle(
-                    container
-                );
-
-
-            if (
-                style.position === "static"
-            ) {
-
-                container.style.position =
-                    "relative";
-            }
-
-
-            return {
-
-                image,
-                container
-
-            };
-        }
     }
 
 
-    // --------------------------------------------------------
-    // Fallback: canvas
-    // --------------------------------------------------------
-
-    const canvas =
-        document.querySelector(
-            "canvas"
+    const container =
+        document.getElementById(
+            "dungeon-map"
         );
 
 
-    if (canvas) {
+    if (!container) {
 
-        const container =
-            canvas.parentElement;
+        throw new Error(
+            "Contenitore della mappa non trovato."
+        );
 
-
-        if (container) {
-
-            const style =
-                window.getComputedStyle(
-                    container
-                );
-
-
-            if (
-                style.position === "static"
-            ) {
-
-                container.style.position =
-                    "relative";
-            }
-
-
-            return {
-
-                canvas,
-                container
-
-            };
-        }
     }
 
 
-    throw new Error(
-        "Contenitore della mappa non trovato."
-    );
+    const style =
+        window.getComputedStyle(
+            container
+        );
+
+
+    if (
+        style.position === "static"
+    ) {
+
+        container.style.position =
+            "relative";
+
+    }
+
+
+    return {
+
+        image,
+        container
+
+    };
+
 }
 
 
@@ -1021,7 +1465,7 @@ function showToken(
 ) {
 
     console.log(
-        "TOKEN POSIZIONE:",
+        "Visualizzazione token:",
         x,
         y
     );
@@ -1037,50 +1481,30 @@ function showToken(
 
 
         // ----------------------------------------------------
-        // Rimuovi eventuale token precedente
+        // RIMUOVI TOKEN PRECEDENTE
         // ----------------------------------------------------
 
-        if (
-            tokenElement
-        ) {
+        if (tokenElement) {
 
             tokenElement.remove();
 
             tokenElement =
                 null;
+
         }
 
 
         // ----------------------------------------------------
-        // Dimensioni reali della mappa
+        // DIMENSIONI MAPPA
         // ----------------------------------------------------
-
-        const mapElement =
-            image ||
-            container.querySelector(
-                "canvas"
-            );
-
-
-        if (!mapElement) {
-
-            throw new Error(
-                "Elemento della mappa non trovato."
-            );
-        }
-
 
         const mapRect =
-            mapElement.getBoundingClientRect();
+            image.getBoundingClientRect();
 
 
         const containerRect =
             container.getBoundingClientRect();
 
-
-        // ----------------------------------------------------
-        // Dimensione casella
-        // ----------------------------------------------------
 
         const cellWidth =
             mapRect.width /
@@ -1093,12 +1517,12 @@ function showToken(
 
 
         // ----------------------------------------------------
-        // Creiamo il token
+        // CREA TOKEN
         // ----------------------------------------------------
 
         const token =
             document.createElement(
-                "div"
+                "img"
             );
 
 
@@ -1106,15 +1530,38 @@ function showToken(
             "dungeon-player-token";
 
 
+        const tokenFile =
+            character.token ||
+            "token_1.png";
+
+
+        token.src =
+            "immagini/token/" +
+            tokenFile;
+
+
+        token.alt =
+            "Token di " +
+            (
+                character.nome ||
+                "personaggio"
+            );
+
+
+        token.title =
+            character.nome ||
+            "Personaggio";
+
+
         // ----------------------------------------------------
-        // Dimensione token
+        // DIMENSIONI
         // ----------------------------------------------------
 
         const tokenSize =
             Math.min(
                 cellWidth,
                 cellHeight
-            ) * 0.78;
+            ) * 0.92;
 
 
         token.style.position =
@@ -1129,24 +1576,12 @@ function showToken(
             `${tokenSize}px`;
 
 
-        token.style.borderRadius =
-            "50%";
-
-
-        token.style.background =
-            "#b88a3b";
-
-
-        token.style.border =
-            "3px solid white";
+        token.style.objectFit =
+            "contain";
 
 
         token.style.boxSizing =
             "border-box";
-
-
-        token.style.boxShadow =
-            "0 0 0 2px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.6)";
 
 
         token.style.zIndex =
@@ -1157,12 +1592,8 @@ function showToken(
             "none";
 
 
-        token.style.transform =
-            "translate(-50%, -50%)";
-
-
         // ----------------------------------------------------
-        // Centro della casella
+        // CENTRO DELLA CASELLA
         // ----------------------------------------------------
 
         const centerX =
@@ -1180,7 +1611,7 @@ function showToken(
 
 
         // ----------------------------------------------------
-        // Offset tra mappa e contenitore
+        // OFFSET MAPPA
         // ----------------------------------------------------
 
         const offsetX =
@@ -1194,25 +1625,27 @@ function showToken(
 
 
         // ----------------------------------------------------
-        // Posizione finale
+        // POSIZIONE
         // ----------------------------------------------------
 
         token.style.left =
             `${
                 offsetX +
-                centerX
+                centerX -
+                (tokenSize / 2)
             }px`;
 
 
         token.style.top =
             `${
                 offsetY +
-                centerY
+                centerY -
+                (tokenSize / 2)
             }px`;
 
 
         // ----------------------------------------------------
-        // Inserimento
+        // INSERIMENTO
         // ----------------------------------------------------
 
         container.appendChild(
@@ -1225,23 +1658,8 @@ function showToken(
 
 
         console.log(
-            "Token creato."
-        );
-
-
-        console.log(
-            "Casella:",
-            cellWidth,
-            "x",
-            cellHeight
-        );
-
-
-        console.log(
-            "Token:",
-            tokenSize,
-            "x",
-            tokenSize
+            "Token creato:",
+            token.src
         );
 
 
@@ -1256,7 +1674,209 @@ function showToken(
         showError(
             "Errore nella visualizzazione del personaggio."
         );
+
     }
+
+}
+
+
+// ============================================================
+// NOTE
+// ============================================================
+
+function setupNotes() {
+
+    const textarea =
+        document.getElementById(
+            "character-notes"
+        );
+
+
+    const saveButton =
+        document.getElementById(
+            "save-notes-button"
+        );
+
+
+    if (!textarea || !saveButton) {
+
+        console.warn(
+            "Campo note o pulsante salva non trovato."
+        );
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // CARICAMENTO NOTE
+    // --------------------------------------------------------
+
+    textarea.value =
+        character.notes ||
+        "";
+
+
+    console.log(
+        "Note caricate:",
+        character.notes
+    );
+
+
+    // --------------------------------------------------------
+    // SALVATAGGIO
+    // --------------------------------------------------------
+
+    saveButton.addEventListener(
+        "click",
+        saveNotes
+    );
+
+}
+
+
+// ============================================================
+// SALVA NOTE
+// ============================================================
+
+async function saveNotes() {
+
+    const textarea =
+        document.getElementById(
+            "character-notes"
+        );
+
+
+    const message =
+        document.getElementById(
+            "notes-message"
+        );
+
+
+    if (!textarea) {
+
+        return;
+
+    }
+
+
+    if (!character) {
+
+        console.error(
+            "Personaggio non caricato."
+        );
+
+        return;
+
+    }
+
+
+    const notes =
+        textarea.value;
+
+
+    if (message) {
+
+        message.textContent =
+            "Salvataggio...";
+
+    }
+
+
+    console.log(
+        "Salvataggio note:",
+        notes
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("characters")
+            .update({
+
+                notes:
+                    notes,
+
+                updated_at:
+                    new Date().toISOString()
+
+            })
+            .eq(
+                "id",
+                character.id
+            )
+            .select(
+                "id, notes"
+            )
+            .single();
+
+
+    if (error) {
+
+        console.error(
+            "Errore salvataggio note:",
+            error
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                "Errore durante il salvataggio delle note.";
+
+        }
+
+
+        return;
+
+    }
+
+
+    character.notes =
+        data.notes ||
+        "";
+
+
+    textarea.value =
+        character.notes;
+
+
+    console.log(
+        "Note salvate su Supabase:",
+        data
+    );
+
+
+    if (message) {
+
+        message.textContent =
+            "Note salvate.";
+
+    }
+
+
+    setTimeout(
+        () => {
+
+            if (
+                message &&
+                message.textContent ===
+                "Note salvate."
+            ) {
+
+                message.textContent =
+                    "";
+
+            }
+
+        },
+        2500
+    );
+
 }
 
 
@@ -1280,8 +1900,10 @@ function setMessage(
             text;
 
         element.style.color =
-            "#b18a4d";
+            "";
+
     }
+
 }
 
 
@@ -1311,17 +1933,45 @@ function showError(
 
         element.style.color =
             "#d66";
+
     }
+
+}
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+const logoutButton =
+    document.getElementById(
+        "logout-button"
+    );
+
+
+if (logoutButton) {
+
+    logoutButton.addEventListener(
+        "click",
+        async () => {
+
+            await db
+                .auth
+                .signOut();
+
+
+            window.location.href =
+                "index.html";
+
+        }
+    );
+
 }
 
 
 // ============================================================
 // RIDIMENSIONAMENTO
 // ============================================================
-//
-// Quando la finestra cambia dimensione,
-// ricalcoliamo posizione e dimensione del token.
-//
 
 window.addEventListener(
     "resize",
@@ -1336,6 +1986,8 @@ window.addEventListener(
                 playerX,
                 playerY
             );
+
         }
+
     }
 );
