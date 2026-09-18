@@ -5,19 +5,19 @@
 
 
 /* ============================================================
-   PAGINA
+   PAGINA DUNGEON
    ============================================================ */
 
 .dungeon-page {
-
     width: 100%;
-
     min-height: 100vh;
 
     box-sizing: border-box;
 
-    padding: 24px;
+    padding: 20px;
 
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -26,186 +26,90 @@
    ============================================================ */
 
 .dungeon-header {
-
     width: 100%;
+    max-width: 1500px;
 
-    max-width: 1450px;
-
-    margin: 0 auto 20px auto;
+    margin: 0 auto 16px auto;
 
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
-    gap: 20px;
-
-}
-
-
-.dungeon-title h1 {
-
-    margin: 0;
-
-    color: #b18a4d;
-
-    letter-spacing: 4px;
-
-    font-size: 28px;
-
-}
-
-
-.dungeon-title p {
-
-    margin: 5px 0 0 0;
-
-    color: #aaa;
-
-    font-size: 14px;
-
+    box-sizing: border-box;
 }
 
 
 /* ============================================================
-   LAYOUT PRINCIPALE
+   CONTENITORE PRINCIPALE
    ============================================================ */
 
-.dungeon-layout {
-
+.dungeon-container {
     width: 100%;
-
-    max-width: 1450px;
+    max-width: 1500px;
 
     margin: 0 auto;
 
     display: grid;
 
+    /*
+       MAPPA A SINISTRA
+       SCHEDA A DESTRA
+    */
+
     grid-template-columns:
         minmax(0, 1fr)
-        350px;
+        330px;
 
-    gap: 24px;
+    gap: 18px;
 
     align-items: start;
 
-}
-
-
-/* ============================================================
-   PANNELLO MAPPA
-   ============================================================ */
-
-.map-panel {
-
-    min-width: 0;
-
-    background:
-        rgba(15, 15, 15, 0.75);
-
-    border:
-
-        1px solid
-        rgba(177, 138, 77, 0.45);
-
-    border-radius: 10px;
-
-    padding: 14px;
-
     box-sizing: border-box;
-
-    box-shadow:
-        0 10px 35px rgba(0, 0, 0, 0.45);
-
 }
 
 
 /* ============================================================
-   TITOLO PANNELLI
-   ============================================================ */
-
-.panel-title {
-
-    margin-bottom: 12px;
-
-    padding-bottom: 9px;
-
-    border-bottom:
-        1px solid
-        rgba(177, 138, 77, 0.3);
-
-    color: #b18a4d;
-
-    font-size: 13px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-
-}
-
-
-/* ============================================================
-   MAPPA
+   AREA MAPPA
    ============================================================ */
 
 .dungeon-map {
-
     position: relative;
 
     width: 100%;
 
-    aspect-ratio: 1 / 1;
+    /*
+       Evita che la mappa diventi gigantesca.
+    */
+
+    max-width: 1150px;
+
+    margin: 0 auto;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    box-sizing: border-box;
 
     overflow: hidden;
-
-    border:
-        2px solid
-        #66563c;
-
-    border-radius: 5px;
-
-    background: #080808;
-
-    box-shadow:
-        inset 0 0 25px rgba(0, 0, 0, 0.7),
-        0 0 25px rgba(0, 0, 0, 0.5);
-
 }
 
 
 /* ============================================================
-   IMMAGINE DUNGEON
+   IMMAGINE DELLA MAPPA
    ============================================================ */
 
-.dungeon-map img {
-
+#dungeon-image {
     display: block;
 
     width: 100%;
+    height: auto;
 
-    height: 100%;
+    max-width: 100%;
 
     object-fit: contain;
 
-}
-
-
-/* ============================================================
-   VECCHIO TOKEN
-   ============================================================ */
-
-/*
-   Il token con ID player-token rimane nascosto.
-   dungeon.js crea il token reale con la classe
-   dungeon-player-token.
-*/
-
-#player-token {
-
-    display: none;
-
+    box-sizing: border-box;
 }
 
 
@@ -214,455 +118,106 @@
    ============================================================ */
 
 .dungeon-player-token {
-
     position: absolute;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: #b88a3b;
-
-    border: 3px solid white;
-
-    box-sizing: border-box;
-
-    box-shadow:
-        0 0 0 2px rgba(0, 0, 0, 0.8),
-        0 2px 8px rgba(0, 0, 0, 0.6);
-
-    z-index: 100;
 
     pointer-events: none;
 
-    transform:
-        translate(-50%, -50%);
+    z-index: 100;
 
+    box-sizing: border-box;
 }
 
 
 /* ============================================================
-   SCHEDA PERSONAGGIO
+   PANNELLO PERSONAGGIO
    ============================================================ */
 
 .character-panel {
-
     width: 100%;
 
     box-sizing: border-box;
 
-    padding: 20px;
+    position: sticky;
+    top: 20px;
 
-    border:
-        1px solid
-        rgba(177, 138, 77, 0.55);
+    max-height: calc(100vh - 40px);
 
-    border-radius: 10px;
+    overflow-y: auto;
+}
 
-    background:
 
-        linear-gradient(
-            145deg,
-            rgba(37, 31, 23, 0.98),
-            rgba(19, 18, 17, 0.98)
-        );
+/*
+   Nel caso il pannello venga identificato con uno
+   di questi ID/classi, manteniamo lo stesso comportamento.
+*/
 
-    box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.55);
+#character-panel,
+#character-sheet,
+.dungeon-character-sheet {
+    width: 100%;
 
+    box-sizing: border-box;
+
+    position: sticky;
+    top: 20px;
+
+    max-height: calc(100vh - 40px);
+
+    overflow-y: auto;
 }
 
 
 /* ============================================================
-   TESTATA SCHEDA
-   ============================================================ */
-
-.character-panel-header {
-
-    padding-bottom: 12px;
-
-    border-bottom:
-        1px solid
-        rgba(177, 138, 77, 0.35);
-
-}
-
-
-.character-panel-label {
-
-    color: #b18a4d;
-
-    font-size: 12px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-
-}
-
-
-.character-class-race {
-
-    margin-top: 5px;
-
-    color: #aaa;
-
-    font-size: 13px;
-
-}
-
-
-/* ============================================================
-   NOME
-   ============================================================ */
-
-.character-name-large {
-
-    padding:
-        15px
-        0
-        16px
-        0;
-
-    color: #f1dfbd;
-
-    font-size: 24px;
-
-    font-weight: bold;
-
-    line-height: 1.15;
-
-    word-break: break-word;
-
-}
-
-
-/* ============================================================
-   PF / CA
-   ============================================================ */
-
-.combat-stats {
-
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    gap: 10px;
-
-    margin-bottom: 18px;
-
-}
-
-
-.combat-stat {
-
-    min-width: 0;
-
-    padding: 12px 10px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    background:
-        rgba(0, 0, 0, 0.28);
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-    border-radius: 7px;
-
-}
-
-
-.combat-stat-icon {
-
-    width: 28px;
-
-    height: 28px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 50%;
-
-    font-size: 14px;
-
-}
-
-
-.hp-icon {
-
-    background:
-        rgba(160, 50, 50, 0.2);
-
-    color: #d66;
-
-}
-
-
-.ac-icon {
-
-    background:
-        rgba(120, 120, 120, 0.2);
-
-    color: #ddd;
-
-}
-
-
-.combat-stat-content {
-
-    min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-}
-
-
-.combat-stat-label {
-
-    color: #888;
-
-    font-size: 8px;
-
-    font-weight: bold;
-
-    letter-spacing: 0.7px;
-
-    white-space: nowrap;
-
-}
-
-
-.combat-stat strong {
-
-    margin-top: 2px;
-
-    color: #eee;
-
-    font-size: 18px;
-
-}
-
-
-/* ============================================================
-   SEZIONE CARATTERISTICHE
-   ============================================================ */
-
-.abilities-section {
-
-    margin-top: 4px;
-
-}
-
-
-.section-heading {
-
-    margin-bottom: 9px;
-
-    padding-bottom: 7px;
-
-    border-bottom:
-        1px solid
-        rgba(177, 138, 77, 0.25);
-
-    color: #b18a4d;
-
-    font-size: 10px;
-
-    font-weight: bold;
-
-    letter-spacing: 1.5px;
-
-}
-
-
-/* ============================================================
-   GRIGLIA CARATTERISTICHE
-   ============================================================ */
-
-.abilities-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap: 8px;
-
-}
-
-
-.ability {
-
-    min-width: 0;
-
-    padding: 9px 5px;
-
-    text-align: center;
-
-    background:
-        rgba(0, 0, 0, 0.24);
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.07);
-
-    border-radius: 6px;
-
-}
-
-
-.ability-name {
-
-    display: block;
-
-    color: #888;
-
-    font-size: 9px;
-
-    font-weight: bold;
-
-    letter-spacing: 1px;
-
-}
-
-
-.ability-value {
-
-    display: block;
-
-    margin-top: 3px;
-
-    color: #eee;
-
-    font-size: 20px;
-
-}
-
-
-.ability-modifier {
-
-    display: block;
-
-    margin-top: 1px;
-
-    color: #b18a4d;
-
-    font-size: 11px;
-
-}
-
-
-/* ============================================================
-   INFORMAZIONI
-   ============================================================ */
-
-.character-info {
-
-    margin-top: 17px;
-
-    border-top:
-        1px solid
-        rgba(177, 138, 77, 0.25);
-
-}
-
-
-.info-row {
-
-    min-height: 34px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-    border-bottom:
-        1px solid
-        rgba(255, 255, 255, 0.06);
-
-}
-
-
-.info-row span {
-
-    color: #888;
-
-    font-size: 9px;
-
-    font-weight: bold;
-
-    letter-spacing: 1px;
-
-}
-
-
-.info-row strong {
-
-    color: #ddd;
-
-    font-size: 13px;
-
-    text-align: right;
-
-}
-
-
-/* ============================================================
-   MESSAGGIO SCHEDA
-   ============================================================ */
-
-.character-sheet-message {
-
-    margin-top: 12px;
-
-    color: #777;
-
-    font-size: 10px;
-
-    text-align: center;
-
-}
-
-
-/* ============================================================
-   MESSAGGIO DUNGEON
+   MESSAGGI
    ============================================================ */
 
 .dungeon-message {
-
     width: 100%;
+    max-width: 1500px;
 
-    max-width: 900px;
-
-    margin: 15px auto 0 auto;
-
-    min-height: 20px;
-
-    color: #b18a4d;
-
-    font-size: 13px;
+    margin: 12px auto 0 auto;
 
     text-align: center;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   DESKTOP GRANDE
+   ============================================================ */
+
+@media (min-width: 1400px) {
+
+    .dungeon-container {
+        grid-template-columns:
+            minmax(0, 1fr)
+            350px;
+
+        gap: 20px;
+    }
+
+}
+
+
+/* ============================================================
+   LAPTOP / SCHERMI MEDI
+   ============================================================ */
+
+@media (max-width: 1100px) {
+
+    .dungeon-page {
+        padding: 15px;
+    }
+
+
+    .dungeon-container {
+        grid-template-columns:
+            minmax(0, 1fr)
+            300px;
+
+        gap: 15px;
+    }
 
 }
 
@@ -671,30 +226,37 @@
    TABLET
    ============================================================ */
 
-@media (max-width: 1050px) {
+@media (max-width: 850px) {
 
-    .dungeon-layout {
-
-        grid-template-columns:
-            minmax(0, 1fr)
-            310px;
-
-        gap: 16px;
-
+    .dungeon-page {
+        padding: 10px;
     }
 
 
-    .character-panel {
+    .dungeon-container {
+        grid-template-columns: 1fr;
 
-        padding: 16px;
-
+        gap: 15px;
     }
 
 
-    .character-name-large {
+    .dungeon-map {
+        max-width: 100%;
+    }
 
-        font-size: 21px;
 
+    .character-panel,
+    #character-panel,
+    #character-sheet,
+    .dungeon-character-sheet {
+
+        position: relative;
+
+        top: auto;
+
+        max-height: none;
+
+        overflow: visible;
     }
 
 }
@@ -704,173 +266,243 @@
    TELEFONO
    ============================================================ */
 
-@media (max-width: 760px) {
+@media (max-width: 600px) {
 
     .dungeon-page {
-
-        padding: 12px;
-
+        padding: 8px;
     }
 
 
     .dungeon-header {
-
-        margin-bottom: 13px;
-
+        margin-bottom: 10px;
     }
 
 
-    .dungeon-title h1 {
-
-        font-size: 20px;
-
-        letter-spacing: 2px;
-
+    .dungeon-container {
+        gap: 10px;
     }
 
 
-    .dungeon-title p {
-
-        font-size: 11px;
-
-    }
-
-
-    .dungeon-layout {
-
-        display: flex;
-
-        flex-direction: column;
-
-        gap: 14px;
-
-    }
-
-
-    .map-panel {
-
+    #dungeon-image {
         width: 100%;
-
-        padding: 9px;
-
     }
 
+}
+/* ============================================================
+   STATISTICHE SECONDARIE
+   ============================================================ */
 
-    .panel-title {
+.secondary-stats-grid {
+    display: grid;
 
-        margin-bottom: 8px;
+    grid-template-columns: repeat(2, 1fr);
 
-        font-size: 11px;
+    gap: 10px;
 
+    margin-top: 12px;
+}
+
+
+/* ============================================================
+   RIQUADRO STATISTICA
+   ============================================================ */
+
+.secondary-stat {
+    min-height: 82px;
+
+    padding: 10px 8px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    text-align: center;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(184, 138, 59, 0.45);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.055),
+            rgba(0, 0, 0, 0.18)
+        );
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 2px 6px rgba(0, 0, 0, 0.18);
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+/* ============================================================
+   NOME STATISTICA
+   ============================================================ */
+
+.secondary-stat-name {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 0.72rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+    opacity: 0.75;
+}
+
+
+/* ============================================================
+   VALORE
+   ============================================================ */
+
+.secondary-stat strong {
+    display: block;
+
+    font-size: 1.65rem;
+
+    line-height: 1;
+
+    font-weight: 800;
+
+    color: #b88a3b;
+
+    text-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+
+/* ============================================================
+   STATISTICHE PRIMARIE
+   ============================================================ */
+
+.primary-stats-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+
+.primary-stat {
+    min-height: 68px;
+
+    padding: 8px 5px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    text-align: center;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(184, 138, 59, 0.35);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+}
+
+
+.primary-stat span {
+    font-size: 0.68rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    opacity: 0.7;
+
+    margin-bottom: 4px;
+}
+
+
+.primary-stat strong {
+    font-size: 1.35rem;
+
+    line-height: 1;
+
+    color: #b88a3b;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+
+    .secondary-stat {
+        min-height: 76px;
     }
 
-
-    .character-panel {
-
-        width: 100%;
-
-        padding: 15px;
-
-    }
-
-
-    .character-name-large {
-
-        font-size: 22px;
-
-    }
-
-
-    .dungeon-message {
-
-        font-size: 12px;
-
+    .secondary-stat strong {
+        font-size: 1.45rem;
     }
 
 }
 
 
-/* ============================================================
-   TELEFONO PICCOLO
-   ============================================================ */
+@media (max-width: 850px) {
 
-@media (max-width: 420px) {
+    .secondary-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-    .dungeon-page {
+}
 
-        padding: 8px;
 
+@media (max-width: 500px) {
+
+    .secondary-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 8px;
     }
 
 
-    .dungeon-header {
-
-        gap: 10px;
-
+    .secondary-stat {
+        min-height: 72px;
     }
 
 
-    .dungeon-title h1 {
-
-        font-size: 17px;
-
-        letter-spacing: 1.5px;
-
+    .secondary-stat-name {
+        font-size: 0.65rem;
     }
 
 
-    .dungeon-header .button {
-
-        padding:
-            8px
-            11px;
-
-        font-size: 11px;
-
+    .secondary-stat strong {
+        font-size: 1.35rem;
     }
 
 
-    .character-panel {
+    .primary-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
 
-        padding: 13px;
-
-    }
-
-
-    .combat-stat {
-
-        padding: 9px 7px;
-
-    }
-
-
-    .combat-stat-icon {
-
-        width: 25px;
-
-        height: 25px;
-
-    }
-
-
-    .combat-stat-label {
-
-        font-size: 7px;
-
-    }
-
-
-    .combat-stat strong {
-
-        font-size: 16px;
-
-    }
-
-
-    .ability-value {
-
-        font-size: 18px;
-
+        gap: 6px;
     }
 
 }
