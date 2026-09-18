@@ -542,11 +542,22 @@ function updateCharacterPanel() {
             resistenza / 2
         );
 
-    const health =
+    const maxHealth =
+    Math.ceil(
         5 *
-        Math.ceil(
+        (
             costituzione / 2
-        );
+        )
+    );
+
+
+const health =
+    character.current_hp !== null &&
+    character.current_hp !== undefined
+        ? Number(
+            character.current_hp
+        )
+        : maxHealth;
 
     const mana =
         5 *
