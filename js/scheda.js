@@ -6,12 +6,14 @@
 // Gestisce:
 //
 // - autenticazione del giocatore
+// - caricamento del ruolo utente
 // - caricamento del personaggio
 // - visualizzazione degli attributi
 // - calcolo delle statistiche secondarie
 // - caricamento del token
 // - caricamento delle note
 // - salvataggio delle note
+// - accesso modalità Master
 // - logout
 //
 // ============================================================
@@ -33,6 +35,7 @@ const db = supabaseClient;
 
 let currentUser = null;
 let character = null;
+let currentUserRole = "player";
 
 
 // ============================================================
@@ -51,9 +54,13 @@ document.addEventListener(
 
             await checkUser();
 
+            await loadUserRole();
+
             await loadCharacter();
 
             displayCharacter();
+
+            updateMasterEntryButton();
 
             setupEvents();
 
@@ -132,6 +139,75 @@ async function checkUser() {
 
 
 // ============================================================
+// CARICAMENTO RUOLO UTENTE
+// ============================================================
+
+async function loadUserRole() {
+
+    console.log(
+        "Caricamento ruolo utente..."
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("user_roles")
+            .select("role")
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+    if (error) {
+
+        throw error;
+    }
+
+
+    currentUserRole =
+        data?.role ||
+        "player";
+
+
+    console.log(
+        "Ruolo utente:",
+        currentUserRole
+    );
+
+}
+
+
+// ============================================================
+// PULSANTE ACCESSO MASTER
+// ============================================================
+
+function updateMasterEntryButton() {
+
+    const masterButton =
+        document.getElementById(
+            "master-entry-button"
+        );
+
+
+    if (!masterButton) {
+
+        return;
+    }
+
+
+    masterButton.hidden =
+        currentUserRole !==
+        "master";
+
+}
+
+
+// ============================================================
 // CARICAMENTO PERSONAGGIO
 // ============================================================
 
@@ -162,19 +238,12 @@ async function loadCharacter() {
     }
 
 
-    // --------------------------------------------------------
-    // Nessun personaggio
-    // --------------------------------------------------------
-
     if (!data) {
 
         console.log(
             "Nessun personaggio trovato."
         );
 
-
-        // Se non esiste ancora un personaggio,
-        // mandiamo il giocatore alla pagina di creazione.
 
         window.location.href =
             "personaggio.html";
@@ -207,10 +276,6 @@ function displayCharacter() {
     }
 
 
-    // ========================================================
-    // NOME
-    // ========================================================
-
     const nameElement =
         document.getElementById(
             "character-name"
@@ -225,10 +290,6 @@ function displayCharacter() {
 
     }
 
-
-    // ========================================================
-    // LIVELLO
-    // ========================================================
 
     const levelElement =
         document.getElementById(
@@ -250,16 +311,8 @@ function displayCharacter() {
     }
 
 
-    // ========================================================
-    // TOKEN
-    // ========================================================
-
     displayToken();
 
-
-    // ========================================================
-    // ATTRIBUTI
-    // ========================================================
 
     displayAttribute(
         "forza",
@@ -297,16 +350,8 @@ function displayCharacter() {
     );
 
 
-    // ========================================================
-    // STATISTICHE SECONDARIE
-    // ========================================================
-
     calculateSecondaryStats();
 
-
-    // ========================================================
-    // NOTE
-    // ========================================================
 
     const notesElement =
         document.getElementById(
@@ -390,10 +435,6 @@ function displayToken() {
     }
 
 
-    // --------------------------------------------------------
-    // Se non è stato selezionato un token
-    // --------------------------------------------------------
-
     if (
         !character.token
     ) {
@@ -409,27 +450,9 @@ function displayToken() {
     }
 
 
-    // --------------------------------------------------------
-    // Il database contiene il nome del file
-    //
-    // Esempio:
-    //
-    // token_1.png
-    //
-    // oppure:
-    //
-    // token_5.png
-    //
-    // --------------------------------------------------------
-
     let tokenPath =
         character.token;
 
-
-    // --------------------------------------------------------
-    // Se il valore non contiene già un percorso,
-    // utilizziamo la cartella immagini/token.
-    // --------------------------------------------------------
 
     if (
         !tokenPath.includes("/")
@@ -453,10 +476,6 @@ function displayToken() {
         "block";
 
 
-    // --------------------------------------------------------
-    // Gestione errore immagine
-    // --------------------------------------------------------
-
     tokenElement.onerror =
         () => {
 
@@ -475,35 +494,6 @@ function displayToken() {
 
 // ============================================================
 // CALCOLO STATISTICHE SECONDARIE
-// ============================================================
-//
-// FORMULE:
-//
-// Attacco     = Forza / 2
-//
-// Difesa      = 7 + Resistenza / 2
-//
-// Vita        = 5 * (Costituzione / 2)
-//
-// Mana        = 5 * (Intelligenza / 2)
-//
-// Movimento   = 4 + Destrezza / 2
-//
-// Critico     = Fortuna / 6
-//
-// Tutti i calcoli vengono arrotondati PER ECCESSO.
-//
-// Esempi:
-//
-// 0.5 → 1
-// 1.5 → 2
-// 2.5 → 3
-//
-// Per il critico:
-//
-// Fortuna 1  → 17%
-// Fortuna 30 → 50%
-//
 // ============================================================
 
 function calculateSecondaryStats() {
@@ -544,19 +534,11 @@ function calculateSecondaryStats() {
         );
 
 
-    // ========================================================
-    // ATTACCO
-    // ========================================================
-
     const attack =
         Math.ceil(
             forza / 2
         );
 
-
-    // ========================================================
-    // DIFESA
-    // ========================================================
 
     const defense =
         Math.ceil(
@@ -567,10 +549,6 @@ function calculateSecondaryStats() {
         );
 
 
-    // ========================================================
-    // VITA
-    // ========================================================
-
     const life =
         Math.ceil(
             5 *
@@ -579,10 +557,6 @@ function calculateSecondaryStats() {
             )
         );
 
-
-    // ========================================================
-    // MANA
-    // ========================================================
 
     const mana =
         Math.ceil(
@@ -593,10 +567,6 @@ function calculateSecondaryStats() {
         );
 
 
-    // ========================================================
-    // MOVIMENTO
-    // ========================================================
-
     const movement =
         Math.ceil(
             4 +
@@ -605,26 +575,6 @@ function calculateSecondaryStats() {
             )
         );
 
-
-    // ========================================================
-    // CRITICO
-    // ========================================================
-    //
-    // Fortuna 1  = 1 / 6  = 16.66... → 17%
-    //
-    // Fortuna 30 = 30 / 6 = 5
-    //
-    // Per ottenere il 50% massimo:
-    //
-    // 30 / 6 = 5
-    //
-    // quindi convertiamo il valore da 1-5
-    // nella probabilità 10%-50%.
-    //
-    // Fortuna 1  = 10%
-    // Fortuna 30 = 50%
-    //
-    // ========================================================
 
     const critical =
         Math.min(
@@ -637,10 +587,6 @@ function calculateSecondaryStats() {
             )
         );
 
-
-    // ========================================================
-    // VISUALIZZAZIONE
-    // ========================================================
 
     setSecondaryValue(
         "attack-display",
@@ -675,19 +621,6 @@ function calculateSecondaryStats() {
     setSecondaryValue(
         "critical-display",
         `${critical}%`
-    );
-
-
-    console.log(
-        "Statistiche secondarie:",
-        {
-            attack,
-            defense,
-            life,
-            mana,
-            movement,
-            critical
-        }
     );
 
 }
@@ -766,10 +699,6 @@ function setSecondaryValue(
 
 function setupEvents() {
 
-    // --------------------------------------------------------
-    // SALVATAGGIO NOTE
-    // --------------------------------------------------------
-
     const saveNotesButton =
         document.getElementById(
             "save-notes-button"
@@ -785,10 +714,6 @@ function setupEvents() {
 
     }
 
-
-    // --------------------------------------------------------
-    // LOGOUT
-    // --------------------------------------------------------
 
     const logoutButton =
         document.getElementById(
@@ -828,11 +753,6 @@ async function saveNotes() {
 
     const notes =
         notesElement.value;
-
-
-    console.log(
-        "Salvataggio note..."
-    );
 
 
     const saveButton =
@@ -889,11 +809,6 @@ async function saveNotes() {
 
         showMessage(
             "Note salvate correttamente!"
-        );
-
-
-        console.log(
-            "Note salvate."
         );
 
 
@@ -985,9 +900,6 @@ function showMessage(
     element.textContent =
         text;
 
-
-    // Dopo alcuni secondi
-    // rimuoviamo il messaggio.
 
     setTimeout(
         () => {
