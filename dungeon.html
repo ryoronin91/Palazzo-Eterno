@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/dungeon.css"
+        href="css/dungeon.css?v=3"
     >
 
 </head>
@@ -64,6 +64,87 @@
         =================================================== -->
 
         <section class="dungeon-container">
+
+
+            <!-- ==================================================
+                 CHAT DEL PIANO
+            =================================================== -->
+
+            <aside class="dungeon-chat-panel" aria-label="Chat del piano">
+
+                <div class="dungeon-chat-header">
+
+                    <div>
+                        <span class="panel-label">MULTIPLAYER</span>
+                        <h2>CHAT DEL PIANO</h2>
+                    </div>
+
+                    <span
+                        id="floor-chat-status"
+                        class="floor-chat-status"
+                    >
+                        Connessione...
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="floor-chat-messages"
+                    class="floor-chat-messages"
+                    role="log"
+                    aria-live="polite"
+                    aria-relevant="additions"
+                >
+
+                    <div class="floor-chat-empty">
+                        I messaggi del piano compariranno qui.
+                    </div>
+
+                </div>
+
+
+                <form
+                    id="floor-chat-form"
+                    class="floor-chat-form"
+                >
+
+                    <label
+                        for="floor-chat-input"
+                        class="floor-chat-label"
+                    >
+                        MESSAGGIO
+                    </label>
+
+                    <textarea
+                        id="floor-chat-input"
+                        class="floor-chat-input"
+                        maxlength="300"
+                        rows="3"
+                        placeholder="Scrivi un messaggio..."
+                    ></textarea>
+
+                    <div class="floor-chat-actions">
+
+                        <span
+                            id="floor-chat-feedback"
+                            class="floor-chat-feedback"
+                        ></span>
+
+                        <button
+                            id="floor-chat-send"
+                            class="button floor-chat-send"
+                            type="submit"
+                            disabled
+                        >
+                            INVIA
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </aside>
 
 
             <!-- ==================================================
@@ -441,7 +522,7 @@
          DUNGEON
     ======================================================= -->
 
-    <script src="js/dungeon.js?v=2"></script>
+    <script src="js/dungeon.js?v=3"></script>
 
 
 </body>
