@@ -47,6 +47,83 @@ const MAP_ROWS =
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
 
+// ============================================================
+// EVENTI DEL DUNGEON
+// ============================================================
+
+const MASTER_DUNGEON_EVENTS = {
+
+    "11,17": {
+
+        id:
+            "stairs_down",
+
+        type:
+            "communication",
+
+        message:
+            "Queste scale scendono ad un piano inferiore."
+
+    },
+
+
+    "15,22": {
+
+        id:
+            "dead_end",
+
+        type:
+            "communication",
+
+        message:
+            "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì"
+
+    },
+
+
+    "11,11": {
+
+        id:
+            "blade_corridor",
+
+        type:
+            "trap",
+
+        message:
+            "Una lama affilata attraversa il corridoio da muro a muro."
+
+    },
+
+
+    "9,15": {
+
+        id:
+            "acid_vapor",
+
+        type:
+            "trap",
+
+        message:
+            "Dal pavimento una nube di vapore acido ti investe."
+
+    }
+
+};
+
+
+// trap_id -> stato Supabase
+
+const masterTrapStates =
+    new Map();
+
+
+let trapStateRefreshTimer =
+    null;
+
+
+let trapCountdownTimer =
+    null;
+
 
 // ============================================================
 // VARIABILI
@@ -94,7 +171,13 @@ document.addEventListener(
 
             setupMap();
 
-            await setupRealtime();
+await loadMasterTrapStates();
+
+renderMasterEvents();
+
+startMasterTrapTimers();
+
+await setupRealtime();
 
         } catch (error) {
 
@@ -220,23 +303,684 @@ function setupMap() {
     }
 
 
+    const renderMapElements =
+        () => {
+
+            renderAllTokens();
+
+            renderMasterEvents();
+
+        };
+
+
     if (
         image.complete
     ) {
 
-        renderAllTokens();
+        renderMapElements();
 
     } else {
 
         image.addEventListener(
             "load",
-            renderAllTokens
+            renderMapElements
         );
 
     }
 
 }
 
+// ============================================================
+// CARICA STATO TRAPPOLE
+// ============================================================
+
+async function loadMasterTrapStates() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "dungeon_trap_states"
+            )
+            .select(
+                "trap_id, triggered_at, disabled_until"
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Errore caricamento stato trappole:",
+            error
+        );
+
+        return;
+
+    }
+
+
+    masterTrapStates.clear();
+
+
+    (
+        data ||
+        []
+    ).forEach(
+        trapState => {
+
+            masterTrapStates.set(
+                trapState.trap_id,
+                trapState
+            );
+
+        }
+    );
+
+
+    renderMasterEvents();
+
+}
+
+
+// ============================================================
+// TIMER MASTER TRAPPOLE
+// ============================================================
+
+function startMasterTrapTimers() {
+
+    if (
+        trapStateRefreshTimer
+    ) {
+
+        clearInterval(
+            trapStateRefreshTimer
+        );
+
+    }
+
+
+    if (
+        trapCountdownTimer
+    ) {
+
+        clearInterval(
+            trapCountdownTimer
+        );
+
+    }
+
+
+    // Rilegge Supabase periodicamente,
+    // così il Master vede le trappole
+    // attivate dai giocatori.
+
+    trapStateRefreshTimer =
+        setInterval(
+            async () => {
+
+                await loadMasterTrapStates();
+
+            },
+            5000
+        );
+
+
+    // Aggiorna invece il countdown visivo
+    // ogni secondo senza interrogare Supabase.
+
+    trapCountdownTimer =
+        setInterval(
+            () => {
+
+                updateMasterTrapCountdowns();
+
+            },
+            1000
+        );
+
+}
+
+
+// ============================================================
+// RENDER EVENTI MASTER
+// ============================================================
+
+function renderMasterEvents() {
+
+    const image =
+        document.getElementById(
+            "master-map-image"
+        );
+
+
+    const container =
+        document.getElementById(
+            "master-map"
+        );
+
+
+    if (
+        !image ||
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    const oldMarkers =
+        container.querySelectorAll(
+            ".master-event-marker"
+        );
+
+
+    oldMarkers.forEach(
+        marker => {
+
+            marker.remove();
+
+        }
+    );
+
+
+    const mapRect =
+        image.getBoundingClientRect();
+
+
+    const containerRect =
+        container.getBoundingClientRect();
+
+
+    if (
+        mapRect.width <= 0 ||
+        mapRect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        mapRect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        mapRect.height /
+        MAP_ROWS;
+
+
+    Object.entries(
+        MASTER_DUNGEON_EVENTS
+    ).forEach(
+        ([
+            coordinateKey,
+            dungeonEvent
+        ]) => {
+
+            const [
+                x,
+                y
+            ] =
+                coordinateKey
+                    .split(",")
+                    .map(Number);
+
+
+            const marker =
+                document.createElement(
+                    "div"
+                );
+
+
+            marker.className =
+                "master-event-marker";
+
+
+            marker.dataset.eventId =
+                dungeonEvent.id;
+
+
+            marker.dataset.eventType =
+                dungeonEvent.type;
+
+
+            // ------------------------------------------------
+            // POSIZIONE
+            // ------------------------------------------------
+
+            const markerSize =
+                Math.min(
+                    cellWidth,
+                    cellHeight
+                ) *
+                0.72;
+
+
+            const centerX =
+                (
+                    x +
+                    0.5
+                ) *
+                cellWidth;
+
+
+            const centerY =
+                (
+                    y +
+                    0.5
+                ) *
+                cellHeight;
+
+
+            const offsetX =
+                mapRect.left -
+                containerRect.left;
+
+
+            const offsetY =
+                mapRect.top -
+                containerRect.top;
+
+
+            marker.style.width =
+                `${markerSize}px`;
+
+
+            marker.style.height =
+                `${markerSize}px`;
+
+
+            marker.style.left =
+                `${
+                    offsetX +
+                    centerX -
+                    markerSize / 2
+                }px`;
+
+
+            marker.style.top =
+                `${
+                    offsetY +
+                    centerY -
+                    markerSize / 2
+                }px`;
+
+
+            // ------------------------------------------------
+            // TIPO EVENTO
+            // ------------------------------------------------
+
+            if (
+                dungeonEvent.type ===
+                "communication"
+            ) {
+
+                marker.classList.add(
+                    "is-communication"
+                );
+
+
+                marker.textContent =
+                    "◆";
+
+
+                marker.title =
+                    `EVENTO\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
+
+            }
+
+
+            if (
+                dungeonEvent.type ===
+                "trap"
+            ) {
+
+                const state =
+                    masterTrapStates.get(
+                        dungeonEvent.id
+                    );
+
+
+                const cooldownActive =
+                    isMasterTrapCooldownActive(
+                        state
+                    );
+
+
+                marker.classList.add(
+                    "is-trap"
+                );
+
+
+                if (
+                    cooldownActive
+                ) {
+
+                    marker.classList.add(
+                        "is-cooldown"
+                    );
+
+                } else {
+
+                    marker.classList.add(
+                        "is-active"
+                    );
+
+                }
+
+
+                const icon =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                icon.className =
+                    "master-event-icon";
+
+
+                icon.textContent =
+                    "⚠";
+
+
+                marker.appendChild(
+                    icon
+                );
+
+
+                const countdown =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                countdown.className =
+                    "master-event-countdown";
+
+
+                marker.appendChild(
+                    countdown
+                );
+
+
+                updateSingleMasterTrapMarker(
+                    marker,
+                    dungeonEvent,
+                    x,
+                    y
+                );
+
+            }
+
+
+            container.appendChild(
+                marker
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// TRAPPOLA IN COOLDOWN?
+// ============================================================
+
+function isMasterTrapCooldownActive(
+    state
+) {
+
+    if (
+        !state ||
+        !state.disabled_until
+    ) {
+
+        return false;
+
+    }
+
+
+    const disabledUntil =
+        new Date(
+            state.disabled_until
+        )
+            .getTime();
+
+
+    if (
+        !Number.isFinite(
+            disabledUntil
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    return (
+        disabledUntil >
+        Date.now()
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA COUNTDOWN
+// ============================================================
+
+function updateMasterTrapCountdowns() {
+
+    document
+        .querySelectorAll(
+            ".master-event-marker.is-trap"
+        )
+        .forEach(
+            marker => {
+
+                const eventId =
+                    marker.dataset.eventId;
+
+
+                const dungeonEvent =
+                    Object.values(
+                        MASTER_DUNGEON_EVENTS
+                    )
+                        .find(
+                            event =>
+                                event.id ===
+                                eventId
+                        );
+
+
+                if (
+                    !dungeonEvent
+                ) {
+
+                    return;
+
+                }
+
+
+                const entry =
+                    Object.entries(
+                        MASTER_DUNGEON_EVENTS
+                    )
+                        .find(
+                            ([
+                                key,
+                                event
+                            ]) =>
+                                event.id ===
+                                eventId
+                        );
+
+
+                if (
+                    !entry
+                ) {
+
+                    return;
+
+                }
+
+
+                const [
+                    coordinateKey
+                ] =
+                    entry;
+
+
+                const [
+                    x,
+                    y
+                ] =
+                    coordinateKey
+                        .split(",")
+                        .map(Number);
+
+
+                updateSingleMasterTrapMarker(
+                    marker,
+                    dungeonEvent,
+                    x,
+                    y
+                );
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// AGGIORNA SINGOLA TRAPPOLA
+// ============================================================
+
+function updateSingleMasterTrapMarker(
+    marker,
+    dungeonEvent,
+    x,
+    y
+) {
+
+    const state =
+        masterTrapStates.get(
+            dungeonEvent.id
+        );
+
+
+    const countdownElement =
+        marker.querySelector(
+            ".master-event-countdown"
+        );
+
+
+    const cooldownActive =
+        isMasterTrapCooldownActive(
+            state
+        );
+
+
+    marker.classList.toggle(
+        "is-cooldown",
+        cooldownActive
+    );
+
+
+    marker.classList.toggle(
+        "is-active",
+        !cooldownActive
+    );
+
+
+    if (
+        !cooldownActive
+    ) {
+
+        if (
+            countdownElement
+        ) {
+
+            countdownElement.textContent =
+                "";
+
+        }
+
+
+        marker.title =
+            `TRAPPOLA ATTIVA\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
+
+
+        return;
+
+    }
+
+
+    const disabledUntil =
+        new Date(
+            state.disabled_until
+        )
+            .getTime();
+
+
+    const remainingMs =
+        Math.max(
+            0,
+            disabledUntil -
+            Date.now()
+        );
+
+
+    const remainingSeconds =
+        Math.ceil(
+            remainingMs /
+            1000
+        );
+
+
+    const minutes =
+        Math.floor(
+            remainingSeconds /
+            60
+        );
+
+
+    const seconds =
+        remainingSeconds %
+        60;
+
+
+    const countdownText =
+        `${minutes}:${String(
+            seconds
+        ).padStart(
+            2,
+            "0"
+        )}`;
+
+
+    if (
+        countdownElement
+    ) {
+
+        countdownElement.textContent =
+            countdownText;
+
+    }
+
+
+    marker.title =
+        `TRAPPOLA IN COOLDOWN\nX ${x} • Y ${y}\n${dungeonEvent.message}\nTempo residuo: ${countdownText}`;
+
+}
 
 // ============================================================
 // REALTIME
@@ -2113,6 +2857,8 @@ window.addEventListener(
     () => {
 
         renderAllTokens();
+
+        renderMasterEvents();
 
     }
 );
