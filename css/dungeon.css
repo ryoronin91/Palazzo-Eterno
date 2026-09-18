@@ -45,20 +45,25 @@
 
 .dungeon-container {
     width: 100%;
-    max-width: 1500px;
+    max-width: 1780px;
 
     margin: 0 auto;
 
     display: grid;
 
     /*
-       MAPPA A SINISTRA
+       CHAT A SINISTRA
+       MAPPA AL CENTRO
        SCHEDA A DESTRA
     */
 
     grid-template-columns:
+        250px
         minmax(0, 1fr)
         330px;
+
+    grid-template-areas:
+        "chat map character";
 
     gap: 18px;
 
@@ -69,10 +74,239 @@
 
 
 /* ============================================================
+   CHAT DEL PIANO
+   ============================================================ */
+
+.dungeon-chat-panel {
+    grid-area: chat;
+
+    width: 100%;
+    height: calc(100vh - 140px);
+    min-height: 500px;
+    max-height: 760px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    position: sticky;
+    top: 20px;
+
+    overflow: hidden;
+
+    border: 1px solid rgba(184, 138, 59, 0.38);
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.035),
+            rgba(0, 0, 0, 0.18)
+        );
+}
+
+
+.dungeon-chat-header {
+    padding: 14px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    border-bottom: 1px solid rgba(184, 138, 59, 0.25);
+}
+
+
+.dungeon-chat-header h2 {
+    margin: 2px 0 0 0;
+
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+
+.floor-chat-status {
+    font-size: 0.72rem;
+    opacity: 0.65;
+}
+
+
+.floor-chat-status.is-online {
+    opacity: 0.9;
+}
+
+
+.floor-chat-messages {
+    min-height: 0;
+    flex: 1;
+
+    padding: 12px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    scrollbar-width: thin;
+}
+
+
+.floor-chat-empty {
+    margin-top: 8px;
+
+    font-size: 0.78rem;
+    line-height: 1.45;
+
+    opacity: 0.55;
+}
+
+
+.floor-chat-message {
+    margin-bottom: 10px;
+    padding: 8px 9px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9px;
+
+    background: rgba(255, 255, 255, 0.035);
+}
+
+
+.floor-chat-message.is-mine {
+    border-color: rgba(184, 138, 59, 0.42);
+    background: rgba(184, 138, 59, 0.075);
+}
+
+
+.floor-chat-message-meta {
+    margin-bottom: 4px;
+
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+
+    align-items: baseline;
+}
+
+
+.floor-chat-message-meta strong {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 0.74rem;
+    color: #b88a3b;
+}
+
+
+.floor-chat-message-meta span {
+    flex: 0 0 auto;
+
+    font-size: 0.64rem;
+    opacity: 0.45;
+}
+
+
+.floor-chat-message-body {
+    font-size: 0.82rem;
+    line-height: 1.4;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+
+.floor-chat-form {
+    padding: 12px;
+
+    border-top: 1px solid rgba(184, 138, 59, 0.25);
+}
+
+
+.floor-chat-label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+
+    opacity: 0.65;
+}
+
+
+.floor-chat-input {
+    width: 100%;
+    min-height: 72px;
+    max-height: 130px;
+
+    box-sizing: border-box;
+
+    padding: 9px 10px;
+
+    resize: vertical;
+
+    border: 1px solid rgba(184, 138, 59, 0.35);
+    border-radius: 8px;
+
+    background: rgba(0, 0, 0, 0.22);
+
+    color: inherit;
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+
+.floor-chat-input:focus {
+    outline: 1px solid rgba(184, 138, 59, 0.72);
+    outline-offset: 1px;
+}
+
+
+.floor-chat-input:disabled {
+    opacity: 0.45;
+}
+
+
+.floor-chat-actions {
+    margin-top: 8px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+
+.floor-chat-feedback {
+    min-width: 0;
+    flex: 1;
+
+    font-size: 0.68rem;
+    opacity: 0.65;
+}
+
+
+.floor-chat-send {
+    flex: 0 0 auto;
+}
+
+
+.floor-chat-send:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+
+/* ============================================================
    AREA MAPPA
    ============================================================ */
 
 .dungeon-map {
+    grid-area: map;
+
     position: relative;
 
     width: 100%;
@@ -131,6 +365,15 @@
 /* ============================================================
    PANNELLO PERSONAGGIO
    ============================================================ */
+
+.dungeon-character-panel {
+    grid-area: character;
+
+    width: 100%;
+    box-sizing: border-box;
+}
+
+
 
 .character-panel {
     width: 100%;
@@ -191,6 +434,7 @@
 
     .dungeon-container {
         grid-template-columns:
+            270px
             minmax(0, 1fr)
             350px;
 
@@ -213,10 +457,16 @@
 
     .dungeon-container {
         grid-template-columns:
+            220px
             minmax(0, 1fr)
-            300px;
+            290px;
 
         gap: 15px;
+    }
+
+
+    .dungeon-chat-panel {
+        min-height: 440px;
     }
 
 }
@@ -236,6 +486,11 @@
     .dungeon-container {
         grid-template-columns: 1fr;
 
+        grid-template-areas:
+            "map"
+            "chat"
+            "character";
+
         gap: 15px;
     }
 
@@ -245,10 +500,21 @@
     }
 
 
+    .dungeon-chat-panel {
+        position: relative;
+        top: auto;
+
+        height: 420px;
+        min-height: 420px;
+        max-height: 420px;
+    }
+
+
     .character-panel,
     #character-panel,
     #character-sheet,
-    .dungeon-character-sheet {
+    .dungeon-character-sheet,
+    .dungeon-character-panel {
 
         position: relative;
 
@@ -288,6 +554,8 @@
     }
 
 }
+
+
 /* ============================================================
    STATISTICHE SECONDARIE
    ============================================================ */
@@ -503,6 +771,32 @@
         grid-template-columns: repeat(3, 1fr);
 
         gap: 6px;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .dungeon-chat-panel {
+        height: 380px;
+        min-height: 380px;
+        max-height: 380px;
+    }
+
+
+    .dungeon-chat-header {
+        padding: 12px;
+    }
+
+
+    .floor-chat-messages {
+        padding: 10px;
+    }
+
+
+    .floor-chat-form {
+        padding: 10px;
     }
 
 }
