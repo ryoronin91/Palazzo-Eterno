@@ -2356,10 +2356,14 @@ function hasLineOfSight(
 
 
     /*
-       La casella che contiene il muro o la porta
-       rimane visibile.
+       Controlliamo tutte le celle attraversate
+       tranne:
 
-       Ciò che si trova DIETRO viene nascosto.
+       - la cella iniziale del giocatore
+       - la cella bersaglio
+
+       In questo modo il muro/porta bersaglio
+       può essere visto, ma non si vede attraverso.
     */
 
     for (
@@ -2402,7 +2406,38 @@ function getGridLine(
     y1
 ) {
 
-    const points = [];
+    const cells = [];
+
+
+    // --------------------------------------------------------
+    // AGGIUNGE UNA CELLA EVITANDO DUPLICATI
+    // --------------------------------------------------------
+
+    function addCell(
+        x,
+        y
+    ) {
+
+        const last =
+            cells[
+                cells.length - 1
+            ];
+
+
+        if (
+            !last ||
+            last.x !== x ||
+            last.y !== y
+        ) {
+
+            cells.push({
+                x,
+                y
+            });
+
+        }
+
+    }
 
 
     let x =
@@ -2412,92 +2447,212 @@ function getGridLine(
         y0;
 
 
-    const dx =
-        Math.abs(
-            x1 -
-            x0
-        );
+    addCell(
+        x,
+        y
+    );
 
-    const sx =
-        x0 < x1
-            ? 1
-            : -1;
+
+    const dx =
+        x1 -
+        x0;
 
 
     const dy =
-        -Math.abs(
-            y1 -
-            y0
+        y1 -
+        y0;
+
+
+    const stepX =
+        Math.sign(
+            dx
         );
 
-    const sy =
-        y0 < y1
-            ? 1
-            : -1;
+
+    const stepY =
+        Math.sign(
+            dy
+        );
 
 
-    let error =
-        dx +
-        dy;
+    const absDx =
+        Math.abs(
+            dx
+        );
 
 
-    while (true) {
+    const absDy =
+        Math.abs(
+            dy
+        );
 
-        points.push({
-            x,
-            y
-        });
 
+    const tDeltaX =
+        absDx === 0
+            ? Infinity
+            : 1 / absDx;
+
+
+    const tDeltaY =
+        absDy === 0
+            ? Infinity
+            : 1 / absDy;
+
+
+    /*
+       Partiamo dal centro della casella,
+       quindi il primo bordo dista metà cella.
+    */
+
+    let tMaxX =
+        absDx === 0
+            ? Infinity
+            : 0.5 / absDx;
+
+
+    let tMaxY =
+        absDy === 0
+            ? Infinity
+            : 0.5 / absDy;
+
+
+    const EPSILON =
+        0.0000001;
+
+
+    while (
+        x !== x1 ||
+        y !== y1
+    ) {
+
+        // ----------------------------------------------------
+        // ATTRAVERSAMENTO DI UN ANGOLO
+        // ----------------------------------------------------
+        //
+        // Qui sta la correzione fondamentale.
+        //
+        // Se il raggio attraversa esattamente l'angolo
+        // di quattro celle, controlliamo ENTRAMBE
+        // le celle laterali.
+        //
+        // Così la vista non può infilarsi diagonalmente
+        // tra due muri.
+        // ----------------------------------------------------
 
         if (
-            x === x1 &&
-            y === y1
+            Math.abs(
+                tMaxX -
+                tMaxY
+            ) <
+            EPSILON
         ) {
 
-            break;
+            const sideX =
+                x +
+                stepX;
+
+
+            const sideY =
+                y +
+                stepY;
+
+
+            // Cella laterale orizzontale
+
+            addCell(
+                sideX,
+                y
+            );
+
+
+            // Cella laterale verticale
+
+            addCell(
+                x,
+                sideY
+            );
+
+
+            // Cella diagonale
+
+            x =
+                sideX;
+
+
+            y =
+                sideY;
+
+
+            addCell(
+                x,
+                y
+            );
+
+
+            tMaxX +=
+                tDeltaX;
+
+
+            tMaxY +=
+                tDeltaY;
+
+
+            continue;
 
         }
 
 
-        const doubleError =
-            2 *
-            error;
-
+        // ----------------------------------------------------
+        // ATTRAVERSA BORDO VERTICALE
+        // ----------------------------------------------------
 
         if (
-            doubleError >=
-            dy
+            tMaxX <
+            tMaxY
         ) {
-
-            error +=
-                dy;
 
             x +=
-                sx;
+                stepX;
+
+
+            tMaxX +=
+                tDeltaX;
+
+
+            addCell(
+                x,
+                y
+            );
+
+
+            continue;
 
         }
 
 
-        if (
-            doubleError <=
-            dx
-        ) {
+        // ----------------------------------------------------
+        // ATTRAVERSA BORDO ORIZZONTALE
+        // ----------------------------------------------------
 
-            error +=
-                dx;
+        y +=
+            stepY;
 
-            y +=
-                sy;
 
-        }
+        tMaxY +=
+            tDeltaY;
+
+
+        addCell(
+            x,
+            y
+        );
 
     }
 
 
-    return points;
+    return cells;
 
 }
-
 
 // ============================================================
 // CELLE CHE BLOCCANO LA VISTA
