@@ -22,6 +22,160 @@
         href="css/dungeon.css?v=4"
     >
 
+    <style>
+
+        /* =====================================================
+           EVENTI DUNGEON
+           ===================================================== */
+
+        .dungeon-event-modal {
+
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            box-sizing: border-box;
+
+        }
+
+
+        .dungeon-event-modal[hidden] {
+
+            display: none !important;
+
+        }
+
+
+        .dungeon-event-backdrop {
+
+            position: absolute;
+            inset: 0;
+
+            background:
+                rgba(0, 0, 0, 0.78);
+
+            backdrop-filter:
+                blur(4px);
+
+        }
+
+
+        .dungeon-event-card {
+
+            position: relative;
+            z-index: 1;
+
+            width: 100%;
+            max-width: 520px;
+
+            padding: 28px;
+
+            box-sizing: border-box;
+
+            border:
+                1px solid rgba(184, 138, 59, 0.6);
+
+            border-radius: 18px;
+
+            background:
+                rgba(20, 20, 20, 0.98);
+
+            box-shadow:
+                0 20px 65px rgba(0, 0, 0, 0.7);
+
+            text-align: center;
+
+        }
+
+
+        .dungeon-event-label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            color: #b88a3b;
+
+            font-size: 0.72rem;
+            font-weight: 800;
+
+            letter-spacing: 0.14em;
+
+        }
+
+
+        .dungeon-event-card h2 {
+
+            margin:
+                0
+                0
+                18px;
+
+        }
+
+
+        .dungeon-event-text {
+
+            margin:
+                0
+                auto
+                24px;
+
+            max-width: 430px;
+
+            font-size: 1rem;
+            line-height: 1.6;
+
+        }
+
+
+        .dungeon-event-actions {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        @media (max-width: 520px) {
+
+            .dungeon-event-card {
+
+                padding:
+                    24px
+                    16px;
+
+            }
+
+
+            .dungeon-event-actions {
+
+                flex-direction: column;
+
+            }
+
+
+            .dungeon-event-actions .button {
+
+                width: 100%;
+
+            }
+
+        }
+
+    </style>
+
 </head>
 
 
@@ -500,6 +654,52 @@
         ></div>
 
 
+        <!-- ==================================================
+             EVENTI DUNGEON
+        =================================================== -->
+
+        <div
+            id="dungeon-event-modal"
+            class="dungeon-event-modal"
+            hidden
+        >
+
+            <div class="dungeon-event-backdrop"></div>
+
+
+            <section
+                class="dungeon-event-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="dungeon-event-title"
+            >
+
+                <span class="dungeon-event-label">
+                    EVENTO
+                </span>
+
+
+                <h2 id="dungeon-event-title">
+                    COMUNICAZIONE
+                </h2>
+
+
+                <p
+                    id="dungeon-event-text"
+                    class="dungeon-event-text"
+                ></p>
+
+
+                <div
+                    id="dungeon-event-actions"
+                    class="dungeon-event-actions"
+                ></div>
+
+            </section>
+
+        </div>
+
+
     </main>
 
 
@@ -522,7 +722,7 @@
          DUNGEON
     ======================================================= -->
 
-    <script src="js/dungeon.js?v=4"></script>
+    <script src="js/dungeon.js?v=5"></script>
 
 
 </body>
