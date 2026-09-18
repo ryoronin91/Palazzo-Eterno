@@ -12,7 +12,10 @@
 
     <title>Palazzo Eterno - Dungeon</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
 
     <link
         rel="stylesheet"
@@ -26,13 +29,14 @@
 
     <main class="dungeon-page">
 
+
         <!-- ==================================================
              INTESTAZIONE
-             ================================================== -->
+        =================================================== -->
 
         <header class="dungeon-header">
 
-            <div class="dungeon-title">
+            <div>
 
                 <h1>PALAZZO ETERNO</h1>
 
@@ -54,331 +58,67 @@
         </header>
 
 
-        <!-- ==================================================
-             CONTENUTO PRINCIPALE
-             ================================================== -->
 
-        <section class="dungeon-layout">
+        <!-- ==================================================
+             CONTENITORE PRINCIPALE
+        =================================================== -->
+
+        <section class="dungeon-container">
 
 
             <!-- ==================================================
                  MAPPA
-                 ================================================== -->
+            =================================================== -->
 
-            <div class="map-panel">
+            <div
+                id="dungeon-map"
+                class="dungeon-map"
+            >
 
-                <div class="panel-title">
-                    DUNGEON
-                </div>
-
-
-                <div
-                    id="dungeon-map"
-                    class="dungeon-map"
+                <img
+                    id="dungeon-image"
+                    src="immagini/dungeon-test.png"
+                    alt="Mappa del dungeon"
                 >
-
-                    <img
-                        id="dungeon-image"
-                        src="immagini/dungeon-test.png"
-                        alt="Mappa del dungeon"
-                    >
-
-                    <!--
-                        Il vecchio token viene mantenuto
-                        per compatibilità.
-                        dungeon.js creerà il token
-                        effettivamente utilizzato.
-                    -->
-
-                    <div
-                        id="player-token"
-                        class="player-token"
-                        title="Il tuo personaggio"
-                    >
-                        ●
-                    </div>
-
-                </div>
 
             </div>
 
 
+
             <!-- ==================================================
                  SCHEDA PERSONAGGIO
-                 ================================================== -->
+            =================================================== -->
 
-            <aside class="character-panel">
+            <aside class="dungeon-character-panel">
 
-                <div class="character-panel-header">
 
-                    <div class="character-panel-label">
-                        PERSONAGGIO
-                    </div>
+                <!-- ==================================================
+                     INTESTAZIONE
+                =================================================== -->
 
-                    <div
-                        id="character-class-race"
-                        class="character-class-race"
-                    >
-                        Caricamento...
-                    </div>
+                <div class="dungeon-character-header">
 
-                </div>
+                    <div>
 
-
-                <!-- NOME -->
-
-                <div class="character-name-large">
-
-                    <span id="sheet-name">
-                        Caricamento...
-                    </span>
-
-                </div>
-
-
-                <!-- PF E CA -->
-
-                <div class="combat-stats">
-
-
-                    <div class="combat-stat">
-
-                        <div class="combat-stat-icon hp-icon">
-                            ♥
-                        </div>
-
-                        <div class="combat-stat-content">
-
-                            <span class="combat-stat-label">
-                                PUNTI FERITA
-                            </span>
-
-                            <strong id="sheet-hp">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="combat-stat">
-
-                        <div class="combat-stat-icon ac-icon">
-                            🛡
-                        </div>
-
-                        <div class="combat-stat-content">
-
-                            <span class="combat-stat-label">
-                                CLASSE ARMATURA
-                            </span>
-
-                            <strong id="sheet-ca">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                </div>
-
-
-                <!-- CARATTERISTICHE -->
-
-                <div class="abilities-section">
-
-                    <div class="section-heading">
-                        CARATTERISTICHE
-                    </div>
-
-
-                    <div class="abilities-grid">
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                FOR
-                            </span>
-
-                            <strong
-                                id="sheet-forza"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-forza"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                DES
-                            </span>
-
-                            <strong
-                                id="sheet-destrezza"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-destrezza"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                COS
-                            </span>
-
-                            <strong
-                                id="sheet-costituzione"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-costituzione"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                INT
-                            </span>
-
-                            <strong
-                                id="sheet-intelligenza"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-intelligenza"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                SAG
-                            </span>
-
-                            <strong
-                                id="sheet-saggezza"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-saggezza"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                        <div class="ability">
-
-                            <span class="ability-name">
-                                CAR
-                            </span>
-
-                            <strong
-                                id="sheet-carisma"
-                                class="ability-value"
-                            >
-                                -
-                            </strong>
-
-                            <span
-                                id="mod-carisma"
-                                class="ability-modifier"
-                            >
-                                -
-                            </span>
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-
-
-                <!-- INFORMAZIONI PERSONAGGIO -->
-
-                <div class="character-info">
-
-                    <div class="info-row">
-
-                        <span>
-                            RAZZA
+                        <span class="panel-label">
+                            PERSONAGGIO
                         </span>
 
-                        <strong id="sheet-razza">
-                            -
-                        </strong>
+                        <h2 id="character-name-panel">
+                            Caricamento...
+                        </h2>
 
                     </div>
 
 
-                    <div class="info-row">
-
-                        <span>
-                            CLASSE
-                        </span>
-
-                        <strong id="sheet-classe">
-                            -
-                        </strong>
-
-                    </div>
-
-
-                    <div class="info-row">
+                    <div class="level-badge">
 
                         <span>
                             LIVELLO
                         </span>
 
-                        <strong id="sheet-livello">
-                            -
+                        <strong id="character-level">
+                            1
                         </strong>
 
                     </div>
@@ -386,19 +126,292 @@
                 </div>
 
 
-                <div
-                    id="character-sheet-message"
-                    class="character-sheet-message"
-                ></div>
+
+                <!-- ==================================================
+                     TOKEN
+                =================================================== -->
+
+                <div class="character-token-container">
+
+                    <img
+                        id="character-token"
+                        src=""
+                        alt="Token del personaggio"
+                        class="character-token"
+                    >
+
+                </div>
+
+
+
+                <!-- ==================================================
+                     STATISTICHE SECONDARIE
+                =================================================== -->
+
+                <section class="character-section">
+
+                    <h3>
+                        STATISTICHE
+                    </h3>
+
+
+                    <div class="secondary-stats-grid">
+
+
+                        <!-- FORZA -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                FORZA
+                            </span>
+
+                            <strong id="attack-display">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <!-- RESISTENZA -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                RESISTENZA
+                            </span>
+
+                            <strong id="defense-display">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <!-- VITA -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                VITA
+                            </span>
+
+                            <strong id="health-display">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <!-- MANA -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                MANA
+                            </span>
+
+                            <strong id="mana-display">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <!-- MOVIMENTO -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                MOVIMENTO
+                            </span>
+
+                            <strong id="movement-display">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <!-- CRITICO -->
+
+                        <div class="secondary-stat">
+
+                            <span class="secondary-stat-name">
+                                CRITICO
+                            </span>
+
+                            <strong id="critical-display">
+                                0%
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- ==================================================
+                     ATTRIBUTI PRIMARI
+                =================================================== -->
+
+                <section class="character-section">
+
+                    <h3>
+                        ATTRIBUTI
+                    </h3>
+
+
+                    <div class="primary-stats-grid">
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                FOR
+                            </span>
+
+                            <strong id="forza-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                RES
+                            </span>
+
+                            <strong id="resistenza-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                COS
+                            </span>
+
+                            <strong id="costituzione-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                INT
+                            </span>
+
+                            <strong id="intelligenza-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                DES
+                            </span>
+
+                            <strong id="destrezza-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                        <div class="primary-stat">
+
+                            <span>
+                                LCK
+                            </span>
+
+                            <strong id="fortuna-display">
+                                1
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- ==================================================
+                     NOTE
+                =================================================== -->
+
+                <section class="character-section notes-section">
+
+                    <h3>
+                        LE MIE NOTE
+                    </h3>
+
+
+                    <textarea
+                        id="character-notes"
+                        placeholder="Scrivi qui le tue note..."
+                    ></textarea>
+
+
+                    <button
+                        type="button"
+                        id="save-notes-button"
+                        class="button save-notes-button"
+                    >
+                        SALVA NOTE
+                    </button>
+
+
+                    <div
+                        id="notes-message"
+                        class="notes-message"
+                    ></div>
+
+                </section>
+
+
+
+                <!-- ==================================================
+                     AZIONI
+                =================================================== -->
+
+                <div class="character-actions">
+
+                    <a
+                        href="scheda.html"
+                        class="button secondary"
+                    >
+                        APRI SCHEDA
+                    </a>
+
+                </div>
+
 
             </aside>
 
         </section>
 
 
+
         <!-- ==================================================
-             MESSAGGI DUNGEON
-             ================================================== -->
+             MESSAGGI
+        =================================================== -->
 
         <div
             id="dungeon-message"
@@ -409,15 +422,27 @@
     </main>
 
 
+
     <!-- ======================================================
          SUPABASE
-         ====================================================== -->
+    ======================================================= -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
+    <!-- ======================================================
+         CONFIGURAZIONE
+    ======================================================= -->
+
     <script src="js/config.js"></script>
 
+
+    <!-- ======================================================
+         DUNGEON
+    ======================================================= -->
+
     <script src="js/dungeon.js"></script>
+
 
 </body>
 
