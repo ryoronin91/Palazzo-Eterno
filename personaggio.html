@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Crea il tuo personaggio - Palazzo Eterno</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <style>
+
+        /* =====================================================
+           TOKEN
+           ===================================================== */
+
+        .token-section {
+            margin-top: 30px;
+        }
+
+        .token-description {
+            color: #aaa;
+            margin-top: -5px;
+            margin-bottom: 20px;
+        }
+
+        .token-preview-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .token-preview {
+            width: 130px;
+            height: 130px;
+
+            border-radius: 50%;
+
+            border: 4px solid #b88a3b;
+
+            background: rgba(0, 0, 0, 0.35);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 0 0 2px rgba(0, 0, 0, 0.7),
+                0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .token-preview img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+
+            display: block;
+        }
+
+        .token-placeholder {
+            color: #777;
+
+            font-size: 14px;
+
+            text-align: center;
+
+            padding: 20px;
+        }
+
+        .token-library {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(90px, 1fr)
+                );
+
+            gap: 18px;
+
+            max-width: 700px;
+
+            margin: 0 auto;
+        }
+
+        .token-option {
+            width: 100%;
+
+            aspect-ratio: 1 / 1;
+
+            padding: 5px;
+
+            border-radius: 50%;
+
+            border: 3px solid transparent;
+
+            background:
+                rgba(0, 0, 0, 0.25);
+
+            cursor: pointer;
+
+            transition:
+                transform 0.15s ease,
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .token-option:hover {
+            transform: scale(1.06);
+
+            border-color:
+                rgba(184, 138, 59, 0.7);
+        }
+
+        .token-option.selected {
+            border-color: #b88a3b;
+
+            box-shadow:
+                0 0 0 2px rgba(184, 138, 59, 0.25),
+                0 0 15px rgba(184, 138, 59, 0.35);
+
+            transform: scale(1.06);
+        }
+
+        .token-option img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+
+            border-radius: 50%;
+
+            display: block;
+        }
+
+        .selected-token-name {
+            text-align: center;
+
+            margin-top: 15px;
+
+            min-height: 22px;
+
+            color: #d4af67;
+
+            font-weight: bold;
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (max-width: 600px) {
+
+            .token-library {
+                grid-template-columns:
+                    repeat(3, 1fr);
+
+                gap: 12px;
+            }
+
+            .token-preview {
+                width: 110px;
+                height: 110px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <main class="home">
+
+        <div class="character-card">
+
+
+            <!-- =================================================
+                 INTESTAZIONE
+                 ================================================= -->
+
+            <div class="character-header">
+
+                <div>
+
+                    <h1>
+                        CREA IL TUO PERSONAGGIO
+                    </h1>
+
+                    <p id="user-email"></p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="logout-button"
+                    class="button secondary"
+                >
+                    ESCI
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 IDENTITÀ
+                 ================================================= -->
+
+            <section>
+
+                <h2>
+                    Identità
+                </h2>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="nome">
+                            Nome del personaggio
+                        </label>
+
+                        <input
+                            type="text"
+                            id="nome"
+                            placeholder="Nome"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 TOKEN
+                 ================================================= -->
+
+            <section class="token-section">
+
+                <h2>
+                    Token del personaggio
+                </h2>
+
+
+                <p class="token-description">
+
+                    Scegli l'immagine che rappresenterà
+                    il tuo personaggio all'interno del dungeon.
+
+                </p>
+
+
+                <!-- ANTEPRIMA -->
+
+                <div class="token-preview-container">
+
+                    <div
+                        id="token-preview"
+                        class="token-preview"
+                    >
+
+                        <div
+                            id="token-placeholder"
+                            class="token-placeholder"
+                        >
+                            Seleziona<br>
+                            un token
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TOKEN SELEZIONATO -->
+
+                <div
+                    id="selected-token-name"
+                    class="selected-token-name"
+                ></div>
+
+
+                <!-- LIBRERIA TOKEN -->
+
+                <div
+                    id="token-library"
+                    class="token-library"
+                >
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_1.png"
+                        aria-label="Token 1"
+                    >
+
+                        <img
+                            src="immagini/token/token_1.png"
+                            alt="Token 1"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_2.png"
+                        aria-label="Token 2"
+                    >
+
+                        <img
+                            src="immagini/token/token_2.png"
+                            alt="Token 2"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_3.png"
+                        aria-label="Token 3"
+                    >
+
+                        <img
+                            src="immagini/token/token_3.png"
+                            alt="Token 3"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_4.png"
+                        aria-label="Token 4"
+                    >
+
+                        <img
+                            src="immagini/token/token_4.png"
+                            alt="Token 4"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_5.png"
+                        aria-label="Token 5"
+                    >
+
+                        <img
+                            src="immagini/token/token_5.png"
+                            alt="Token 5"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_6.png"
+                        aria-label="Token 6"
+                    >
+
+                        <img
+                            src="immagini/token/token_6.png"
+                            alt="Token 6"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_7.png"
+                        aria-label="Token 7"
+                    >
+
+                        <img
+                            src="immagini/token/token_7.png"
+                            alt="Token 7"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_8.png"
+                        aria-label="Token 8"
+                    >
+
+                        <img
+                            src="immagini/token/token_8.png"
+                            alt="Token 8"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_9.png"
+                        aria-label="Token 9"
+                    >
+
+                        <img
+                            src="immagini/token/token_9.png"
+                            alt="Token 9"
+                        >
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="token-option"
+                        data-token="token_10.png"
+                        aria-label="Token 10"
+                    >
+
+                        <img
+                            src="immagini/token/token_10.png"
+                            alt="Token 10"
+                        >
+
+                    </button>
+
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 ATTRIBUTI
+                 ================================================= -->
+
+            <section>
+
+                <h2>
+                    Attributi
+                </h2>
+
+
+                <p class="point-buy-description">
+
+                    Distribuisci i tuoi
+                    <strong>10 punti abilità</strong>
+                    tra i sei attributi.
+
+                    Ogni attributo parte da
+                    <strong>1</strong>
+                    e può arrivare fino a
+                    <strong>30</strong>.
+
+                </p>
+
+
+                <div class="points-remaining">
+
+                    Punti disponibili:
+
+                    <strong id="points-remaining">
+                        10
+                    </strong>
+
+                </div>
+
+
+                <div class="stats-grid point-buy-grid">
+
+
+                    <!-- FORZA -->
+
+                    <div class="stat">
+
+                        <label>
+                            FORZA
+                        </label>
+
+                        <div class="stat-name">
+                            FOR
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="forza"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="forza-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="forza"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="attacco-secondary"
+                            class="stat-final"
+                        >
+                            Attacco: 1
+                        </div>
+
+                    </div>
+
+
+                    <!-- RESISTENZA -->
+
+                    <div class="stat">
+
+                        <label>
+                            RESISTENZA
+                        </label>
+
+                        <div class="stat-name">
+                            RES
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="resistenza"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="resistenza-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="resistenza"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="difesa-secondary"
+                            class="stat-final"
+                        >
+                            Difesa: 8
+                        </div>
+
+                    </div>
+
+
+                    <!-- COSTITUZIONE -->
+
+                    <div class="stat">
+
+                        <label>
+                            COSTITUZIONE
+                        </label>
+
+                        <div class="stat-name">
+                            COS
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="costituzione"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="costituzione-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="costituzione"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="costituzione-secondary"
+                            class="stat-final"
+                        >
+                            Vita: 3
+                        </div>
+
+                    </div>
+
+
+                    <!-- INTELLIGENZA -->
+
+                    <div class="stat">
+
+                        <label>
+                            INTELLIGENZA
+                        </label>
+
+                        <div class="stat-name">
+                            INT
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="intelligenza"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="intelligenza-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="intelligenza"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="intelligenza-secondary"
+                            class="stat-final"
+                        >
+                            Mana: 3
+                        </div>
+
+                    </div>
+
+
+                    <!-- DESTREZZA -->
+
+                    <div class="stat">
+
+                        <label>
+                            DESTREZZA
+                        </label>
+
+                        <div class="stat-name">
+                            DES
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="destrezza"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="destrezza-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="destrezza"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="destrezza-secondary"
+                            class="stat-final"
+                        >
+                            Movimento: 5
+                        </div>
+
+                    </div>
+
+
+                    <!-- FORTUNA -->
+
+                    <div class="stat">
+
+                        <label>
+                            FORTUNA
+                        </label>
+
+                        <div class="stat-name">
+                            LCK
+                        </div>
+
+
+                        <div class="stat-controls">
+
+                            <button
+                                type="button"
+                                class="stat-minus"
+                                data-stat="fortuna"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="fortuna-value"
+                                class="stat-value"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="stat-plus"
+                                data-stat="fortuna"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="fortuna-secondary"
+                            class="stat-final"
+                        >
+                            Critico: 2%
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 STATISTICHE SECONDARIE
+                 ================================================= -->
+
+            <section>
+
+                <h2>
+                    Statistiche secondarie
+                </h2>
+
+
+                <div class="combat-grid">
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            ATTACCO
+                        </span>
+
+                        <strong id="attack-display">
+                            1
+                        </strong>
+
+                    </div>
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            DIFESA
+                        </span>
+
+                        <strong id="defense-display">
+                            8
+                        </strong>
+
+                    </div>
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            VITA
+                        </span>
+
+                        <strong id="health-display">
+                            3
+                        </strong>
+
+                    </div>
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            MANA
+                        </span>
+
+                        <strong id="mana-display">
+                            3
+                        </strong>
+
+                    </div>
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            MOVIMENTO
+                        </span>
+
+                        <strong id="movement-display">
+                            5
+                        </strong>
+
+                    </div>
+
+
+                    <div class="combat-box">
+
+                        <span>
+                            CRITICO
+                        </span>
+
+                        <strong id="critical-display">
+                            2%
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+
+                <p class="calculation-note">
+
+                    Le statistiche secondarie vengono
+                    calcolate automaticamente dagli attributi.
+
+                </p>
+
+            </section>
+
+
+            <!-- =================================================
+                 SALVATAGGIO
+                 ================================================= -->
+
+            <form id="character-form">
+
+                <button
+                    type="submit"
+                    class="button save-button"
+                >
+                    SALVA PERSONAGGIO
+                </button>
+
+            </form>
+
+
+            <div
+                id="character-message"
+            ></div>
+
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================================================
+         SUPABASE
+         ========================================================= -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+
+    <script src="js/config.js"></script>
+
+    <script src="js/personaggio.js"></script>
+
+
+</body>
+
+</html>

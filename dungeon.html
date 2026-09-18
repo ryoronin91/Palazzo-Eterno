@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Palazzo Eterno - Dungeon</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link
+        rel="stylesheet"
+        href="css/dungeon.css"
+    >
+
+</head>
+
+
+<body>
+
+    <main class="dungeon-page">
+
+        <!-- ==================================================
+             INTESTAZIONE
+             ================================================== -->
+
+        <header class="dungeon-header">
+
+            <div class="dungeon-title">
+
+                <h1>PALAZZO ETERNO</h1>
+
+                <p id="character-name">
+                    Caricamento...
+                </p>
+
+            </div>
+
+
+            <button
+                id="logout-button"
+                class="button secondary"
+                type="button"
+            >
+                ESCI
+            </button>
+
+        </header>
+
+
+        <!-- ==================================================
+             CONTENUTO PRINCIPALE
+             ================================================== -->
+
+        <section class="dungeon-layout">
+
+
+            <!-- ==================================================
+                 MAPPA
+                 ================================================== -->
+
+            <div class="map-panel">
+
+                <div class="panel-title">
+                    DUNGEON
+                </div>
+
+
+                <div
+                    id="dungeon-map"
+                    class="dungeon-map"
+                >
+
+                    <img
+                        id="dungeon-image"
+                        src="immagini/dungeon-test.png"
+                        alt="Mappa del dungeon"
+                    >
+
+                    <!--
+                        Il vecchio token viene mantenuto
+                        per compatibilità.
+                        dungeon.js creerà il token
+                        effettivamente utilizzato.
+                    -->
+
+                    <div
+                        id="player-token"
+                        class="player-token"
+                        title="Il tuo personaggio"
+                    >
+                        ●
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 SCHEDA PERSONAGGIO
+                 ================================================== -->
+
+            <aside class="character-panel">
+
+                <div class="character-panel-header">
+
+                    <div class="character-panel-label">
+                        PERSONAGGIO
+                    </div>
+
+                    <div
+                        id="character-class-race"
+                        class="character-class-race"
+                    >
+                        Caricamento...
+                    </div>
+
+                </div>
+
+
+                <!-- NOME -->
+
+                <div class="character-name-large">
+
+                    <span id="sheet-name">
+                        Caricamento...
+                    </span>
+
+                </div>
+
+
+                <!-- PF E CA -->
+
+                <div class="combat-stats">
+
+
+                    <div class="combat-stat">
+
+                        <div class="combat-stat-icon hp-icon">
+                            ♥
+                        </div>
+
+                        <div class="combat-stat-content">
+
+                            <span class="combat-stat-label">
+                                PUNTI FERITA
+                            </span>
+
+                            <strong id="sheet-hp">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="combat-stat">
+
+                        <div class="combat-stat-icon ac-icon">
+                            🛡
+                        </div>
+
+                        <div class="combat-stat-content">
+
+                            <span class="combat-stat-label">
+                                CLASSE ARMATURA
+                            </span>
+
+                            <strong id="sheet-ca">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- CARATTERISTICHE -->
+
+                <div class="abilities-section">
+
+                    <div class="section-heading">
+                        CARATTERISTICHE
+                    </div>
+
+
+                    <div class="abilities-grid">
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                FOR
+                            </span>
+
+                            <strong
+                                id="sheet-forza"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-forza"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                DES
+                            </span>
+
+                            <strong
+                                id="sheet-destrezza"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-destrezza"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                COS
+                            </span>
+
+                            <strong
+                                id="sheet-costituzione"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-costituzione"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                INT
+                            </span>
+
+                            <strong
+                                id="sheet-intelligenza"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-intelligenza"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                SAG
+                            </span>
+
+                            <strong
+                                id="sheet-saggezza"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-saggezza"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <div class="ability">
+
+                            <span class="ability-name">
+                                CAR
+                            </span>
+
+                            <strong
+                                id="sheet-carisma"
+                                class="ability-value"
+                            >
+                                -
+                            </strong>
+
+                            <span
+                                id="mod-carisma"
+                                class="ability-modifier"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- INFORMAZIONI PERSONAGGIO -->
+
+                <div class="character-info">
+
+                    <div class="info-row">
+
+                        <span>
+                            RAZZA
+                        </span>
+
+                        <strong id="sheet-razza">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-row">
+
+                        <span>
+                            CLASSE
+                        </span>
+
+                        <strong id="sheet-classe">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-row">
+
+                        <span>
+                            LIVELLO
+                        </span>
+
+                        <strong id="sheet-livello">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="character-sheet-message"
+                    class="character-sheet-message"
+                ></div>
+
+            </aside>
+
+        </section>
+
+
+        <!-- ==================================================
+             MESSAGGI DUNGEON
+             ================================================== -->
+
+        <div
+            id="dungeon-message"
+            class="dungeon-message"
+        ></div>
+
+
+    </main>
+
+
+    <!-- ======================================================
+         SUPABASE
+         ====================================================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="js/config.js"></script>
+
+    <script src="js/dungeon.js"></script>
+
+</body>
+
+</html>
