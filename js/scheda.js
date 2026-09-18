@@ -200,9 +200,20 @@ function updateMasterEntryButton() {
     }
 
 
-    masterButton.hidden =
-        currentUserRole !==
-        "master";
+    if (
+        currentUserRole ===
+        "master"
+    ) {
+
+        masterButton.style.display =
+            "inline-flex";
+
+    } else {
+
+        masterButton.style.display =
+            "none";
+
+    }
 
 }
 
