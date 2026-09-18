@@ -19,6 +19,7 @@
 // - Supabase Realtime Broadcast
 // - statistiche del personaggio
 // - caricamento e salvataggio note
+// - chat realtime del piano
 //
 // ============================================================
 
@@ -148,6 +149,13 @@ document.addEventListener(
             // ------------------------------------------------
 
             setupNotes();
+
+
+            // ------------------------------------------------
+            // CHAT DEL PIANO
+            // ------------------------------------------------
+
+            setupFloorChat();
 
 
             // ------------------------------------------------
@@ -972,6 +980,49 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
+    // CHAT DEL PIANO
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "floor-chat"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            // Il messaggio del giocatore locale viene già
+            // mostrato immediatamente da sendFloorChatMessage().
+
+            if (
+                data.character_id ===
+                character.id
+            ) {
+
+                return;
+
+            }
+
+
+            appendFloorChatMessage(
+                data
+            );
+
+        }
+    );
+
+
+    // ========================================================
     // SUBSCRIBE
     // ========================================================
 
@@ -989,6 +1040,19 @@ async function setupRealtimeMultiplayer() {
                 "SUBSCRIBED"
             ) {
 
+                if (
+                    status === "CHANNEL_ERROR" ||
+                    status === "TIMED_OUT" ||
+                    status === "CLOSED"
+                ) {
+
+                    setFloorChatConnected(
+                        false
+                    );
+
+                }
+
+
                 return;
 
             }
@@ -996,6 +1060,11 @@ async function setupRealtimeMultiplayer() {
 
             realtimeReady =
                 true;
+
+
+            setFloorChatConnected(
+                true
+            );
 
 
             // ------------------------------------------------
@@ -1172,6 +1241,9 @@ function syncOnlinePlayers() {
         }
 
     }
+
+
+    updateFloorChatOnlineStatus();
 
 }
 
@@ -2416,6 +2488,529 @@ function showToken(
         );
 
     }
+
+}
+
+
+// ============================================================
+// CHAT DEL PIANO
+// ============================================================
+
+function setupFloorChat() {
+
+    const form =
+        document.getElementById(
+            "floor-chat-form"
+        );
+
+
+    const input =
+        document.getElementById(
+            "floor-chat-input"
+        );
+
+
+    if (
+        !form ||
+        !input
+    ) {
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            await sendFloorChatMessage();
+
+        }
+    );
+
+
+    // Invio con ENTER.
+    // SHIFT + ENTER continua ad andare a capo.
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey
+            ) {
+
+                event.preventDefault();
+
+
+                form.requestSubmit();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// STATO CONNESSIONE CHAT
+// ============================================================
+
+function setFloorChatConnected(
+    connected
+) {
+
+    const sendButton =
+        document.getElementById(
+            "floor-chat-send"
+        );
+
+
+    const input =
+        document.getElementById(
+            "floor-chat-input"
+        );
+
+
+    const status =
+        document.getElementById(
+            "floor-chat-status"
+        );
+
+
+    if (sendButton) {
+
+        sendButton.disabled =
+            !connected;
+
+    }
+
+
+    if (input) {
+
+        input.disabled =
+            !connected;
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            connected
+                ? "Online"
+                : "Disconnessa";
+
+
+        status.classList.toggle(
+            "is-online",
+            connected
+        );
+
+    }
+
+
+    if (connected) {
+
+        updateFloorChatOnlineStatus();
+
+    }
+
+}
+
+
+// ============================================================
+// NUMERO GIOCATORI ONLINE
+// ============================================================
+
+function updateFloorChatOnlineStatus() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady
+    ) {
+
+        return;
+
+    }
+
+
+    const status =
+        document.getElementById(
+            "floor-chat-status"
+        );
+
+
+    if (!status) {
+
+        return;
+
+    }
+
+
+    const presenceState =
+        dungeonChannel
+            .presenceState();
+
+
+    let onlineCount = 0;
+
+
+    Object.values(
+        presenceState
+    ).forEach(
+        presences => {
+
+            onlineCount +=
+                presences.length;
+
+        }
+    );
+
+
+    if (onlineCount <= 0) {
+
+        status.textContent =
+            "Online";
+
+        return;
+
+    }
+
+
+    status.textContent =
+        onlineCount === 1
+            ? "1 giocatore online"
+            : `${onlineCount} giocatori online`;
+
+}
+
+
+// ============================================================
+// INVIA MESSAGGIO CHAT
+// ============================================================
+
+async function sendFloorChatMessage() {
+
+    const input =
+        document.getElementById(
+            "floor-chat-input"
+        );
+
+
+    const feedback =
+        document.getElementById(
+            "floor-chat-feedback"
+        );
+
+
+    if (
+        !input ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
+    const text =
+        input.value
+            .trim();
+
+
+    if (!text) {
+
+        return;
+
+    }
+
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady
+    ) {
+
+        if (feedback) {
+
+            feedback.textContent =
+                "Chat non connessa.";
+
+        }
+
+
+        return;
+
+    }
+
+
+    const payload = {
+
+        message_id:
+            `${character.id}-${Date.now()}`,
+
+        character_id:
+            character.id,
+
+        user_id:
+            currentUser?.id ||
+            null,
+
+        nome:
+            character.nome ||
+            "Avventuriero",
+
+        text:
+            text,
+
+        sent_at:
+            new Date()
+                .toISOString()
+
+    };
+
+
+    // Mostra subito il messaggio nel browser locale.
+
+    appendFloorChatMessage(
+        payload,
+        true
+    );
+
+
+    input.value =
+        "";
+
+
+    if (feedback) {
+
+        feedback.textContent =
+            "";
+
+    }
+
+
+    const result =
+        await dungeonChannel.send({
+
+            type:
+                "broadcast",
+
+            event:
+                "floor-chat",
+
+            payload:
+                payload
+
+        });
+
+
+    if (
+        result !== "ok" &&
+        result !== undefined
+    ) {
+
+        console.warn(
+            "Invio chat:",
+            result
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// MOSTRA MESSAGGIO CHAT
+// ============================================================
+
+function appendFloorChatMessage(
+    data,
+    isMine = false
+) {
+
+    const container =
+        document.getElementById(
+            "floor-chat-messages"
+        );
+
+
+    if (
+        !container ||
+        !data
+    ) {
+
+        return;
+
+    }
+
+
+    const empty =
+        container.querySelector(
+            ".floor-chat-empty"
+        );
+
+
+    if (empty) {
+
+        empty.remove();
+
+    }
+
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+
+    message.className =
+        "floor-chat-message" +
+        (
+            isMine
+                ? " is-mine"
+                : ""
+        );
+
+
+    const meta =
+        document.createElement(
+            "div"
+        );
+
+
+    meta.className =
+        "floor-chat-message-meta";
+
+
+    const author =
+        document.createElement(
+            "strong"
+        );
+
+
+    author.textContent =
+        data.nome ||
+        "Giocatore";
+
+
+    const time =
+        document.createElement(
+            "span"
+        );
+
+
+    time.textContent =
+        formatFloorChatTime(
+            data.sent_at
+        );
+
+
+    meta.appendChild(
+        author
+    );
+
+
+    meta.appendChild(
+        time
+    );
+
+
+    const body =
+        document.createElement(
+            "div"
+        );
+
+
+    body.className =
+        "floor-chat-message-body";
+
+
+    // textContent evita che un messaggio possa inserire HTML.
+
+    body.textContent =
+        String(
+            data.text ||
+            ""
+        );
+
+
+    message.appendChild(
+        meta
+    );
+
+
+    message.appendChild(
+        body
+    );
+
+
+    container.appendChild(
+        message
+    );
+
+
+    // Limitiamo la chat locale agli ultimi 100 messaggi.
+
+    const messages =
+        container.querySelectorAll(
+            ".floor-chat-message"
+        );
+
+
+    if (
+        messages.length > 100
+    ) {
+
+        messages[0].remove();
+
+    }
+
+
+    container.scrollTop =
+        container.scrollHeight;
+
+}
+
+
+// ============================================================
+// ORARIO CHAT
+// ============================================================
+
+function formatFloorChatTime(
+    value
+) {
+
+    const date =
+        value
+            ? new Date(value)
+            : new Date();
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    return date.toLocaleTimeString(
+        "it-IT",
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
 
 }
 
