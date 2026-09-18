@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=1"
+        href="css/master.css?v=2"
     >
 
 </head>
@@ -85,43 +85,138 @@
 
 
             <!-- ==================================================
-                 GIOCATORI ONLINE
+                 COLONNA SINISTRA
             =================================================== -->
 
-            <aside class="master-players-panel">
+            <div class="master-sidebar">
 
-                <div class="master-panel-header">
 
-                    <span class="panel-label">
-                        PRESENZE
-                    </span>
+                <!-- ==================================================
+                     GIOCATORI ONLINE
+                =================================================== -->
 
-                    <h2>
-                        GIOCATORI ONLINE
-                    </h2>
+                <aside class="master-players-panel">
+
+                    <div class="master-panel-header">
+
+                        <span class="panel-label">
+                            PRESENZE
+                        </span>
+
+                        <h2>
+                            GIOCATORI ONLINE
+                        </h2>
+
+                        <div
+                            id="master-online-count"
+                            class="master-online-count"
+                        >
+                            Connessione...
+                        </div>
+
+                    </div>
+
 
                     <div
-                        id="master-online-count"
-                        class="master-online-count"
+                        id="master-player-list"
+                        class="master-player-list"
                     >
-                        Connessione...
+
+                        <div class="master-player-empty">
+                            Nessun giocatore collegato.
+                        </div>
+
                     </div>
 
-                </div>
+                </aside>
 
 
-                <div
-                    id="master-player-list"
-                    class="master-player-list"
-                >
 
-                    <div class="master-player-empty">
-                        Nessun giocatore collegato.
+                <!-- ==================================================
+                     CHAT DEL PIANO
+                =================================================== -->
+
+                <aside class="master-chat-panel">
+
+                    <div class="master-chat-header">
+
+                        <span class="panel-label">
+                            COMUNICAZIONI
+                        </span>
+
+                        <h2>
+                            CHAT DEL PIANO
+                        </h2>
+
+                        <div
+                            id="master-chat-status"
+                            class="master-chat-status"
+                        >
+                            Connessione...
+                        </div>
+
                     </div>
 
-                </div>
 
-            </aside>
+                    <div
+                        id="master-chat-messages"
+                        class="master-chat-messages"
+                    >
+
+                        <div class="master-chat-empty">
+                            Nessun messaggio ancora.
+                        </div>
+
+                    </div>
+
+
+                    <form
+                        id="master-chat-form"
+                        class="master-chat-form"
+                    >
+
+                        <label
+                            for="master-chat-input"
+                            class="master-chat-label"
+                        >
+                            MESSAGGIO
+                        </label>
+
+
+                        <textarea
+                            id="master-chat-input"
+                            class="master-chat-input"
+                            maxlength="300"
+                            placeholder="Scrivi come Master..."
+                            disabled
+                        ></textarea>
+
+
+                        <div class="master-chat-actions">
+
+                            <div
+                                id="master-chat-feedback"
+                                class="master-chat-feedback"
+                            ></div>
+
+
+                            <button
+                                id="master-chat-send"
+                                type="submit"
+                                class="button master-chat-send"
+                                disabled
+                            >
+                                INVIA
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </aside>
+
+
+            </div>
 
 
 
@@ -229,7 +324,9 @@
 
 
 
-                <!-- ATTRIBUTI -->
+                <!-- ==================================================
+                     ATTRIBUTI
+                =================================================== -->
 
                 <h3>
                     ATTRIBUTI
@@ -271,7 +368,9 @@
 
 
 
-                <!-- STATISTICHE -->
+                <!-- ==================================================
+                     STATISTICHE
+                =================================================== -->
 
                 <h3>
                     STATISTICHE
@@ -352,7 +451,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=1"></script>
+    <script src="js/master.js?v=2"></script>
 
 
 </body>
