@@ -2515,6 +2515,9 @@ function isVisionBlockingCell(
         );
 
 
+    // Fuori dalla mappa / cella inesistente
+    // blocca sempre la visuale.
+
     if (
         value === null
     ) {
@@ -2529,28 +2532,48 @@ function isVisionBlockingCell(
         {};
 
 
-    // Muro
+    // --------------------------------------------------------
+    // SPAZIO VUOTO / NERO
+    // --------------------------------------------------------
+    //
+    // Nel dungeon.json molte zone nere non sono "perimeter":
+    // hanno semplicemente valore 0.
+    //
+    // Devono quindi bloccare la visuale.
+    // --------------------------------------------------------
+
+    if (
+        value === 0
+    ) {
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // BIT CHE BLOCCANO LA VISUALE
+    // --------------------------------------------------------
+
+    const BLOCK =
+        bits.block ||
+        1;
+
 
     const PERIMETER =
         bits.perimeter ||
         16;
 
 
-    // Porta
-
     const DOOR =
         bits.door ||
         131072;
 
 
-    // Porta chiusa a chiave
-
     const LOCKED =
         bits.locked ||
         262144;
 
-
-    // Porta segreta / muro segreto
 
     const SECRET =
         bits.secret ||
@@ -2563,6 +2586,8 @@ function isVisionBlockingCell(
 
 
     return (
+
+        (value & BLOCK) !== 0 ||
 
         (value & PERIMETER) !== 0 ||
 
