@@ -414,6 +414,23 @@ async function loadCharacter() {
 
 }
 
+// ============================================================
+// CONTROLLO MORTE AL CARICAMENTO
+// ============================================================
+
+if (
+    character.current_hp !== null &&
+    character.current_hp !== undefined &&
+    Number(
+        character.current_hp
+    ) <= 0
+) {
+
+    await handleCharacterDeath();
+
+    return;
+
+}
 
 // ============================================================
 // AGGIORNA SCHEDA PERSONAGGIO
@@ -4043,22 +4060,6 @@ async function triggerTrapEvent(
     }
 
 
-    /*
-       Il sistema di cooldown è predisposto,
-       ma durante i test è disattivato.
-    */
-
-    if (
-        TRAP_COOLDOWN_ENABLED
-    ) {
-
-        console.log(
-            "Cooldown trappole predisposto: verrà collegato in seguito."
-        );
-
-    }
-
-
     dungeonEventModalOpen =
         true;
 
@@ -4091,8 +4092,7 @@ async function triggerTrapEvent(
 
     const diceRoll =
         Math.floor(
-            Math.random() *
-            10
+            Math.random() * 10
         ) + 1;
 
 
@@ -4110,7 +4110,7 @@ async function triggerTrapEvent(
 
 
     // ========================================================
-    // VITA
+    // VITA MASSIMA
     // ========================================================
 
     const costituzione =
@@ -4123,11 +4123,14 @@ async function triggerTrapEvent(
         Math.ceil(
             5 *
             (
-                costituzione /
-                2
+                costituzione / 2
             )
         );
 
+
+    // ========================================================
+    // VITA ATTUALE
+    // ========================================================
 
     const oldHealth =
         character.current_hp !== null &&
@@ -4146,60 +4149,68 @@ async function triggerTrapEvent(
         );
 
 
-    // ========================================================
-    // SALVA DANNO
-    // ========================================================
-
-    if (
-        damage > 0
-    ) {
-
-        const {
-            error
-        } =
-            await db
-                .from(
-                    "characters"
-                )
-                .update({
-
-                    current_hp:
-                        newHealth,
-
-                    updated_at:
-                        new Date()
-                            .toISOString()
-
-                })
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (error) {
-
-            console.error(
-                "Errore salvataggio danno trappola:",
-                error
-            );
-
-
-            dungeonEventModalOpen =
-                false;
-
-
-            showError(
-                "Errore durante il salvataggio del danno."
-            );
-
-
-            return;
-
+    console.log(
+        "TRAPPOLA:",
+        {
+            oldHealth,
+            damage,
+            newHealth
         }
+    );
+
+
+    // ========================================================
+    // SALVA SEMPRE LA NUOVA VITA
+    // ========================================================
+
+    const {
+        error
+    } =
+        await db
+            .from(
+                "characters"
+            )
+            .update({
+
+                current_hp:
+                    newHealth,
+
+                updated_at:
+                    new Date()
+                        .toISOString()
+
+            })
+            .eq(
+                "id",
+                character.id
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Errore aggiornamento vita:",
+            error
+        );
+
+
+        dungeonEventModalOpen =
+            false;
+
+
+        showError(
+            "Errore durante l'aggiornamento della vita."
+        );
+
+
+        return;
 
     }
 
+
+    // ========================================================
+    // AGGIORNA PERSONAGGIO LOCALE
+    // ========================================================
 
     character.current_hp =
         newHealth;
@@ -4210,41 +4221,58 @@ async function triggerTrapEvent(
         newHealth
     );
 
-// ========================================================
-// MORTE
-// ========================================================
 
-if (
-    newHealth <= 0
-) {
-
-    await handleCharacterDeath();
-
-    return;
-
-}
-
-    
     // ========================================================
-    // APRE IL POPUP
+    // MORTE
+    // ========================================================
+
+    if (
+        newHealth <= 0
+    ) {
+
+        console.log(
+            "IL PERSONAGGIO È MORTO"
+        );
+
+
+        await handleCharacterDeath();
+
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // SOPRAVVISSUTO → MOSTRA POPUP
     // ========================================================
 
     openTrapEvent(
         dungeonEvent,
         {
+
             diceRoll,
+
             fortuna,
+
             trapResult,
+
             defenseStatName,
+
             defenseValue,
+
             damage,
+
             oldHealth,
+
             newHealth
+
         },
         eventKey
     );
 
 }
+
 
 // ============================================================
 // MORTE DEL PERSONAGGIO
