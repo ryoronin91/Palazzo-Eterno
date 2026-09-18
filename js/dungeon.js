@@ -4210,7 +4210,21 @@ async function triggerTrapEvent(
         newHealth
     );
 
+// ========================================================
+// MORTE
+// ========================================================
 
+if (
+    newHealth <= 0
+) {
+
+    await handleCharacterDeath();
+
+    return;
+
+}
+
+    
     // ========================================================
     // APRE IL POPUP
     // ========================================================
@@ -4232,6 +4246,135 @@ async function triggerTrapEvent(
 
 }
 
+// ============================================================
+// MORTE DEL PERSONAGGIO
+// ============================================================
+
+async function handleCharacterDeath() {
+
+    if (!character) {
+
+        return;
+
+    }
+
+
+    // Blocca qualsiasi ulteriore movimento.
+
+    movementLocked =
+        true;
+
+    dungeonEventModalOpen =
+        true;
+
+
+    try {
+
+        // ----------------------------------------------------
+        // Rimuove la presenza dal multiplayer
+        // ----------------------------------------------------
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            try {
+
+                await dungeonChannel
+                    .untrack();
+
+            } catch (error) {
+
+                console.error(
+                    "Errore rimozione presenza alla morte:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------------
+        // Cancella il personaggio da Supabase
+        // ----------------------------------------------------
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .delete()
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Errore cancellazione personaggio morto:",
+                error
+            );
+
+
+            movementLocked =
+                false;
+
+            dungeonEventModalOpen =
+                false;
+
+
+            showError(
+                "Errore durante la gestione della morte del personaggio."
+            );
+
+
+            return;
+
+        }
+
+
+        console.log(
+            "Personaggio morto e cancellato:",
+            character.id
+        );
+
+
+        // ----------------------------------------------------
+        // Vai alla pagina MORTE
+        // ----------------------------------------------------
+
+        window.location.href =
+            "morte.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore durante la morte del personaggio:",
+            error
+        );
+
+
+        movementLocked =
+            false;
+
+        dungeonEventModalOpen =
+            false;
+
+
+        showError(
+            "Errore durante la gestione della morte del personaggio."
+        );
+
+    }
+
+}
 
 // ============================================================
 // POPUP TRAPPOLA
