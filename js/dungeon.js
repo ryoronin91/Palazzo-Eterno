@@ -344,6 +344,7 @@ async function loadCharacter() {
         "Caricamento personaggio..."
     );
 
+
     const {
         data: {
             user
@@ -352,11 +353,13 @@ async function loadCharacter() {
     } =
         await db.auth.getUser();
 
+
     if (authError) {
 
         throw authError;
 
     }
+
 
     if (!user) {
 
@@ -367,15 +370,19 @@ async function loadCharacter() {
 
     }
 
+
     currentUser =
         user;
+
 
     const {
         data,
         error
     } =
         await db
-            .from("characters")
+            .from(
+                "characters"
+            )
             .select("*")
             .eq(
                 "user_id",
@@ -383,11 +390,13 @@ async function loadCharacter() {
             )
             .maybeSingle();
 
+
     if (error) {
 
         throw error;
 
     }
+
 
     if (!data) {
 
@@ -395,40 +404,46 @@ async function loadCharacter() {
             "Non hai ancora creato un personaggio."
         );
 
+
         window.location.href =
             "personaggio.html";
+
 
         return;
 
     }
 
+
     character =
         data;
+
 
     console.log(
         "Personaggio caricato:",
         character
     );
 
+
     updateCharacterPanel();
 
-}
 
-// ============================================================
-// CONTROLLO MORTE AL CARICAMENTO
-// ============================================================
+    // ========================================================
+    // CONTROLLO MORTE AL CARICAMENTO
+    // ========================================================
 
-if (
-    character.current_hp !== null &&
-    character.current_hp !== undefined &&
-    Number(
-        character.current_hp
-    ) <= 0
-) {
+    if (
+        character.current_hp !== null &&
+        character.current_hp !== undefined &&
+        Number(
+            character.current_hp
+        ) <= 0
+    ) {
 
-    await handleCharacterDeath();
+        await handleCharacterDeath();
 
-    return;
+        return;
+
+    }
 
 }
 
