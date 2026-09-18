@@ -4124,12 +4124,12 @@ function triggerDungeonEvent(
 
         case "trap":
 
-            console.log(
-                "Evento trappola non ancora implementato:",
-                dungeonEvent
-            );
+    triggerTrapEvent(
+        dungeonEvent,
+        eventKey
+    );
 
-            break;
+    break;
 
 
         // ----------------------------------------------------
@@ -4161,7 +4161,461 @@ function triggerDungeonEvent(
 
 }
 
+// ============================================================
+// TRAPPOLA
+// ============================================================
 
+async function triggerTrapEvent(
+    dungeonEvent,
+    eventKey
+) {
+
+    if (
+        !dungeonEvent ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Il cooldown è già predisposto.
+
+       Durante i test:
+       TRAP_COOLDOWN_ENABLED = false
+
+       quindi entriamo sempre qui.
+    */
+
+    if (
+        TRAP_COOLDOWN_ENABLED
+    ) {
+
+        /*
+           La gestione globale del timer
+           verrà collegata qui in seguito.
+        */
+
+        console.log(
+            "Cooldown trappole predisposto ma non ancora attivo."
+        );
+
+    }
+
+
+    // Blocchiamo il movimento mentre
+    // risolviamo la trappola.
+
+    dungeonEventModalOpen =
+        true;
+
+
+    // ========================================================
+    // STATISTICHE
+    // ========================================================
+
+    const fortuna =
+        Number(
+            character.fortuna
+        ) || 1;
+
+
+    const defenseStatName =
+        dungeonEvent.defenseStat;
+
+
+    const defenseValue =
+        Number(
+            character[
+                defenseStatName
+            ]
+        ) || 1;
+
+
+    // ========================================================
+    // TIRO 1D10
+    // ========================================================
+
+    const diceRoll =
+        Math.floor(
+            Math.random() * 10
+        ) + 1;
+
+
+    // 1d10 - LCK
+
+    const trapResult =
+        diceRoll -
+        fortuna;
+
+
+    // Il risultato può anche diventare negativo.
+    // Ai fini del danno non cambia nulla.
+
+    const damage =
+        Math.max(
+            0,
+            trapResult -
+            defenseValue
+        );
+
+
+    // ========================================================
+    // VITA MASSIMA
+    // ========================================================
+
+    const costituzione =
+        Number(
+            character.costituzione
+        ) || 1;
+
+
+    const maxHealth =
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
+
+
+    // ========================================================
+    // VITA ATTUALE
+    // ========================================================
+
+    const oldHealth =
+        character.current_hp !== null &&
+        character.current_hp !== undefined
+            ? Number(
+                character.current_hp
+            )
+            : maxHealth;
+
+
+    const newHealth =
+        Math.max(
+            0,
+            oldHealth -
+            damage
+        );
+
+
+    // ========================================================
+    // SALVATAGGIO DANNO
+    // ========================================================
+
+    if (
+        damage > 0
+    ) {
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .update({
+
+                    current_hp:
+                        newHealth,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Errore salvataggio danno trappola:",
+                error
+            );
+
+
+            dungeonEventModalOpen =
+                false;
+
+
+            showError(
+                "Errore durante il salvataggio del danno."
+            );
+
+
+            return;
+
+        }
+
+    }
+
+
+    // Aggiorna il personaggio locale.
+
+    character.current_hp =
+        newHealth;
+
+
+    // Aggiorna subito la Vita
+    // mostrata nel pannello.
+
+    setText(
+        "health-display",
+        newHealth
+    );
+
+// ============================================================
+// POPUP TRAPPOLA
+// ============================================================
+
+function openTrapEvent(
+    dungeonEvent,
+    result,
+    eventKey
+) {
+
+    const modal =
+        document.getElementById(
+            "dungeon-event-modal"
+        );
+
+
+    const titleElement =
+        document.getElementById(
+            "dungeon-event-title"
+        );
+
+
+    const textElement =
+        document.getElementById(
+            "dungeon-event-text"
+        );
+
+
+    const actionsElement =
+        document.getElementById(
+            "dungeon-event-actions"
+        );
+
+
+    if (
+        !modal ||
+        !titleElement ||
+        !textElement ||
+        !actionsElement
+    ) {
+
+        console.error(
+            "Elementi popup evento non trovati."
+        );
+
+        dungeonEventModalOpen =
+            false;
+
+        return;
+
+    }
+
+
+    activeDungeonEvent =
+        dungeonEvent;
+
+    activeDungeonEventKey =
+        eventKey;
+
+
+    // ========================================================
+    // TITOLO
+    // ========================================================
+
+    titleElement.textContent =
+        "TRAPPOLA";
+
+
+    titleElement.style.display =
+        "block";
+
+
+    // ========================================================
+    // NOME STATISTICA DIFENSIVA
+    // ========================================================
+
+    let defenseLabel =
+        result.defenseStatName
+            .toUpperCase();
+
+
+    if (
+        result.defenseStatName ===
+        "destrezza"
+    ) {
+
+        defenseLabel =
+            "DES";
+
+    }
+
+
+    if (
+        result.defenseStatName ===
+        "resistenza"
+    ) {
+
+        defenseLabel =
+            "RES";
+
+    }
+
+
+    // ========================================================
+    // TESTO
+    // ========================================================
+
+    let resultText =
+        dungeonEvent.message;
+
+
+    resultText +=
+        "\n\n";
+
+
+    resultText +=
+        `Tiro: ${result.diceRoll} - LCK ${result.fortuna} = ${result.trapResult}`;
+
+
+    resultText +=
+        "\n";
+
+
+    resultText +=
+        `${defenseLabel}: ${result.defenseValue}`;
+
+
+    resultText +=
+        "\n\n";
+
+
+    if (
+        result.damage > 0
+    ) {
+
+        resultText +=
+            `SUBISCI ${result.damage} DANN${
+                result.damage === 1
+                    ? "O"
+                    : "I"
+            }`;
+
+
+        resultText +=
+            "\n";
+
+
+        resultText +=
+            `Vita: ${result.oldHealth} → ${result.newHealth}`;
+
+    } else {
+
+        resultText +=
+            "RIESCI A EVITARE LA TRAPPOLA";
+
+
+        resultText +=
+            "\n";
+
+
+        resultText +=
+            `Vita: ${result.oldHealth}`;
+
+    }
+
+
+    textElement.textContent =
+        resultText;
+
+
+    // Mantiene gli a capo.
+
+    textElement.style.whiteSpace =
+        "pre-line";
+
+
+    // ========================================================
+    // PULSANTE
+    // ========================================================
+
+    actionsElement.innerHTML =
+        "";
+
+
+    const continueButton =
+        document.createElement(
+            "button"
+        );
+
+
+    continueButton.type =
+        "button";
+
+
+    continueButton.className =
+        "button";
+
+
+    continueButton.textContent =
+        "CONTINUA";
+
+
+    continueButton.addEventListener(
+        "click",
+        () => {
+
+            closeDungeonEventModal();
+
+        }
+    );
+
+
+    actionsElement.appendChild(
+        continueButton
+    );
+
+
+    modal.hidden =
+        false;
+
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+    // ========================================================
+    // POPUP
+    // ========================================================
+
+    openTrapEvent(
+        dungeonEvent,
+        {
+            diceRoll,
+            fortuna,
+            trapResult,
+            defenseStatName,
+            defenseValue,
+            damage,
+            oldHealth,
+            newHealth
+        },
+        eventKey
+    );
+
+}
 // ============================================================
 // APRI COMUNICAZIONE
 // ============================================================
