@@ -51,8 +51,8 @@ const GRID_OFFSET_Y = 4;
 // POSIZIONE INIZIALE
 // ============================================================
 
-const INITIAL_PLAYER_X = 10;
-const INITIAL_PLAYER_Y = 1;
+const INITIAL_PLAYER_X = 9;
+const INITIAL_PLAYER_Y = 0;
 
 
 // ============================================================
