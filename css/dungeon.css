@@ -800,3 +800,18 @@
     }
 
 }
+/* ============================================================
+   NEBBIA DI GUERRA
+   ============================================================ */
+
+.dungeon-fog-canvas {
+    position: absolute;
+
+    z-index: 70;
+
+    pointer-events: none;
+
+    display: block;
+
+    box-sizing: border-box;
+}
