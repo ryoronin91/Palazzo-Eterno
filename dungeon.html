@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/dungeon.css?v=3"
+        href="css/dungeon.css"
     >
 
 </head>
@@ -70,39 +70,47 @@
                  CHAT DEL PIANO
             =================================================== -->
 
-            <aside class="dungeon-chat-panel" aria-label="Chat del piano">
+            <aside class="dungeon-chat-panel">
 
                 <div class="dungeon-chat-header">
 
-                    <div>
-                        <span class="panel-label">MULTIPLAYER</span>
-                        <h2>CHAT DEL PIANO</h2>
-                    </div>
+                    <span class="panel-label">
+                        COMUNICAZIONI
+                    </span>
 
-                    <span
+                    <h2>
+                        CHAT DEL PIANO
+                    </h2>
+
+                    <div
                         id="floor-chat-status"
                         class="floor-chat-status"
                     >
                         Connessione...
-                    </span>
-
-                </div>
-
-
-                <div
-                    id="floor-chat-messages"
-                    class="floor-chat-messages"
-                    role="log"
-                    aria-live="polite"
-                    aria-relevant="additions"
-                >
-
-                    <div class="floor-chat-empty">
-                        I messaggi del piano compariranno qui.
                     </div>
 
                 </div>
 
+
+                <!-- ==================================================
+                     MESSAGGI CHAT
+                =================================================== -->
+
+                <div
+                    id="floor-chat-messages"
+                    class="floor-chat-messages"
+                >
+
+                    <div class="floor-chat-empty">
+                        Nessun messaggio ancora.
+                    </div>
+
+                </div>
+
+
+                <!-- ==================================================
+                     INVIO MESSAGGIO
+                =================================================== -->
 
                 <form
                     id="floor-chat-form"
@@ -116,25 +124,28 @@
                         MESSAGGIO
                     </label>
 
+
                     <textarea
                         id="floor-chat-input"
                         class="floor-chat-input"
                         maxlength="300"
-                        rows="3"
                         placeholder="Scrivi un messaggio..."
+                        disabled
                     ></textarea>
+
 
                     <div class="floor-chat-actions">
 
-                        <span
+                        <div
                             id="floor-chat-feedback"
                             class="floor-chat-feedback"
-                        ></span>
+                        ></div>
+
 
                         <button
                             id="floor-chat-send"
-                            class="button floor-chat-send"
                             type="submit"
+                            class="button floor-chat-send"
                             disabled
                         >
                             INVIA
@@ -145,6 +156,7 @@
                 </form>
 
             </aside>
+
 
 
             <!-- ==================================================
@@ -239,8 +251,6 @@
                     <div class="secondary-stats-grid">
 
 
-                        <!-- FORZA -->
-
                         <div class="secondary-stat">
 
                             <span class="secondary-stat-name">
@@ -253,8 +263,6 @@
 
                         </div>
 
-
-                        <!-- RESISTENZA -->
 
                         <div class="secondary-stat">
 
@@ -269,8 +277,6 @@
                         </div>
 
 
-                        <!-- VITA -->
-
                         <div class="secondary-stat">
 
                             <span class="secondary-stat-name">
@@ -283,8 +289,6 @@
 
                         </div>
 
-
-                        <!-- MANA -->
 
                         <div class="secondary-stat">
 
@@ -299,8 +303,6 @@
                         </div>
 
 
-                        <!-- MOVIMENTO -->
-
                         <div class="secondary-stat">
 
                             <span class="secondary-stat-name">
@@ -313,8 +315,6 @@
 
                         </div>
 
-
-                        <!-- CRITICO -->
 
                         <div class="secondary-stat">
 
@@ -491,7 +491,7 @@
 
 
         <!-- ==================================================
-             MESSAGGI
+             MESSAGGI DUNGEON
         =================================================== -->
 
         <div
@@ -515,7 +515,7 @@
          CONFIGURAZIONE
     ======================================================= -->
 
-    <script src="js/config.js?v=2"></script>
+    <script src="js/config.js?v=3"></script>
 
 
     <!-- ======================================================
