@@ -88,6 +88,10 @@ let fogSavePromise =
 
 const DUNGEON_EVENTS = {
 
+    // ========================================================
+    // COMUNICAZIONI
+    // ========================================================
+
     "11,17": {
 
         id:
@@ -160,22 +164,68 @@ const DUNGEON_EVENTS = {
 
         ]
 
+    },
+
+
+    // ========================================================
+    // TRAPPOLE
+    // ========================================================
+
+    "11,11": {
+
+        id:
+            "blade_corridor",
+
+        type:
+            "trap",
+
+        message:
+            "Una lama affilata attraversa il corridoio da muro a muro.",
+
+        defenseStat:
+            "destrezza"
+
+    },
+
+
+    "9,15": {
+
+        id:
+            "acid_vapor",
+
+        type:
+            "trap",
+
+        message:
+            "Dal pavimento una nube di vapore acido ti investe.",
+
+        defenseStat:
+            "resistenza"
+
     }
 
 };
 
+// ============================================================
+// COOLDOWN TRAPPOLE
+// ============================================================
+//
+// Durante i test resta DISATTIVATO.
+//
+// Quando avremo finito i test basterà cambiare:
+// false → true
+//
+// Il tempo previsto è già 1 ora.
+// ============================================================
 
-let activeDungeonEvent =
-    null;
-
-let activeDungeonEventKey =
-    null;
-
-let lastTriggeredDungeonEventKey =
-    null;
-
-let dungeonEventModalOpen =
+const TRAP_COOLDOWN_ENABLED =
     false;
+
+const TRAP_COOLDOWN_MS =
+    60 *
+    60 *
+    1000;
+
 
 // ============================================================
 // AVVIO
