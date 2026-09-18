@@ -97,7 +97,7 @@ const DUNGEON_EVENTS = {
             "communication",
 
         title:
-            "COMUNICAZIONE",
+            "",
 
         message:
             "Queste scale scendono ad un piano inferiore.",
@@ -140,7 +140,7 @@ const DUNGEON_EVENTS = {
             "communication",
 
         title:
-            "COMUNICAZIONE",
+            "",
 
         message:
             "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì",
@@ -4160,9 +4160,16 @@ function openCommunicationEvent(
         true;
 
 
-    titleElement.textContent =
-        dungeonEvent.title ||
-        "COMUNICAZIONE";
+const popupTitle =
+    dungeonEvent.title || "";
+
+titleElement.textContent =
+    popupTitle;
+
+titleElement.style.display =
+    popupTitle
+        ? "block"
+        : "none";
 
 
     textElement.textContent =
