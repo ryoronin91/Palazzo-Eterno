@@ -21,7 +21,168 @@
         rel="stylesheet"
         href="css/master.css?v=2"
     >
+<style>
 
+    /* ========================================================
+       EVENTI VISIBILI AL MASTER
+    ======================================================== */
+
+    .master-event-marker {
+
+        position: absolute;
+
+        z-index: 80;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        transform-origin: center;
+
+        border-radius: 50%;
+
+        font-family:
+            Arial,
+            sans-serif;
+
+        font-weight: 800;
+
+        line-height: 1;
+
+        cursor: help;
+
+        user-select: none;
+
+        box-sizing: border-box;
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.75
+            );
+
+        pointer-events: auto;
+
+    }
+
+
+    .master-event-marker.is-communication {
+
+        color:
+            #ffe59a;
+
+        background:
+            rgba(
+                79,
+                55,
+                10,
+                0.88
+            );
+
+        border:
+            2px solid
+            #d4aa45;
+
+        font-size:
+            clamp(
+                10px,
+                1vw,
+                18px
+            );
+
+    }
+
+
+    .master-event-marker.is-trap {
+
+        border:
+            2px solid;
+
+        font-size:
+            clamp(
+                10px,
+                1vw,
+                18px
+            );
+
+    }
+
+
+    .master-event-marker.is-trap.is-active {
+
+        color:
+            #ffffff;
+
+        background:
+            rgba(
+                145,
+                15,
+                15,
+                0.92
+            );
+
+        border-color:
+            #ff5757;
+
+    }
+
+
+    .master-event-marker.is-trap.is-cooldown {
+
+        color:
+            #dedede;
+
+        background:
+            rgba(
+                55,
+                55,
+                55,
+                0.9
+            );
+
+        border-color:
+            #999999;
+
+    }
+
+
+    .master-event-icon {
+
+        display: block;
+
+        line-height: 0.9;
+
+    }
+
+
+    .master-event-countdown {
+
+        display: block;
+
+        margin-top: 1px;
+
+        font-size:
+            clamp(
+                6px,
+                0.55vw,
+                10px
+            );
+
+        line-height: 1;
+
+        white-space: nowrap;
+
+    }
+
+</style>
+    
 </head>
 
 
