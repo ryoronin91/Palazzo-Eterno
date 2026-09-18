@@ -96,12 +96,31 @@
     display: grid;
 
     grid-template-columns:
-        260px
+        280px
         minmax(0, 1fr);
 
     gap: 20px;
 
     align-items: start;
+
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.master-sidebar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+    position: sticky;
+
+    top: 20px;
 
 }
 
@@ -129,10 +148,6 @@
         );
 
     overflow: hidden;
-
-    position: sticky;
-
-    top: 20px;
 
 }
 
@@ -281,6 +296,273 @@
     font-size: 0.68rem;
 
     opacity: 0.55;
+
+}
+
+
+/* ============================================================
+   CHAT MASTER
+   ============================================================ */
+
+.master-chat-panel {
+
+    width: 100%;
+
+    height: 430px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    box-sizing: border-box;
+
+    border-radius: 14px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.38);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045),
+            rgba(0, 0, 0, 0.22)
+        );
+
+    overflow: hidden;
+
+}
+
+
+.master-chat-header {
+
+    padding: 14px;
+
+    border-bottom:
+        1px solid rgba(184, 138, 59, 0.25);
+
+}
+
+
+.master-chat-header h2 {
+
+    margin:
+        5px
+        0
+        6px;
+
+    font-size: 1rem;
+
+}
+
+
+.master-chat-status {
+
+    font-size: 0.72rem;
+
+    opacity: 0.6;
+
+}
+
+
+.master-chat-status.is-online {
+
+    opacity: 0.9;
+
+}
+
+
+/* ============================================================
+   MESSAGGI CHAT
+   ============================================================ */
+
+.master-chat-messages {
+
+    flex: 1;
+
+    min-height: 0;
+
+    padding: 10px;
+
+    overflow-y: auto;
+
+}
+
+
+.master-chat-empty {
+
+    padding: 8px;
+
+    font-size: 0.78rem;
+
+    opacity: 0.5;
+
+}
+
+
+.master-chat-message {
+
+    margin-bottom: 9px;
+
+    padding: 8px;
+
+    border-radius: 9px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+}
+
+
+.master-chat-message.is-master {
+
+    border-color:
+        rgba(184, 138, 59, 0.5);
+
+    background:
+        rgba(184, 138, 59, 0.1);
+
+}
+
+
+.master-chat-meta {
+
+    margin-bottom: 4px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 8px;
+
+}
+
+
+.master-chat-meta strong {
+
+    font-size: 0.72rem;
+
+    color: #b88a3b;
+
+}
+
+
+.master-chat-meta span {
+
+    font-size: 0.62rem;
+
+    opacity: 0.45;
+
+}
+
+
+.master-chat-body {
+
+    font-size: 0.8rem;
+
+    line-height: 1.4;
+
+    white-space: pre-wrap;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* ============================================================
+   FORM CHAT
+   ============================================================ */
+
+.master-chat-form {
+
+    padding: 10px;
+
+    border-top:
+        1px solid rgba(184, 138, 59, 0.25);
+
+}
+
+
+.master-chat-label {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 0.65rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    opacity: 0.6;
+
+}
+
+
+.master-chat-input {
+
+    width: 100%;
+
+    min-height: 65px;
+
+    max-height: 120px;
+
+    resize: vertical;
+
+    padding: 8px;
+
+    box-sizing: border-box;
+
+    border-radius: 8px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.35);
+
+    background:
+        rgba(0, 0, 0, 0.25);
+
+    color: inherit;
+
+    font: inherit;
+
+    font-size: 0.8rem;
+
+}
+
+
+.master-chat-input:focus {
+
+    outline:
+        1px solid rgba(184, 138, 59, 0.7);
+
+}
+
+
+.master-chat-actions {
+
+    margin-top: 7px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 8px;
+
+}
+
+
+.master-chat-feedback {
+
+    flex: 1;
+
+    font-size: 0.67rem;
+
+    opacity: 0.6;
 
 }
 
@@ -719,7 +1001,7 @@
     }
 
 
-    .master-players-panel {
+    .master-sidebar {
 
         position: relative;
 
@@ -743,6 +1025,13 @@
     .master-player-item {
 
         margin: 0;
+
+    }
+
+
+    .master-chat-panel {
+
+        height: 380px;
 
     }
 
