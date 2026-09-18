@@ -1,35 +1,9 @@
 // ============================================================
-// PALAZZO ETERNO
-// DUNGEON.JS
-// ============================================================
-//
-// Gestisce:
-//
-// - autenticazione Supabase
-// - caricamento personaggio
-// - caricamento dungeon.json
-// - posizione iniziale X=10 Y=1
-// - movimento WASD / frecce
-// - movimento tramite click su casella adiacente
-// - controllo muri
-// - salvataggio posizione
-// - token personale
-// - token degli altri giocatori online
-// - Supabase Realtime Presence
-// - Supabase Realtime Broadcast
-// - statistiche del personaggio
-// - caricamento e salvataggio note
-// - chat realtime del piano
-//
+// PALAZZO ETERNO - DUNGEON.JS
+// Multiplayer, chat del piano, note e nebbia di guerra personale
 // ============================================================
 
-
-console.log("DUNGEON.JS MULTIPLAYER CARICATO");
-
-
-// ============================================================
-// SUPABASE
-// ============================================================
+console.log("DUNGEON.JS MULTIPLAYER + FOG CARICATO");
 
 const db = supabaseClient;
 
@@ -41,48 +15,23 @@ const db = supabaseClient;
 const MAP_COLUMNS = 23;
 const MAP_ROWS = 23;
 
-
-// Offset corretto JSON -> mappa visibile
-
 const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
 
-
-// ============================================================
-// POSIZIONE INIZIALE
-// ============================================================
-
 const INITIAL_PLAYER_X = 9;
 const INITIAL_PLAYER_Y = 0;
-
-
-// ============================================================
-// MULTIPLAYER
-// ============================================================
-//
-// Per ora tutti i giocatori dentro dungeon.html
-// partecipano allo stesso piano.
-//
-// Quando aggiungeremo più piani basterà cambiare
-// questo nome, ad esempio:
-//
-// palazzo-eterno-dungeon-1
-// palazzo-eterno-dungeon-2
-//
-// ============================================================
 
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
 
 
 // ============================================================
-// VARIABILI
+// STATO GENERALE
 // ============================================================
 
 let dungeonData = null;
 
 let character = null;
-
 let currentUser = null;
 
 let playerX = null;
@@ -98,28 +47,29 @@ let movementLocked = false;
 // ============================================================
 
 let dungeonChannel = null;
-
 let realtimeReady = false;
-
-
-// ============================================================
-// TOKEN DEGLI ALTRI GIOCATORI
-// ============================================================
-//
-// character_id -> elemento IMG
-//
-// ============================================================
 
 const otherPlayerTokens =
     new Map();
 
-
-// ============================================================
-// DATI DEGLI ALTRI GIOCATORI
-// ============================================================
-
 const otherPlayers =
     new Map();
+
+
+// ============================================================
+// NEBBIA DI GUERRA
+// ============================================================
+
+let fogCanvas = null;
+
+let exploredCells =
+    new Set();
+
+let visibleCells =
+    new Set();
+
+let fogSavePromise =
+    Promise.resolve();
 
 
 // ============================================================
@@ -134,57 +84,23 @@ document.addEventListener(
             "Pagina dungeon pronta."
         );
 
-
         try {
-
-            // ------------------------------------------------
-            // PERSONAGGIO
-            // ------------------------------------------------
 
             await loadCharacter();
 
-
-            // ------------------------------------------------
-            // NOTE
-            // ------------------------------------------------
-
             setupNotes();
-
-
-            // ------------------------------------------------
-            // CHAT DEL PIANO
-            // ------------------------------------------------
 
             setupFloorChat();
 
-
-            // ------------------------------------------------
-            // MAPPA
-            // ------------------------------------------------
-
             await loadDungeon();
-
-
-            // ------------------------------------------------
-            // POSIZIONE
-            // ------------------------------------------------
 
             await initializePlayer();
 
-
-            // ------------------------------------------------
-            // MOVIMENTO
-            // ------------------------------------------------
+            setupFogOfWar();
 
             setupMovement();
 
-
-            // ------------------------------------------------
-            // MULTIPLAYER
-            // ------------------------------------------------
-
             await setupRealtimeMultiplayer();
-
 
         } catch (error) {
 
@@ -192,7 +108,6 @@ document.addEventListener(
                 "Errore durante l'avvio del dungeon:",
                 error
             );
-
 
             showError(
                 error.message ||
@@ -206,7 +121,7 @@ document.addEventListener(
 
 
 // ============================================================
-// CARICAMENTO DUNGEON.JSON
+// DUNGEON.JSON
 // ============================================================
 
 async function loadDungeon() {
@@ -215,12 +130,10 @@ async function loadDungeon() {
         "Caricamento dungeon.json..."
     );
 
-
     const response =
         await fetch(
             "dungeon.json"
         );
-
 
     if (!response.ok) {
 
@@ -230,16 +143,8 @@ async function loadDungeon() {
 
     }
 
-
     dungeonData =
         await response.json();
-
-
-    console.log(
-        "Dungeon JSON caricato:",
-        dungeonData
-    );
-
 
     if (!dungeonData.cells) {
 
@@ -249,20 +154,9 @@ async function loadDungeon() {
 
     }
 
-
     console.log(
-        "Griglia visibile:",
-        MAP_COLUMNS,
-        "x",
-        MAP_ROWS
-    );
-
-
-    console.log(
-        "Matrice interna:",
-        dungeonData.cells[0].length,
-        "x",
-        dungeonData.cells.length
+        "Dungeon JSON caricato:",
+        dungeonData
     );
 
 }
@@ -278,11 +172,6 @@ async function loadCharacter() {
         "Caricamento personaggio..."
     );
 
-
-    // --------------------------------------------------------
-    // UTENTE
-    // --------------------------------------------------------
-
     const {
         data: {
             user
@@ -291,13 +180,11 @@ async function loadCharacter() {
     } =
         await db.auth.getUser();
 
-
     if (authError) {
 
         throw authError;
 
     }
-
 
     if (!user) {
 
@@ -308,20 +195,8 @@ async function loadCharacter() {
 
     }
 
-
     currentUser =
         user;
-
-
-    console.log(
-        "Utente autenticato:",
-        currentUser.id
-    );
-
-
-    // --------------------------------------------------------
-    // PERSONAGGIO
-    // --------------------------------------------------------
 
     const {
         data,
@@ -336,13 +211,11 @@ async function loadCharacter() {
             )
             .maybeSingle();
 
-
     if (error) {
 
         throw error;
 
     }
-
 
     if (!data) {
 
@@ -350,25 +223,20 @@ async function loadCharacter() {
             "Non hai ancora creato un personaggio."
         );
 
-
         window.location.href =
             "personaggio.html";
-
 
         return;
 
     }
 
-
     character =
         data;
-
 
     console.log(
         "Personaggio caricato:",
         character
     );
-
 
     updateCharacterPanel();
 
@@ -387,70 +255,33 @@ function updateCharacterPanel() {
 
     }
 
-
     const name =
         character.nome ||
         "Avventuriero";
-
-
-    // --------------------------------------------------------
-    // NOME
-    // --------------------------------------------------------
-
-    const nameHeader =
-        document.getElementById(
-            "character-name"
-        );
-
-
-    const namePanel =
-        document.getElementById(
-            "character-name-panel"
-        );
-
-
-    if (nameHeader) {
-
-        nameHeader.textContent =
-            name;
-
-    }
-
-
-    if (namePanel) {
-
-        namePanel.textContent =
-            name;
-
-    }
-
-
-    // --------------------------------------------------------
-    // LIVELLO
-    // --------------------------------------------------------
 
     const level =
         Number(
             character.livello
         ) || 1;
 
+    setText(
+        "character-name",
+        name
+    );
 
-    const levelElement =
-        document.getElementById(
-            "character-level"
-        );
+    setText(
+        "character-name-panel",
+        name
+    );
 
-
-    if (levelElement) {
-
-        levelElement.textContent =
-            level;
-
-    }
+    setText(
+        "character-level",
+        level
+    );
 
 
     // --------------------------------------------------------
-    // TOKEN NELLA SCHEDA
+    // TOKEN
     // --------------------------------------------------------
 
     const tokenImage =
@@ -458,18 +289,15 @@ function updateCharacterPanel() {
             "character-token"
         );
 
-
     if (tokenImage) {
 
         const tokenFile =
             character.token ||
             "token_1.png";
 
-
         tokenImage.src =
             "immagini/token/" +
             tokenFile;
-
 
         tokenImage.alt =
             "Token di " +
@@ -487,30 +315,25 @@ function updateCharacterPanel() {
             character.forza
         ) || 1;
 
-
     const resistenza =
         Number(
             character.resistenza
         ) || 1;
-
 
     const costituzione =
         Number(
             character.costituzione
         ) || 1;
 
-
     const intelligenza =
         Number(
             character.intelligenza
         ) || 1;
 
-
     const destrezza =
         Number(
             character.destrezza
         ) || 1;
-
 
     const fortuna =
         Number(
@@ -523,30 +346,25 @@ function updateCharacterPanel() {
         forza
     );
 
-
     setText(
         "resistenza-display",
         resistenza
     );
-
 
     setText(
         "costituzione-display",
         costituzione
     );
 
-
     setText(
         "intelligenza-display",
         intelligenza
     );
 
-
     setText(
         "destrezza-display",
         destrezza
     );
-
 
     setText(
         "fortuna-display",
@@ -555,7 +373,7 @@ function updateCharacterPanel() {
 
 
     // --------------------------------------------------------
-    // STATISTICHE SECONDARIE
+    // STATISTICHE
     // --------------------------------------------------------
 
     const attack =
@@ -563,13 +381,11 @@ function updateCharacterPanel() {
             forza / 2
         );
 
-
     const defense =
         7 +
         Math.ceil(
             resistenza / 2
         );
-
 
     const health =
         5 *
@@ -577,20 +393,17 @@ function updateCharacterPanel() {
             costituzione / 2
         );
 
-
     const mana =
         5 *
         Math.ceil(
             intelligenza / 2
         );
 
-
     const movement =
         4 +
         Math.ceil(
             destrezza / 2
         );
-
 
     const critical =
         Math.round(
@@ -607,30 +420,25 @@ function updateCharacterPanel() {
         attack
     );
 
-
     setText(
         "defense-display",
         defense
     );
-
 
     setText(
         "health-display",
         health
     );
 
-
     setText(
         "mana-display",
         mana
     );
 
-
     setText(
         "movement-display",
         movement
     );
-
 
     setText(
         "critical-display",
@@ -654,7 +462,6 @@ function setText(
             id
         );
 
-
     if (element) {
 
         element.textContent =
@@ -666,7 +473,7 @@ function setText(
 
 
 // ============================================================
-// INIZIALIZZAZIONE GIOCATORE
+// POSIZIONE INIZIALE
 // ============================================================
 
 async function initializePlayer() {
@@ -674,11 +481,6 @@ async function initializePlayer() {
     console.log(
         "Controllo posizione del personaggio..."
     );
-
-
-    // --------------------------------------------------------
-    // POSIZIONE GIÀ SALVATA
-    // --------------------------------------------------------
 
     if (
         character.dungeon_x !== null &&
@@ -692,23 +494,19 @@ async function initializePlayer() {
                 character.dungeon_x
             );
 
-
         playerY =
             Number(
                 character.dungeon_y
             );
-
 
         showToken(
             playerX,
             playerY
         );
 
-
         setMessage(
             "Usa WASD o le frecce per muoverti."
         );
-
 
         return;
 
@@ -722,10 +520,8 @@ async function initializePlayer() {
     playerX =
         INITIAL_PLAYER_X;
 
-
     playerY =
         INITIAL_PLAYER_Y;
-
 
     const {
         error
@@ -746,27 +542,22 @@ async function initializePlayer() {
                 character.id
             );
 
-
     if (error) {
 
         throw error;
 
     }
 
-
     character.dungeon_x =
         playerX;
 
-
     character.dungeon_y =
         playerY;
-
 
     showToken(
         playerX,
         playerY
     );
-
 
     setMessage(
         "Usa WASD o le frecce per muoverti."
@@ -785,7 +576,6 @@ async function setupRealtimeMultiplayer() {
         "Avvio multiplayer..."
     );
 
-
     if (
         !character ||
         !currentUser
@@ -795,10 +585,6 @@ async function setupRealtimeMultiplayer() {
 
     }
 
-
-    // --------------------------------------------------------
-    // CREAZIONE CANALE
-    // --------------------------------------------------------
 
     dungeonChannel =
         db.channel(
@@ -821,7 +607,7 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // PRESENCE SYNC
+    // PRESENCE
     // ========================================================
 
     dungeonChannel.on(
@@ -835,23 +621,13 @@ async function setupRealtimeMultiplayer() {
                 "Presence sincronizzata."
             );
 
-
             syncOnlinePlayers();
-
-
-            // Quando entra un nuovo giocatore,
-            // tutti gli utenti già presenti
-            // reinviano la loro posizione corrente.
 
             broadcastMyState();
 
         }
     );
 
-
-    // ========================================================
-    // PRESENCE JOIN
-    // ========================================================
 
     dungeonChannel.on(
         "presence",
@@ -871,10 +647,6 @@ async function setupRealtimeMultiplayer() {
     );
 
 
-    // ========================================================
-    // PRESENCE LEAVE
-    // ========================================================
-
     dungeonChannel.on(
         "presence",
         {
@@ -889,16 +661,12 @@ async function setupRealtimeMultiplayer() {
                 leftPresences
             );
 
-
-            // Presence sync si occuperà
-            // anche di rimuovere le pedine.
-
         }
     );
 
 
     // ========================================================
-    // MOVIMENTO DEGLI ALTRI GIOCATORI
+    // MOVIMENTO
     // ========================================================
 
     dungeonChannel.on(
@@ -911,17 +679,8 @@ async function setupRealtimeMultiplayer() {
             const data =
                 message.payload;
 
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            // Ignora il nostro stesso movimento.
-
             if (
+                !data ||
                 data.character_id ===
                 character.id
             ) {
@@ -929,7 +688,6 @@ async function setupRealtimeMultiplayer() {
                 return;
 
             }
-
 
             updateRemotePlayer(
                 data
@@ -940,7 +698,7 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // STATO COMPLETO
+    // STATO
     // ========================================================
 
     dungeonChannel.on(
@@ -953,15 +711,8 @@ async function setupRealtimeMultiplayer() {
             const data =
                 message.payload;
 
-
-            if (!data) {
-
-                return;
-
-            }
-
-
             if (
+                !data ||
                 data.character_id ===
                 character.id
             ) {
@@ -969,7 +720,6 @@ async function setupRealtimeMultiplayer() {
                 return;
 
             }
-
 
             updateRemotePlayer(
                 data
@@ -980,7 +730,7 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // CHAT DEL PIANO
+    // CHAT
     // ========================================================
 
     dungeonChannel.on(
@@ -993,18 +743,8 @@ async function setupRealtimeMultiplayer() {
             const data =
                 message.payload;
 
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            // Il messaggio del giocatore locale viene già
-            // mostrato immediatamente da sendFloorChatMessage().
-
             if (
+                !data ||
                 data.character_id ===
                 character.id
             ) {
@@ -1012,7 +752,6 @@ async function setupRealtimeMultiplayer() {
                 return;
 
             }
-
 
             appendFloorChatMessage(
                 data
@@ -1034,7 +773,6 @@ async function setupRealtimeMultiplayer() {
                 status
             );
 
-
             if (
                 status !==
                 "SUBSCRIBED"
@@ -1052,24 +790,16 @@ async function setupRealtimeMultiplayer() {
 
                 }
 
-
                 return;
 
             }
 
-
             realtimeReady =
                 true;
-
 
             setFloorChatConnected(
                 true
             );
-
-
-            // ------------------------------------------------
-            // REGISTRA PRESENZA
-            // ------------------------------------------------
 
             const presenceData = {
 
@@ -1099,22 +829,15 @@ async function setupRealtimeMultiplayer() {
 
             };
 
-
             const trackResult =
                 await dungeonChannel.track(
                     presenceData
                 );
 
-
             console.log(
                 "Presence registrata:",
                 trackResult
             );
-
-
-            // ------------------------------------------------
-            // INVIA POSIZIONE
-            // ------------------------------------------------
 
             broadcastMyState();
 
@@ -1125,7 +848,7 @@ async function setupRealtimeMultiplayer() {
 
 
 // ============================================================
-// SINCRONIZZA GIOCATORI ONLINE
+// GIOCATORI ONLINE
 // ============================================================
 
 function syncOnlinePlayers() {
@@ -1136,25 +859,12 @@ function syncOnlinePlayers() {
 
     }
 
-
     const presenceState =
         dungeonChannel
             .presenceState();
 
-
-    console.log(
-        "Giocatori online:",
-        presenceState
-    );
-
-
     const onlineCharacterIds =
         new Set();
-
-
-    // --------------------------------------------------------
-    // LEGGI TUTTE LE PRESENZE
-    // --------------------------------------------------------
 
     Object.values(
         presenceState
@@ -1165,18 +875,7 @@ function syncOnlinePlayers() {
                 presence => {
 
                     if (
-                        !presence.character_id
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    // Il nostro personaggio
-                    // viene già disegnato separatamente.
-
-                    if (
+                        !presence.character_id ||
                         presence.character_id ===
                         character.id
                     ) {
@@ -1185,11 +884,9 @@ function syncOnlinePlayers() {
 
                     }
 
-
                     onlineCharacterIds.add(
                         presence.character_id
                     );
-
 
                     updateRemotePlayer(
                         presence
@@ -1201,10 +898,6 @@ function syncOnlinePlayers() {
         }
     );
 
-
-    // --------------------------------------------------------
-    // RIMUOVI CHI NON È PIÙ ONLINE
-    // --------------------------------------------------------
 
     for (
         const [
@@ -1222,19 +915,11 @@ function syncOnlinePlayers() {
 
             token.remove();
 
-
             otherPlayerTokens.delete(
                 characterId
             );
 
-
             otherPlayers.delete(
-                characterId
-            );
-
-
-            console.log(
-                "Rimossa pedina offline:",
                 characterId
             );
 
@@ -1242,14 +927,15 @@ function syncOnlinePlayers() {
 
     }
 
-
     updateFloorChatOnlineStatus();
+
+    updateRemoteTokensVisibility();
 
 }
 
 
 // ============================================================
-// CREA / AGGIORNA GIOCATORE REMOTO
+// GIOCATORE REMOTO
 // ============================================================
 
 function updateRemotePlayer(
@@ -1258,15 +944,7 @@ function updateRemotePlayer(
 
     if (
         !data ||
-        !data.character_id
-    ) {
-
-        return;
-
-    }
-
-
-    if (
+        !data.character_id ||
         data.character_id ===
         character.id
     ) {
@@ -1275,18 +953,15 @@ function updateRemotePlayer(
 
     }
 
-
     const x =
         Number(
             data.x
         );
 
-
     const y =
         Number(
             data.y
         );
-
 
     if (
         !Number.isFinite(x) ||
@@ -1296,11 +971,6 @@ function updateRemotePlayer(
         return;
 
     }
-
-
-    // --------------------------------------------------------
-    // SALVA DATI LOCALI
-    // --------------------------------------------------------
 
     otherPlayers.set(
         data.character_id,
@@ -1320,19 +990,11 @@ function updateRemotePlayer(
                 data.token ||
                 "token_1.png",
 
-            x:
-                x,
-
-            y:
-                y
+            x,
+            y
 
         }
     );
-
-
-    // --------------------------------------------------------
-    // DISEGNA TOKEN
-    // --------------------------------------------------------
 
     showRemoteToken(
         data.character_id
@@ -1342,7 +1004,7 @@ function updateRemotePlayer(
 
 
 // ============================================================
-// MOSTRA TOKEN REMOTO
+// TOKEN REMOTO
 // ============================================================
 
 function showRemoteToken(
@@ -1354,13 +1016,11 @@ function showRemoteToken(
             characterId
         );
 
-
     if (!player) {
 
         return;
 
     }
-
 
     try {
 
@@ -1370,34 +1030,25 @@ function showRemoteToken(
         } =
             getMapContainer();
 
-
         const mapRect =
             image.getBoundingClientRect();
-
 
         const containerRect =
             container.getBoundingClientRect();
 
-
         const cellWidth =
             mapRect.width /
             MAP_COLUMNS;
-
 
         const cellHeight =
             mapRect.height /
             MAP_ROWS;
 
 
-        // ----------------------------------------------------
-        // CREA O RECUPERA TOKEN
-        // ----------------------------------------------------
-
         let token =
             otherPlayerTokens.get(
                 characterId
             );
-
 
         if (!token) {
 
@@ -1406,35 +1057,27 @@ function showRemoteToken(
                     "img"
                 );
 
-
             token.className =
                 "dungeon-player-token dungeon-other-player-token";
-
 
             token.style.position =
                 "absolute";
 
-
             token.style.objectFit =
                 "contain";
-
 
             token.style.boxSizing =
                 "border-box";
 
-
             token.style.zIndex =
                 "90";
-
 
             token.style.pointerEvents =
                 "none";
 
-
             container.appendChild(
                 token
             );
-
 
             otherPlayerTokens.set(
                 characterId,
@@ -1444,27 +1087,17 @@ function showRemoteToken(
         }
 
 
-        // ----------------------------------------------------
-        // IMMAGINE
-        // ----------------------------------------------------
-
         token.src =
             "immagini/token/" +
             player.token;
-
 
         token.alt =
             "Token di " +
             player.nome;
 
-
         token.title =
             player.nome;
 
-
-        // ----------------------------------------------------
-        // DIMENSIONI
-        // ----------------------------------------------------
 
         const tokenSize =
             Math.min(
@@ -1472,18 +1105,12 @@ function showRemoteToken(
                 cellHeight
             ) * 0.92;
 
-
         token.style.width =
             `${tokenSize}px`;
-
 
         token.style.height =
             `${tokenSize}px`;
 
-
-        // ----------------------------------------------------
-        // POSIZIONE
-        // ----------------------------------------------------
 
         const centerX =
             (
@@ -1492,7 +1119,6 @@ function showRemoteToken(
             ) *
             cellWidth;
 
-
         const centerY =
             (
                 player.y +
@@ -1500,11 +1126,9 @@ function showRemoteToken(
             ) *
             cellHeight;
 
-
         const offsetX =
             mapRect.left -
             containerRect.left;
-
 
         const offsetY =
             mapRect.top -
@@ -1518,13 +1142,25 @@ function showRemoteToken(
                 tokenSize / 2
             }px`;
 
-
         token.style.top =
             `${
                 offsetY +
                 centerY -
                 tokenSize / 2
             }px`;
+
+
+        // ----------------------------------------------------
+        // NEBBIA
+        // ----------------------------------------------------
+
+        token.style.display =
+            isCellCurrentlyVisible(
+                player.x,
+                player.y
+            )
+                ? "block"
+                : "none";
 
 
     } catch (error) {
@@ -1540,7 +1176,7 @@ function showRemoteToken(
 
 
 // ============================================================
-// INVIA STATO PERSONAGGIO
+// BROADCAST STATO
 // ============================================================
 
 function broadcastMyState() {
@@ -1554,7 +1190,6 @@ function broadcastMyState() {
         return;
 
     }
-
 
     dungeonChannel.send({
 
@@ -1594,7 +1229,7 @@ function broadcastMyState() {
 
 
 // ============================================================
-// INVIA MOVIMENTO
+// BROADCAST MOVIMENTO
 // ============================================================
 
 function broadcastMovement() {
@@ -1608,7 +1243,6 @@ function broadcastMovement() {
         return;
 
     }
-
 
     dungeonChannel.send({
 
@@ -1648,6 +1282,60 @@ function broadcastMovement() {
 
 
 // ============================================================
+// VALORE CELLA DUNGEON
+// ============================================================
+
+function getDungeonCellValue(
+    x,
+    y
+) {
+
+    if (
+        !dungeonData ||
+        x < 0 ||
+        y < 0 ||
+        x >= MAP_COLUMNS ||
+        y >= MAP_ROWS
+    ) {
+
+        return null;
+
+    }
+
+    const jsonX =
+        x +
+        GRID_OFFSET_X;
+
+    const jsonY =
+        y +
+        GRID_OFFSET_Y;
+
+    if (
+        !dungeonData.cells[jsonY] ||
+        dungeonData.cells[jsonY][jsonX] ===
+        undefined
+    ) {
+
+        return null;
+
+    }
+
+    const value =
+        Number(
+            dungeonData
+                .cells[jsonY][jsonX]
+        );
+
+    return Number.isFinite(
+        value
+    )
+        ? value
+        : null;
+
+}
+
+
+// ============================================================
 // CONTROLLO CELLA PERCORRIBILE
 // ============================================================
 
@@ -1656,112 +1344,55 @@ function isWalkable(
     y
 ) {
 
-    if (!dungeonData) {
-
-        return false;
-
-    }
-
-
-    if (
-        x < 0 ||
-        y < 0 ||
-        x >= MAP_COLUMNS ||
-        y >= MAP_ROWS
-    ) {
-
-        return false;
-
-    }
-
-
-    // --------------------------------------------------------
-    // MAPPA -> JSON
-    // --------------------------------------------------------
-
-    const jsonX =
-        x +
-        GRID_OFFSET_X;
-
-
-    const jsonY =
-        y +
-        GRID_OFFSET_Y;
-
-
-    if (
-        !dungeonData.cells[jsonY] ||
-        dungeonData.cells[jsonY][jsonX] ===
-        undefined
-    ) {
-
-        return false;
-
-    }
-
-
     const value =
-        Number(
-            dungeonData
-                .cells[jsonY][jsonX]
+        getDungeonCellValue(
+            x,
+            y
         );
 
-
     if (
-        !Number.isFinite(
-            value
-        )
+        value === null
     ) {
 
         return false;
 
     }
-
 
     const bits =
         dungeonData.cell_bit ||
         {};
 
-
     const ROOM =
         bits.room ||
         2;
-
 
     const CORRIDOR =
         bits.corridor ||
         4;
 
-
     const APERTURE =
         bits.aperture ||
         32;
-
 
     const ARCH =
         bits.arch ||
         65536;
 
-
     const DOOR =
         bits.door ||
         131072;
-
 
     const PORTCULLIS =
         bits.portcullis ||
         2097152;
 
-
     const STAIR_DOWN =
         bits.stair_down ||
         4194304;
 
-
     const STAIR_UP =
         bits.stair_up ||
         8388608;
-
 
     return (
 
@@ -1796,24 +1427,20 @@ function setupMovement() {
         "Movimento attivato."
     );
 
-
     document.addEventListener(
         "keydown",
         handleMovementKey
     );
-
 
     const image =
         document.getElementById(
             "dungeon-image"
         );
 
-
     if (image) {
 
         image.style.cursor =
             "pointer";
-
 
         image.addEventListener(
             "click",
@@ -1836,10 +1463,6 @@ function handleMovementKey(
     const activeElement =
         document.activeElement;
 
-
-    // Se stiamo scrivendo nelle note,
-    // non muovere il personaggio.
-
     if (
         activeElement &&
         (
@@ -1855,10 +1478,8 @@ function handleMovementKey(
 
     }
 
-
     let dx = 0;
     let dy = 0;
-
 
     switch (
         event.key.toLowerCase()
@@ -1902,9 +1523,7 @@ function handleMovementKey(
 
     }
 
-
     event.preventDefault();
-
 
     movePlayer(
         dx,
@@ -1931,12 +1550,10 @@ function handleMapClick(
 
     }
 
-
     const image =
         document.getElementById(
             "dungeon-image"
         );
-
 
     if (!image) {
 
@@ -1944,71 +1561,52 @@ function handleMapClick(
 
     }
 
-
     const rect =
         image.getBoundingClientRect();
-
 
     const cellWidth =
         rect.width /
         MAP_COLUMNS;
 
-
     const cellHeight =
         rect.height /
         MAP_ROWS;
 
-
-    const clickX =
-        event.clientX -
-        rect.left;
-
-
-    const clickY =
-        event.clientY -
-        rect.top;
-
-
     const targetX =
         Math.floor(
-            clickX /
+            (
+                event.clientX -
+                rect.left
+            ) /
             cellWidth
         );
 
-
     const targetY =
         Math.floor(
-            clickY /
+            (
+                event.clientY -
+                rect.top
+            ) /
             cellHeight
         );
-
 
     const dx =
         targetX -
         playerX;
 
-
     const dy =
         targetY -
         playerY;
 
-
-    // Solo movimento ortogonale
-    // verso una casella adiacente.
-
-    const distance =
-        Math.abs(dx) +
-        Math.abs(dy);
-
-
     if (
-        distance !== 1
+        Math.abs(dx) +
+        Math.abs(dy) !==
+        1
     ) {
 
         return;
 
     }
-
 
     movePlayer(
         dx,
@@ -2027,14 +1625,8 @@ async function movePlayer(
     dy
 ) {
 
-    if (movementLocked) {
-
-        return;
-
-    }
-
-
     if (
+        movementLocked ||
         playerX === null ||
         playerY === null
     ) {
@@ -2043,20 +1635,14 @@ async function movePlayer(
 
     }
 
-
     const targetX =
         playerX +
         dx;
-
 
     const targetY =
         playerY +
         dy;
 
-
-    // --------------------------------------------------------
-    // MURO
-    // --------------------------------------------------------
 
     if (
         !isWalkable(
@@ -2069,7 +1655,6 @@ async function movePlayer(
             "Non puoi andare in quella direzione."
         );
 
-
         return;
 
     }
@@ -2078,22 +1663,15 @@ async function movePlayer(
     movementLocked =
         true;
 
-
     const previousX =
         playerX;
-
 
     const previousY =
         playerY;
 
 
-    // --------------------------------------------------------
-    // MOVIMENTO LOCALE
-    // --------------------------------------------------------
-
     playerX =
         targetX;
-
 
     playerY =
         targetY;
@@ -2105,20 +1683,13 @@ async function movePlayer(
     );
 
 
-    // --------------------------------------------------------
-    // MULTIPLAYER
-    // --------------------------------------------------------
-    //
-    // Gli altri giocatori vedono immediatamente
-    // il movimento.
-    //
+    // Aggiorna immediatamente la visuale.
+
+    updateFogOfWar();
+
 
     broadcastMovement();
 
-
-    // --------------------------------------------------------
-    // DATABASE
-    // --------------------------------------------------------
 
     const success =
         await savePlayerPosition();
@@ -2129,30 +1700,24 @@ async function movePlayer(
         playerX =
             previousX;
 
-
         playerY =
             previousY;
-
 
         showToken(
             playerX,
             playerY
         );
 
-
-        // Comunica agli altri che siamo tornati indietro.
+        updateFogOfWar();
 
         broadcastMovement();
-
 
         setMessage(
             "Errore durante il salvataggio della posizione."
         );
 
-
         movementLocked =
             false;
-
 
         return;
 
@@ -2162,16 +1727,12 @@ async function movePlayer(
     character.dungeon_x =
         playerX;
 
-
     character.dungeon_y =
         playerY;
 
 
     setMessage(
-        "Posizione: X " +
-        playerX +
-        " • Y " +
-        playerY
+        `Posizione: X ${playerX} • Y ${playerY}`
     );
 
 
@@ -2212,7 +1773,6 @@ async function savePlayerPosition() {
                     character.id
                 );
 
-
         if (error) {
 
             console.error(
@@ -2220,11 +1780,9 @@ async function savePlayerPosition() {
                 error
             );
 
-
             return false;
 
         }
-
 
         return true;
 
@@ -2235,7 +1793,6 @@ async function savePlayerPosition() {
             "Errore salvataggio posizione:",
             error
         );
-
 
         return false;
 
@@ -2255,7 +1812,6 @@ function getMapContainer() {
             "dungeon-image"
         );
 
-
     if (!image) {
 
         throw new Error(
@@ -2264,12 +1820,10 @@ function getMapContainer() {
 
     }
 
-
     const container =
         document.getElementById(
             "dungeon-map"
         );
-
 
     if (!container) {
 
@@ -2279,12 +1833,10 @@ function getMapContainer() {
 
     }
 
-
     const style =
         window.getComputedStyle(
             container
         );
-
 
     if (
         style.position ===
@@ -2295,7 +1847,6 @@ function getMapContainer() {
             "relative";
 
     }
-
 
     return {
 
@@ -2308,7 +1859,7 @@ function getMapContainer() {
 
 
 // ============================================================
-// MOSTRA TOKEN PERSONALE
+// TOKEN PERSONALE
 // ============================================================
 
 function showToken(
@@ -2338,15 +1889,12 @@ function showToken(
         const mapRect =
             image.getBoundingClientRect();
 
-
         const containerRect =
             container.getBoundingClientRect();
-
 
         const cellWidth =
             mapRect.width /
             MAP_COLUMNS;
-
 
         const cellHeight =
             mapRect.height /
@@ -2358,7 +1906,6 @@ function showToken(
                 "img"
             );
 
-
         token.className =
             "dungeon-player-token";
 
@@ -2367,11 +1914,9 @@ function showToken(
             character.token ||
             "token_1.png";
 
-
         token.src =
             "immagini/token/" +
             tokenFile;
-
 
         token.alt =
             "Token di " +
@@ -2379,7 +1924,6 @@ function showToken(
                 character.nome ||
                 "personaggio"
             );
-
 
         token.title =
             character.nome ||
@@ -2396,29 +1940,20 @@ function showToken(
         token.style.position =
             "absolute";
 
-
         token.style.width =
             `${tokenSize}px`;
-
 
         token.style.height =
             `${tokenSize}px`;
 
-
         token.style.objectFit =
             "contain";
-
 
         token.style.boxSizing =
             "border-box";
 
-
-        // Il proprio token rimane sopra
-        // quelli degli altri.
-
         token.style.zIndex =
             "100";
-
 
         token.style.pointerEvents =
             "none";
@@ -2431,7 +1966,6 @@ function showToken(
             ) *
             cellWidth;
 
-
         const centerY =
             (
                 y +
@@ -2439,11 +1973,9 @@ function showToken(
             ) *
             cellHeight;
 
-
         const offsetX =
             mapRect.left -
             containerRect.left;
-
 
         const offsetY =
             mapRect.top -
@@ -2456,7 +1988,6 @@ function showToken(
                 centerX -
                 tokenSize / 2
             }px`;
-
 
         token.style.top =
             `${
@@ -2482,12 +2013,958 @@ function showToken(
             error
         );
 
-
         showError(
             "Errore nella visualizzazione del personaggio."
         );
 
     }
+
+}
+
+
+// ============================================================
+// NEBBIA DI GUERRA - INIZIALIZZAZIONE
+// ============================================================
+
+function setupFogOfWar() {
+
+    loadExploredCellsFromCharacter();
+
+
+    const {
+        image,
+        container
+    } =
+        getMapContainer();
+
+
+    if (!fogCanvas) {
+
+        fogCanvas =
+            document.createElement(
+                "canvas"
+            );
+
+        fogCanvas.className =
+            "dungeon-fog-canvas";
+
+        fogCanvas.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        container.appendChild(
+            fogCanvas
+        );
+
+    }
+
+
+    if (
+        !image.complete
+    ) {
+
+        image.addEventListener(
+            "load",
+            updateFogOfWar,
+            {
+                once: true
+            }
+        );
+
+    }
+
+
+    updateFogOfWar();
+
+}
+
+
+// ============================================================
+// CARICA CELLE GIÀ ESPLORATE
+// ============================================================
+
+function loadExploredCellsFromCharacter() {
+
+    exploredCells.clear();
+
+
+    const stored =
+        character?.fog_explored;
+
+
+    if (
+        !Array.isArray(
+            stored
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    stored.forEach(
+        cell => {
+
+            if (
+                !Array.isArray(cell) ||
+                cell.length < 2
+            ) {
+
+                return;
+
+            }
+
+
+            const x =
+                Number(
+                    cell[0]
+                );
+
+            const y =
+                Number(
+                    cell[1]
+                );
+
+
+            if (
+                Number.isInteger(x) &&
+                Number.isInteger(y) &&
+                x >= 0 &&
+                y >= 0 &&
+                x < MAP_COLUMNS &&
+                y < MAP_ROWS
+            ) {
+
+                exploredCells.add(
+                    fogCellKey(
+                        x,
+                        y
+                    )
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA NEBBIA
+// ============================================================
+
+function updateFogOfWar() {
+
+    if (
+        !dungeonData ||
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    visibleCells =
+        calculateVisibleCells();
+
+
+    let discoveredSomething =
+        false;
+
+
+    for (
+        const key
+        of visibleCells
+    ) {
+
+        if (
+            !exploredCells.has(
+                key
+            )
+        ) {
+
+            exploredCells.add(
+                key
+            );
+
+            discoveredSomething =
+                true;
+
+        }
+
+    }
+
+
+    renderFogOfWar();
+
+    updateRemoteTokensVisibility();
+
+
+    if (
+        discoveredSomething
+    ) {
+
+        queueFogExplorationSave();
+
+    }
+
+}
+
+
+// ============================================================
+// CALCOLA VISIBILITÀ
+// ============================================================
+
+function calculateVisibleCells() {
+
+    const visible =
+        new Set();
+
+
+    const radius =
+        getVisionRadius();
+
+
+    for (
+        let y = 0;
+        y < MAP_ROWS;
+        y++
+    ) {
+
+        for (
+            let x = 0;
+            x < MAP_COLUMNS;
+            x++
+        ) {
+
+            const dx =
+                x -
+                playerX;
+
+            const dy =
+                y -
+                playerY;
+
+
+            // Raggio circolare.
+            // Il valore massimo è il Movimento.
+
+            if (
+                Math.hypot(
+                    dx,
+                    dy
+                ) >
+                radius
+            ) {
+
+                continue;
+
+            }
+
+
+            if (
+                hasLineOfSight(
+                    playerX,
+                    playerY,
+                    x,
+                    y
+                )
+            ) {
+
+                visible.add(
+                    fogCellKey(
+                        x,
+                        y
+                    )
+                );
+
+            }
+
+        }
+
+    }
+
+
+    // La propria casella è sempre visibile.
+
+    visible.add(
+        fogCellKey(
+            playerX,
+            playerY
+        )
+    );
+
+
+    return visible;
+
+}
+
+
+// ============================================================
+// RAGGIO DI VISIONE = MOVIMENTO
+// ============================================================
+
+function getVisionRadius() {
+
+    const destrezza =
+        Number(
+            character?.destrezza
+        ) || 1;
+
+
+    return 4 +
+        Math.ceil(
+            destrezza / 2
+        );
+
+}
+
+
+// ============================================================
+// LINEA DI VISTA
+// ============================================================
+
+function hasLineOfSight(
+    startX,
+    startY,
+    targetX,
+    targetY
+) {
+
+    if (
+        startX === targetX &&
+        startY === targetY
+    ) {
+
+        return true;
+
+    }
+
+
+    const line =
+        getGridLine(
+            startX,
+            startY,
+            targetX,
+            targetY
+        );
+
+
+    /*
+       La casella che contiene il muro o la porta
+       rimane visibile.
+
+       Ciò che si trova DIETRO viene nascosto.
+    */
+
+    for (
+        let i = 1;
+        i < line.length - 1;
+        i++
+    ) {
+
+        const cell =
+            line[i];
+
+
+        if (
+            isVisionBlockingCell(
+                cell.x,
+                cell.y
+            )
+        ) {
+
+            return false;
+
+        }
+
+    }
+
+
+    return true;
+
+}
+
+
+// ============================================================
+// LINEA TRA DUE CASELLE - BRESENHAM
+// ============================================================
+
+function getGridLine(
+    x0,
+    y0,
+    x1,
+    y1
+) {
+
+    const points = [];
+
+
+    let x =
+        x0;
+
+    let y =
+        y0;
+
+
+    const dx =
+        Math.abs(
+            x1 -
+            x0
+        );
+
+    const sx =
+        x0 < x1
+            ? 1
+            : -1;
+
+
+    const dy =
+        -Math.abs(
+            y1 -
+            y0
+        );
+
+    const sy =
+        y0 < y1
+            ? 1
+            : -1;
+
+
+    let error =
+        dx +
+        dy;
+
+
+    while (true) {
+
+        points.push({
+            x,
+            y
+        });
+
+
+        if (
+            x === x1 &&
+            y === y1
+        ) {
+
+            break;
+
+        }
+
+
+        const doubleError =
+            2 *
+            error;
+
+
+        if (
+            doubleError >=
+            dy
+        ) {
+
+            error +=
+                dy;
+
+            x +=
+                sx;
+
+        }
+
+
+        if (
+            doubleError <=
+            dx
+        ) {
+
+            error +=
+                dx;
+
+            y +=
+                sy;
+
+        }
+
+    }
+
+
+    return points;
+
+}
+
+
+// ============================================================
+// CELLE CHE BLOCCANO LA VISTA
+// ============================================================
+
+function isVisionBlockingCell(
+    x,
+    y
+) {
+
+    const value =
+        getDungeonCellValue(
+            x,
+            y
+        );
+
+
+    if (
+        value === null
+    ) {
+
+        return true;
+
+    }
+
+
+    const bits =
+        dungeonData.cell_bit ||
+        {};
+
+
+    // Muro
+
+    const PERIMETER =
+        bits.perimeter ||
+        16;
+
+
+    // Porta
+
+    const DOOR =
+        bits.door ||
+        131072;
+
+
+    // Porta chiusa a chiave
+
+    const LOCKED =
+        bits.locked ||
+        262144;
+
+
+    // Porta segreta / muro segreto
+
+    const SECRET =
+        bits.secret ||
+        1048576;
+
+
+    const PORTCULLIS =
+        bits.portcullis ||
+        2097152;
+
+
+    return (
+
+        (value & PERIMETER) !== 0 ||
+
+        (value & DOOR) !== 0 ||
+
+        (value & LOCKED) !== 0 ||
+
+        (value & SECRET) !== 0 ||
+
+        (value & PORTCULLIS) !== 0
+
+    );
+
+}
+
+
+// ============================================================
+// DISEGNA NEBBIA
+// ============================================================
+
+function renderFogOfWar() {
+
+    if (
+        !fogCanvas
+    ) {
+
+        return;
+
+    }
+
+
+    let image;
+    let container;
+
+
+    try {
+
+        ({
+            image,
+            container
+        } =
+            getMapContainer());
+
+    } catch {
+
+        return;
+
+    }
+
+
+    const mapRect =
+        image.getBoundingClientRect();
+
+
+    const containerRect =
+        container.getBoundingClientRect();
+
+
+    if (
+        mapRect.width <= 0 ||
+        mapRect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const pixelRatio =
+        window.devicePixelRatio ||
+        1;
+
+
+    fogCanvas.style.left =
+        `${
+            mapRect.left -
+            containerRect.left
+        }px`;
+
+
+    fogCanvas.style.top =
+        `${
+            mapRect.top -
+            containerRect.top
+        }px`;
+
+
+    fogCanvas.style.width =
+        `${mapRect.width}px`;
+
+
+    fogCanvas.style.height =
+        `${mapRect.height}px`;
+
+
+    fogCanvas.width =
+        Math.max(
+            1,
+            Math.round(
+                mapRect.width *
+                pixelRatio
+            )
+        );
+
+
+    fogCanvas.height =
+        Math.max(
+            1,
+            Math.round(
+                mapRect.height *
+                pixelRatio
+            )
+        );
+
+
+    const context =
+        fogCanvas.getContext(
+            "2d"
+        );
+
+
+    if (!context) {
+
+        return;
+
+    }
+
+
+    context.setTransform(
+        pixelRatio,
+        0,
+        0,
+        pixelRatio,
+        0,
+        0
+    );
+
+
+    context.clearRect(
+        0,
+        0,
+        mapRect.width,
+        mapRect.height
+    );
+
+
+    const cellWidth =
+        mapRect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        mapRect.height /
+        MAP_ROWS;
+
+
+    for (
+        let y = 0;
+        y < MAP_ROWS;
+        y++
+    ) {
+
+        for (
+            let x = 0;
+            x < MAP_COLUMNS;
+            x++
+        ) {
+
+            const key =
+                fogCellKey(
+                    x,
+                    y
+                );
+
+
+            // --------------------------------------------
+            // VISIBILE ORA
+            // --------------------------------------------
+
+            if (
+                visibleCells.has(
+                    key
+                )
+            ) {
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------
+            // GIÀ ESPLORATA
+            // --------------------------------------------
+
+            if (
+                exploredCells.has(
+                    key
+                )
+            ) {
+
+                context.fillStyle =
+                    "rgba(0, 0, 0, 0.62)";
+
+            }
+
+            // --------------------------------------------
+            // MAI ESPLORATA
+            // --------------------------------------------
+
+            else {
+
+                context.fillStyle =
+                    "rgba(0, 0, 0, 1)";
+
+            }
+
+
+            context.fillRect(
+
+                x *
+                cellWidth -
+                0.5,
+
+                y *
+                cellHeight -
+                0.5,
+
+                cellWidth +
+                1,
+
+                cellHeight +
+                1
+
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CONTROLLO VISIBILITÀ CELLA
+// ============================================================
+
+function isCellCurrentlyVisible(
+    x,
+    y
+) {
+
+    return visibleCells.has(
+        fogCellKey(
+            Number(x),
+            Number(y)
+        )
+    );
+
+}
+
+
+// ============================================================
+// NASCONDI / MOSTRA TOKEN REMOTI
+// ============================================================
+
+function updateRemoteTokensVisibility() {
+
+    for (
+        const [
+            characterId,
+            token
+        ]
+        of otherPlayerTokens
+    ) {
+
+        const player =
+            otherPlayers.get(
+                characterId
+            );
+
+
+        if (!player) {
+
+            token.style.display =
+                "none";
+
+            continue;
+
+        }
+
+
+        token.style.display =
+            isCellCurrentlyVisible(
+                player.x,
+                player.y
+            )
+                ? "block"
+                : "none";
+
+    }
+
+}
+
+
+// ============================================================
+// SALVATAGGIO ESPLORAZIONE
+// ============================================================
+
+function queueFogExplorationSave() {
+
+    const snapshot =
+        Array.from(
+            exploredCells
+        )
+            .map(
+                key =>
+                    key
+                        .split(",")
+                        .map(Number)
+            )
+            .sort(
+                (a, b) =>
+                    a[1] -
+                    b[1] ||
+                    a[0] -
+                    b[0]
+            );
+
+
+    character.fog_explored =
+        snapshot;
+
+
+    /*
+       I salvataggi vengono messi in coda.
+       Così due movimenti veloci non possono
+       sovrascrivere accidentalmente l'esplorazione.
+    */
+
+    fogSavePromise =
+        fogSavePromise
+            .then(
+                async () => {
+
+                    const {
+                        error
+                    } =
+                        await db
+                            .from(
+                                "characters"
+                            )
+                            .update({
+
+                                fog_explored:
+                                    snapshot,
+
+                                updated_at:
+                                    new Date()
+                                        .toISOString()
+
+                            })
+                            .eq(
+                                "id",
+                                character.id
+                            );
+
+
+                    if (error) {
+
+                        console.error(
+                            "Errore salvataggio nebbia di guerra:",
+                            error
+                        );
+
+                    }
+
+                }
+            )
+            .catch(
+                error => {
+
+                    console.error(
+                        "Errore coda salvataggio nebbia:",
+                        error
+                    );
+
+                }
+            );
+
+}
+
+
+// ============================================================
+// CHIAVE CELLA
+// ============================================================
+
+function fogCellKey(
+    x,
+    y
+) {
+
+    return `${x},${y}`;
 
 }
 
@@ -2503,12 +2980,10 @@ function setupFloorChat() {
             "floor-chat-form"
         );
 
-
     const input =
         document.getElementById(
             "floor-chat-input"
         );
-
 
     if (
         !form ||
@@ -2526,27 +3001,23 @@ function setupFloorChat() {
 
             event.preventDefault();
 
-
             await sendFloorChatMessage();
 
         }
     );
 
 
-    // Invio con ENTER.
-    // SHIFT + ENTER continua ad andare a capo.
-
     input.addEventListener(
         "keydown",
         event => {
 
             if (
-                event.key === "Enter" &&
+                event.key ===
+                "Enter" &&
                 !event.shiftKey
             ) {
 
                 event.preventDefault();
-
 
                 form.requestSubmit();
 
@@ -2559,7 +3030,7 @@ function setupFloorChat() {
 
 
 // ============================================================
-// STATO CONNESSIONE CHAT
+// STATO CHAT
 // ============================================================
 
 function setFloorChatConnected(
@@ -2571,12 +3042,10 @@ function setFloorChatConnected(
             "floor-chat-send"
         );
 
-
     const input =
         document.getElementById(
             "floor-chat-input"
         );
-
 
     const status =
         document.getElementById(
@@ -2606,7 +3075,6 @@ function setFloorChatConnected(
             connected
                 ? "Online"
                 : "Disconnessa";
-
 
         status.classList.toggle(
             "is-online",
@@ -2659,7 +3127,8 @@ function updateFloorChatOnlineStatus() {
             .presenceState();
 
 
-    let onlineCount = 0;
+    let onlineCount =
+        0;
 
 
     Object.values(
@@ -2674,7 +3143,9 @@ function updateFloorChatOnlineStatus() {
     );
 
 
-    if (onlineCount <= 0) {
+    if (
+        onlineCount <= 0
+    ) {
 
         status.textContent =
             "Online";
@@ -2693,7 +3164,7 @@ function updateFloorChatOnlineStatus() {
 
 
 // ============================================================
-// INVIA MESSAGGIO CHAT
+// INVIA CHAT
 // ============================================================
 
 async function sendFloorChatMessage() {
@@ -2702,7 +3173,6 @@ async function sendFloorChatMessage() {
         document.getElementById(
             "floor-chat-input"
         );
-
 
     const feedback =
         document.getElementById(
@@ -2744,7 +3214,6 @@ async function sendFloorChatMessage() {
 
         }
 
-
         return;
 
     }
@@ -2753,7 +3222,9 @@ async function sendFloorChatMessage() {
     const payload = {
 
         message_id:
-            `${character.id}-${Date.now()}`,
+            `${
+                character.id
+            }-${Date.now()}`,
 
         character_id:
             character.id,
@@ -2766,8 +3237,7 @@ async function sendFloorChatMessage() {
             character.nome ||
             "Avventuriero",
 
-        text:
-            text,
+        text,
 
         sent_at:
             new Date()
@@ -2775,8 +3245,6 @@ async function sendFloorChatMessage() {
 
     };
 
-
-    // Mostra subito il messaggio nel browser locale.
 
     appendFloorChatMessage(
         payload,
@@ -2805,8 +3273,7 @@ async function sendFloorChatMessage() {
             event:
                 "floor-chat",
 
-            payload:
-                payload
+            payload
 
         });
 
@@ -2916,7 +3383,6 @@ function appendFloorChatMessage(
         author
     );
 
-
     meta.appendChild(
         time
     );
@@ -2932,8 +3398,6 @@ function appendFloorChatMessage(
         "floor-chat-message-body";
 
 
-    // textContent evita che un messaggio possa inserire HTML.
-
     body.textContent =
         String(
             data.text ||
@@ -2945,18 +3409,14 @@ function appendFloorChatMessage(
         meta
     );
 
-
     message.appendChild(
         body
     );
-
 
     container.appendChild(
         message
     );
 
-
-    // Limitiamo la chat locale agli ultimi 100 messaggi.
 
     const messages =
         container.querySelectorAll(
@@ -2965,7 +3425,8 @@ function appendFloorChatMessage(
 
 
     if (
-        messages.length > 100
+        messages.length >
+        100
     ) {
 
         messages[0].remove();
@@ -3007,8 +3468,13 @@ function formatFloorChatTime(
     return date.toLocaleTimeString(
         "it-IT",
         {
-            hour: "2-digit",
-            minute: "2-digit"
+
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
+
         }
     );
 
@@ -3026,7 +3492,6 @@ function setupNotes() {
             "character-notes"
         );
 
-
     const saveButton =
         document.getElementById(
             "save-notes-button"
@@ -3043,18 +3508,10 @@ function setupNotes() {
     }
 
 
-    // --------------------------------------------------------
-    // CARICAMENTO
-    // --------------------------------------------------------
-
     textarea.value =
         character.notes ||
         "";
 
-
-    // --------------------------------------------------------
-    // SALVATAGGIO
-    // --------------------------------------------------------
 
     saveButton.addEventListener(
         "click",
@@ -3074,7 +3531,6 @@ async function saveNotes() {
         document.getElementById(
             "character-notes"
         );
-
 
     const message =
         document.getElementById(
@@ -3109,11 +3565,12 @@ async function saveNotes() {
         error
     } =
         await db
-            .from("characters")
+            .from(
+                "characters"
+            )
             .update({
 
-                notes:
-                    notes,
+                notes,
 
                 updated_at:
                     new Date()
@@ -3145,7 +3602,6 @@ async function saveNotes() {
 
         }
 
-
         return;
 
     }
@@ -3165,32 +3621,31 @@ async function saveNotes() {
         message.textContent =
             "Note salvate.";
 
+
+        setTimeout(
+            () => {
+
+                if (
+                    message.textContent ===
+                    "Note salvate."
+                ) {
+
+                    message.textContent =
+                        "";
+
+                }
+
+            },
+            2500
+        );
+
     }
-
-
-    setTimeout(
-        () => {
-
-            if (
-                message &&
-                message.textContent ===
-                "Note salvate."
-            ) {
-
-                message.textContent =
-                    "";
-
-            }
-
-        },
-        2500
-    );
 
 }
 
 
 // ============================================================
-// MESSAGGIO
+// MESSAGGI
 // ============================================================
 
 function setMessage(
@@ -3207,7 +3662,6 @@ function setMessage(
 
         element.textContent =
             text;
-
 
         element.style.color =
             "";
@@ -3241,7 +3695,6 @@ function showError(
         element.textContent =
             text;
 
-
         element.style.color =
             "#d66";
 
@@ -3265,10 +3718,6 @@ if (logoutButton) {
     logoutButton.addEventListener(
         "click",
         async () => {
-
-            // ------------------------------------------------
-            // ABBANDONA PRESENCE
-            // ------------------------------------------------
 
             if (dungeonChannel) {
 
@@ -3311,10 +3760,6 @@ window.addEventListener(
     "resize",
     () => {
 
-        // ----------------------------------------------------
-        // NOSTRO TOKEN
-        // ----------------------------------------------------
-
         if (
             playerX !== null &&
             playerY !== null
@@ -3328,9 +3773,8 @@ window.addEventListener(
         }
 
 
-        // ----------------------------------------------------
-        // TOKEN DEGLI ALTRI
-        // ----------------------------------------------------
+        renderFogOfWar();
+
 
         for (
             const characterId
