@@ -73,6 +73,111 @@ let fogSavePromise =
 
 
 // ============================================================
+// EVENTI DUNGEON
+// ============================================================
+//
+// Le coordinate sono quelle VISIBILI della mappa 23x23.
+//
+// Tipi previsti:
+// - communication
+// - trap
+// - combat
+//
+// Per ora implementiamo le comunicazioni.
+// ============================================================
+
+const DUNGEON_EVENTS = {
+
+    "11,17": {
+
+        id:
+            "stairs_down",
+
+        type:
+            "communication",
+
+        title:
+            "COMUNICAZIONE",
+
+        message:
+            "Queste scale scendono ad un piano inferiore.",
+
+        actions: [
+
+            {
+                id:
+                    "descend",
+
+                label:
+                    "SCENDI LE SCALE",
+
+                primary:
+                    true
+            },
+
+            {
+                id:
+                    "stay",
+
+                label:
+                    "RIMANI QUI",
+
+                primary:
+                    false
+            }
+
+        ]
+
+    },
+
+
+    "15,22": {
+
+        id:
+            "dead_end",
+
+        type:
+            "communication",
+
+        title:
+            "COMUNICAZIONE",
+
+        message:
+            "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì",
+
+        actions: [
+
+            {
+                id:
+                    "close",
+
+                label:
+                    "CHIUDI",
+
+                primary:
+                    true
+            }
+
+        ]
+
+    }
+
+};
+
+
+let activeDungeonEvent =
+    null;
+
+let activeDungeonEventKey =
+    null;
+
+let lastTriggeredDungeonEventKey =
+    null;
+
+let dungeonEventModalOpen =
+    false;
+
+// ============================================================
 // AVVIO
 // ============================================================
 
@@ -509,7 +614,8 @@ async function initializePlayer() {
         );
 
         return;
-
+        
+checkDungeonEventAtCurrentPosition();
     }
 
 
@@ -562,6 +668,7 @@ async function initializePlayer() {
     setMessage(
         "Usa WASD o le frecce per muoverti."
     );
+    checkDungeonEventAtCurrentPosition();
 
 }
 
@@ -1627,6 +1734,7 @@ async function movePlayer(
 
     if (
         movementLocked ||
+        dungeonEventModalOpen ||
         playerX === null ||
         playerY === null
     ) {
@@ -1734,6 +1842,8 @@ async function movePlayer(
     setMessage(
         `Posizione: X ${playerX} • Y ${playerY}`
     );
+
+    checkDungeonEventAtCurrentPosition();
 
 
     movementLocked =
@@ -3820,6 +3930,420 @@ async function saveNotes() {
         );
 
     }
+
+}
+
+// ============================================================
+// EVENTI DUNGEON
+// ============================================================
+
+function getDungeonEventKey(
+    x,
+    y
+) {
+
+    return `${x},${y}`;
+
+}
+
+
+// ============================================================
+// CONTROLLA EVENTO NELLA POSIZIONE ATTUALE
+// ============================================================
+
+function checkDungeonEventAtCurrentPosition() {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    const eventKey =
+        getDungeonEventKey(
+            playerX,
+            playerY
+        );
+
+
+    const dungeonEvent =
+        DUNGEON_EVENTS[
+            eventKey
+        ];
+
+
+    /*
+       Se non siamo più sopra una casella evento,
+       azzeriamo l'ultimo evento.
+
+       In questo modo, se il giocatore esce dalla
+       casella e successivamente ci rientra,
+       l'evento si attiva nuovamente.
+    */
+
+    if (!dungeonEvent) {
+
+        lastTriggeredDungeonEventKey =
+            null;
+
+        return;
+
+    }
+
+
+    /*
+       Impedisce che lo stesso popup continui
+       ad aprirsi mentre il personaggio
+       rimane fermo sulla stessa casella.
+    */
+
+    if (
+        lastTriggeredDungeonEventKey ===
+        eventKey
+    ) {
+
+        return;
+
+    }
+
+
+    lastTriggeredDungeonEventKey =
+        eventKey;
+
+
+    triggerDungeonEvent(
+        dungeonEvent,
+        eventKey
+    );
+
+}
+
+
+// ============================================================
+// ATTIVA EVENTO
+// ============================================================
+
+function triggerDungeonEvent(
+    dungeonEvent,
+    eventKey
+) {
+
+    if (!dungeonEvent) {
+
+        return;
+
+    }
+
+
+    switch (
+        dungeonEvent.type
+    ) {
+
+        // ----------------------------------------------------
+        // COMUNICAZIONE
+        // ----------------------------------------------------
+
+        case "communication":
+
+            openCommunicationEvent(
+                dungeonEvent,
+                eventKey
+            );
+
+            break;
+
+
+        // ----------------------------------------------------
+        // TRAPPOLA
+        // ----------------------------------------------------
+
+        case "trap":
+
+            console.log(
+                "Evento trappola non ancora implementato:",
+                dungeonEvent
+            );
+
+            break;
+
+
+        // ----------------------------------------------------
+        // COMBATTIMENTO
+        // ----------------------------------------------------
+
+        case "combat":
+
+            console.log(
+                "Evento combattimento non ancora implementato:",
+                dungeonEvent
+            );
+
+            break;
+
+
+        // ----------------------------------------------------
+        // TIPO SCONOSCIUTO
+        // ----------------------------------------------------
+
+        default:
+
+            console.warn(
+                "Tipo evento sconosciuto:",
+                dungeonEvent.type
+            );
+
+    }
+
+}
+
+
+// ============================================================
+// APRI COMUNICAZIONE
+// ============================================================
+
+function openCommunicationEvent(
+    dungeonEvent,
+    eventKey
+) {
+
+    const modal =
+        document.getElementById(
+            "dungeon-event-modal"
+        );
+
+
+    const titleElement =
+        document.getElementById(
+            "dungeon-event-title"
+        );
+
+
+    const textElement =
+        document.getElementById(
+            "dungeon-event-text"
+        );
+
+
+    const actionsElement =
+        document.getElementById(
+            "dungeon-event-actions"
+        );
+
+
+    if (
+        !modal ||
+        !titleElement ||
+        !textElement ||
+        !actionsElement
+    ) {
+
+        console.error(
+            "Elementi popup evento non trovati."
+        );
+
+        return;
+
+    }
+
+
+    activeDungeonEvent =
+        dungeonEvent;
+
+    activeDungeonEventKey =
+        eventKey;
+
+    dungeonEventModalOpen =
+        true;
+
+
+    titleElement.textContent =
+        dungeonEvent.title ||
+        "COMUNICAZIONE";
+
+
+    textElement.textContent =
+        dungeonEvent.message ||
+        "";
+
+
+    actionsElement.innerHTML =
+        "";
+
+
+    const actions =
+        Array.isArray(
+            dungeonEvent.actions
+        )
+            ? dungeonEvent.actions
+            : [];
+
+
+    actions.forEach(
+        action => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                action.primary
+                    ? "button"
+                    : "button secondary";
+
+
+            button.textContent =
+                action.label ||
+                "CONTINUA";
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    handleDungeonEventAction(
+                        action.id
+                    );
+
+                }
+            );
+
+
+            actionsElement.appendChild(
+                button
+            );
+
+        }
+    );
+
+
+    modal.hidden =
+        false;
+
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+
+
+// ============================================================
+// AZIONI EVENTO
+// ============================================================
+
+function handleDungeonEventAction(
+    actionId
+) {
+
+    switch (
+        actionId
+    ) {
+
+        // ----------------------------------------------------
+        // SCENDI LE SCALE
+        // ----------------------------------------------------
+
+        case "descend":
+
+            /*
+               Per ora non facciamo realmente
+               cambiare piano al personaggio.
+
+               Qui in futuro collegheremo
+               il sistema dei piani.
+            */
+
+            closeDungeonEventModal();
+
+
+            setMessage(
+                "La discesa al piano inferiore non è ancora disponibile."
+            );
+
+            break;
+
+
+        // ----------------------------------------------------
+        // RIMANI QUI
+        // ----------------------------------------------------
+
+        case "stay":
+
+            closeDungeonEventModal();
+
+
+            setMessage(
+                "Decidi di rimanere su questo piano."
+            );
+
+            break;
+
+
+        // ----------------------------------------------------
+        // CHIUDI
+        // ----------------------------------------------------
+
+        case "close":
+
+            closeDungeonEventModal();
+
+            break;
+
+
+        // ----------------------------------------------------
+        // AZIONE NON RICONOSCIUTA
+        // ----------------------------------------------------
+
+        default:
+
+            closeDungeonEventModal();
+
+    }
+
+}
+
+
+// ============================================================
+// CHIUDI POPUP EVENTO
+// ============================================================
+
+function closeDungeonEventModal() {
+
+    const modal =
+        document.getElementById(
+            "dungeon-event-modal"
+        );
+
+
+    if (modal) {
+
+        modal.hidden =
+            true;
+
+    }
+
+
+    document.body.style.overflow =
+        "";
+
+
+    dungeonEventModalOpen =
+        false;
+
+    activeDungeonEvent =
+        null;
+
+    activeDungeonEventKey =
+        null;
 
 }
 
