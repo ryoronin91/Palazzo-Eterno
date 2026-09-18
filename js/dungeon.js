@@ -83,7 +83,6 @@ let fogSavePromise =
 // - trap
 // - combat
 //
-// Per ora implementiamo le comunicazioni.
 // ============================================================
 
 const DUNGEON_EVENTS = {
@@ -206,6 +205,7 @@ const DUNGEON_EVENTS = {
 
 };
 
+
 // ============================================================
 // COOLDOWN TRAPPOLE
 // ============================================================
@@ -225,6 +225,23 @@ const TRAP_COOLDOWN_MS =
     60 *
     60 *
     1000;
+
+
+// ============================================================
+// STATO EVENTI DUNGEON
+// ============================================================
+
+let activeDungeonEvent =
+    null;
+
+let activeDungeonEventKey =
+    null;
+
+let lastTriggeredDungeonEventKey =
+    null;
+
+let dungeonEventModalOpen =
+    false;
 
 
 // ============================================================
@@ -543,21 +560,21 @@ function updateCharacterPanel() {
         );
 
     const maxHealth =
-    Math.ceil(
-        5 *
-        (
-            costituzione / 2
-        )
-    );
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
 
 
-const health =
-    character.current_hp !== null &&
-    character.current_hp !== undefined
-        ? Number(
-            character.current_hp
-        )
-        : maxHealth;
+    const health =
+        character.current_hp !== null &&
+        character.current_hp !== undefined
+            ? Number(
+                character.current_hp
+            )
+            : maxHealth;
 
     const mana =
         5 *
@@ -674,9 +691,10 @@ async function initializePlayer() {
             "Usa WASD o le frecce per muoverti."
         );
 
+        checkDungeonEventAtCurrentPosition();
+
         return;
-        
-checkDungeonEventAtCurrentPosition();
+
     }
 
 
@@ -729,11 +747,10 @@ checkDungeonEventAtCurrentPosition();
     setMessage(
         "Usa WASD o le frecce per muoverti."
     );
+
     checkDungeonEventAtCurrentPosition();
 
 }
-
-
 // ============================================================
 // REALTIME MULTIPLAYER
 // ============================================================
@@ -1583,8 +1600,6 @@ function isWalkable(
     );
 
 }
-
-
 // ============================================================
 // MOVIMENTO
 // ============================================================
@@ -1852,8 +1867,6 @@ async function movePlayer(
     );
 
 
-    // Aggiorna immediatamente la visuale.
-
     updateFogOfWar();
 
 
@@ -1903,6 +1916,7 @@ async function movePlayer(
     setMessage(
         `Posizione: X ${playerX} • Y ${playerY}`
     );
+
 
     checkDungeonEventAtCurrentPosition();
 
@@ -2422,9 +2436,6 @@ function calculateVisibleCells() {
                 playerY;
 
 
-            // Raggio circolare.
-            // Il valore massimo è il Movimento.
-
             if (
                 Math.hypot(
                     dx,
@@ -2460,8 +2471,6 @@ function calculateVisibleCells() {
 
     }
 
-
-    // La propria casella è sempre visibile.
 
     visible.add(
         fogCellKey(
@@ -2526,17 +2535,6 @@ function hasLineOfSight(
         );
 
 
-    /*
-       Controlliamo tutte le celle attraversate
-       tranne:
-
-       - la cella iniziale del giocatore
-       - la cella bersaglio
-
-       In questo modo il muro/porta bersaglio
-       può essere visto, ma non si vede attraverso.
-    */
-
     for (
         let i = 1;
         i < line.length - 1;
@@ -2564,10 +2562,8 @@ function hasLineOfSight(
     return true;
 
 }
-
-
 // ============================================================
-// LINEA TRA DUE CASELLE - BRESENHAM
+// LINEA TRA DUE CASELLE - SUPERCOVER
 // ============================================================
 
 function getGridLine(
@@ -2579,10 +2575,6 @@ function getGridLine(
 
     const cells = [];
 
-
-    // --------------------------------------------------------
-    // AGGIUNGE UNA CELLA EVITANDO DUPLICATI
-    // --------------------------------------------------------
 
     function addCell(
         x,
@@ -2611,11 +2603,8 @@ function getGridLine(
     }
 
 
-    let x =
-        x0;
-
-    let y =
-        y0;
+    let x = x0;
+    let y = y0;
 
 
     addCell(
@@ -2625,37 +2614,24 @@ function getGridLine(
 
 
     const dx =
-        x1 -
-        x0;
-
+        x1 - x0;
 
     const dy =
-        y1 -
-        y0;
+        y1 - y0;
 
 
     const stepX =
-        Math.sign(
-            dx
-        );
-
+        Math.sign(dx);
 
     const stepY =
-        Math.sign(
-            dy
-        );
+        Math.sign(dy);
 
 
     const absDx =
-        Math.abs(
-            dx
-        );
-
+        Math.abs(dx);
 
     const absDy =
-        Math.abs(
-            dy
-        );
+        Math.abs(dy);
 
 
     const tDeltaX =
@@ -2669,11 +2645,6 @@ function getGridLine(
             ? Infinity
             : 1 / absDy;
 
-
-    /*
-       Partiamo dal centro della casella,
-       quindi il primo bordo dista metà cella.
-    */
 
     let tMaxX =
         absDx === 0
@@ -2696,20 +2667,6 @@ function getGridLine(
         y !== y1
     ) {
 
-        // ----------------------------------------------------
-        // ATTRAVERSAMENTO DI UN ANGOLO
-        // ----------------------------------------------------
-        //
-        // Qui sta la correzione fondamentale.
-        //
-        // Se il raggio attraversa esattamente l'angolo
-        // di quattro celle, controlliamo ENTRAMBE
-        // le celle laterali.
-        //
-        // Così la vista non può infilarsi diagonalmente
-        // tra due muri.
-        // ----------------------------------------------------
-
         if (
             Math.abs(
                 tMaxX -
@@ -2719,16 +2676,11 @@ function getGridLine(
         ) {
 
             const sideX =
-                x +
-                stepX;
-
+                x + stepX;
 
             const sideY =
-                y +
-                stepY;
+                y + stepY;
 
-
-            // Cella laterale orizzontale
 
             addCell(
                 sideX,
@@ -2736,19 +2688,14 @@ function getGridLine(
             );
 
 
-            // Cella laterale verticale
-
             addCell(
                 x,
                 sideY
             );
 
 
-            // Cella diagonale
-
             x =
                 sideX;
-
 
             y =
                 sideY;
@@ -2763,7 +2710,6 @@ function getGridLine(
             tMaxX +=
                 tDeltaX;
 
-
             tMaxY +=
                 tDeltaY;
 
@@ -2773,10 +2719,6 @@ function getGridLine(
         }
 
 
-        // ----------------------------------------------------
-        // ATTRAVERSA BORDO VERTICALE
-        // ----------------------------------------------------
-
         if (
             tMaxX <
             tMaxY
@@ -2784,7 +2726,6 @@ function getGridLine(
 
             x +=
                 stepX;
-
 
             tMaxX +=
                 tDeltaX;
@@ -2801,13 +2742,8 @@ function getGridLine(
         }
 
 
-        // ----------------------------------------------------
-        // ATTRAVERSA BORDO ORIZZONTALE
-        // ----------------------------------------------------
-
         y +=
             stepY;
-
 
         tMaxY +=
             tDeltaY;
@@ -2825,6 +2761,7 @@ function getGridLine(
 
 }
 
+
 // ============================================================
 // CELLE CHE BLOCCANO LA VISTA
 // ============================================================
@@ -2841,9 +2778,6 @@ function isVisionBlockingCell(
         );
 
 
-    // Fuori dalla mappa / cella inesistente
-    // blocca sempre la visuale.
-
     if (
         value === null
     ) {
@@ -2858,16 +2792,6 @@ function isVisionBlockingCell(
         {};
 
 
-    // --------------------------------------------------------
-    // SPAZIO VUOTO / NERO
-    // --------------------------------------------------------
-    //
-    // Nel dungeon.json molte zone nere non sono "perimeter":
-    // hanno semplicemente valore 0.
-    //
-    // Devono quindi bloccare la visuale.
-    // --------------------------------------------------------
-
     if (
         value === 0
     ) {
@@ -2877,34 +2801,25 @@ function isVisionBlockingCell(
     }
 
 
-    // --------------------------------------------------------
-    // BIT CHE BLOCCANO LA VISUALE
-    // --------------------------------------------------------
-
     const BLOCK =
         bits.block ||
         1;
-
 
     const PERIMETER =
         bits.perimeter ||
         16;
 
-
     const DOOR =
         bits.door ||
         131072;
-
 
     const LOCKED =
         bits.locked ||
         262144;
 
-
     const SECRET =
         bits.secret ||
         1048576;
-
 
     const PORTCULLIS =
         bits.portcullis ||
@@ -2936,9 +2851,7 @@ function isVisionBlockingCell(
 
 function renderFogOfWar() {
 
-    if (
-        !fogCanvas
-    ) {
+    if (!fogCanvas) {
 
         return;
 
@@ -2966,7 +2879,6 @@ function renderFogOfWar() {
 
     const mapRect =
         image.getBoundingClientRect();
-
 
     const containerRect =
         container.getBoundingClientRect();
@@ -3003,7 +2915,6 @@ function renderFogOfWar() {
 
     fogCanvas.style.width =
         `${mapRect.width}px`;
-
 
     fogCanvas.style.height =
         `${mapRect.height}px`;
@@ -3064,7 +2975,6 @@ function renderFogOfWar() {
         mapRect.width /
         MAP_COLUMNS;
 
-
     const cellHeight =
         mapRect.height /
         MAP_ROWS;
@@ -3089,10 +2999,6 @@ function renderFogOfWar() {
                 );
 
 
-            // --------------------------------------------
-            // VISIBILE ORA
-            // --------------------------------------------
-
             if (
                 visibleCells.has(
                     key
@@ -3104,10 +3010,6 @@ function renderFogOfWar() {
             }
 
 
-            // --------------------------------------------
-            // GIÀ ESPLORATA
-            // --------------------------------------------
-
             if (
                 exploredCells.has(
                     key
@@ -3117,13 +3019,7 @@ function renderFogOfWar() {
                 context.fillStyle =
                     "rgba(0, 0, 0, 0.62)";
 
-            }
-
-            // --------------------------------------------
-            // MAI ESPLORATA
-            // --------------------------------------------
-
-            else {
+            } else {
 
                 context.fillStyle =
                     "rgba(0, 0, 0, 1)";
@@ -3176,7 +3072,7 @@ function isCellCurrentlyVisible(
 
 
 // ============================================================
-// NASCONDI / MOSTRA TOKEN REMOTI
+// VISIBILITÀ TOKEN REMOTI
 // ============================================================
 
 function updateRemoteTokensVisibility() {
@@ -3246,12 +3142,6 @@ function queueFogExplorationSave() {
     character.fog_explored =
         snapshot;
 
-
-    /*
-       I salvataggi vengono messi in coda.
-       Così due movimenti veloci non possono
-       sovrascrivere accidentalmente l'esplorazione.
-    */
 
     fogSavePromise =
         fogSavePromise
@@ -3335,6 +3225,7 @@ function setupFloorChat() {
         document.getElementById(
             "floor-chat-input"
         );
+
 
     if (
         !form ||
@@ -3426,6 +3317,7 @@ function setFloorChatConnected(
             connected
                 ? "Online"
                 : "Disconnessa";
+
 
         status.classList.toggle(
             "is-online",
@@ -3994,6 +3886,7 @@ async function saveNotes() {
 
 }
 
+
 // ============================================================
 // EVENTI DUNGEON
 // ============================================================
@@ -4037,15 +3930,6 @@ function checkDungeonEventAtCurrentPosition() {
         ];
 
 
-    /*
-       Se non siamo più sopra una casella evento,
-       azzeriamo l'ultimo evento.
-
-       In questo modo, se il giocatore esce dalla
-       casella e successivamente ci rientra,
-       l'evento si attiva nuovamente.
-    */
-
     if (!dungeonEvent) {
 
         lastTriggeredDungeonEventKey =
@@ -4055,12 +3939,6 @@ function checkDungeonEventAtCurrentPosition() {
 
     }
 
-
-    /*
-       Impedisce che lo stesso popup continui
-       ad aprirsi mentre il personaggio
-       rimane fermo sulla stessa casella.
-    */
 
     if (
         lastTriggeredDungeonEventKey ===
@@ -4104,10 +3982,6 @@ function triggerDungeonEvent(
         dungeonEvent.type
     ) {
 
-        // ----------------------------------------------------
-        // COMUNICAZIONE
-        // ----------------------------------------------------
-
         case "communication":
 
             openCommunicationEvent(
@@ -4118,23 +3992,15 @@ function triggerDungeonEvent(
             break;
 
 
-        // ----------------------------------------------------
-        // TRAPPOLA
-        // ----------------------------------------------------
-
         case "trap":
 
-    triggerTrapEvent(
-        dungeonEvent,
-        eventKey
-    );
+            triggerTrapEvent(
+                dungeonEvent,
+                eventKey
+            );
 
-    break;
+            break;
 
-
-        // ----------------------------------------------------
-        // COMBATTIMENTO
-        // ----------------------------------------------------
 
         case "combat":
 
@@ -4146,10 +4012,6 @@ function triggerDungeonEvent(
             break;
 
 
-        // ----------------------------------------------------
-        // TIPO SCONOSCIUTO
-        // ----------------------------------------------------
-
         default:
 
             console.warn(
@@ -4160,6 +4022,7 @@ function triggerDungeonEvent(
     }
 
 }
+
 
 // ============================================================
 // TRAPPOLA
@@ -4181,32 +4044,20 @@ async function triggerTrapEvent(
 
 
     /*
-       Il cooldown è già predisposto.
-
-       Durante i test:
-       TRAP_COOLDOWN_ENABLED = false
-
-       quindi entriamo sempre qui.
+       Il sistema di cooldown è predisposto,
+       ma durante i test è disattivato.
     */
 
     if (
         TRAP_COOLDOWN_ENABLED
     ) {
 
-        /*
-           La gestione globale del timer
-           verrà collegata qui in seguito.
-        */
-
         console.log(
-            "Cooldown trappole predisposto ma non ancora attivo."
+            "Cooldown trappole predisposto: verrà collegato in seguito."
         );
 
     }
 
-
-    // Blocchiamo il movimento mentre
-    // risolviamo la trappola.
 
     dungeonEventModalOpen =
         true;
@@ -4235,24 +4086,20 @@ async function triggerTrapEvent(
 
 
     // ========================================================
-    // TIRO 1D10
+    // TIRO 1D10 - LCK
     // ========================================================
 
     const diceRoll =
         Math.floor(
-            Math.random() * 10
+            Math.random() *
+            10
         ) + 1;
 
-
-    // 1d10 - LCK
 
     const trapResult =
         diceRoll -
         fortuna;
 
-
-    // Il risultato può anche diventare negativo.
-    // Ai fini del danno non cambia nulla.
 
     const damage =
         Math.max(
@@ -4263,7 +4110,7 @@ async function triggerTrapEvent(
 
 
     // ========================================================
-    // VITA MASSIMA
+    // VITA
     // ========================================================
 
     const costituzione =
@@ -4276,14 +4123,11 @@ async function triggerTrapEvent(
         Math.ceil(
             5 *
             (
-                costituzione / 2
+                costituzione /
+                2
             )
         );
 
-
-    // ========================================================
-    // VITA ATTUALE
-    // ========================================================
 
     const oldHealth =
         character.current_hp !== null &&
@@ -4303,7 +4147,7 @@ async function triggerTrapEvent(
 
 
     // ========================================================
-    // SALVATAGGIO DANNO
+    // SALVA DANNO
     // ========================================================
 
     if (
@@ -4357,19 +4201,37 @@ async function triggerTrapEvent(
     }
 
 
-    // Aggiorna il personaggio locale.
-
     character.current_hp =
         newHealth;
 
-
-    // Aggiorna subito la Vita
-    // mostrata nel pannello.
 
     setText(
         "health-display",
         newHealth
     );
+
+
+    // ========================================================
+    // APRE IL POPUP
+    // ========================================================
+
+    openTrapEvent(
+        dungeonEvent,
+        {
+            diceRoll,
+            fortuna,
+            trapResult,
+            defenseStatName,
+            defenseValue,
+            damage,
+            oldHealth,
+            newHealth
+        },
+        eventKey
+    );
+
+}
+
 
 // ============================================================
 // POPUP TRAPPOLA
@@ -4438,13 +4300,12 @@ function openTrapEvent(
     titleElement.textContent =
         "TRAPPOLA";
 
-
     titleElement.style.display =
         "block";
 
 
     // ========================================================
-    // NOME STATISTICA DIFENSIVA
+    // STATISTICA DIFENSIVA
     // ========================================================
 
     let defenseLabel =
@@ -4475,7 +4336,7 @@ function openTrapEvent(
 
 
     // ========================================================
-    // TESTO
+    // TESTO RISULTATO
     // ========================================================
 
     let resultText =
@@ -4507,10 +4368,10 @@ function openTrapEvent(
     ) {
 
         resultText +=
-            `SUBISCI ${result.damage} DANN${
+            `SUBISCI ${result.damage} ${
                 result.damage === 1
-                    ? "O"
-                    : "I"
+                    ? "DANNO"
+                    : "DANNI"
             }`;
 
 
@@ -4541,14 +4402,12 @@ function openTrapEvent(
         resultText;
 
 
-    // Mantiene gli a capo.
-
     textElement.style.whiteSpace =
         "pre-line";
 
 
     // ========================================================
-    // PULSANTE
+    // PULSANTE CONTINUA
     // ========================================================
 
     actionsElement.innerHTML =
@@ -4594,26 +4453,6 @@ function openTrapEvent(
 
     document.body.style.overflow =
         "hidden";
-
-}
-    // ========================================================
-    // POPUP
-    // ========================================================
-
-    openTrapEvent(
-        dungeonEvent,
-        {
-            diceRoll,
-            fortuna,
-            trapResult,
-            defenseStatName,
-            defenseValue,
-            damage,
-            oldHealth,
-            newHealth
-        },
-        eventKey
-    );
 
 }
 // ============================================================
@@ -4675,22 +4514,41 @@ function openCommunicationEvent(
         true;
 
 
-const popupTitle =
-    dungeonEvent.title || "";
+    // ========================================================
+    // TITOLO
+    // ========================================================
 
-titleElement.textContent =
-    popupTitle;
+    const popupTitle =
+        dungeonEvent.title ||
+        "";
 
-titleElement.style.display =
-    popupTitle
-        ? "block"
-        : "none";
 
+    titleElement.textContent =
+        popupTitle;
+
+
+    titleElement.style.display =
+        popupTitle
+            ? "block"
+            : "none";
+
+
+    // ========================================================
+    // TESTO
+    // ========================================================
 
     textElement.textContent =
         dungeonEvent.message ||
         "";
 
+
+    textElement.style.whiteSpace =
+        "pre-line";
+
+
+    // ========================================================
+    // AZIONI
+    // ========================================================
 
     actionsElement.innerHTML =
         "";
@@ -4776,14 +4634,6 @@ function handleDungeonEventAction(
 
         case "descend":
 
-            /*
-               Per ora non facciamo realmente
-               cambiare piano al personaggio.
-
-               Qui in futuro collegheremo
-               il sistema dei piani.
-            */
-
             closeDungeonEventModal();
 
 
@@ -4861,8 +4711,10 @@ function closeDungeonEventModal() {
     dungeonEventModalOpen =
         false;
 
+
     activeDungeonEvent =
         null;
+
 
     activeDungeonEventKey =
         null;
@@ -4888,6 +4740,7 @@ function setMessage(
 
         element.textContent =
             text;
+
 
         element.style.color =
             "";
@@ -4920,6 +4773,7 @@ function showError(
 
         element.textContent =
             text;
+
 
         element.style.color =
             "#d66";
