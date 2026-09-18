@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Master - Palazzo Eterno</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/master.css?v=1"
+    >
+
+</head>
+
+
+<body>
+
+    <main class="master-page">
+
+
+        <!-- ==================================================
+             HEADER
+        =================================================== -->
+
+        <header class="master-header">
+
+            <div>
+
+                <span class="master-label">
+                    MODALITÀ MASTER
+                </span>
+
+                <h1>
+                    PALAZZO ETERNO
+                </h1>
+
+                <p>
+                    Visuale completa del piano
+                </p>
+
+            </div>
+
+
+            <div class="master-header-actions">
+
+                <a
+                    href="scheda.html"
+                    class="button secondary"
+                >
+                    TORNA ALLA SCHEDA
+                </a>
+
+
+                <button
+                    id="logout-button"
+                    type="button"
+                    class="button secondary"
+                >
+                    ESCI
+                </button>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ==================================================
+             AREA PRINCIPALE
+        =================================================== -->
+
+        <section class="master-layout">
+
+
+            <!-- ==================================================
+                 GIOCATORI ONLINE
+            =================================================== -->
+
+            <aside class="master-players-panel">
+
+                <div class="master-panel-header">
+
+                    <span class="panel-label">
+                        PRESENZE
+                    </span>
+
+                    <h2>
+                        GIOCATORI ONLINE
+                    </h2>
+
+                    <div
+                        id="master-online-count"
+                        class="master-online-count"
+                    >
+                        Connessione...
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="master-player-list"
+                    class="master-player-list"
+                >
+
+                    <div class="master-player-empty">
+                        Nessun giocatore collegato.
+                    </div>
+
+                </div>
+
+            </aside>
+
+
+
+            <!-- ==================================================
+                 MAPPA
+            =================================================== -->
+
+            <div class="master-map-column">
+
+                <div
+                    id="master-map"
+                    class="master-map"
+                >
+
+                    <img
+                        id="master-map-image"
+                        src="immagini/dungeon-test.png"
+                        alt="Mappa completa del dungeon"
+                    >
+
+                </div>
+
+
+                <div
+                    id="master-message"
+                    class="master-message"
+                >
+                    Connessione al dungeon...
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ==================================================
+             MODALE SCHEDA PERSONAGGIO
+        =================================================== -->
+
+        <div
+            id="master-character-modal"
+            class="master-modal"
+            hidden
+        >
+
+            <div
+                class="master-modal-backdrop"
+                data-close-master-modal
+            ></div>
+
+
+            <section
+                class="master-character-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="master-character-name"
+            >
+
+                <button
+                    id="master-modal-close"
+                    class="master-modal-close"
+                    type="button"
+                    aria-label="Chiudi scheda"
+                >
+                    ×
+                </button>
+
+
+                <div class="master-character-top">
+
+                    <div class="master-character-token-wrapper">
+
+                        <img
+                            id="master-character-token"
+                            class="master-character-token"
+                            src=""
+                            alt=""
+                        >
+
+                    </div>
+
+
+                    <div class="master-character-identity">
+
+                        <span class="panel-label">
+                            PERSONAGGIO
+                        </span>
+
+                        <h2 id="master-character-name">
+                            Caricamento...
+                        </h2>
+
+                        <div
+                            id="master-character-level"
+                            class="master-character-level"
+                        >
+                            Livello 1
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ATTRIBUTI -->
+
+                <h3>
+                    ATTRIBUTI
+                </h3>
+
+                <div class="master-attributes-grid">
+
+                    <div class="master-stat-box">
+                        <span>FOR</span>
+                        <strong id="master-forza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>RES</span>
+                        <strong id="master-resistenza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>COS</span>
+                        <strong id="master-costituzione">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>INT</span>
+                        <strong id="master-intelligenza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>DES</span>
+                        <strong id="master-destrezza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>LCK</span>
+                        <strong id="master-fortuna">1</strong>
+                    </div>
+
+                </div>
+
+
+
+                <!-- STATISTICHE -->
+
+                <h3>
+                    STATISTICHE
+                </h3>
+
+                <div class="master-secondary-grid">
+
+                    <div class="master-secondary-box">
+                        <span>ATTACCO</span>
+                        <strong id="master-attack">1</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>DIFESA</span>
+                        <strong id="master-defense">8</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>VITA</span>
+                        <strong id="master-life">3</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>MANA</span>
+                        <strong id="master-mana">3</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>MOVIMENTO</span>
+                        <strong id="master-movement">5</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>CRITICO</span>
+                        <strong id="master-critical">2%</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="master-character-position">
+
+                    <span>
+                        POSIZIONE
+                    </span>
+
+                    <strong id="master-character-position">
+                        X 0 • Y 0
+                    </strong>
+
+                </div>
+
+
+            </section>
+
+        </div>
+
+
+    </main>
+
+
+
+    <!-- ======================================================
+         SUPABASE
+    ======================================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <!-- ======================================================
+         CONFIG
+    ======================================================= -->
+
+    <script src="js/config.js?v=2"></script>
+
+
+    <!-- ======================================================
+         MASTER
+    ======================================================= -->
+
+    <script src="js/master.js?v=1"></script>
+
+
+</body>
+
+</html>
