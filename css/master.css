@@ -1,0 +1,821 @@
+/* ============================================================
+   PALAZZO ETERNO
+   MASTER.CSS
+   ============================================================ */
+
+
+/* ============================================================
+   PAGINA
+   ============================================================ */
+
+.master-page {
+
+    width: 100%;
+    min-height: 100vh;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.master-header {
+
+    width: 100%;
+    max-width: 1650px;
+
+    margin: 0 auto 18px auto;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+}
+
+
+.master-header h1 {
+
+    margin: 4px 0;
+
+}
+
+
+.master-header p {
+
+    margin: 0;
+
+    opacity: 0.65;
+
+}
+
+
+.master-label {
+
+    font-size: 0.72rem;
+
+    letter-spacing: 0.14em;
+
+    font-weight: 800;
+
+    color: #b88a3b;
+
+}
+
+
+.master-header-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+}
+
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
+.master-layout {
+
+    width: 100%;
+    max-width: 1650px;
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        260px
+        minmax(0, 1fr);
+
+    gap: 20px;
+
+    align-items: start;
+
+}
+
+
+/* ============================================================
+   PANNELLO GIOCATORI
+   ============================================================ */
+
+.master-players-panel {
+
+    width: 100%;
+
+    box-sizing: border-box;
+
+    border-radius: 14px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.38);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045),
+            rgba(0, 0, 0, 0.22)
+        );
+
+    overflow: hidden;
+
+    position: sticky;
+
+    top: 20px;
+
+}
+
+
+.master-panel-header {
+
+    padding: 16px;
+
+    border-bottom:
+        1px solid rgba(184, 138, 59, 0.25);
+
+}
+
+
+.master-panel-header h2 {
+
+    margin:
+        5px
+        0
+        7px;
+
+    font-size: 1rem;
+
+}
+
+
+.master-online-count {
+
+    font-size: 0.76rem;
+
+    opacity: 0.65;
+
+}
+
+
+/* ============================================================
+   LISTA GIOCATORI
+   ============================================================ */
+
+.master-player-list {
+
+    padding: 10px;
+
+}
+
+
+.master-player-empty {
+
+    padding: 15px 8px;
+
+    font-size: 0.8rem;
+
+    opacity: 0.55;
+
+}
+
+
+.master-player-item {
+
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 8px;
+
+    margin-bottom: 7px;
+
+    box-sizing: border-box;
+
+    border-radius: 10px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    color: inherit;
+
+    font: inherit;
+
+    text-align: left;
+
+    cursor: pointer;
+
+}
+
+
+.master-player-item:hover {
+
+    border-color:
+        rgba(184, 138, 59, 0.5);
+
+    background:
+        rgba(184, 138, 59, 0.08);
+
+}
+
+
+.master-player-item img {
+
+    width: 42px;
+    height: 42px;
+
+    object-fit: contain;
+
+    flex: 0 0 auto;
+
+}
+
+
+.master-player-info {
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+
+.master-player-name {
+
+    font-size: 0.85rem;
+
+    font-weight: 700;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+}
+
+
+.master-player-position {
+
+    margin-top: 2px;
+
+    font-size: 0.68rem;
+
+    opacity: 0.55;
+
+}
+
+
+/* ============================================================
+   MAPPA
+   ============================================================ */
+
+.master-map-column {
+
+    min-width: 0;
+
+}
+
+
+.master-map {
+
+    position: relative;
+
+    width: 100%;
+
+    max-width: 1250px;
+
+    margin: 0 auto;
+
+    overflow: hidden;
+
+}
+
+
+#master-map-image {
+
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    max-width: 100%;
+
+    object-fit: contain;
+
+}
+
+
+/* ============================================================
+   TOKEN
+   ============================================================ */
+
+.master-player-token {
+
+    position: absolute;
+
+    z-index: 100;
+
+    object-fit: contain;
+
+    box-sizing: border-box;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.12s ease,
+        filter 0.12s ease;
+
+}
+
+
+.master-player-token:hover {
+
+    transform: scale(1.15);
+
+    filter: brightness(1.2);
+
+    z-index: 110;
+
+}
+
+
+/* ============================================================
+   MESSAGGIO
+   ============================================================ */
+
+.master-message {
+
+    margin-top: 10px;
+
+    text-align: center;
+
+    min-height: 22px;
+
+    font-size: 0.8rem;
+
+    opacity: 0.65;
+
+}
+
+
+/* ============================================================
+   MODALE
+   ============================================================ */
+
+.master-modal {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 1000;
+
+}
+
+
+.master-modal[hidden] {
+
+    display: none;
+
+}
+
+
+.master-modal-backdrop {
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        rgba(0, 0, 0, 0.78);
+
+    backdrop-filter:
+        blur(4px);
+
+}
+
+
+/* ============================================================
+   SCHEDA PERSONAGGIO
+   ============================================================ */
+
+.master-character-card {
+
+    position: relative;
+
+    z-index: 2;
+
+    width: calc(100% - 30px);
+    max-width: 620px;
+
+    max-height: calc(100vh - 40px);
+
+    overflow-y: auto;
+
+    margin: 20px auto;
+
+    padding: 28px;
+
+    box-sizing: border-box;
+
+    border-radius: 18px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.55);
+
+    background:
+        rgba(20, 20, 20, 0.98);
+
+    box-shadow:
+        0
+        18px
+        60px
+        rgba(0, 0, 0, 0.65);
+
+}
+
+
+.master-modal-close {
+
+    position: absolute;
+
+    top: 10px;
+    right: 13px;
+
+    width: 40px;
+    height: 40px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: inherit;
+
+    font-size: 30px;
+
+    cursor: pointer;
+
+    opacity: 0.7;
+
+}
+
+
+.master-modal-close:hover {
+
+    opacity: 1;
+
+}
+
+
+/* ============================================================
+   TESTATA PERSONAGGIO
+   ============================================================ */
+
+.master-character-top {
+
+    display: grid;
+
+    grid-template-columns:
+        130px
+        1fr;
+
+    gap: 22px;
+
+    align-items: center;
+
+    margin-bottom: 26px;
+
+}
+
+
+.master-character-token-wrapper {
+
+    width: 130px;
+    height: 130px;
+
+}
+
+
+.master-character-token {
+
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+}
+
+
+.master-character-identity h2 {
+
+    margin:
+        4px
+        0
+        6px;
+
+    font-size: 2rem;
+
+}
+
+
+.master-character-level {
+
+    opacity: 0.7;
+
+}
+
+
+/* ============================================================
+   ATTRIBUTI
+   ============================================================ */
+
+.master-character-card h3 {
+
+    margin:
+        22px
+        0
+        10px;
+
+    font-size: 0.8rem;
+
+    letter-spacing: 0.1em;
+
+    opacity: 0.7;
+
+}
+
+
+.master-attributes-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(6, 1fr);
+
+    gap: 8px;
+
+}
+
+
+.master-stat-box {
+
+    padding: 10px 5px;
+
+    text-align: center;
+
+    border-radius: 10px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.32);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+}
+
+
+.master-stat-box span {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 0.65rem;
+
+    opacity: 0.6;
+
+}
+
+
+.master-stat-box strong {
+
+    font-size: 1.3rem;
+
+    color: #b88a3b;
+
+}
+
+
+/* ============================================================
+   SECONDARIE
+   ============================================================ */
+
+.master-secondary-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 9px;
+
+}
+
+
+.master-secondary-box {
+
+    padding: 12px;
+
+    text-align: center;
+
+    border-radius: 10px;
+
+    border:
+        1px solid rgba(184, 138, 59, 0.36);
+
+    background:
+        rgba(255, 255, 255, 0.04);
+
+}
+
+
+.master-secondary-box span {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 0.67rem;
+
+    opacity: 0.65;
+
+}
+
+
+.master-secondary-box strong {
+
+    display: block;
+
+    font-size: 1.45rem;
+
+    color: #b88a3b;
+
+}
+
+
+/* ============================================================
+   POSIZIONE
+   ============================================================ */
+
+.master-character-position {
+
+    margin-top: 20px;
+
+    padding-top: 14px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    border-top:
+        1px solid rgba(255, 255, 255, 0.08);
+
+    font-size: 0.8rem;
+
+}
+
+
+.master-character-position span {
+
+    opacity: 0.55;
+
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+    .master-layout {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .master-players-panel {
+
+        position: relative;
+
+        top: auto;
+
+    }
+
+
+    .master-player-list {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        gap: 8px;
+
+    }
+
+
+    .master-player-item {
+
+        margin: 0;
+
+    }
+
+}
+
+
+/* ============================================================
+   TELEFONO
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+    .master-page {
+
+        padding: 10px;
+
+    }
+
+
+    .master-header {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+    }
+
+
+    .master-player-list {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .master-character-card {
+
+        padding:
+            24px
+            16px;
+
+    }
+
+
+    .master-character-top {
+
+        grid-template-columns: 1fr;
+
+        text-align: center;
+
+    }
+
+
+    .master-character-token-wrapper {
+
+        margin: 0 auto;
+
+    }
+
+
+    .master-attributes-grid {
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+    }
+
+
+    .master-secondary-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
