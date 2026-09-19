@@ -1370,9 +1370,11 @@ let combatMoveInProgress =
     false;
 
 
-async function moveCombatPlayer(
-    dx,
-    dy
+window.moveCombatPlayer =
+    async function (
+        dx,
+        dy
+    ) {
 ) {
 
     if (
@@ -1597,10 +1599,10 @@ document.addEventListener(
         event.preventDefault();
 
 
-        await moveCombatPlayer(
-            dx,
-            dy
-        );
+        await window.moveCombatPlayer(
+    dx,
+    dy
+);
 
     }
 );
