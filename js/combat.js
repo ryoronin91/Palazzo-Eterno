@@ -31,6 +31,8 @@ let currentCharacter =
 let currentRole =
     "player";
 
+let masterObserverMode =
+    false;
 
 let combatId =
     null;
@@ -58,8 +60,11 @@ document.addEventListener(
 
             await loadCurrentRole();
 
-            combatId =
-                getCombatIdFromUrl();
+masterObserverMode =
+    getMasterObserverModeFromUrl();
+
+combatId =
+    getCombatIdFromUrl();
 
 
             if (!combatId) {
@@ -192,7 +197,26 @@ function getCombatIdFromUrl() {
 
 }
 
+// ============================================================
+// MODALITÀ MASTER DALL'URL
+// ============================================================
 
+function getMasterObserverModeFromUrl() {
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    return (
+        params.get(
+            "mode"
+        ) ===
+        "master"
+    );
+
+}
 // ============================================================
 // PERSONAGGIO CORRENTE
 // ============================================================
@@ -200,13 +224,12 @@ function getCombatIdFromUrl() {
 async function loadCurrentCharacter() {
 
     if (
-        currentRole ===
-        "master"
-    ) {
+    masterObserverMode
+) {
 
-        return;
+    return;
 
-    }
+}
 
 
     const {
@@ -733,8 +756,7 @@ function updateCombatMode() {
 
     badge.classList.toggle(
         "visible",
-        currentRole ===
-        "master"
+        masterObserverMode
     );
 
 }
