@@ -1375,7 +1375,6 @@ window.moveCombatPlayer =
         dx,
         dy
     ) {
-) {
 
     if (
         combatMoveInProgress ||
