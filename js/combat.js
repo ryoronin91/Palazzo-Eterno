@@ -1362,6 +1362,249 @@ window.addEventListener(
     }
 );
 
+// ============================================================
+// MOVIMENTO PLAYER
+// ============================================================
+
+let combatMoveInProgress =
+    false;
+
+
+async function moveCombatPlayer(
+    dx,
+    dy
+) {
+
+    if (
+        combatMoveInProgress ||
+        masterObserverMode ||
+        !currentCharacter ||
+        !combatSession ||
+        combatSession.status !== "active"
+    ) {
+
+        return;
+
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    if (
+        !currentEntity ||
+        currentEntity.entity_type !== "player" ||
+        currentEntity.character_id !== currentCharacter.id
+    ) {
+
+        return;
+
+    }
+
+
+    combatMoveInProgress =
+        true;
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "move_combat_player",
+                {
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id,
+
+                    p_dx:
+                        dx,
+
+                    p_dy:
+                        dy
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (!data) {
+
+            console.log(
+                "Movimento non consentito."
+            );
+
+            return;
+
+        }
+
+
+        await loadCombatEntities();
+
+        renderCombatTokens();
+
+        renderCombatEntityList();
+
+
+        lastCombatEntitiesSnapshot =
+            JSON.stringify(
+                Array.from(
+                    combatEntities.values()
+                )
+                    .map(
+                        entity => ({
+
+                            id:
+                                entity.id,
+
+                            x:
+                                entity.x,
+
+                            y:
+                                entity.y,
+
+                            current_hp:
+                                entity.current_hp,
+
+                            max_hp:
+                                entity.max_hp,
+
+                            status:
+                                entity.status,
+
+                            entity_type:
+                                entity.entity_type,
+
+                            display_name:
+                                entity.display_name,
+
+                            character_id:
+                                entity.character_id,
+
+                            monster_type:
+                                entity.monster_type
+
+                        })
+                    )
+                    .sort(
+                        (a, b) =>
+                            a.id.localeCompare(
+                                b.id
+                            )
+                    )
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore movimento combattimento:",
+            error
+        );
+
+
+    } finally {
+
+        combatMoveInProgress =
+            false;
+
+    }
+
+}
+
+
+// ============================================================
+// TASTIERA MOVIMENTO
+// ============================================================
+
+document.addEventListener(
+    "keydown",
+    async event => {
+
+        if (
+            event.repeat
+        ) {
+
+            return;
+
+        }
+
+
+        let dx =
+            0;
+
+        let dy =
+            0;
+
+
+        switch (
+            event.key.toLowerCase()
+        ) {
+
+            case "w":
+            case "arrowup":
+
+                dy =
+                    -1;
+
+                break;
+
+
+            case "s":
+            case "arrowdown":
+
+                dy =
+                    1;
+
+                break;
+
+
+            case "a":
+            case "arrowleft":
+
+                dx =
+                    -1;
+
+                break;
+
+
+            case "d":
+            case "arrowright":
+
+                dx =
+                    1;
+
+                break;
+
+
+            default:
+
+                return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        await moveCombatPlayer(
+            dx,
+            dy
+        );
+
+    }
+);
+
 window.addEventListener(
     "beforeunload",
     () => {
