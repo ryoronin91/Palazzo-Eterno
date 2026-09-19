@@ -116,33 +116,61 @@ document.addEventListener(
 
             await loadCombatSession();
 
+await loadCombatEntities();
 
-            // =================================================
-            // ENTITÀ PRESENTI NEL COMBATTIMENTO
-            // =================================================
+lastCombatEntitiesSnapshot =
+    JSON.stringify(
+        Array.from(
+            combatEntities.values()
+        )
+            .map(
+                entity => ({
 
-            await loadCombatEntities();
+                    id:
+                        entity.id,
 
+                    x:
+                        entity.x,
 
-            // =================================================
-            // RENDER INIZIALE
-            // =================================================
+                    y:
+                        entity.y,
 
-            renderCombat();
+                    current_hp:
+                        entity.current_hp,
 
+                    max_hp:
+                        entity.max_hp,
 
-            // =================================================
-            // MODALITÀ MASTER / PLAYER
-            // =================================================
+                    status:
+                        entity.status,
 
-            updateCombatMode();
+                    entity_type:
+                        entity.entity_type,
 
+                    display_name:
+                        entity.display_name,
 
-            // =================================================
-            // AVVIO CONTROLLO TURNI E TIMER
-            // =================================================
+                    character_id:
+                        entity.character_id,
 
-            startCombatStateLoop();
+                    monster_type:
+                        entity.monster_type
+
+                })
+            )
+            .sort(
+                (a, b) =>
+                    a.id.localeCompare(
+                        b.id
+                    )
+            )
+    );
+
+renderCombat();
+
+updateCombatMode();
+
+startCombatStateLoop();
 
 
         } catch (error) {
@@ -1034,7 +1062,28 @@ function stopCombatStateLoop() {
 // AGGIORNA STATO DAL DATABASE
 // ============================================================
 
+let combatRefreshInProgress =
+    false;
+
+
+let lastCombatEntitiesSnapshot =
+    "";
+
+
 async function refreshCombatState() {
+
+    if (
+        combatRefreshInProgress
+    ) {
+
+        return;
+
+    }
+
+
+    combatRefreshInProgress =
+        true;
+
 
     try {
 
@@ -1049,20 +1098,97 @@ async function refreshCombatState() {
 
         await loadCombatSession();
 
-await loadCombatEntities();
+        await loadCombatEntities();
 
-renderCombatTokens();
 
-renderCombatEntityList();
+        // ====================================================
+        // CREA SNAPSHOT DELLO STATO ENTITÀ
+        // ====================================================
 
-updateCombatTurnUI();
-        
+        const snapshot =
+            JSON.stringify(
+                Array.from(
+                    combatEntities.values()
+                )
+                    .map(
+                        entity => ({
+
+                            id:
+                                entity.id,
+
+                            x:
+                                entity.x,
+
+                            y:
+                                entity.y,
+
+                            current_hp:
+                                entity.current_hp,
+
+                            max_hp:
+                                entity.max_hp,
+
+                            status:
+                                entity.status,
+
+                            entity_type:
+                                entity.entity_type,
+
+                            display_name:
+                                entity.display_name,
+
+                            character_id:
+                                entity.character_id,
+
+                            monster_type:
+                                entity.monster_type
+
+                        })
+                    )
+                    .sort(
+                        (a, b) =>
+                            a.id.localeCompare(
+                                b.id
+                            )
+                    )
+            );
+
+
+        // ====================================================
+        // RIDISEGNA SOLO SE QUALCOSA È CAMBIATO
+        // ====================================================
+
+        if (
+            snapshot !==
+            lastCombatEntitiesSnapshot
+        ) {
+
+            lastCombatEntitiesSnapshot =
+                snapshot;
+
+
+            renderCombatTokens();
+
+            renderCombatEntityList();
+
+        }
+
+
+        updateCombatTurnUI();
+
+
     } catch (error) {
 
         console.error(
             "Errore aggiornamento stato combat:",
             error
         );
+
+
+    } finally {
+
+        combatRefreshInProgress =
+            false;
 
     }
 
