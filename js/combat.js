@@ -464,19 +464,6 @@ function renderCombatTokens() {
     }
 
 
-    for (
-        const token
-        of combatTokens.values()
-    ) {
-
-        token.remove();
-
-    }
-
-
-    combatTokens.clear();
-
-
     const rect =
         map.getBoundingClientRect();
 
@@ -491,40 +478,125 @@ function renderCombatTokens() {
         COMBAT_ROWS;
 
 
+    const activeEntityIds =
+        new Set();
+
+
     combatEntities.forEach(
         entity => {
+
+            activeEntityIds.add(
+                entity.id
+            );
+
+
+            // =================================================
+            // ENTITÀ MORTA
+            // =================================================
 
             if (
                 entity.status ===
                 "dead"
             ) {
 
+                const deadToken =
+                    combatTokens.get(
+                        entity.id
+                    );
+
+
+                if (deadToken) {
+
+                    deadToken.remove();
+
+                    combatTokens.delete(
+                        entity.id
+                    );
+
+                }
+
+
                 return;
 
             }
 
 
-            const token =
-                document.createElement(
-                    "div"
+            // =================================================
+            // CERCA TOKEN ESISTENTE
+            // =================================================
+
+            let token =
+                combatTokens.get(
+                    entity.id
                 );
 
 
-            token.className =
-                "combat-token";
+            // =================================================
+            // CREA TOKEN SOLO SE NON ESISTE
+            // =================================================
+
+            if (!token) {
+
+                token =
+                    document.createElement(
+                        "div"
+                    );
 
 
-            if (
-                entity.entity_type ===
-                "player"
-            ) {
+                token.className =
+                    "combat-token";
 
-                token.classList.add(
+
+                if (
+                    entity.entity_type ===
                     "player"
+                ) {
+
+                    token.classList.add(
+                        "player"
+                    );
+
+
+                    renderPlayerTokenContent(
+                        token,
+                        entity
+                    );
+
+                } else {
+
+                    token.classList.add(
+                        "enemy"
+                    );
+
+
+                    renderEnemyTokenContent(
+                        token,
+                        entity
+                    );
+
+                }
+
+
+                token.title =
+                    entity.display_name;
+
+
+                map.appendChild(
+                    token
+                );
+
+
+                combatTokens.set(
+                    entity.id,
+                    token
                 );
 
             }
 
+
+            // =================================================
+            // DIMENSIONI
+            // =================================================
 
             const size =
                 Math.min(
@@ -541,6 +613,10 @@ function renderCombatTokens() {
             token.style.height =
                 `${size}px`;
 
+
+            // =================================================
+            // POSIZIONE
+            // =================================================
 
             token.style.left =
                 `${
@@ -567,46 +643,39 @@ function renderCombatTokens() {
                     size / 2
                 }px`;
 
-
-            if (
-                entity.entity_type ===
-                "player"
-            ) {
-
-                renderPlayerTokenContent(
-                    token,
-                    entity
-                );
-
-            } else {
-
-                renderEnemyTokenContent(
-                    token,
-                    entity
-                );
-
-            }
-
-
-            token.title =
-                entity.display_name;
-
-
-            map.appendChild(
-                token
-            );
-
-
-            combatTokens.set(
-                entity.id,
-                token
-            );
-
         }
     );
 
-}
 
+    // ========================================================
+    // ELIMINA TOKEN DI ENTITÀ NON PIÙ PRESENTI
+    // ========================================================
+
+    for (
+        const [
+            entityId,
+            token
+        ]
+        of combatTokens
+    ) {
+
+        if (
+            !activeEntityIds.has(
+                entityId
+            )
+        ) {
+
+            token.remove();
+
+            combatTokens.delete(
+                entityId
+            );
+
+        }
+
+    }
+
+}
 
 // ============================================================
 // TOKEN PLAYER
@@ -980,12 +1049,14 @@ async function refreshCombatState() {
 
         await loadCombatSession();
 
-        await loadCombatEntities();
+await loadCombatEntities();
 
-        renderCombat();
+renderCombatTokens();
 
-        updateCombatTurnUI();
+renderCombatEntityList();
 
+updateCombatTurnUI();
+        
     } catch (error) {
 
         console.error(
