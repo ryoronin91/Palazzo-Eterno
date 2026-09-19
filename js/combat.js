@@ -37,6 +37,14 @@ let masterObserverMode =
 let combatId =
     null;
 
+let combatSession =
+    null;
+
+let combatTimerInterval =
+    null;
+
+let combatStateInterval =
+    null;
 
 const combatEntities =
     new Map();
@@ -56,15 +64,34 @@ document.addEventListener(
 
         try {
 
+            // =================================================
+            // UTENTE
+            // =================================================
+
             await loadCurrentUser();
+
+
+            // =================================================
+            // RUOLO ACCOUNT
+            // =================================================
 
             await loadCurrentRole();
 
-masterObserverMode =
-    getMasterObserverModeFromUrl();
 
-combatId =
-    getCombatIdFromUrl();
+            // =================================================
+            // MODALITÀ MASTER OSSERVATORE
+            // =================================================
+
+            masterObserverMode =
+                getMasterObserverModeFromUrl();
+
+
+            // =================================================
+            // ID SESSIONE COMBATTIMENTO
+            // =================================================
+
+            combatId =
+                getCombatIdFromUrl();
 
 
             if (!combatId) {
@@ -76,13 +103,47 @@ combatId =
             }
 
 
+            // =================================================
+            // PERSONAGGIO
+            // =================================================
+
             await loadCurrentCharacter();
+
+
+            // =================================================
+            // SESSIONE DI COMBATTIMENTO
+            // =================================================
+
+            await loadCombatSession();
+
+
+            // =================================================
+            // ENTITÀ PRESENTI NEL COMBATTIMENTO
+            // =================================================
 
             await loadCombatEntities();
 
+
+            // =================================================
+            // RENDER INIZIALE
+            // =================================================
+
             renderCombat();
 
+
+            // =================================================
+            // MODALITÀ MASTER / PLAYER
+            // =================================================
+
             updateCombatMode();
+
+
+            // =================================================
+            // AVVIO CONTROLLO TURNI E TIMER
+            // =================================================
+
+            startCombatStateLoop();
+
 
         } catch (error) {
 
@@ -262,6 +323,49 @@ async function loadCurrentCharacter() {
 
 }
 
+// ============================================================
+// CARICA SESSIONE COMBATTIMENTO
+// ============================================================
+
+async function loadCombatSession() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "combat_sessions"
+            )
+            .select(
+                `
+                id,
+                encounter_id,
+                status,
+                round_number,
+                current_turn_entity_id,
+                turn_started_at,
+                turn_duration_seconds
+                `
+            )
+            .eq(
+                "id",
+                combatId
+            )
+            .single();
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    combatSession =
+        data;
+
+}
 
 // ============================================================
 // CARICA ENTITÀ
@@ -785,6 +889,268 @@ function setCombatStatus(
 
 }
 
+// ============================================================
+// LOOP STATO COMBATTIMENTO
+// ============================================================
+
+function startCombatStateLoop() {
+
+    stopCombatStateLoop();
+
+
+    updateCombatTurnUI();
+
+
+    combatTimerInterval =
+        setInterval(
+            () => {
+
+                updateCombatTurnUI();
+
+            },
+            250
+        );
+
+
+    combatStateInterval =
+        setInterval(
+            async () => {
+
+                await refreshCombatState();
+
+            },
+            1000
+        );
+
+}
+
+
+// ============================================================
+// FERMA LOOP
+// ============================================================
+
+function stopCombatStateLoop() {
+
+    if (
+        combatTimerInterval
+    ) {
+
+        clearInterval(
+            combatTimerInterval
+        );
+
+        combatTimerInterval =
+            null;
+
+    }
+
+
+    if (
+        combatStateInterval
+    ) {
+
+        clearInterval(
+            combatStateInterval
+        );
+
+        combatStateInterval =
+            null;
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA STATO DAL DATABASE
+// ============================================================
+
+async function refreshCombatState() {
+
+    try {
+
+        await db.rpc(
+            "advance_combat_if_timeout",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+        await loadCombatSession();
+
+        await loadCombatEntities();
+
+        renderCombat();
+
+        updateCombatTurnUI();
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento stato combat:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// ENTITÀ DI TURNO
+// ============================================================
+
+function getCurrentTurnEntity() {
+
+    if (
+        !combatSession ||
+        !combatSession.current_turn_entity_id
+    ) {
+
+        return null;
+
+    }
+
+
+    return combatEntities.get(
+        combatSession.current_turn_entity_id
+    ) || null;
+
+}
+
+
+// ============================================================
+// UI TURNO
+// ============================================================
+
+function updateCombatTurnUI() {
+
+    if (
+        !combatSession
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        combatSession.status !==
+        "active"
+    ) {
+
+        setCombatStatus(
+            `Stato: ${combatSession.status}`
+        );
+
+        return;
+
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    if (
+        !currentEntity
+    ) {
+
+        setCombatStatus(
+            "Turno non disponibile."
+        );
+
+        return;
+
+    }
+
+
+    const round =
+        Number(
+            combatSession.round_number
+        ) || 1;
+
+
+    // ========================================================
+    // TURNO MOSTRO
+    // ========================================================
+
+    if (
+        currentEntity.entity_type ===
+        "enemy"
+    ) {
+
+        setCombatStatus(
+            `Round ${round} · Turno di ${currentEntity.display_name}`
+        );
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // TIMER PLAYER
+    // ========================================================
+
+    const duration =
+        Number(
+            combatSession.turn_duration_seconds
+        ) || 30;
+
+
+    const startedAt =
+        combatSession.turn_started_at
+            ? new Date(
+                combatSession.turn_started_at
+            ).getTime()
+            : Date.now();
+
+
+    const elapsedSeconds =
+        (
+            Date.now() -
+            startedAt
+        ) /
+        1000;
+
+
+    const remaining =
+        Math.max(
+            0,
+            Math.ceil(
+                duration -
+                elapsedSeconds
+            )
+        );
+
+
+    const isMyTurn =
+        currentCharacter &&
+        currentEntity.character_id ===
+            currentCharacter.id;
+
+
+    if (
+        isMyTurn
+    ) {
+
+        setCombatStatus(
+            `Round ${round} · IL TUO TURNO · ${remaining}s`
+        );
+
+        return;
+
+    }
+
+
+    setCombatStatus(
+        `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
+    );
+
+}
 
 // ============================================================
 // RESIZE
@@ -795,6 +1161,15 @@ window.addEventListener(
     () => {
 
         renderCombatTokens();
+
+    }
+);
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        stopCombatStateLoop();
 
     }
 );
