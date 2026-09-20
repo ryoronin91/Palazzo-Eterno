@@ -440,17 +440,32 @@
                 rgba(0, 0, 0, .28);
         }
 
-        background-image:
-                url("immagini/combat/combat_map_1.png");
+       .combat-map {
+    position: relative;
 
-        background-size:
-                100% 100%;
+    width: 100%;
 
-        background-position:
-                center;
+    aspect-ratio:
+        1 / 1;
 
-        background-repeat:
-                no-repeat;
+    border:
+        2px solid
+        #7a5a31;
+
+    background-image:
+        url("immagini/combat/combat_map_1.png");
+
+    background-size:
+        100% 100%;
+
+    background-position:
+        center;
+
+    background-repeat:
+        no-repeat;
+
+    overflow: hidden;
+}
 
 /* =====================================================
    REGISTRO COMBATTIMENTO
@@ -1180,8 +1195,7 @@
 
             <section class="combat-center-column">
 
-                <section class="combat-center-column">
-
+                
     <!-- ===============================================
          MAPPA
     ================================================ -->
@@ -1225,8 +1239,7 @@
     </section>
 
 </section>
-            </section>
-
+            
 
             <!-- ===============================================
                  DESTRA
