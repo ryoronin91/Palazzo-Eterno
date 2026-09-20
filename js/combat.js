@@ -141,6 +141,9 @@ lastCombatEntitiesSnapshot =
                     max_hp:
                         entity.max_hp,
 
+                    movement_remaining:
+                        entity.movement_remaining,
+
                     status:
                         entity.status,
 
@@ -410,19 +413,19 @@ async function loadCombatEntities() {
                 "combat_entities"
             )
             .select(
-                `
-                id,
-                entity_type,
-                character_id,
-                monster_type,
-                display_name,
-                x,
-                y,
-                current_hp,
-                max_hp,
-                status
-                `
-            )
+    `
+    id,
+    entity_type,
+    character_id,
+    monster_type,
+    display_name,
+    x,
+    y,
+    current_hp,
+    max_hp,
+    movement_remaining,
+    status
+    `
             .eq(
                 "combat_id",
                 combatId
@@ -900,20 +903,22 @@ function renderCombatEntityList() {
 
 
             meta.textContent =
-                `${
-                    entity.entity_type ===
-                    "player"
-                        ? "Giocatore"
-                        : "Nemico"
-                } · HP ${
-                    entity.current_hp
-                }/${
-                    entity.max_hp
-                } · X ${
-                    entity.x
-                } Y ${
-                    entity.y
-                }`;
+    `${
+        entity.entity_type ===
+        "player"
+            ? "Giocatore"
+            : "Nemico"
+    } · HP ${
+        entity.current_hp
+    }/${
+        entity.max_hp
+    } · Movimento ${
+        entity.movement_remaining ?? 0
+    } · X ${
+        entity.x
+    } Y ${
+        entity.y
+    }`;
 
 
             item.appendChild(
@@ -1128,6 +1133,9 @@ async function refreshCombatState() {
                             max_hp:
                                 entity.max_hp,
 
+                            movement_remaining:
+                                entity.movement_remaining,
+                            
                             status:
                                 entity.status,
 
@@ -1477,10 +1485,13 @@ window.moveCombatPlayer =
                             current_hp:
                                 entity.current_hp,
 
-                            max_hp:
+                           max_hp:
                                 entity.max_hp,
 
-                            status:
+                           movement_remaining:
+                                entity.movement_remaining,
+
+                           status:
                                 entity.status,
 
                             entity_type:
