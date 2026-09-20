@@ -430,6 +430,7 @@ async function loadCombatEntities() {
                 "combat_id",
                 combatId
             );
+    );
 
 
     if (error) {
