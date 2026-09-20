@@ -409,27 +409,27 @@ async function loadCombatEntities() {
         error
     } =
         await db
-            .from(
-                "combat_entities"
-            )
-            .select(
-    `
-    id,
-    entity_type,
-    character_id,
-    monster_type,
-    display_name,
-    x,
-    y,
-    current_hp,
-    max_hp,
-    movement_remaining,
-    status
-    `
-            .eq(
-                "combat_id",
-                combatId
-            );
+    .from(
+        "combat_entities"
+    )
+    .select(
+        `
+        id,
+        entity_type,
+        character_id,
+        monster_type,
+        display_name,
+        x,
+        y,
+        current_hp,
+        max_hp,
+        movement_remaining,
+        status
+        `
+    )
+    .eq(
+        "combat_id",
+        combatId
     );
 
 
