@@ -2033,6 +2033,22 @@ document.addEventListener(
     "keydown",
     async event => {
 
+        const target =
+            event.target;
+
+
+        if (
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLTextAreaElement ||
+            target instanceof HTMLSelectElement ||
+            target?.isContentEditable
+        ) {
+
+            return;
+
+        }
+
+
         if (
             event.repeat
         ) {
@@ -2040,7 +2056,7 @@ document.addEventListener(
             return;
 
         }
-
+        
 
         let dx =
             0;
