@@ -3,21 +3,17 @@
 // PERSONAGGIO.JS
 // ============================================================
 //
-// Gestisce:
+// CREAZIONE PERSONAGGIO IN 3 STEP:
 //
-// - autenticazione Supabase
-// - creazione del personaggio
-// - controllo personaggio già esistente
-// - 10 punti abilità iniziali
-// - 6 attributi primari
-// - minimo 1 / massimo 30 per attributo
-// - calcolo statistiche secondarie
-// - scelta del token
-// - scelta di 3 oggetti iniziali
-// - possibilità di scegliere più copie dello stesso oggetto
-// - inventario iniziale
-// - salvataggio su Supabase
-// - redirect alla scheda
+// 1. Identità / Token / Attributi
+// 2. Scelta di 3 abilità
+// 3. Scelta di 3 equipaggiamenti
+//
+// Alla conferma finale salva:
+//
+// - characters
+// - character_abilities
+// - character_inventory
 //
 // ============================================================
 
@@ -42,6 +38,8 @@ document.addEventListener(
         const MIN_ATTRIBUTE = 1;
 
         const MAX_ATTRIBUTE = 30;
+
+        const REQUIRED_STARTING_ABILITIES = 3;
 
         const REQUIRED_STARTING_ITEMS = 3;
 
@@ -94,6 +92,27 @@ document.addEventListener(
 
         let selectedToken = null;
 
+
+        // ----------------------------------------------------
+        // STEP
+        // ----------------------------------------------------
+
+        let currentStep = 1;
+
+
+        // ----------------------------------------------------
+        // ABILITÀ
+        // ----------------------------------------------------
+
+        let availableAbilities = [];
+
+        let selectedAbilities = [];
+
+
+        // ----------------------------------------------------
+        // EQUIPAGGIAMENTO
+        // ----------------------------------------------------
+
         let startingItems = [];
 
         let selectedStartingItems = [];
@@ -137,13 +156,13 @@ document.addEventListener(
 
 
             message.textContent =
-                text;
+                text || "";
 
         }
 
 
         // ====================================================
-        // IMPOSTA TESTO ELEMENTO
+        // IMPOSTA TESTO
         // ====================================================
 
         function setText(
@@ -329,15 +348,11 @@ document.addEventListener(
                 attributeValues.fortuna;
 
 
-            // ATTACCO
-
             const attack =
                 Math.ceil(
                     forza / 2
                 );
 
-
-            // DIFESA
 
             const defense =
                 Math.ceil(
@@ -348,8 +363,6 @@ document.addEventListener(
                 );
 
 
-            // VITA
-
             const hp =
                 Math.ceil(
                     5 *
@@ -358,8 +371,6 @@ document.addEventListener(
                     )
                 );
 
-
-            // MANA
 
             const mana =
                 Math.ceil(
@@ -370,8 +381,6 @@ document.addEventListener(
                 );
 
 
-            // MOVIMENTO
-
             const movement =
                 Math.ceil(
                     4 +
@@ -380,8 +389,6 @@ document.addEventListener(
                     )
                 );
 
-
-            // CRITICO
 
             const critical =
                 Math.min(
@@ -827,6 +834,11 @@ document.addEventListener(
 
                             }
 
+
+                            showMessage(
+                                ""
+                            );
+
                         }
                     );
 
@@ -837,503 +849,692 @@ document.addEventListener(
 
 
         // ====================================================
-        // CREA INTERFACCIA EQUIPAGGIAMENTO INIZIALE
+        // STEP
         // ====================================================
 
-        function ensureStartingItemsUI() {
+        function showStep(
+            stepNumber
+        ) {
 
-            if (
-                document.getElementById(
-                    "starting-items-list"
+            currentStep =
+                stepNumber;
+
+
+            document
+                .querySelectorAll(
+                    ".creation-step"
                 )
-            ) {
+                .forEach(
+                    step => {
 
-                return;
-
-            }
-
-
-            if (!form) {
-
-                return;
-
-            }
+                        const number =
+                            Number(
+                                step.dataset.step
+                            );
 
 
-            const style =
-                document.createElement(
-                    "style"
+                        step.classList.toggle(
+                            "active",
+                            number === stepNumber
+                        );
+
+                    }
                 );
 
 
-            style.textContent = `
-
-                .starting-items-section {
-
-                    margin-top: 32px;
-
-                    margin-bottom: 28px;
-
-                }
-
-
-                .starting-items-description {
-
-                    color: #aaa;
-
-                    line-height: 1.5;
-
-                    margin-bottom: 12px;
-
-                }
-
-
-                .starting-items-counter {
-
-                    display: inline-flex;
-
-                    align-items: center;
-
-                    padding: 7px 12px;
-
-                    margin-bottom: 20px;
-
-                    border-radius: 7px;
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.10
-                        );
-
-                    border:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.30
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 13px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-category {
-
-                    margin-bottom: 22px;
-
-                }
-
-
-                .starting-item-category-title {
-
-                    margin: 0 0 10px;
-
-                    padding-bottom: 6px;
-
-                    border-bottom:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.25
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 14px;
-
-                    letter-spacing: 1px;
-
-                }
-
-
-                .starting-items-grid {
-
-                    display: grid;
-
-                    grid-template-columns:
-                        repeat(
-                            auto-fill,
-                            minmax(
-                                145px,
-                                1fr
-                            )
-                        );
-
-                    gap: 8px;
-
-                }
-
-
-                .starting-item {
-
-                    position: relative;
-
-                    min-height: 82px;
-
-                    padding: 9px 10px;
-
-                    box-sizing: border-box;
-
-                    text-align: left;
-
-                    border-radius: 7px;
-
-                    border:
-                        1px solid
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.10
-                        );
-
-                    background:
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.025
-                        );
-
-                    color: inherit;
-
-                    transition:
-                        border-color 0.12s ease,
-                        background 0.12s ease,
-                        transform 0.12s ease;
-
-                }
-
-
-                .starting-item:hover {
-
-                    border-color:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.55
-                        );
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.05
-                        );
-
-                }
-
-
-                .starting-item.selected {
-
-                    border-color:
-                        #b88a3b;
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.12
-                        );
-
-                }
-
-
-                .starting-item-name {
-
-                    padding-right: 30px;
-
-                    font-size: 12px;
-
-                    font-weight: bold;
-
-                    margin-bottom: 4px;
-
-                }
-
-
-                .starting-item-description {
-
-                    color: #aaa;
-
-                    font-size: 10px;
-
-                    line-height: 1.3;
-
-                }
-
-
-                .starting-item-meta {
-
-                    margin-top: 6px;
-
-                    color: #cda65b;
-
-                    font-size: 9px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-quantity {
-
-                    position: absolute;
-
-                    top: 6px;
-
-                    right: 6px;
-
-                    min-width: 22px;
-
-                    height: 22px;
-
-                    padding: 0 5px;
-
-                    box-sizing: border-box;
-
-                    display: flex;
-
-                    align-items: center;
-
-                    justify-content: center;
-
-                    border-radius: 20px;
-
-                    background: #b88a3b;
-
-                    color: #111;
-
-                    font-size: 10px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-controls {
-
-                    display: flex;
-
-                    gap: 5px;
-
-                    margin-top: 7px;
-
-                }
-
-
-                .starting-item-control {
-
-                    flex: 1;
-
-                    height: 23px;
-
-                    padding: 0;
-
-                    border-radius: 4px;
-
-                    border:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.35
-                        );
-
-                    background:
-                        rgba(
-                            0,
-                            0,
-                            0,
-                            0.25
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 14px;
-
-                    line-height: 20px;
-
-                    cursor: pointer;
-
-                }
-
-
-                .starting-item-control:hover:not(:disabled) {
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.15
-                        );
-
-                }
-
-
-                .starting-item-control:disabled {
-
-                    opacity: 0.25;
-
-                    cursor: default;
-
-                }
-
-
-                .starting-kit-note {
-
-                    margin-top: 18px;
-
-                    padding: 11px 13px;
-
-                    border-radius: 7px;
-
-                    background:
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.035
-                        );
-
-                    color: #bbb;
-
-                    font-size: 11px;
-
-                    line-height: 1.5;
-
-                }
-
-
-                @media (
-                    max-width: 600px
-                ) {
-
-                    .starting-items-grid {
-
-                        grid-template-columns:
-                            repeat(
-                                2,
-                                1fr
+            document
+                .querySelectorAll(
+                    ".creation-progress-step"
+                )
+                .forEach(
+                    indicator => {
+
+                        const number =
+                            Number(
+                                indicator.dataset.progressStep
                             );
 
+
+                        indicator.classList.remove(
+                            "active",
+                            "completed"
+                        );
+
+
+                        if (
+                            number === stepNumber
+                        ) {
+
+                            indicator.classList.add(
+                                "active"
+                            );
+
+                        } else if (
+                            number < stepNumber
+                        ) {
+
+                            indicator.classList.add(
+                                "completed"
+                            );
+
+                        }
+
                     }
-
-                }
-
-
-                @media (
-                    max-width: 390px
-                ) {
-
-                    .starting-items-grid {
-
-                        grid-template-columns:
-                            1fr;
-
-                    }
-
-                }
-
-            `;
+                );
 
 
-            document.head.appendChild(
-                style
+            showMessage(
+                ""
             );
 
 
-            const section =
-                document.createElement(
-                    "section"
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+        }
+
+
+        // ====================================================
+        // VALIDAZIONE STEP 1
+        // ====================================================
+
+        function validateStep1() {
+
+            const nameInput =
+                document.getElementById(
+                    "nome"
                 );
 
 
-            section.className =
-                "starting-items-section";
+            const nome =
+                nameInput
+                    ? nameInput.value.trim()
+                    : "";
 
 
-            section.innerHTML = `
+            if (!nome) {
 
-                <h2>
-                    Equipaggiamento iniziale
-                </h2>
-
-
-                <p class="starting-items-description">
-
-                    Scegli
-
-                    <strong>
-                        3 oggetti
-                    </strong>
-
-                    con cui iniziare l'avventura.
-
-                    Puoi scegliere anche più copie
-                    dello stesso oggetto.
-
-                </p>
+                showMessage(
+                    "Inserisci il nome del personaggio."
+                );
 
 
-                <div class="starting-items-counter">
-
-                    Oggetti scelti:&nbsp;
-
-                    <span id="starting-items-count">
-                        0
-                    </span>
-
-                    /3
-
-                </div>
+                nameInput?.focus();
 
 
-                <div id="starting-items-list"></div>
+                return false;
+
+            }
 
 
-                <div class="starting-kit-note">
+            if (!selectedToken) {
 
-                    Riceverai inoltre automaticamente:
-
-                    <strong>
-                        1 Pozione cura mana
-                    </strong>,
-
-                    <strong>
-                        1 Pozione cura vita
-                    </strong>
-
-                    e
-
-                    <strong>
-                        10 Monete d'oro
-                    </strong>.
-
-                </div>
-
-            `;
+                showMessage(
+                    "Seleziona un token per il tuo personaggio."
+                );
 
 
-            form.parentNode.insertBefore(
-                section,
-                form
+                return false;
+
+            }
+
+
+            if (
+                getRemainingPoints() !== 0
+            ) {
+
+                showMessage(
+                    "Devi utilizzare tutti i 10 punti attributo."
+                );
+
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+
+
+        // ====================================================
+        // VALIDAZIONE STEP 2
+        // ====================================================
+
+        function validateStep2() {
+
+            if (
+                selectedAbilities.length !==
+                REQUIRED_STARTING_ABILITIES
+            ) {
+
+                showMessage(
+                    "Devi scegliere esattamente 3 abilità iniziali."
+                );
+
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+
+
+        // ====================================================
+        // VALIDAZIONE STEP 3
+        // ====================================================
+
+        function validateStep3() {
+
+            if (
+                selectedStartingItems.length !==
+                REQUIRED_STARTING_ITEMS
+            ) {
+
+                showMessage(
+                    "Devi scegliere esattamente 3 oggetti iniziali."
+                );
+
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+
+
+        // ====================================================
+        // EVENTI NAVIGAZIONE STEP
+        // ====================================================
+
+        function setupStepNavigation() {
+
+            const nextStep1 =
+                document.getElementById(
+                    "next-step-1"
+                );
+
+
+            const previousStep2 =
+                document.getElementById(
+                    "previous-step-2"
+                );
+
+
+            const nextStep2 =
+                document.getElementById(
+                    "next-step-2"
+                );
+
+
+            const previousStep3 =
+                document.getElementById(
+                    "previous-step-3"
+                );
+
+
+            nextStep1?.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        !validateStep1()
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    showStep(
+                        2
+                    );
+
+                }
+            );
+
+
+            previousStep2?.addEventListener(
+                "click",
+                () => {
+
+                    showStep(
+                        1
+                    );
+
+                }
+            );
+
+
+            nextStep2?.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        !validateStep2()
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    showStep(
+                        3
+                    );
+
+                }
+            );
+
+
+            previousStep3?.addEventListener(
+                "click",
+                () => {
+
+                    showStep(
+                        2
+                    );
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // CARICA ABILITÀ
+        // ====================================================
+
+        async function loadAbilities() {
+
+            console.log(
+                "Caricamento abilità..."
+            );
+
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "abilities"
+                    )
+                    .select(`
+                        id,
+                        name,
+                        description,
+                        ability_type,
+                        pm_cost,
+                        max_level
+                    `)
+                    .order(
+                        "name",
+                        {
+                            ascending: true
+                        }
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Errore caricamento abilità:",
+                    error
+                );
+
+
+                throw new Error(
+                    "Impossibile caricare le abilità: " +
+                    error.message
+                );
+
+            }
+
+
+            availableAbilities =
+                data || [];
+
+
+            console.log(
+                "Abilità caricate:",
+                availableAbilities
+            );
+
+
+            renderAbilities();
+
+        }
+
+
+        // ====================================================
+        // ABILITÀ SELEZIONATA?
+        // ====================================================
+
+        function isAbilitySelected(
+            abilityId
+        ) {
+
+            return selectedAbilities.includes(
+                abilityId
+            );
+
+        }
+
+
+        // ====================================================
+        // SELEZIONA / DESELEZIONA ABILITÀ
+        // ====================================================
+
+        function toggleAbility(
+            abilityId
+        ) {
+
+            const index =
+                selectedAbilities.indexOf(
+                    abilityId
+                );
+
+
+            // ------------------------------------------------
+            // DESELEZIONE
+            // ------------------------------------------------
+
+            if (
+                index !== -1
+            ) {
+
+                selectedAbilities.splice(
+                    index,
+                    1
+                );
+
+
+                showMessage(
+                    ""
+                );
+
+
+                renderAbilities();
+
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // MASSIMO 3
+            // ------------------------------------------------
+
+            if (
+                selectedAbilities.length >=
+                REQUIRED_STARTING_ABILITIES
+            ) {
+
+                showMessage(
+                    "Puoi scegliere massimo 3 abilità iniziali."
+                );
+
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // SELEZIONE
+            // ------------------------------------------------
+
+            selectedAbilities.push(
+                abilityId
+            );
+
+
+            showMessage(
+                ""
+            );
+
+
+            renderAbilities();
+
+        }
+
+
+        // ====================================================
+        // CREA CARTA ABILITÀ
+        // ====================================================
+
+        function createAbilityCard(
+            ability
+        ) {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "ability-card";
+
+
+            card.setAttribute(
+                "role",
+                "button"
+            );
+
+
+            card.setAttribute(
+                "tabindex",
+                "0"
+            );
+
+
+            const selected =
+                isAbilitySelected(
+                    ability.id
+                );
+
+
+            if (selected) {
+
+                card.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+            // ------------------------------------------------
+            // COSTO
+            // ------------------------------------------------
+
+            const cost =
+                document.createElement(
+                    "div"
+                );
+
+
+            cost.className =
+                "ability-cost";
+
+
+            cost.textContent =
+                `${Number(ability.pm_cost) || 0} PM`;
+
+
+            card.appendChild(
+                cost
+            );
+
+
+            // ------------------------------------------------
+            // NOME
+            // ------------------------------------------------
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "ability-name";
+
+
+            name.textContent =
+                ability.name;
+
+
+            card.appendChild(
+                name
+            );
+
+
+            // ------------------------------------------------
+            // DESCRIZIONE
+            // ------------------------------------------------
+
+            const description =
+                document.createElement(
+                    "div"
+                );
+
+
+            description.className =
+                "ability-description";
+
+
+            description.textContent =
+                ability.description || "";
+
+
+            card.appendChild(
+                description
+            );
+
+
+            // ------------------------------------------------
+            // LIVELLO
+            // ------------------------------------------------
+
+            const level =
+                document.createElement(
+                    "div"
+                );
+
+
+            level.className =
+                "ability-level";
+
+
+            level.textContent =
+                "LIVELLO 1";
+
+
+            card.appendChild(
+                level
+            );
+
+
+            // ------------------------------------------------
+            // CLICK
+            // ------------------------------------------------
+
+            card.addEventListener(
+                "click",
+                () => {
+
+                    toggleAbility(
+                        ability.id
+                    );
+
+                }
+            );
+
+
+            // ------------------------------------------------
+            // TASTIERA
+            // ------------------------------------------------
+
+            card.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key !== "Enter" &&
+                        event.key !== " "
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    event.preventDefault();
+
+
+                    toggleAbility(
+                        ability.id
+                    );
+
+                }
+            );
+
+
+            return card;
+
+        }
+
+
+        // ====================================================
+        // MOSTRA ABILITÀ
+        // ====================================================
+
+        function renderAbilities() {
+
+            const container =
+                document.getElementById(
+                    "abilities-list"
+                );
+
+
+            if (!container) {
+
+                return;
+
+            }
+
+
+            container.replaceChildren();
+
+
+            availableAbilities.forEach(
+                ability => {
+
+                    container.appendChild(
+                        createAbilityCard(
+                            ability
+                        )
+                    );
+
+                }
+            );
+
+
+            setText(
+                "selected-abilities-count",
+                selectedAbilities.length
             );
 
         }
@@ -1396,13 +1597,10 @@ document.addEventListener(
                 );
 
 
-                showMessage(
+                throw new Error(
                     "Impossibile caricare gli oggetti iniziali: " +
                     error.message
                 );
-
-
-                return;
 
             }
 
@@ -1879,6 +2077,58 @@ document.addEventListener(
 
 
         // ====================================================
+        // SALVA ABILITÀ INIZIALI
+        // ====================================================
+
+        async function saveStartingAbilities(
+            characterId
+        ) {
+
+            const rows =
+                selectedAbilities.map(
+                    abilityId => ({
+
+                        character_id:
+                            characterId,
+
+                        ability_id:
+                            abilityId,
+
+                        level:
+                            1
+
+                    })
+                );
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "character_abilities"
+                    )
+                    .insert(
+                        rows
+                    );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            console.log(
+                "Abilità iniziali salvate:",
+                rows
+            );
+
+        }
+
+
+        // ====================================================
         // SALVA INVENTARIO INIZIALE
         // ====================================================
 
@@ -2023,6 +2273,52 @@ document.addEventListener(
 
 
         // ====================================================
+        // CANCELLA PERSONAGGIO IN CASO DI ERRORE
+        // ====================================================
+
+        async function rollbackCharacter(
+            characterId
+        ) {
+
+            if (!characterId) {
+
+                return;
+
+            }
+
+
+            console.warn(
+                "Rollback creazione personaggio..."
+            );
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "characters"
+                    )
+                    .delete()
+                    .eq(
+                        "id",
+                        characterId
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Errore durante il rollback:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
         // SALVATAGGIO PERSONAGGIO
         // ====================================================
 
@@ -2035,22 +2331,16 @@ document.addEventListener(
                     event.preventDefault();
 
 
-                    const nameInput =
-                        document.getElementById(
-                            "nome"
-                        );
+                    // ------------------------------------------------
+                    // CONTROLLO TUTTI GLI STEP
+                    // ------------------------------------------------
 
+                    if (
+                        !validateStep1()
+                    ) {
 
-                    const nome =
-                        nameInput
-                            ? nameInput.value.trim()
-                            : "";
-
-
-                    if (!nome) {
-
-                        showMessage(
-                            "Inserisci il nome del personaggio."
+                        showStep(
+                            1
                         );
 
 
@@ -2060,24 +2350,11 @@ document.addEventListener(
 
 
                     if (
-                        getRemainingPoints() !==
-                        0
+                        !validateStep2()
                     ) {
 
-                        showMessage(
-                            "Devi utilizzare tutti i 10 punti abilità."
-                        );
-
-
-                        return;
-
-                    }
-
-
-                    if (!selectedToken) {
-
-                        showMessage(
-                            "Seleziona un token per il tuo personaggio."
+                        showStep(
+                            2
                         );
 
 
@@ -2087,12 +2364,11 @@ document.addEventListener(
 
 
                     if (
-                        selectedStartingItems.length !==
-                        REQUIRED_STARTING_ITEMS
+                        !validateStep3()
                     ) {
 
-                        showMessage(
-                            "Devi scegliere esattamente 3 oggetti iniziali."
+                        showStep(
+                            3
                         );
 
 
@@ -2112,9 +2388,21 @@ document.addEventListener(
                     }
 
 
+                    const nameInput =
+                        document.getElementById(
+                            "nome"
+                        );
+
+
+                    const nome =
+                        nameInput
+                            ? nameInput.value.trim()
+                            : "";
+
+
                     const submitButton =
-                        form.querySelector(
-                            'button[type="submit"]'
+                        document.getElementById(
+                            "save-character-button"
                         );
 
 
@@ -2129,6 +2417,23 @@ document.addEventListener(
 
                     }
 
+
+                    showMessage(
+                        "Creazione del personaggio in corso..."
+                    );
+
+
+                    // ------------------------------------------------
+                    // PF / PM INIZIALI
+                    // ------------------------------------------------
+
+                    const secondary =
+                        calculateSecondaryStats();
+
+
+                    // ------------------------------------------------
+                    // DATI PERSONAGGIO
+                    // ------------------------------------------------
 
                     const characterData = {
 
@@ -2159,6 +2464,12 @@ document.addEventListener(
                         fortuna:
                             attributeValues.fortuna,
 
+                        current_hp:
+                            secondary.hp,
+
+                        current_pm:
+                            secondary.mana,
+
                         token:
                             selectedToken,
 
@@ -2175,6 +2486,10 @@ document.addEventListener(
 
 
                     try {
+
+                        // ============================================
+                        // 1. CREA PERSONAGGIO
+                        // ============================================
 
                         const {
                             data,
@@ -2210,29 +2525,41 @@ document.addEventListener(
 
                         try {
 
+                            // ========================================
+                            // 2. SALVA ABILITÀ
+                            // ========================================
+
+                            await saveStartingAbilities(
+                                currentCharacter.id
+                            );
+
+
+                            // ========================================
+                            // 3. SALVA INVENTARIO
+                            // ========================================
+
                             await saveStartingInventory(
                                 currentCharacter.id
                             );
 
                         } catch (
-                            inventoryError
+                            relatedDataError
                         ) {
 
                             console.error(
-                                "Errore inventario iniziale:",
-                                inventoryError
+                                "Errore durante il salvataggio dei dati iniziali:",
+                                relatedDataError
                             );
 
 
-                            await supabaseClient
-                                .from(
-                                    "characters"
-                                )
-                                .delete()
-                                .eq(
-                                    "id",
-                                    currentCharacter.id
-                                );
+                            // Eliminando characters,
+                            // character_abilities e
+                            // character_inventory vengono eliminati
+                            // grazie a ON DELETE CASCADE.
+
+                            await rollbackCharacter(
+                                currentCharacter.id
+                            );
 
 
                             currentCharacter =
@@ -2240,18 +2567,29 @@ document.addEventListener(
 
 
                             throw new Error(
-                                "Inventario iniziale non creato: " +
-                                inventoryError.message
+                                "Creazione incompleta: " +
+                                relatedDataError.message
                             );
 
                         }
+
+
+                        // ============================================
+                        // COMPLETATO
+                        // ============================================
+
+                        showMessage(
+                            "Personaggio creato!"
+                        );
 
 
                         window.location.href =
                             "scheda.html";
 
 
-                    } catch (error) {
+                    } catch (
+                        error
+                    ) {
 
                         console.error(
                             "Errore creazione personaggio:",
@@ -2312,27 +2650,75 @@ document.addEventListener(
         // AVVIO INTERFACCIA
         // ====================================================
 
-        updateAttributesDisplay();
+        try {
+
+            // ------------------------------------------------
+            // PRIMA VERIFICHIAMO CHE NON ESISTA GIÀ
+            // ------------------------------------------------
+
+            const alreadyExists =
+                await checkExistingCharacter();
 
 
-        setupTokenSelection();
+            if (alreadyExists) {
+
+                return;
+
+            }
 
 
-        const alreadyExists =
-            await checkExistingCharacter();
+            // ------------------------------------------------
+            // INTERFACCIA
+            // ------------------------------------------------
+
+            updateAttributesDisplay();
 
 
-        if (alreadyExists) {
+            setupTokenSelection();
 
-            return;
+
+            setupStepNavigation();
+
+
+            showStep(
+                1
+            );
+
+
+            // ------------------------------------------------
+            // DATI DAL DATABASE
+            // ------------------------------------------------
+
+            await Promise.all([
+
+                loadAbilities(),
+
+                loadStartingItems()
+
+            ]);
+
+
+            console.log(
+                "Creazione personaggio pronta."
+            );
+
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "Errore inizializzazione creazione personaggio:",
+                error
+            );
+
+
+            showMessage(
+                error.message ||
+                "Errore durante il caricamento della creazione personaggio."
+            );
 
         }
-
-
-        ensureStartingItemsUI();
-
-
-        await loadStartingItems();
 
     }
 );
