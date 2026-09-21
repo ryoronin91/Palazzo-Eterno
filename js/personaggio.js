@@ -1,28 +1,70 @@
 // ============================================================
 // PALAZZO ETERNO
-// PERSONAGGIO.JS
+// SCHEDA.JS
 // ============================================================
 //
 // Gestisce:
 //
-// - autenticazione Supabase
-// - creazione del personaggio
-// - controllo personaggio già esistente
-// - 10 punti abilità iniziali
-// - 6 attributi primari
-// - minimo 1 / massimo 30 per attributo
-// - calcolo statistiche secondarie
-// - scelta del token
-// - scelta di 3 oggetti iniziali
-// - possibilità di scegliere più copie dello stesso oggetto
-// - inventario iniziale
-// - salvataggio su Supabase
-// - redirect alla scheda
+// - autenticazione
+// - ruolo utente
+// - personaggio
+// - token
+// - attributi base
+// - bonus equipaggiamento
+// - statistiche secondarie
+// - inventario
+// - zaino
+// - equipaggia
+// - rimuovi equipaggiamento
+// - usa consumabili
+// - note
+// - Master
+// - logout
 //
 // ============================================================
 
 
-console.log("PERSONAGGIO.JS CARICATO");
+console.log("SCHEDA.JS CARICATO");
+
+
+// ============================================================
+// SUPABASE
+// ============================================================
+
+const db = supabaseClient;
+
+
+// ============================================================
+// VARIABILI GLOBALI
+// ============================================================
+
+let currentUser = null;
+
+let character = null;
+
+let currentUserRole = "player";
+
+let characterInventory = [];
+
+let equipmentBonuses = {
+
+    attack_bonus: 0,
+
+    defense_bonus: 0,
+
+    forza_bonus: 0,
+
+    resistenza_bonus: 0,
+
+    costituzione_bonus: 0,
+
+    intelligenza_bonus: 0,
+
+    destrezza_bonus: 0,
+
+    fortuna_bonus: 0
+
+};
 
 
 // ============================================================
@@ -33,2434 +75,2707 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
-        // ====================================================
-        // CONFIGURAZIONE
-        // ====================================================
+        console.log(
+            "Pagina scheda pronta."
+        );
 
-        const INITIAL_POINTS = 10;
 
-        const MIN_ATTRIBUTE = 1;
+        try {
 
-        const MAX_ATTRIBUTE = 30;
+            await checkUser();
 
-        const REQUIRED_STARTING_ITEMS = 3;
+            await loadUserRole();
 
+            await loadCharacter();
 
-        const attributes = [
+            ensureInventoryInterface();
 
-            "forza",
+            await loadInventory();
 
-            "resistenza",
+            displayCharacter();
 
-            "costituzione",
+            displayInventory();
 
-            "intelligenza",
+            updateMasterEntryButton();
 
-            "destrezza",
+            setupEvents();
 
-            "fortuna"
 
-        ];
+        } catch (error) {
 
-
-        // ====================================================
-        // VALORI ATTRIBUTI
-        // ====================================================
-
-        let attributeValues = {
-
-            forza: 1,
-
-            resistenza: 1,
-
-            costituzione: 1,
-
-            intelligenza: 1,
-
-            destrezza: 1,
-
-            fortuna: 1
-
-        };
-
-
-        // ====================================================
-        // VARIABILI
-        // ====================================================
-
-        let currentUser = null;
-
-        let currentCharacter = null;
-
-        let selectedToken = null;
-
-        let startingItems = [];
-
-        let selectedStartingItems = [];
-
-
-        // ====================================================
-        // ELEMENTI HTML
-        // ====================================================
-
-        const form =
-            document.getElementById(
-                "character-form"
-            );
-
-
-        const message =
-            document.getElementById(
-                "character-message"
-            );
-
-
-        const logoutButton =
-            document.getElementById(
-                "logout-button"
-            );
-
-
-        // ====================================================
-        // MESSAGGI
-        // ====================================================
-
-        function showMessage(
-            text
-        ) {
-
-            if (!message) {
-
-                return;
-
-            }
-
-
-            message.textContent =
-                text;
-
-        }
-
-
-        // ====================================================
-        // IMPOSTA TESTO ELEMENTO
-        // ====================================================
-
-        function setText(
-            id,
-            value
-        ) {
-
-            const element =
-                document.getElementById(
-                    id
-                );
-
-
-            if (element) {
-
-                element.textContent =
-                    value;
-
-            }
-
-        }
-
-
-        // ====================================================
-        // CONTROLLO LOGIN
-        // ====================================================
-
-        const {
-
-            data: {
-                user
-            },
-
-            error: userError
-
-        } =
-            await supabaseClient
-                .auth
-                .getUser();
-
-
-        if (
-            userError ||
-            !user
-        ) {
-
-            console.log(
-                "Utente non autenticato."
-            );
-
-
-            window.location.href =
-                "login.html";
-
-
-            return;
-
-        }
-
-
-        currentUser =
-            user;
-
-
-        // ====================================================
-        // EMAIL
-        // ====================================================
-
-        const emailElement =
-            document.getElementById(
-                "user-email"
-            );
-
-
-        if (emailElement) {
-
-            emailElement.textContent =
-                user.email || "";
-
-        }
-
-
-        // ====================================================
-        // CONTROLLO PERSONAGGIO ESISTENTE
-        // ====================================================
-
-        async function checkExistingCharacter() {
-
-            console.log(
-                "Controllo personaggio esistente..."
-            );
-
-
-            const {
-                data,
+            console.error(
+                "Errore caricamento scheda:",
                 error
-            } =
-                await supabaseClient
-                    .from("characters")
-                    .select("id")
-                    .eq(
-                        "user_id",
-                        currentUser.id
-                    )
-                    .maybeSingle();
-
-
-            if (error) {
-
-                console.error(
-                    "Errore controllo personaggio:",
-                    error
-                );
-
-
-                showMessage(
-                    "Errore nel controllo del personaggio."
-                );
-
-
-                return true;
-
-            }
-
-
-            if (data) {
-
-                console.log(
-                    "Personaggio già esistente."
-                );
-
-
-                currentCharacter =
-                    data;
-
-
-                window.location.href =
-                    "scheda.html";
-
-
-                return true;
-
-            }
-
-
-            console.log(
-                "Nessun personaggio trovato."
-            );
-
-
-            return false;
-
-        }
-
-
-        // ====================================================
-        // CALCOLO STATISTICHE SECONDARIE
-        // ====================================================
-
-        function calculateSecondaryStats() {
-
-            const forza =
-                attributeValues.forza;
-
-
-            const resistenza =
-                attributeValues.resistenza;
-
-
-            const costituzione =
-                attributeValues.costituzione;
-
-
-            const intelligenza =
-                attributeValues.intelligenza;
-
-
-            const destrezza =
-                attributeValues.destrezza;
-
-
-            const fortuna =
-                attributeValues.fortuna;
-
-
-            // ATTACCO
-
-            const attack =
-                Math.ceil(
-                    forza / 2
-                );
-
-
-            // DIFESA
-
-            const defense =
-                Math.ceil(
-                    7 +
-                    (
-                        resistenza / 2
-                    )
-                );
-
-
-            // VITA
-
-            const hp =
-                Math.ceil(
-                    5 *
-                    (
-                        costituzione / 2
-                    )
-                );
-
-
-            // MANA
-
-            const mana =
-                Math.ceil(
-                    5 *
-                    (
-                        intelligenza / 2
-                    )
-                );
-
-
-            // MOVIMENTO
-
-            const movement =
-                Math.ceil(
-                    4 +
-                    (
-                        destrezza / 2
-                    )
-                );
-
-
-            // CRITICO
-
-            const critical =
-                Math.min(
-                    50,
-                    Math.ceil(
-                        fortuna *
-                        (
-                            50 / 30
-                        )
-                    )
-                );
-
-
-            return {
-
-                attack,
-
-                defense,
-
-                hp,
-
-                mana,
-
-                movement,
-
-                critical
-
-            };
-
-        }
-
-
-        // ====================================================
-        // AGGIORNA STATISTICHE SECONDARIE
-        // ====================================================
-
-        function updateSecondaryStats() {
-
-            const secondary =
-                calculateSecondaryStats();
-
-
-            setText(
-                "attack-display",
-                secondary.attack
-            );
-
-
-            setText(
-                "attacco-secondary",
-                `Attacco: ${secondary.attack}`
-            );
-
-
-            setText(
-                "defense-display",
-                secondary.defense
-            );
-
-
-            setText(
-                "difesa-secondary",
-                `Difesa: ${secondary.defense}`
-            );
-
-
-            setText(
-                "health-display",
-                secondary.hp
-            );
-
-
-            setText(
-                "costituzione-secondary",
-                `Vita: ${secondary.hp}`
-            );
-
-
-            setText(
-                "mana-display",
-                secondary.mana
-            );
-
-
-            setText(
-                "intelligenza-secondary",
-                `Mana: ${secondary.mana}`
-            );
-
-
-            setText(
-                "movement-display",
-                secondary.movement
-            );
-
-
-            setText(
-                "destrezza-secondary",
-                `Movimento: ${secondary.movement}`
-            );
-
-
-            setText(
-                "critical-display",
-                `${secondary.critical}%`
-            );
-
-
-            setText(
-                "fortuna-secondary",
-                `Critico: ${secondary.critical}%`
-            );
-
-        }
-
-
-        // ====================================================
-        // CALCOLO PUNTI SPESI
-        // ====================================================
-
-        function calculateSpentPoints() {
-
-            return attributes.reduce(
-
-                (
-                    total,
-                    attribute
-                ) => {
-
-                    return total +
-                        (
-                            attributeValues[
-                                attribute
-                            ] - 1
-                        );
-
-                },
-
-                0
-
-            );
-
-        }
-
-
-        // ====================================================
-        // PUNTI RIMANENTI
-        // ====================================================
-
-        function getRemainingPoints() {
-
-            return INITIAL_POINTS -
-                calculateSpentPoints();
-
-        }
-
-
-        // ====================================================
-        // AGGIORNA ATTRIBUTI
-        // ====================================================
-
-        function updateAttributesDisplay() {
-
-            attributes.forEach(
-                attribute => {
-
-                    const value =
-                        attributeValues[
-                            attribute
-                        ];
-
-
-                    setText(
-                        `${attribute}-value`,
-                        value
-                    );
-
-
-                    const minusButton =
-                        document.querySelector(
-                            `.stat-minus[data-stat="${attribute}"]`
-                        );
-
-
-                    const plusButton =
-                        document.querySelector(
-                            `.stat-plus[data-stat="${attribute}"]`
-                        );
-
-
-                    if (minusButton) {
-
-                        minusButton.disabled =
-                            value <=
-                            MIN_ATTRIBUTE;
-
-                    }
-
-
-                    if (plusButton) {
-
-                        plusButton.disabled =
-                            value >=
-                            MAX_ATTRIBUTE ||
-                            getRemainingPoints() <= 0;
-
-                    }
-
-                }
-            );
-
-
-            setText(
-                "points-remaining",
-                getRemainingPoints()
-            );
-
-
-            updateSecondaryStats();
-
-        }
-
-
-        // ====================================================
-        // PULSANTI +
-        // ====================================================
-
-        document
-            .querySelectorAll(
-                ".stat-plus"
-            )
-            .forEach(
-                button => {
-
-                    button.addEventListener(
-                        "click",
-                        () => {
-
-                            const attribute =
-                                button.dataset.stat;
-
-
-                            if (
-                                !attributes.includes(
-                                    attribute
-                                )
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            const currentValue =
-                                attributeValues[
-                                    attribute
-                                ];
-
-
-                            if (
-                                currentValue >=
-                                MAX_ATTRIBUTE
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            if (
-                                getRemainingPoints() <= 0
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            attributeValues[
-                                attribute
-                            ] =
-                                currentValue + 1;
-
-
-                            updateAttributesDisplay();
-
-                        }
-                    );
-
-                }
-            );
-
-
-        // ====================================================
-        // PULSANTI -
-        // ====================================================
-
-        document
-            .querySelectorAll(
-                ".stat-minus"
-            )
-            .forEach(
-                button => {
-
-                    button.addEventListener(
-                        "click",
-                        () => {
-
-                            const attribute =
-                                button.dataset.stat;
-
-
-                            if (
-                                !attributes.includes(
-                                    attribute
-                                )
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            const currentValue =
-                                attributeValues[
-                                    attribute
-                                ];
-
-
-                            if (
-                                currentValue <=
-                                MIN_ATTRIBUTE
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            attributeValues[
-                                attribute
-                            ] =
-                                currentValue - 1;
-
-
-                            updateAttributesDisplay();
-
-                        }
-                    );
-
-                }
-            );
-
-
-        // ====================================================
-        // TOKEN
-        // ====================================================
-
-        function setupTokenSelection() {
-
-            const tokenOptions =
-                document.querySelectorAll(
-                    ".token-option"
-                );
-
-
-            const preview =
-                document.getElementById(
-                    "token-preview"
-                );
-
-
-            const selectedName =
-                document.getElementById(
-                    "selected-token-name"
-                );
-
-
-            tokenOptions.forEach(
-                token => {
-
-                    token.addEventListener(
-                        "click",
-                        () => {
-
-                            tokenOptions.forEach(
-                                option => {
-
-                                    option.classList.remove(
-                                        "selected"
-                                    );
-
-                                }
-                            );
-
-
-                            token.classList.add(
-                                "selected"
-                            );
-
-
-                            selectedToken =
-                                token.dataset.token;
-
-
-                            console.log(
-                                "Token selezionato:",
-                                selectedToken
-                            );
-
-
-                            if (preview) {
-
-                                preview.innerHTML =
-                                    "";
-
-
-                                const image =
-                                    document.createElement(
-                                        "img"
-                                    );
-
-
-                                image.src =
-                                    `immagini/token/${selectedToken}`;
-
-
-                                image.alt =
-                                    "Token selezionato";
-
-
-                                preview.appendChild(
-                                    image
-                                );
-
-                            }
-
-
-                            if (selectedName) {
-
-                                selectedName.textContent =
-                                    "Token selezionato";
-
-                            }
-
-                        }
-                    );
-
-                }
-            );
-
-        }
-
-
-        // ====================================================
-        // CREA INTERFACCIA EQUIPAGGIAMENTO INIZIALE
-        // ====================================================
-
-        function ensureStartingItemsUI() {
-
-            if (
-                document.getElementById(
-                    "starting-items-list"
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            if (!form) {
-
-                return;
-
-            }
-
-
-            // =================================================
-            // CSS
-            // =================================================
-
-            const style =
-                document.createElement(
-                    "style"
-                );
-
-
-            style.textContent = `
-
-                .starting-items-section {
-
-                    margin-top: 32px;
-
-                    margin-bottom: 28px;
-
-                }
-
-
-                .starting-items-description {
-
-                    color: #aaa;
-
-                    line-height: 1.5;
-
-                    margin-bottom: 12px;
-
-                }
-
-
-                .starting-items-counter {
-
-                    display: inline-flex;
-
-                    align-items: center;
-
-                    padding: 7px 12px;
-
-                    margin-bottom: 20px;
-
-                    border-radius: 7px;
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.10
-                        );
-
-                    border:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.30
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 13px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-category {
-
-                    margin-bottom: 22px;
-
-                }
-
-
-                .starting-item-category-title {
-
-                    margin: 0 0 10px;
-
-                    padding-bottom: 6px;
-
-                    border-bottom:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.25
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 14px;
-
-                    letter-spacing: 1px;
-
-                }
-
-
-                .starting-items-grid {
-
-                    display: grid;
-
-                    grid-template-columns:
-                        repeat(
-                            auto-fill,
-                            minmax(
-                                145px,
-                                1fr
-                            )
-                        );
-
-                    gap: 8px;
-
-                }
-
-
-                .starting-item {
-
-                    position: relative;
-
-                    min-height: 82px;
-
-                    padding: 9px 10px;
-
-                    box-sizing: border-box;
-
-                    text-align: left;
-
-                    border-radius: 7px;
-
-                    border:
-                        1px solid
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.10
-                        );
-
-                    background:
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.025
-                        );
-
-                    color: inherit;
-
-                    transition:
-                        border-color 0.12s ease,
-                        background 0.12s ease,
-                        transform 0.12s ease;
-
-                }
-
-
-                .starting-item:hover {
-
-                    border-color:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.55
-                        );
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.05
-                        );
-
-                }
-
-
-                .starting-item.selected {
-
-                    border-color:
-                        #b88a3b;
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.12
-                        );
-
-                }
-
-
-                .starting-item-name {
-
-                    padding-right: 30px;
-
-                    font-size: 12px;
-
-                    font-weight: bold;
-
-                    margin-bottom: 4px;
-
-                }
-
-
-                .starting-item-description {
-
-                    color: #aaa;
-
-                    font-size: 10px;
-
-                    line-height: 1.3;
-
-                }
-
-
-                .starting-item-meta {
-
-                    margin-top: 6px;
-
-                    color: #cda65b;
-
-                    font-size: 9px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-quantity {
-
-                    position: absolute;
-
-                    top: 6px;
-
-                    right: 6px;
-
-                    min-width: 22px;
-
-                    height: 22px;
-
-                    padding: 0 5px;
-
-                    box-sizing: border-box;
-
-                    display: flex;
-
-                    align-items: center;
-
-                    justify-content: center;
-
-                    border-radius: 20px;
-
-                    background: #b88a3b;
-
-                    color: #111;
-
-                    font-size: 10px;
-
-                    font-weight: bold;
-
-                }
-
-
-                .starting-item-controls {
-
-                    display: flex;
-
-                    gap: 5px;
-
-                    margin-top: 7px;
-
-                }
-
-
-                .starting-item-control {
-
-                    flex: 1;
-
-                    height: 23px;
-
-                    padding: 0;
-
-                    border-radius: 4px;
-
-                    border:
-                        1px solid
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.35
-                        );
-
-                    background:
-                        rgba(
-                            0,
-                            0,
-                            0,
-                            0.25
-                        );
-
-                    color: #d4af67;
-
-                    font-size: 14px;
-
-                    line-height: 20px;
-
-                    cursor: pointer;
-
-                }
-
-
-                .starting-item-control:hover:not(:disabled) {
-
-                    background:
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.15
-                        );
-
-                }
-
-
-                .starting-item-control:disabled {
-
-                    opacity: 0.25;
-
-                    cursor: default;
-
-                }
-
-
-                .starting-kit-note {
-
-                    margin-top: 18px;
-
-                    padding: 11px 13px;
-
-                    border-radius: 7px;
-
-                    background:
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.035
-                        );
-
-                    color: #bbb;
-
-                    font-size: 11px;
-
-                    line-height: 1.5;
-
-                }
-
-
-                @media (
-                    max-width: 600px
-                ) {
-
-                    .starting-items-grid {
-
-                        grid-template-columns:
-                            repeat(
-                                2,
-                                1fr
-                            );
-
-                    }
-
-                }
-
-
-                @media (
-                    max-width: 390px
-                ) {
-
-                    .starting-items-grid {
-
-                        grid-template-columns:
-                            1fr;
-
-                    }
-
-                }
-
-            `;
-
-
-            document.head.appendChild(
-                style
-            );
-
-
-            // =================================================
-            // HTML
-            // =================================================
-
-            const section =
-                document.createElement(
-                    "section"
-                );
-
-
-            section.className =
-                "starting-items-section";
-
-
-            section.innerHTML = `
-
-                <h2>
-                    Equipaggiamento iniziale
-                </h2>
-
-
-                <p class="starting-items-description">
-
-                    Scegli
-
-                    <strong>
-                        3 oggetti
-                    </strong>
-
-                    con cui iniziare l'avventura.
-
-                    Puoi scegliere anche più copie
-                    dello stesso oggetto.
-
-                </p>
-
-
-                <div class="starting-items-counter">
-
-                    Oggetti scelti:&nbsp;
-
-                    <span id="starting-items-count">
-                        0
-                    </span>
-
-                    /3
-
-                </div>
-
-
-                <div id="starting-items-list"></div>
-
-
-                <div class="starting-kit-note">
-
-                    Riceverai inoltre automaticamente:
-
-                    <strong>
-                        1 Pozione cura mana
-                    </strong>,
-
-                    <strong>
-                        1 Pozione cura vita
-                    </strong>
-
-                    e
-
-                    <strong>
-                        10 Monete d'oro
-                    </strong>.
-
-                </div>
-
-            `;
-
-
-            form.parentNode.insertBefore(
-                section,
-                form
-            );
-
-        }
-
-
-        // ====================================================
-        // CARICA OGGETTI EQUIPAGGIABILI
-        // ====================================================
-
-        async function loadStartingItems() {
-
-            console.log(
-                "Caricamento oggetti iniziali..."
-            );
-
-
-            const {
-                data,
-                error
-            } =
-                await supabaseClient
-                    .from("items")
-                    .select(`
-                        id,
-                        name,
-                        description,
-                        item_type,
-                        equip_slot,
-                        hand_rule,
-                        gold_value,
-                        recipe_only
-                    `)
-                    .neq(
-                        "equip_slot",
-                        "none"
-                    )
-                    .eq(
-                        "recipe_only",
-                        false
-                    )
-                    .order(
-                        "item_type",
-                        {
-                            ascending: true
-                        }
-                    )
-                    .order(
-                        "name",
-                        {
-                            ascending: true
-                        }
-                    );
-
-
-            if (error) {
-
-                console.error(
-                    "Errore caricamento oggetti iniziali:",
-                    error
-                );
-
-
-                showMessage(
-                    "Impossibile caricare gli oggetti iniziali: " +
-                    error.message
-                );
-
-
-                return;
-
-            }
-
-
-            startingItems =
-                data || [];
-
-
-            console.log(
-                "Oggetti iniziali caricati:",
-                startingItems
-            );
-
-
-            renderStartingItems();
-
-        }
-
-
-        // ====================================================
-        // QUANTITÀ SELEZIONATA DI UN OGGETTO
-        // ====================================================
-
-        function getSelectedItemQuantity(
-            itemId
-        ) {
-
-            return selectedStartingItems.filter(
-                selectedId =>
-                    selectedId ===
-                    itemId
-            ).length;
-
-        }
-
-
-        // ====================================================
-        // AGGIUNGI OGGETTO
-        // ====================================================
-
-        function addStartingItem(
-            itemId
-        ) {
-
-            if (
-                selectedStartingItems.length >=
-                REQUIRED_STARTING_ITEMS
-            ) {
-
-                showMessage(
-                    "Hai già scelto 3 oggetti."
-                );
-
-
-                return;
-
-            }
-
-
-            selectedStartingItems.push(
-                itemId
             );
 
 
             showMessage(
-                ""
-            );
-
-
-            renderStartingItems();
-
-        }
-
-
-        // ====================================================
-        // RIMUOVI OGGETTO
-        // ====================================================
-
-        function removeStartingItem(
-            itemId
-        ) {
-
-            const index =
-                selectedStartingItems.indexOf(
-                    itemId
-                );
-
-
-            if (
-                index === -1
-            ) {
-
-                return;
-
-            }
-
-
-            selectedStartingItems.splice(
-                index,
-                1
-            );
-
-
-            showMessage(
-                ""
-            );
-
-
-            renderStartingItems();
-
-        }
-
-
-        // ====================================================
-        // CONTATORE OGGETTI
-        // ====================================================
-
-        function updateStartingItemsCounter() {
-
-            setText(
-                "starting-items-count",
-                selectedStartingItems.length
+                "Errore durante il caricamento della scheda: " +
+                error.message
             );
 
         }
-
-
-        // ====================================================
-        // CREA CARTA OGGETTO
-        // ====================================================
-
-        function createStartingItemCard(
-            item
-        ) {
-
-            const quantity =
-                getSelectedItemQuantity(
-                    item.id
-                );
-
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "starting-item";
-
-
-            if (
-                quantity > 0
-            ) {
-
-                card.classList.add(
-                    "selected"
-                );
-
-            }
-
-
-            // =================================================
-            // QUANTITÀ
-            // =================================================
-
-            if (
-                quantity > 0
-            ) {
-
-                const quantityElement =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                quantityElement.className =
-                    "starting-item-quantity";
-
-
-                quantityElement.textContent =
-                    `×${quantity}`;
-
-
-                card.appendChild(
-                    quantityElement
-                );
-
-            }
-
-
-            // =================================================
-            // NOME
-            // =================================================
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-
-            name.className =
-                "starting-item-name";
-
-
-            name.textContent =
-                item.name;
-
-
-            card.appendChild(
-                name
-            );
-
-
-            // =================================================
-            // DESCRIZIONE
-            // =================================================
-
-            const description =
-                document.createElement(
-                    "div"
-                );
-
-
-            description.className =
-                "starting-item-description";
-
-
-            description.textContent =
-                item.description || "";
-
-
-            card.appendChild(
-                description
-            );
-
-
-            // =================================================
-            // PREZZO
-            // =================================================
-
-            const value =
-                document.createElement(
-                    "div"
-                );
-
-
-            value.className =
-                "starting-item-meta";
-
-
-            value.textContent =
-                `Valore: ${
-                    Number(
-                        item.gold_value
-                    ) || 0
-                } MO`;
-
-
-            card.appendChild(
-                value
-            );
-
-
-            // =================================================
-            // CONTROLLI
-            // =================================================
-
-            const controls =
-                document.createElement(
-                    "div"
-                );
-
-
-            controls.className =
-                "starting-item-controls";
-
-
-            // -------------------------------------------------
-            // MENO
-            // -------------------------------------------------
-
-            const minus =
-                document.createElement(
-                    "button"
-                );
-
-
-            minus.type =
-                "button";
-
-
-            minus.className =
-                "starting-item-control";
-
-
-            minus.textContent =
-                "−";
-
-
-            minus.disabled =
-                quantity <= 0;
-
-
-            minus.addEventListener(
-                "click",
-                () => {
-
-                    removeStartingItem(
-                        item.id
-                    );
-
-                }
-            );
-
-
-            // -------------------------------------------------
-            // PIÙ
-            // -------------------------------------------------
-
-            const plus =
-                document.createElement(
-                    "button"
-                );
-
-
-            plus.type =
-                "button";
-
-
-            plus.className =
-                "starting-item-control";
-
-
-            plus.textContent =
-                "+";
-
-
-            plus.disabled =
-                selectedStartingItems.length >=
-                REQUIRED_STARTING_ITEMS;
-
-
-            plus.addEventListener(
-                "click",
-                () => {
-
-                    addStartingItem(
-                        item.id
-                    );
-
-                }
-            );
-
-
-            controls.append(
-                minus,
-                plus
-            );
-
-
-            card.appendChild(
-                controls
-            );
-
-
-            return card;
-
-        }
-
-
-        // ====================================================
-        // MOSTRA OGGETTI DIVISI PER CATEGORIA
-        // ====================================================
-
-        function renderStartingItems() {
-
-            const container =
-                document.getElementById(
-                    "starting-items-list"
-                );
-
-
-            if (!container) {
-
-                return;
-
-            }
-
-
-            container.replaceChildren();
-
-
-            const categories = [
-
-                {
-                    type: "weapon",
-                    label: "ARMI"
-                },
-
-                {
-                    type: "armor",
-                    label: "ARMATURE"
-                },
-
-                {
-                    type: "accessory",
-                    label: "ACCESSORI"
-                }
-
-            ];
-
-
-            categories.forEach(
-                category => {
-
-                    const categoryItems =
-                        startingItems.filter(
-                            item =>
-                                item.item_type ===
-                                category.type
-                        );
-
-
-                    if (
-                        categoryItems.length === 0
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    const section =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    section.className =
-                        "starting-item-category";
-
-
-                    // =========================================
-                    // TITOLO
-                    // =========================================
-
-                    const title =
-                        document.createElement(
-                            "h3"
-                        );
-
-
-                    title.className =
-                        "starting-item-category-title";
-
-
-                    title.textContent =
-                        category.label;
-
-
-                    section.appendChild(
-                        title
-                    );
-
-
-                    // =========================================
-                    // GRIGLIA
-                    // =========================================
-
-                    const grid =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    grid.className =
-                        "starting-items-grid";
-
-
-                    categoryItems.forEach(
-                        item => {
-
-                            grid.appendChild(
-                                createStartingItemCard(
-                                    item
-                                )
-                            );
-
-                        }
-                    );
-
-
-                    section.appendChild(
-                        grid
-                    );
-
-
-                    container.appendChild(
-                        section
-                    );
-
-                }
-            );
-
-
-            updateStartingItemsCounter();
-
-        }
-
-
-        // ====================================================
-        // SALVA INVENTARIO INIZIALE
-        // ====================================================
-
-        async function saveStartingInventory(
-            characterId
-        ) {
-
-            // =================================================
-            // RAGGRUPPA EVENTUALI DUPLICATI
-            // =================================================
-
-            const selectedQuantities = {};
-
-
-            selectedStartingItems.forEach(
-                itemId => {
-
-                    if (
-                        !selectedQuantities[
-                            itemId
-                        ]
-                    ) {
-
-                        selectedQuantities[
-                            itemId
-                        ] = 0;
-
-                    }
-
-
-                    selectedQuantities[
-                        itemId
-                    ] += 1;
-
-                }
-            );
-
-
-            // =================================================
-            // OGGETTI SCELTI
-            // =================================================
-
-            const chosenRows =
-                Object.entries(
-                    selectedQuantities
-                ).map(
-                    (
-                        [
-                            itemId,
-                            quantity
-                        ]
-                    ) => ({
-
-                        character_id:
-                            characterId,
-
-                        item_id:
-                            itemId,
-
-                        quantity:
-                            quantity,
-
-                        equipped_slot:
-                            null
-
-                    })
-                );
-
-
-            // =================================================
-            // INVENTARIO COMPLETO
-            // =================================================
-
-            const inventoryRows = [
-
-                ...chosenRows,
-
-
-                // ---------------------------------------------
-                // POZIONE MANA
-                // ---------------------------------------------
-
-                {
-
-                    character_id:
-                        characterId,
-
-                    item_id:
-                        "pozione_mana",
-
-                    quantity:
-                        1,
-
-                    equipped_slot:
-                        null
-
-                },
-
-
-                // ---------------------------------------------
-                // POZIONE VITA
-                // ---------------------------------------------
-
-                {
-
-                    character_id:
-                        characterId,
-
-                    item_id:
-                        "pozione_vita",
-
-                    quantity:
-                        1,
-
-                    equipped_slot:
-                        null
-
-                },
-
-
-                // ---------------------------------------------
-                // MONETE D'ORO
-                // ---------------------------------------------
-
-                {
-
-                    character_id:
-                        characterId,
-
-                    item_id:
-                        "moneta_oro",
-
-                    quantity:
-                        10,
-
-                    equipped_slot:
-                        null
-
-                }
-
-            ];
-
-
-            const {
-                error
-            } =
-                await supabaseClient
-                    .from(
-                        "character_inventory"
-                    )
-                    .insert(
-                        inventoryRows
-                    );
-
-
-            if (error) {
-
-                throw error;
-
-            }
-
-
-            console.log(
-                "Inventario iniziale creato:",
-                inventoryRows
-            );
-
-        }
-
-
-        // ====================================================
-        // SALVATAGGIO PERSONAGGIO
-        // ====================================================
-
-        if (form) {
-
-            form.addEventListener(
-                "submit",
-                async event => {
-
-                    event.preventDefault();
-
-
-                    // =========================================
-                    // CONTROLLO NOME
-                    // =========================================
-
-                    const nameInput =
-                        document.getElementById(
-                            "nome"
-                        );
-
-
-                    const nome =
-                        nameInput
-                            ? nameInput.value.trim()
-                            : "";
-
-
-                    if (!nome) {
-
-                        showMessage(
-                            "Inserisci il nome del personaggio."
-                        );
-
-
-                        return;
-
-                    }
-
-
-                    // =========================================
-                    // CONTROLLO PUNTI
-                    // =========================================
-
-                    if (
-                        getRemainingPoints() !==
-                        0
-                    ) {
-
-                        showMessage(
-                            "Devi utilizzare tutti i 10 punti abilità."
-                        );
-
-
-                        return;
-
-                    }
-
-
-                    // =========================================
-                    // CONTROLLO TOKEN
-                    // =========================================
-
-                    if (!selectedToken) {
-
-                        showMessage(
-                            "Seleziona un token per il tuo personaggio."
-                        );
-
-
-                        return;
-
-                    }
-
-
-                    // =========================================
-                    // CONTROLLO OGGETTI
-                    // =========================================
-
-                    if (
-                        selectedStartingItems.length !==
-                        REQUIRED_STARTING_ITEMS
-                    ) {
-
-                        showMessage(
-                            "Devi scegliere esattamente 3 oggetti iniziali."
-                        );
-
-
-                        return;
-
-                    }
-
-
-                    // =========================================
-                    // CONTROLLO DUPLICATO PERSONAGGIO
-                    // =========================================
-
-                    const alreadyExists =
-                        await checkExistingCharacter();
-
-
-                    if (alreadyExists) {
-
-                        return;
-
-                    }
-
-
-                    // =========================================
-                    // PULSANTE SALVATAGGIO
-                    // =========================================
-
-                    const submitButton =
-                        form.querySelector(
-                            'button[type="submit"]'
-                        );
-
-
-                    if (submitButton) {
-
-                        submitButton.disabled =
-                            true;
-
-
-                        submitButton.textContent =
-                            "SALVATAGGIO...";
-
-                    }
-
-
-                    // =========================================
-                    // DATI PERSONAGGIO
-                    // =========================================
-
-                    const characterData = {
-
-                        user_id:
-                            currentUser.id,
-
-                        nome:
-                            nome,
-
-                        livello:
-                            1,
-
-                        forza:
-                            attributeValues.forza,
-
-                        resistenza:
-                            attributeValues.resistenza,
-
-                        costituzione:
-                            attributeValues.costituzione,
-
-                        intelligenza:
-                            attributeValues.intelligenza,
-
-                        destrezza:
-                            attributeValues.destrezza,
-
-                        fortuna:
-                            attributeValues.fortuna,
-
-                        token:
-                            selectedToken,
-
-                        updated_at:
-                            new Date().toISOString()
-
-                    };
-
-
-                    console.log(
-                        "Dati da salvare:",
-                        characterData
-                    );
-
-
-                    try {
-
-                        // =====================================
-                        // CREA PERSONAGGIO
-                        // =====================================
-
-                        const {
-                            data,
-                            error
-                        } =
-                            await supabaseClient
-                                .from(
-                                    "characters"
-                                )
-                                .insert(
-                                    characterData
-                                )
-                                .select()
-                                .single();
-
-
-                        if (error) {
-
-                            throw error;
-
-                        }
-
-
-                        currentCharacter =
-                            data;
-
-
-                        console.log(
-                            "Personaggio salvato:",
-                            currentCharacter
-                        );
-
-
-                        // =====================================
-                        // CREA INVENTARIO
-                        // =====================================
-
-                        try {
-
-                            await saveStartingInventory(
-                                currentCharacter.id
-                            );
-
-                        } catch (
-                            inventoryError
-                        ) {
-
-                            console.error(
-                                "Errore inventario iniziale:",
-                                inventoryError
-                            );
-
-
-                            // =================================
-                            // ROLLBACK
-                            // =================================
-                            //
-                            // Se l'inventario fallisce,
-                            // cancelliamo il PG appena creato.
-                            //
-                            // =================================
-
-                            await supabaseClient
-                                .from(
-                                    "characters"
-                                )
-                                .delete()
-                                .eq(
-                                    "id",
-                                    currentCharacter.id
-                                );
-
-
-                            currentCharacter =
-                                null;
-
-
-                            throw new Error(
-                                "Inventario iniziale non creato: " +
-                                inventoryError.message
-                            );
-
-                        }
-
-
-                        // =====================================
-                        // REDIRECT ALLA SCHEDA
-                        // =====================================
-
-                        window.location.href =
-                            "scheda.html";
-
-
-                    } catch (error) {
-
-                        console.error(
-                            "Errore creazione personaggio:",
-                            error
-                        );
-
-
-                        showMessage(
-                            "Errore durante la creazione del personaggio: " +
-                            error.message
-                        );
-
-
-                        if (submitButton) {
-
-                            submitButton.disabled =
-                                false;
-
-
-                            submitButton.textContent =
-                                "SALVA PERSONAGGIO";
-
-                        }
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        // ====================================================
-        // LOGOUT
-        // ====================================================
-
-        if (logoutButton) {
-
-            logoutButton.addEventListener(
-                "click",
-                async () => {
-
-                    await supabaseClient
-                        .auth
-                        .signOut();
-
-
-                    window.location.href =
-                        "index.html";
-
-                }
-            );
-
-        }
-
-
-        // ====================================================
-        // AVVIO INTERFACCIA
-        // ====================================================
-
-        updateAttributesDisplay();
-
-
-        setupTokenSelection();
-
-
-        // ====================================================
-        // SE ESISTE GIÀ UN PERSONAGGIO
-        // ====================================================
-
-        const alreadyExists =
-            await checkExistingCharacter();
-
-
-        if (alreadyExists) {
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // EQUIPAGGIAMENTO INIZIALE
-        // ====================================================
-
-        ensureStartingItemsUI();
-
-
-        await loadStartingItems();
 
     }
 );
+
+
+// ============================================================
+// AUTENTICAZIONE
+// ============================================================
+
+async function checkUser() {
+
+    const {
+        data: {
+            user
+        },
+        error
+    } =
+        await db.auth.getUser();
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    if (!user) {
+
+        window.location.href =
+            "login.html";
+
+        return;
+
+    }
+
+
+    currentUser =
+        user;
+
+
+    const emailElement =
+        document.getElementById(
+            "user-email"
+        );
+
+
+    if (emailElement) {
+
+        emailElement.textContent =
+            currentUser.email || "";
+
+    }
+
+}
+
+
+// ============================================================
+// RUOLO
+// ============================================================
+
+async function loadUserRole() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("user_roles")
+            .select("role")
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    currentUserRole =
+        data?.role ||
+        "player";
+
+}
+
+
+// ============================================================
+// MASTER
+// ============================================================
+
+function updateMasterEntryButton() {
+
+    const button =
+        document.getElementById(
+            "master-entry-button"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.style.display =
+        currentUserRole === "master"
+            ? "inline-flex"
+            : "none";
+
+}
+
+
+// ============================================================
+// PERSONAGGIO
+// ============================================================
+
+async function loadCharacter() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("characters")
+            .select("*")
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    if (!data) {
+
+        window.location.href =
+            "personaggio.html";
+
+        return;
+
+    }
+
+
+    character =
+        data;
+
+
+    console.log(
+        "Personaggio:",
+        character
+    );
+
+}
+
+
+// ============================================================
+// INVENTARIO
+// ============================================================
+
+async function loadInventory() {
+
+    if (!character) {
+
+        characterInventory = [];
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "character_inventory"
+            )
+            .select(`
+                id,
+                character_id,
+                item_id,
+                quantity,
+                equipped_slot,
+                created_at,
+                updated_at,
+                item:items (
+                    id,
+                    name,
+                    description,
+                    item_type,
+                    equip_slot,
+                    hand_rule,
+                    stackable,
+                    max_stack,
+                    attack_bonus,
+                    defense_bonus,
+                    forza_bonus,
+                    resistenza_bonus,
+                    costituzione_bonus,
+                    intelligenza_bonus,
+                    destrezza_bonus,
+                    fortuna_bonus,
+                    heal_pf,
+                    heal_pm,
+                    gold_value,
+                    unique_world,
+                    vendor_unlimited,
+                    recipe_only
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterInventory =
+        data || [];
+
+
+    calculateEquipmentBonuses();
+
+
+    console.log(
+        "Inventario:",
+        characterInventory
+    );
+
+}
+
+
+// ============================================================
+// BONUS EQUIPAGGIAMENTO
+// ============================================================
+
+function calculateEquipmentBonuses() {
+
+    equipmentBonuses = {
+
+        attack_bonus: 0,
+
+        defense_bonus: 0,
+
+        forza_bonus: 0,
+
+        resistenza_bonus: 0,
+
+        costituzione_bonus: 0,
+
+        intelligenza_bonus: 0,
+
+        destrezza_bonus: 0,
+
+        fortuna_bonus: 0
+
+    };
+
+
+    characterInventory
+        .filter(
+            entry =>
+                entry.equipped_slot &&
+                entry.item
+        )
+        .forEach(
+            entry => {
+
+                const item =
+                    entry.item;
+
+
+                equipmentBonuses.attack_bonus +=
+                    Number(
+                        item.attack_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.defense_bonus +=
+                    Number(
+                        item.defense_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.forza_bonus +=
+                    Number(
+                        item.forza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.resistenza_bonus +=
+                    Number(
+                        item.resistenza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.costituzione_bonus +=
+                    Number(
+                        item.costituzione_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.intelligenza_bonus +=
+                    Number(
+                        item.intelligenza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.destrezza_bonus +=
+                    Number(
+                        item.destrezza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.fortuna_bonus +=
+                    Number(
+                        item.fortuna_bonus
+                    ) || 0;
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// CLAMP ATTRIBUTO 1-30
+// ============================================================
+
+function clampAttribute(
+    value
+) {
+
+    return Math.max(
+        1,
+        Math.min(
+            30,
+            Number(value) || 1
+        )
+    );
+
+}
+
+
+// ============================================================
+// ATTRIBUTO BASE
+// ============================================================
+
+function getBaseAttribute(
+    name
+) {
+
+    return clampAttribute(
+        character?.[name]
+    );
+
+}
+
+
+// ============================================================
+// ATTRIBUTO EFFETTIVO
+// ============================================================
+
+function getEffectiveAttribute(
+    name
+) {
+
+    const base =
+        getBaseAttribute(
+            name
+        );
+
+
+    const bonusName =
+        `${name}_bonus`;
+
+
+    const bonus =
+        Number(
+            equipmentBonuses[
+                bonusName
+            ]
+        ) || 0;
+
+
+    return clampAttribute(
+        base + bonus
+    );
+
+}
+
+
+// ============================================================
+// MOSTRA PERSONAGGIO
+// ============================================================
+
+function displayCharacter() {
+
+    if (!character) {
+
+        return;
+
+    }
+
+
+    setText(
+        "character-name",
+        character.nome ||
+        "Avventuriero"
+    );
+
+
+    setText(
+        "character-level",
+        `Livello ${
+            Number(
+                character.livello
+            ) || 1
+        }`
+    );
+
+
+    displayToken();
+
+
+    displayAttributes();
+
+
+    calculateSecondaryStats();
+
+
+    const notes =
+        document.getElementById(
+            "character-notes"
+        );
+
+
+    if (notes) {
+
+        notes.value =
+            character.notes || "";
+
+    }
+
+}
+
+
+// ============================================================
+// ATTRIBUTI
+// ============================================================
+
+function displayAttributes() {
+
+    const attributeNames = [
+
+        "forza",
+
+        "resistenza",
+
+        "costituzione",
+
+        "intelligenza",
+
+        "destrezza",
+
+        "fortuna"
+
+    ];
+
+
+    attributeNames.forEach(
+        name => {
+
+            const base =
+                getBaseAttribute(
+                    name
+                );
+
+
+            const effective =
+                getEffectiveAttribute(
+                    name
+                );
+
+
+            const element =
+                document.getElementById(
+                    `${name}-display`
+                );
+
+
+            if (!element) {
+
+                return;
+
+            }
+
+
+            if (
+                base ===
+                effective
+            ) {
+
+                element.textContent =
+                    effective;
+
+            } else {
+
+                element.textContent =
+                    effective;
+
+
+                element.title =
+                    `Base ${base} · Equipaggiamento ${
+                        effective - base >= 0
+                            ? "+"
+                            : ""
+                    }${effective - base}`;
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// TOKEN
+// ============================================================
+
+function displayToken() {
+
+    const token =
+        document.getElementById(
+            "character-token"
+        );
+
+
+    if (!token) {
+
+        return;
+
+    }
+
+
+    if (
+        !character.token
+    ) {
+
+        token.style.display =
+            "none";
+
+        return;
+
+    }
+
+
+    let path =
+        character.token;
+
+
+    if (
+        !path.includes("/")
+    ) {
+
+        path =
+            `immagini/token/${path}`;
+
+    }
+
+
+    token.src =
+        path;
+
+
+    token.alt =
+        `Token di ${
+            character.nome ||
+            "personaggio"
+        }`;
+
+
+    token.style.display =
+        "block";
+
+}
+
+
+// ============================================================
+// STATISTICHE
+// ============================================================
+
+function calculateSecondaryStats() {
+
+    const forza =
+        getEffectiveAttribute(
+            "forza"
+        );
+
+
+    const resistenza =
+        getEffectiveAttribute(
+            "resistenza"
+        );
+
+
+    const costituzione =
+        getEffectiveAttribute(
+            "costituzione"
+        );
+
+
+    const intelligenza =
+        getEffectiveAttribute(
+            "intelligenza"
+        );
+
+
+    const destrezza =
+        getEffectiveAttribute(
+            "destrezza"
+        );
+
+
+    const fortuna =
+        getEffectiveAttribute(
+            "fortuna"
+        );
+
+
+    const attack =
+        Math.ceil(
+            forza / 2
+        )
+        +
+        equipmentBonuses.attack_bonus;
+
+
+    const defense =
+        Math.ceil(
+            7 +
+            (
+                resistenza / 2
+            )
+        )
+        +
+        equipmentBonuses.defense_bonus;
+
+
+    const maxPF =
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
+
+
+    const maxPM =
+        Math.ceil(
+            5 *
+            (
+                intelligenza / 2
+            )
+        );
+
+
+    const movement =
+        Math.ceil(
+            4 +
+            (
+                destrezza / 2
+            )
+        );
+
+
+    const critical =
+        Math.round(
+            fortuna *
+            (
+                50 / 30
+            )
+            *
+            100
+        )
+        /
+        100;
+
+
+    let currentPF =
+        character.current_hp;
+
+
+    let currentPM =
+        character.current_pm;
+
+
+    if (
+        currentPF === null ||
+        currentPF === undefined
+    ) {
+
+        currentPF =
+            maxPF;
+
+    }
+
+
+    if (
+        currentPM === null ||
+        currentPM === undefined
+    ) {
+
+        currentPM =
+            maxPM;
+
+    }
+
+
+    currentPF =
+        Math.max(
+            0,
+            Math.min(
+                Number(
+                    currentPF
+                ),
+                maxPF
+            )
+        );
+
+
+    currentPM =
+        Math.max(
+            0,
+            Math.min(
+                Number(
+                    currentPM
+                ),
+                maxPM
+            )
+        );
+
+
+    setText(
+        "attack-display",
+        attack
+    );
+
+
+    setText(
+        "defense-display",
+        defense
+    );
+
+
+    setText(
+        "life-display",
+        `${currentPF}/${maxPF}`
+    );
+
+
+    setText(
+        "mana-display",
+        `${currentPM}/${maxPM}`
+    );
+
+
+    setText(
+        "movement-display",
+        movement
+    );
+
+
+    setText(
+        "critical-display",
+        `${critical.toFixed(2)}%`
+    );
+
+}
+
+
+// ============================================================
+// IMPOSTA TESTO
+// ============================================================
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (element) {
+
+        element.textContent =
+            value;
+
+    }
+
+}
+
+
+// ============================================================
+// CREA INTERFACCIA INVENTARIO SE MANCA
+// ============================================================
+
+function ensureInventoryInterface() {
+
+    if (
+        document.getElementById(
+            "backpack-list"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const notesSection =
+        document.querySelector(
+            ".notes-section"
+        );
+
+
+    const parent =
+        notesSection?.parentNode;
+
+
+    if (!parent) {
+
+        return;
+
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.textContent = `
+
+        .inventory-system-section {
+
+            margin: 30px 0;
+
+        }
+
+
+        .equipment-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap: 10px;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .equipment-slot {
+
+            min-height: 100px;
+
+            padding: 12px;
+
+            box-sizing: border-box;
+
+            border-radius: 10px;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.04
+                );
+
+        }
+
+
+        .equipment-slot-title {
+
+            font-size: 11px;
+
+            opacity: 0.6;
+
+            margin-bottom: 7px;
+
+            text-transform: uppercase;
+
+        }
+
+
+        .equipment-item-name {
+
+            font-weight: bold;
+
+            font-size: 14px;
+
+        }
+
+
+        .equipment-item-description {
+
+            font-size: 11px;
+
+            opacity: 0.7;
+
+            margin-top: 4px;
+
+        }
+
+
+        .equipment-item-value {
+
+            margin-top: 5px;
+
+            font-size: 10px;
+
+            color: #d4af67;
+
+        }
+
+
+        .equipment-empty {
+
+            opacity: 0.35;
+
+            font-size: 12px;
+
+        }
+
+
+        .inventory-button {
+
+            margin-top: 8px;
+
+            padding: 5px 8px;
+
+            border-radius: 5px;
+
+            border:
+                1px solid
+                rgba(
+                    184,
+                    138,
+                    59,
+                    0.5
+                );
+
+            background:
+                rgba(
+                    184,
+                    138,
+                    59,
+                    0.12
+                );
+
+            color: #d4af67;
+
+            cursor: pointer;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+        }
+
+
+        .inventory-button:hover {
+
+            background:
+                rgba(
+                    184,
+                    138,
+                    59,
+                    0.22
+                );
+
+        }
+
+
+        .backpack-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 10px;
+
+            margin-bottom: 12px;
+
+        }
+
+
+        #backpack-count {
+
+            font-size: 12px;
+
+            opacity: 0.6;
+
+        }
+
+
+        #backpack-list {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(
+                        180px,
+                        1fr
+                    )
+                );
+
+            gap: 8px;
+
+        }
+
+
+        .backpack-item {
+
+            padding: 11px;
+
+            border-radius: 8px;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.1
+                );
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.03
+                );
+
+        }
+
+
+        .backpack-item-name {
+
+            font-weight: bold;
+
+            font-size: 13px;
+
+        }
+
+
+        .backpack-item-quantity {
+
+            color: #d4af67;
+
+        }
+
+
+        .backpack-item-description {
+
+            font-size: 11px;
+
+            opacity: 0.7;
+
+            margin-top: 4px;
+
+        }
+
+
+        .backpack-item-value {
+
+            font-size: 10px;
+
+            margin-top: 5px;
+
+            color: #d4af67;
+
+        }
+
+
+        .backpack-actions {
+
+            display: flex;
+
+            gap: 6px;
+
+            flex-wrap: wrap;
+
+            margin-top: 7px;
+
+        }
+
+
+        .backpack-slot-select {
+
+            width: 100%;
+
+            margin-top: 7px;
+
+            padding: 5px;
+
+            border-radius: 5px;
+
+            background: #181818;
+
+            color: #ddd;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.15
+                );
+
+            font-size: 11px;
+
+        }
+
+
+        #backpack-empty {
+
+            opacity: 0.5;
+
+            padding: 10px 0;
+
+        }
+
+
+        @media (
+            max-width: 700px
+        ) {
+
+            .equipment-grid {
+
+                grid-template-columns:
+                    repeat(
+                        2,
+                        1fr
+                    );
+
+            }
+
+
+            #backpack-list {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.className =
+        "inventory-system-section";
+
+
+    section.innerHTML = `
+
+        <h2>
+            Equipaggiamento
+        </h2>
+
+
+        <div class="equipment-grid">
+
+            <div
+                id="equipment-slot-hand-1"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Mano 1
+                </div>
+            </div>
+
+
+            <div
+                id="equipment-slot-hand-2"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Mano 2
+                </div>
+            </div>
+
+
+            <div
+                id="equipment-slot-armor"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Armatura
+                </div>
+            </div>
+
+
+            <div
+                id="equipment-slot-accessory-1"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Accessorio 1
+                </div>
+            </div>
+
+
+            <div
+                id="equipment-slot-accessory-2"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Accessorio 2
+                </div>
+            </div>
+
+
+            <div
+                id="equipment-slot-accessory-3"
+                class="equipment-slot"
+            >
+                <div class="equipment-slot-title">
+                    Accessorio 3
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="backpack-header">
+
+            <h2>
+                Zaino
+            </h2>
+
+            <span id="backpack-count">
+                0 oggetti
+            </span>
+
+        </div>
+
+
+        <div id="backpack-empty">
+            Lo zaino è vuoto.
+        </div>
+
+
+        <div id="backpack-list"></div>
+
+    `;
+
+
+    parent.insertBefore(
+        section,
+        notesSection
+    );
+
+}
+
+
+// ============================================================
+// VISUALIZZA INVENTARIO
+// ============================================================
+
+function displayInventory() {
+
+    calculateEquipmentBonuses();
+
+
+    displayEquipment();
+
+
+    displayBackpack();
+
+
+    displayAttributes();
+
+
+    calculateSecondaryStats();
+
+}
+
+
+// ============================================================
+// EQUIPAGGIAMENTO
+// ============================================================
+
+function displayEquipment() {
+
+    const slots = {
+
+        hand_1: {
+            key: "hand-1"
+        },
+
+        hand_2: {
+            key: "hand-2"
+        },
+
+        armor: {
+            key: "armor"
+        },
+
+        accessory_1: {
+            key: "accessory-1"
+        },
+
+        accessory_2: {
+            key: "accessory-2"
+        },
+
+        accessory_3: {
+            key: "accessory-3"
+        }
+
+    };
+
+
+    const twoHanded =
+        characterInventory.find(
+            entry =>
+                entry.equipped_slot ===
+                    "hand_1"
+                &&
+                entry.item?.hand_rule ===
+                    "two_handed"
+        );
+
+
+    Object.entries(
+        slots
+    ).forEach(
+        (
+            [
+                slotName,
+                config
+            ]
+        ) => {
+
+            let entry =
+                characterInventory.find(
+                    inventoryItem =>
+                        inventoryItem.equipped_slot ===
+                        slotName
+                );
+
+
+            let blockedByTwoHanded =
+                false;
+
+
+            if (
+                slotName === "hand_2"
+                &&
+                twoHanded
+            ) {
+
+                entry =
+                    twoHanded;
+
+
+                blockedByTwoHanded =
+                    true;
+
+            }
+
+
+            renderEquipmentSlot(
+                config.key,
+                entry,
+                blockedByTwoHanded
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// RENDER SLOT
+// ============================================================
+
+function renderEquipmentSlot(
+    htmlKey,
+    entry,
+    blockedByTwoHanded = false
+) {
+
+    const container =
+        document.getElementById(
+            `equipment-slot-${htmlKey}`
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    let content =
+        container.querySelector(
+            "[data-equipment-content]"
+        );
+
+
+    if (!content) {
+
+        content =
+            document.createElement(
+                "div"
+            );
+
+
+        content.dataset.equipmentContent =
+            "true";
+
+
+        container.appendChild(
+            content
+        );
+
+    }
+
+
+    content.replaceChildren();
+
+
+    if (
+        !entry ||
+        !entry.item
+    ) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+
+        empty.className =
+            "equipment-empty";
+
+
+        empty.textContent =
+            "Vuoto";
+
+
+        content.appendChild(
+            empty
+        );
+
+
+        return;
+
+    }
+
+
+    const item =
+        entry.item;
+
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "equipment-item-name";
+
+
+    name.textContent =
+        blockedByTwoHanded
+            ? `${item.name} · Due mani`
+            : item.name;
+
+
+    content.appendChild(
+        name
+    );
+
+
+    const description =
+        document.createElement(
+            "div"
+        );
+
+
+    description.className =
+        "equipment-item-description";
+
+
+    description.textContent =
+        item.description || "";
+
+
+    content.appendChild(
+        description
+    );
+
+
+    const value =
+        document.createElement(
+            "div"
+        );
+
+
+    value.className =
+        "equipment-item-value";
+
+
+    value.textContent =
+        `Valore: ${
+            Number(
+                item.gold_value
+            ) || 0
+        } MO`;
+
+
+    content.appendChild(
+        value
+    );
+
+
+    // Nello slot Mano 2 bloccato dall'ascia non
+    // mostriamo un secondo pulsante RIMUOVI.
+
+    if (!blockedByTwoHanded) {
+
+        const removeButton =
+            document.createElement(
+                "button"
+            );
+
+
+        removeButton.type =
+            "button";
+
+
+        removeButton.className =
+            "inventory-button";
+
+
+        removeButton.textContent =
+            "RIMUOVI";
+
+
+        removeButton.addEventListener(
+            "click",
+            () => {
+
+                unequipItem(
+                    entry.id
+                );
+
+            }
+        );
+
+
+        content.appendChild(
+            removeButton
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// ZAINO
+// ============================================================
+
+function displayBackpack() {
+
+    const list =
+        document.getElementById(
+            "backpack-list"
+        );
+
+
+    const count =
+        document.getElementById(
+            "backpack-count"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "backpack-empty"
+        );
+
+
+    if (!list) {
+
+        return;
+
+    }
+
+
+    const items =
+        characterInventory.filter(
+            entry =>
+                !entry.equipped_slot
+        );
+
+
+    const total =
+        items.reduce(
+            (
+                sum,
+                entry
+            ) =>
+                sum +
+                (
+                    Number(
+                        entry.quantity
+                    ) || 0
+                ),
+            0
+        );
+
+
+    if (count) {
+
+        count.textContent =
+            total === 1
+                ? "1 oggetto"
+                : `${total} oggetti`;
+
+    }
+
+
+    if (empty) {
+
+        empty.style.display =
+            items.length === 0
+                ? ""
+                : "none";
+
+    }
+
+
+    list.replaceChildren();
+
+
+    items.forEach(
+        entry => {
+
+            renderBackpackItem(
+                list,
+                entry
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// RENDER OGGETTO ZAINO
+// ============================================================
+
+function renderBackpackItem(
+    container,
+    entry
+) {
+
+    const item =
+        entry.item;
+
+
+    if (!item) {
+
+        return;
+
+    }
+
+
+    const quantity =
+        Number(
+            entry.quantity
+        ) || 1;
+
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+
+    card.className =
+        "backpack-item";
+
+
+    // ========================================================
+    // NOME
+    // ========================================================
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "backpack-item-name";
+
+
+    name.textContent =
+        item.name;
+
+
+    if (
+        quantity > 1
+    ) {
+
+        const quantityElement =
+            document.createElement(
+                "span"
+            );
+
+
+        quantityElement.className =
+            "backpack-item-quantity";
+
+
+        quantityElement.textContent =
+            ` ×${quantity}`;
+
+
+        name.appendChild(
+            quantityElement
+        );
+
+    }
+
+
+    card.appendChild(
+        name
+    );
+
+
+    // ========================================================
+    // DESCRIZIONE
+    // ========================================================
+
+    if (
+        item.description
+    ) {
+
+        const description =
+            document.createElement(
+                "div"
+            );
+
+
+        description.className =
+            "backpack-item-description";
+
+
+        description.textContent =
+            item.description;
+
+
+        card.appendChild(
+            description
+        );
+
+    }
+
+
+    // ========================================================
+    // VALORE
+    // ========================================================
+
+    const value =
+        document.createElement(
+            "div"
+        );
+
+
+    value.className =
+        "backpack-item-value";
+
+
+    const unitValue =
+        Number(
+            item.gold_value
+        ) || 0;
+
+
+    value.textContent =
+        `Valore: ${unitValue} MO`;
+
+
+    if (
+        quantity > 1
+    ) {
+
+        value.textContent +=
+            ` · Totale: ${
+                unitValue *
+                quantity
+            } MO`;
+
+    }
+
+
+    card.appendChild(
+        value
+    );
+
+
+    // ========================================================
+    // CONSUMABILE
+    // ========================================================
+
+    if (
+        item.item_type ===
+        "consumable"
+    ) {
+
+        const actions =
+            document.createElement(
+                "div"
+            );
+
+
+        actions.className =
+            "backpack-actions";
+
+
+        const useButton =
+            document.createElement(
+                "button"
+            );
+
+
+        useButton.type =
+            "button";
+
+
+        useButton.className =
+            "inventory-button";
+
+
+        useButton.textContent =
+            "USA";
+
+
+        useButton.addEventListener(
+            "click",
+            () => {
+
+                useInventoryItem(
+                    entry.id
+                );
+
+            }
+        );
+
+
+        actions.appendChild(
+            useButton
+        );
+
+
+        card.appendChild(
+            actions
+        );
+
+    }
+
+
+    // ========================================================
+    // EQUIPAGGIABILE
+    // ========================================================
+
+    if (
+        item.equip_slot !==
+        "none"
+    ) {
+
+        const slots =
+            getCompatibleSlots(
+                item
+            );
+
+
+        const select =
+            document.createElement(
+                "select"
+            );
+
+
+        select.className =
+            "backpack-slot-select";
+
+
+        slots.forEach(
+            slot => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    slot.value;
+
+
+                option.textContent =
+                    slot.label;
+
+
+                select.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        card.appendChild(
+            select
+        );
+
+
+        const actions =
+            document.createElement(
+                "div"
+            );
+
+
+        actions.className =
+            "backpack-actions";
+
+
+        const equipButton =
+            document.createElement(
+                "button"
+            );
+
+
+        equipButton.type =
+            "button";
+
+
+        equipButton.className =
+            "inventory-button";
+
+
+        equipButton.textContent =
+            "EQUIPAGGIA";
+
+
+        equipButton.addEventListener(
+            "click",
+            () => {
+
+                equipItem(
+                    entry.id,
+                    select.value
+                );
+
+            }
+        );
+
+
+        actions.appendChild(
+            equipButton
+        );
+
+
+        card.appendChild(
+            actions
+        );
+
+    }
+
+
+    container.appendChild(
+        card
+    );
+
+}
+
+
+// ============================================================
+// SLOT COMPATIBILI
+// ============================================================
+
+function getCompatibleSlots(
+    item
+) {
+
+    if (
+        item.equip_slot ===
+        "armor"
+    ) {
+
+        return [
+
+            {
+                value: "armor",
+                label: "Armatura"
+            }
+
+        ];
+
+    }
+
+
+    if (
+        item.equip_slot ===
+        "accessory"
+    ) {
+
+        return [
+
+            {
+                value: "accessory_1",
+                label: "Accessorio 1"
+            },
+
+            {
+                value: "accessory_2",
+                label: "Accessorio 2"
+            },
+
+            {
+                value: "accessory_3",
+                label: "Accessorio 3"
+            }
+
+        ];
+
+    }
+
+
+    if (
+        item.equip_slot ===
+        "hand"
+    ) {
+
+        if (
+            item.hand_rule ===
+            "main_hand_only"
+        ) {
+
+            return [
+
+                {
+                    value: "hand_1",
+                    label: "Mano 1"
+                }
+
+            ];
+
+        }
+
+
+        if (
+            item.hand_rule ===
+            "two_handed"
+        ) {
+
+            return [
+
+                {
+                    value: "hand_1",
+                    label: "Due mani"
+                }
+
+            ];
+
+        }
+
+
+        return [
+
+            {
+                value: "hand_1",
+                label: "Mano 1"
+            },
+
+            {
+                value: "hand_2",
+                label: "Mano 2"
+            }
+
+        ];
+
+    }
+
+
+    return [];
+
+}
+
+
+// ============================================================
+// EQUIPAGGIA
+// ============================================================
+
+async function equipItem(
+    inventoryId,
+    slot
+) {
+
+    try {
+
+        showMessage(
+            "Equipaggiamento..."
+        );
+
+
+        const {
+            error
+        } =
+            await db.rpc(
+                "equip_inventory_item",
+                {
+
+                    p_inventory_id:
+                        inventoryId,
+
+                    p_slot:
+                        slot
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshCharacterAndInventory();
+
+
+        showMessage(
+            "Oggetto equipaggiato."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore equipaggiamento:",
+            error
+        );
+
+
+        showMessage(
+            cleanDatabaseError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// RIMUOVI EQUIPAGGIAMENTO
+// ============================================================
+
+async function unequipItem(
+    inventoryId
+) {
+
+    try {
+
+        showMessage(
+            "Rimozione equipaggiamento..."
+        );
+
+
+        const {
+            error
+        } =
+            await db.rpc(
+                "unequip_inventory_item",
+                {
+
+                    p_inventory_id:
+                        inventoryId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshCharacterAndInventory();
+
+
+        showMessage(
+            "Oggetto rimesso nello zaino."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore rimozione equipaggiamento:",
+            error
+        );
+
+
+        showMessage(
+            cleanDatabaseError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// USA CONSUMABILE
+// ============================================================
+
+async function useInventoryItem(
+    inventoryId
+) {
+
+    try {
+
+        showMessage(
+            "Uso oggetto..."
+        );
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "use_inventory_item",
+                {
+
+                    p_inventory_id:
+                        inventoryId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshCharacterAndInventory();
+
+
+        if (data) {
+
+            showMessage(
+                `${data.item_name || "Oggetto"} utilizzato.`
+            );
+
+        } else {
+
+            showMessage(
+                "Oggetto utilizzato."
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore uso oggetto:",
+            error
+        );
+
+
+        showMessage(
+            cleanDatabaseError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA DOPO UN'AZIONE
+// ============================================================
+
+async function refreshCharacterAndInventory() {
+
+    await loadCharacter();
+
+    await loadInventory();
+
+
+    displayCharacter();
+
+    displayInventory();
+
+}
+
+
+// ============================================================
+// PULIZIA MESSAGGI POSTGRES
+// ============================================================
+
+function cleanDatabaseError(
+    text
+) {
+
+    if (!text) {
+
+        return "Si è verificato un errore.";
+
+    }
+
+
+    return text
+        .replace(
+            /^.*?: /,
+            ""
+        )
+        .trim();
+
+}
+
+
+// ============================================================
+// EVENTI
+// ============================================================
+
+function setupEvents() {
+
+    const saveNotesButton =
+        document.getElementById(
+            "save-notes-button"
+        );
+
+
+    if (saveNotesButton) {
+
+        saveNotesButton.addEventListener(
+            "click",
+            saveNotes
+        );
+
+    }
+
+
+    const logoutButton =
+        document.getElementById(
+            "logout-button"
+        );
+
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            logout
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// SALVA NOTE
+// ============================================================
+
+async function saveNotes() {
+
+    const notesElement =
+        document.getElementById(
+            "character-notes"
+        );
+
+
+    if (!notesElement) {
+
+        return;
+
+    }
+
+
+    const notes =
+        notesElement.value;
+
+
+    const saveButton =
+        document.getElementById(
+            "save-notes-button"
+        );
+
+
+    if (saveButton) {
+
+        saveButton.disabled =
+            true;
+
+
+        saveButton.textContent =
+            "SALVATAGGIO...";
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    notes:
+                        notes,
+
+                    updated_at:
+                        new Date().toISOString()
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character =
+            data;
+
+
+        showMessage(
+            "Note salvate correttamente!"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio note:",
+            error
+        );
+
+
+        showMessage(
+            "Errore durante il salvataggio delle note: " +
+            error.message
+        );
+
+
+    } finally {
+
+        if (saveButton) {
+
+            saveButton.disabled =
+                false;
+
+
+            saveButton.textContent =
+                "SALVA NOTE";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+async function logout() {
+
+    const {
+        error
+    } =
+        await db.auth.signOut();
+
+
+    if (error) {
+
+        console.error(
+            "Errore logout:",
+            error
+        );
+
+
+        return;
+
+    }
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// ============================================================
+// MESSAGGI
+// ============================================================
+
+function showMessage(
+    text
+) {
+
+    const element =
+        document.getElementById(
+            "sheet-message"
+        );
+
+
+    if (!element) {
+
+        console.log(
+            text
+        );
+
+        return;
+
+    }
+
+
+    element.textContent =
+        text;
+
+
+    if (!text) {
+
+        return;
+
+    }
+
+
+    setTimeout(
+        () => {
+
+            if (
+                element.textContent ===
+                text
+            ) {
+
+                element.textContent =
+                    "";
+
+            }
+
+        },
+        4000
+    );
+
+}
