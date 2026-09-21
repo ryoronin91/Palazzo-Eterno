@@ -3,55 +3,44 @@
 // COMBAT.JS
 // ============================================================
 
-console.log(
-    "COMBAT.JS CARICATO"
-);
+console.log("COMBAT.JS v6 CARICATO");
 
 
-const db =
-    supabaseClient;
+const db = supabaseClient;
+
+const COMBAT_COLUMNS = 12;
+const COMBAT_ROWS = 12;
 
 
-const COMBAT_COLUMNS =
-    12;
+// ============================================================
+// STATO
+// ============================================================
+
+let currentUser = null;
+let currentCharacter = null;
+let currentRole = "player";
+
+let masterObserverMode = false;
+
+let combatId = null;
+let combatSession = null;
+
+let combatTimerInterval = null;
+let combatStateInterval = null;
+
+let combatRefreshInProgress = false;
+let combatMoveInProgress = false;
+
+let lastCombatEntitiesSnapshot = "";
+
+let characterAbilities = [];
+let characterInventory = [];
+
+let activeDrawer = null;
 
 
-const COMBAT_ROWS =
-    12;
-
-
-let currentUser =
-    null;
-
-
-let currentCharacter =
-    null;
-
-
-let currentRole =
-    "player";
-
-let masterObserverMode =
-    false;
-
-let combatId =
-    null;
-
-let combatSession =
-    null;
-
-let combatTimerInterval =
-    null;
-
-let combatStateInterval =
-    null;
-
-const combatEntities =
-    new Map();
-
-
-const combatTokens =
-    new Map();
+const combatEntities = new Map();
+const combatTokens = new Map();
 
 
 // ============================================================
@@ -64,31 +53,14 @@ document.addEventListener(
 
         try {
 
-            // =================================================
-            // UTENTE
-            // =================================================
-
             await loadCurrentUser();
-
-
-            // =================================================
-            // RUOLO ACCOUNT
-            // =================================================
 
             await loadCurrentRole();
 
 
-            // =================================================
-            // MODALITÀ MASTER OSSERVATORE
-            // =================================================
-
             masterObserverMode =
                 getMasterObserverModeFromUrl();
 
-
-            // =================================================
-            // ID SESSIONE COMBATTIMENTO
-            // =================================================
 
             combatId =
                 getCombatIdFromUrl();
@@ -103,81 +75,73 @@ document.addEventListener(
             }
 
 
-            // =================================================
-            // PERSONAGGIO
-            // =================================================
-
             await loadCurrentCharacter();
-
-
-            // =================================================
-            // SESSIONE DI COMBATTIMENTO
-            // =================================================
 
             await loadCombatSession();
 
+
+            // =================================================
+            // ENTRA NEL COMBAT
+            // =================================================
+
             await joinCombatAsPlayer();
+
+
+            // =================================================
+            // CREA NEMICI SE NECESSARIO
+            // =================================================
 
             await generateCombatEnemies();
 
+
+            // =================================================
+            // CARICA ENTITÀ
+            // =================================================
+
             await loadCombatEntities();
 
+
+            // =================================================
+            // DATI DEL PG
+            // =================================================
+
+            if (
+                !masterObserverMode &&
+                currentCharacter
+            ) {
+
+                await Promise.all([
+
+                    loadCharacterAbilities(),
+
+                    loadCharacterInventory()
+
+                ]);
+
+            }
+
+
+            // =================================================
+            // SNAPSHOT
+            // =================================================
+
             lastCombatEntitiesSnapshot =
-                JSON.stringify(
-                    Array.from(
-                        combatEntities.values()
-                    )
-                        .map(
-                            entity => ({
+                createCombatSnapshot();
 
-                                id:
-                                    entity.id,
 
-                                x:
-                                    entity.x,
+            // =================================================
+            // INTERFACCIA
+            // =================================================
 
-                                y:
-                                    entity.y,
-
-                                current_hp:
-                                    entity.current_hp,
-
-                                max_hp:
-                                    entity.max_hp,
-
-                                movement_remaining:
-                                    entity.movement_remaining,
-
-                                status:
-                                    entity.status,
-
-                                entity_type:
-                                    entity.entity_type,
-
-                                display_name:
-                                    entity.display_name,
-
-                                character_id:
-                                    entity.character_id,
-
-                                monster_type:
-                                    entity.monster_type
-
-                            })
-                        )
-                        .sort(
-                            (a, b) =>
-                                a.id.localeCompare(
-                                    b.id
-                                )
-                        )
-                );
+            setupCombatActions();
 
             renderCombat();
 
             updateCombatMode();
 
             setupCombatNotes();
+
+            updateCombatTurnUI();
 
             startCombatStateLoop();
 
@@ -233,8 +197,7 @@ async function loadCurrentUser() {
     }
 
 
-    currentUser =
-        user;
+    currentUser = user;
 
 }
 
@@ -250,12 +213,8 @@ async function loadCurrentRole() {
         error
     } =
         await db
-            .from(
-                "user_roles"
-            )
-            .select(
-                "role"
-            )
+            .from("user_roles")
+            .select("role")
             .eq(
                 "user_id",
                 currentUser.id
@@ -278,7 +237,7 @@ async function loadCurrentRole() {
 
 
 // ============================================================
-// COMBAT ID DALL'URL
+// URL
 // ============================================================
 
 function getCombatIdFromUrl() {
@@ -296,10 +255,6 @@ function getCombatIdFromUrl() {
 }
 
 
-// ============================================================
-// MODALITÀ MASTER DALL'URL
-// ============================================================
-
 function getMasterObserverModeFromUrl() {
 
     const params =
@@ -309,9 +264,7 @@ function getMasterObserverModeFromUrl() {
 
 
     return (
-        params.get(
-            "mode"
-        ) ===
+        params.get("mode") ===
         "master"
     );
 
@@ -319,14 +272,12 @@ function getMasterObserverModeFromUrl() {
 
 
 // ============================================================
-// PERSONAGGIO CORRENTE
+// PERSONAGGIO
 // ============================================================
 
 async function loadCurrentCharacter() {
 
-    if (
-        masterObserverMode
-    ) {
+    if (masterObserverMode) {
 
         return;
 
@@ -338,11 +289,8 @@ async function loadCurrentCharacter() {
         error
     } =
         await db
-            .from(
-                "characters"
-            )
-            .select(
-                `
+            .from("characters")
+            .select(`
                 id,
                 nome,
                 token,
@@ -352,9 +300,11 @@ async function loadCurrentCharacter() {
                 intelligenza,
                 destrezza,
                 fortuna,
+                current_hp,
+                current_pm,
+                livello,
                 notes
-                `
-            )
+            `)
             .eq(
                 "user_id",
                 currentUser.id
@@ -376,7 +326,7 @@ async function loadCurrentCharacter() {
 
 
 // ============================================================
-// CARICA SESSIONE COMBATTIMENTO
+// SESSIONE
 // ============================================================
 
 async function loadCombatSession() {
@@ -386,11 +336,8 @@ async function loadCombatSession() {
         error
     } =
         await db
-            .from(
-                "combat_sessions"
-            )
-            .select(
-                `
+            .from("combat_sessions")
+            .select(`
                 id,
                 encounter_id,
                 status,
@@ -398,8 +345,7 @@ async function loadCombatSession() {
                 current_turn_entity_id,
                 turn_started_at,
                 turn_duration_seconds
-                `
-            )
+            `)
             .eq(
                 "id",
                 combatId
@@ -419,8 +365,9 @@ async function loadCombatSession() {
 
 }
 
+
 // ============================================================
-// ENTRA NEL COMBATTIMENTO COME GIOCATORE
+// ENTRA NEL COMBATTIMENTO
 // ============================================================
 
 async function joinCombatAsPlayer() {
@@ -433,11 +380,6 @@ async function joinCombatAsPlayer() {
         return;
 
     }
-
-
-    console.log(
-        "Ingresso del personaggio nel combattimento..."
-    );
 
 
     const {
@@ -472,15 +414,10 @@ async function joinCombatAsPlayer() {
 
 
 // ============================================================
-// GENERA NEMICI DELL'INCONTRO
+// GENERA NEMICI
 // ============================================================
 
 async function generateCombatEnemies() {
-
-    console.log(
-        "Controllo generazione nemici..."
-    );
-
 
     const {
         data,
@@ -503,14 +440,15 @@ async function generateCombatEnemies() {
 
 
     console.log(
-        "Nemici presenti nell'incontro:",
+        "Nemici presenti:",
         data
     );
 
 }
 
+
 // ============================================================
-// CARICA ENTITÀ
+// ENTITÀ
 // ============================================================
 
 async function loadCombatEntities() {
@@ -520,27 +458,25 @@ async function loadCombatEntities() {
         error
     } =
         await db
-            .from(
-                "combat_entities"
-            )
-            .select(
-    `
-    id,
-    entity_type,
-    character_id,
-    monster_type,
-    enemy_id,
-    display_name,
-    x,
-    y,
-    current_hp,
-    max_hp,
-    current_pm,
-    max_pm,
-    movement_remaining,
-    status
-    `
-)
+            .from("combat_entities")
+            .select(`
+                id,
+                entity_type,
+                character_id,
+                monster_type,
+                enemy_id,
+                display_name,
+                x,
+                y,
+                current_hp,
+                max_hp,
+                current_pm,
+                max_pm,
+                movement_remaining,
+                action_used,
+                item_used,
+                status
+            `)
             .eq(
                 "combat_id",
                 combatId
@@ -558,8 +494,7 @@ async function loadCombatEntities() {
 
 
     (
-        data ||
-        []
+        data || []
     ).forEach(
         entity => {
 
@@ -575,7 +510,188 @@ async function loadCombatEntities() {
 
 
 // ============================================================
-// RENDER COMPLETO
+// ABILITÀ
+// ============================================================
+
+async function loadCharacterAbilities() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("character_abilities")
+            .select(`
+                id,
+                ability_id,
+                level,
+                ability:abilities (
+                    id,
+                    name,
+                    description,
+                    ability_type,
+                    pm_cost,
+                    max_level
+                )
+            `)
+            .eq(
+                "character_id",
+                currentCharacter.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterAbilities =
+        data || [];
+
+}
+
+
+// ============================================================
+// INVENTARIO
+// ============================================================
+
+async function loadCharacterInventory() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("character_inventory")
+            .select(`
+                id,
+                item_id,
+                quantity,
+                equipped_slot,
+                item:items (
+                    id,
+                    name,
+                    description,
+                    item_type,
+                    equip_slot,
+                    heal_pf,
+                    heal_pm,
+                    gold_value
+                )
+            `)
+            .eq(
+                "character_id",
+                currentCharacter.id
+            )
+            .is(
+                "equipped_slot",
+                null
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterInventory =
+        data || [];
+
+}
+
+
+// ============================================================
+// SNAPSHOT
+// ============================================================
+
+function createCombatSnapshot() {
+
+    return JSON.stringify(
+        Array.from(
+            combatEntities.values()
+        )
+            .map(
+                entity => ({
+
+                    id:
+                        entity.id,
+
+                    x:
+                        entity.x,
+
+                    y:
+                        entity.y,
+
+                    current_hp:
+                        entity.current_hp,
+
+                    max_hp:
+                        entity.max_hp,
+
+                    current_pm:
+                        entity.current_pm,
+
+                    max_pm:
+                        entity.max_pm,
+
+                    movement_remaining:
+                        entity.movement_remaining,
+
+                    action_used:
+                        entity.action_used,
+
+                    item_used:
+                        entity.item_used,
+
+                    status:
+                        entity.status,
+
+                    entity_type:
+                        entity.entity_type,
+
+                    display_name:
+                        entity.display_name,
+
+                    character_id:
+                        entity.character_id,
+
+                    monster_type:
+                        entity.monster_type,
+
+                    enemy_id:
+                        entity.enemy_id
+
+                })
+            )
+            .sort(
+                (a, b) =>
+                    a.id.localeCompare(
+                        b.id
+                    )
+            )
+    );
+
+}
+
+
+// ============================================================
+// RENDER
 // ============================================================
 
 function renderCombat() {
@@ -586,9 +702,7 @@ function renderCombat() {
 
     renderPlayerCombatSheet();
 
-    setCombatStatus(
-        `Sessione: ${combatId}`
-    );
+    updateActionButtons();
 
 }
 
@@ -638,24 +752,20 @@ function renderCombatTokens() {
             );
 
 
-            // =================================================
-            // ENTITÀ MORTA
-            // =================================================
-
             if (
                 entity.status ===
                 "dead"
             ) {
 
-                const deadToken =
+                const oldToken =
                     combatTokens.get(
                         entity.id
                     );
 
 
-                if (deadToken) {
+                if (oldToken) {
 
-                    deadToken.remove();
+                    oldToken.remove();
 
                     combatTokens.delete(
                         entity.id
@@ -669,19 +779,11 @@ function renderCombatTokens() {
             }
 
 
-            // =================================================
-            // CERCA TOKEN ESISTENTE
-            // =================================================
-
             let token =
                 combatTokens.get(
                     entity.id
                 );
 
-
-            // =================================================
-            // CREA TOKEN SOLO SE NON ESISTE
-            // =================================================
 
             if (!token) {
 
@@ -742,10 +844,6 @@ function renderCombatTokens() {
             }
 
 
-            // =================================================
-            // DIMENSIONI
-            // =================================================
-
             const size =
                 Math.min(
                     cellWidth,
@@ -762,16 +860,10 @@ function renderCombatTokens() {
                 `${size}px`;
 
 
-            // =================================================
-            // POSIZIONE
-            // =================================================
-
             token.style.left =
                 `${
                     (
-                        Number(
-                            entity.x
-                        ) +
+                        Number(entity.x) +
                         0.5
                     ) *
                     cellWidth -
@@ -782,9 +874,7 @@ function renderCombatTokens() {
             token.style.top =
                 `${
                     (
-                        Number(
-                            entity.y
-                        ) +
+                        Number(entity.y) +
                         0.5
                     ) *
                     cellHeight -
@@ -794,10 +884,6 @@ function renderCombatTokens() {
         }
     );
 
-
-    // ========================================================
-    // ELIMINA TOKEN DI ENTITÀ NON PIÙ PRESENTI
-    // ========================================================
 
     for (
         const [
@@ -827,7 +913,7 @@ function renderCombatTokens() {
 
 
 // ============================================================
-// TOKEN PLAYER
+// TOKEN PG
 // ============================================================
 
 async function renderPlayerTokenContent(
@@ -844,14 +930,11 @@ async function renderPlayerTokenContent(
     image.style.width =
         "100%";
 
-
     image.style.height =
         "100%";
 
-
     image.style.objectFit =
         "contain";
-
 
     image.alt =
         entity.display_name;
@@ -869,12 +952,8 @@ async function renderPlayerTokenContent(
             data
         } =
             await db
-                .from(
-                    "characters"
-                )
-                .select(
-                    "token"
-                )
+                .from("characters")
+                .select("token")
                 .eq(
                     "id",
                     entity.character_id
@@ -887,8 +966,7 @@ async function renderPlayerTokenContent(
         ) {
 
             image.src =
-                "immagini/token/" +
-                data.token;
+                `immagini/token/${data.token}`;
 
         }
 
@@ -903,7 +981,7 @@ async function renderPlayerTokenContent(
 
 
 // ============================================================
-// TOKEN MOSTRO
+// TOKEN NEMICO
 // ============================================================
 
 function renderEnemyTokenContent(
@@ -920,14 +998,11 @@ function renderEnemyTokenContent(
     image.style.width =
         "100%";
 
-
     image.style.height =
         "100%";
 
-
     image.style.objectFit =
         "contain";
-
 
     image.style.display =
         "block";
@@ -938,24 +1013,10 @@ function renderEnemyTokenContent(
         "Nemico";
 
 
-    // ========================================================
-    // TOKEN DEL NEMICO
-    // ========================================================
-
-    if (
+    image.src =
         entity.enemy_id
-    ) {
-
-        image.src =
-            `immagini/nemici/${entity.enemy_id}.png`;
-
-    } else {
-
-        // Fallback per eventuali vecchi mostri
-        image.src =
-            "immagini/nemici/goblin.png";
-
-    }
+            ? `immagini/nemici/${entity.enemy_id}.png`
+            : "immagini/nemici/goblin.png";
 
 
     token.appendChild(
@@ -984,8 +1045,7 @@ function renderCombatEntityList() {
     }
 
 
-    container.innerHTML =
-        "";
+    container.replaceChildren();
 
 
     combatEntities.forEach(
@@ -999,6 +1059,18 @@ function renderCombatEntityList() {
 
             item.className =
                 "combat-entity-item";
+
+
+            if (
+                entity.id ===
+                combatSession?.current_turn_entity_id
+            ) {
+
+                item.classList.add(
+                    "current-turn"
+                );
+
+            }
 
 
             const name =
@@ -1021,52 +1093,27 @@ function renderCombatEntityList() {
                 "combat-entity-meta";
 
 
-            if (
-    entity.entity_type ===
-    "enemy"
-) {
-
-    meta.textContent =
-        `Nemico · PF ${
-            entity.current_hp
-        }/${
-            entity.max_hp
-        } · PM ${
-            entity.current_pm ?? 0
-        }/${
-            entity.max_pm ?? 0
-        } · Movimento ${
-            entity.movement_remaining ?? 0
-        } · X ${
-            entity.x
-        } Y ${
-            entity.y
-        }`;
-
-} else {
-
-    meta.textContent =
-        `Giocatore · PF ${
-            entity.current_hp
-        }/${
-            entity.max_hp
-        } · Movimento ${
-            entity.movement_remaining ?? 0
-        } · X ${
-            entity.x
-        } Y ${
-            entity.y
-        }`;
-
-}
+            meta.textContent =
+                `${
+                    entity.entity_type ===
+                    "enemy"
+                        ? "Nemico"
+                        : "Giocatore"
+                } · PF ${
+                    entity.current_hp
+                }/${
+                    entity.max_hp
+                } · PM ${
+                    entity.current_pm ?? 0
+                }/${
+                    entity.max_pm ?? 0
+                } · MOV ${
+                    entity.movement_remaining ?? 0
+                }`;
 
 
-            item.appendChild(
-                name
-            );
-
-
-            item.appendChild(
+            item.append(
+                name,
                 meta
             );
 
@@ -1082,10 +1129,12 @@ function renderCombatEntityList() {
 
 
 // ============================================================
-// LIMITI ATTRIBUTI
+// ATTRIBUTI
 // ============================================================
 
-function clampAttribute(value) {
+function clampAttribute(
+    value
+) {
 
     return Math.max(
         1,
@@ -1099,7 +1148,34 @@ function clampAttribute(value) {
 
 
 // ============================================================
-// SCHEDA PERSONAGGIO COMBATTIMENTO
+// ENTITÀ PG
+// ============================================================
+
+function getMyPlayerEntity() {
+
+    if (!currentCharacter) {
+
+        return null;
+
+    }
+
+
+    return Array.from(
+        combatEntities.values()
+    ).find(
+        entity =>
+            entity.entity_type ===
+                "player"
+            &&
+            entity.character_id ===
+                currentCharacter.id
+    ) || null;
+
+}
+
+
+// ============================================================
+// SCHEDA PG
 // ============================================================
 
 function renderPlayerCombatSheet() {
@@ -1114,18 +1190,8 @@ function renderPlayerCombatSheet() {
     }
 
 
-    // ========================================================
-    // ENTITÀ DEL PERSONAGGIO NEL COMBATTIMENTO
-    // ========================================================
-
     const playerEntity =
-        Array.from(
-            combatEntities.values()
-        ).find(
-            entity =>
-                entity.entity_type === "player" &&
-                entity.character_id === currentCharacter.id
-        );
+        getMyPlayerEntity();
 
 
     if (!playerEntity) {
@@ -1134,10 +1200,6 @@ function renderPlayerCombatSheet() {
 
     }
 
-
-    // ========================================================
-    // CARATTERISTICHE
-    // ========================================================
 
     const forza =
         clampAttribute(
@@ -1175,10 +1237,6 @@ function renderPlayerCombatSheet() {
         );
 
 
-    // ========================================================
-    // STATISTICHE DERIVATE
-    // ========================================================
-
     const attack =
         Math.ceil(
             forza / 2
@@ -1192,7 +1250,7 @@ function renderPlayerCombatSheet() {
         );
 
 
-    const maxPF =
+    const fallbackMaxPF =
         Math.ceil(
             5 *
             (
@@ -1201,7 +1259,7 @@ function renderPlayerCombatSheet() {
         );
 
 
-    const maxPM =
+    const fallbackMaxPM =
         Math.ceil(
             5 *
             (
@@ -1210,7 +1268,7 @@ function renderPlayerCombatSheet() {
         );
 
 
-    const maxMovement =
+    const fallbackMovement =
         Math.ceil(
             4 +
             destrezza / 2
@@ -1228,20 +1286,39 @@ function renderPlayerCombatSheet() {
         );
 
 
-    // ========================================================
-    // VALORI ATTUALI DAL COMBATTIMENTO
-    // ========================================================
-
     const currentPF =
-        Number(
-            playerEntity.current_hp
-        ) || 0;
+        Math.max(
+            0,
+            Number(
+                playerEntity.current_hp
+            ) || 0
+        );
 
 
-    const entityMaxPF =
+    const maxPF =
         Number(
             playerEntity.max_hp
-        ) || maxPF;
+        ) ||
+        fallbackMaxPF;
+
+
+    const currentPM =
+        playerEntity.current_pm === null ||
+        playerEntity.current_pm === undefined
+            ? fallbackMaxPM
+            : Math.max(
+                0,
+                Number(
+                    playerEntity.current_pm
+                )
+            );
+
+
+    const maxPM =
+        Number(
+            playerEntity.max_pm
+        ) ||
+        fallbackMaxPM;
 
 
     const currentMovement =
@@ -1249,196 +1326,131 @@ function renderPlayerCombatSheet() {
             playerEntity.movement_remaining
         ) || 0;
 
-    
-const currentPM =
-    playerEntity.current_pm === null ||
-    playerEntity.current_pm === undefined
-        ? maxPM
-        : Math.max(
-            0,
-            Number(
-                playerEntity.current_pm
-            )
-        );
+
+    setText(
+        "combat-character-name",
+        currentCharacter.nome
+    );
 
 
-const entityMaxPM =
-    Number(
-        playerEntity.max_pm
-    ) || maxPM;
-
-    // ========================================================
-    // ELEMENTI HTML
-    // ========================================================
-
-    const nameElement =
-        document.getElementById(
-            "combat-character-name"
-        );
+    setText(
+        "combat-pf-value",
+        `${currentPF} / ${maxPF}`
+    );
 
 
-    const pfElement =
-        document.getElementById(
-            "combat-pf-value"
-        );
+    setText(
+        "combat-pm-value",
+        `${currentPM} / ${maxPM}`
+    );
 
 
-    const pfBar =
-        document.getElementById(
-            "combat-pf-bar"
-        );
+    setText(
+        "combat-attack-value",
+        attack
+    );
 
 
-    const pmElement =
-        document.getElementById(
-            "combat-pm-value"
-        );
+    setText(
+        "combat-defense-value",
+        defense
+    );
 
 
-    const pmBar =
-        document.getElementById(
-            "combat-pm-bar"
-        );
+    setText(
+        "combat-movement-value",
+        `${currentMovement} / ${fallbackMovement}`
+    );
 
 
-    const attackElement =
-        document.getElementById(
-            "combat-attack-value"
-        );
+    setText(
+        "combat-critical-value",
+        `${critical}%`
+    );
 
 
-    const defenseElement =
-        document.getElementById(
-            "combat-defense-value"
-        );
+    updateBar(
+        "combat-pf-bar",
+        currentPF,
+        maxPF
+    );
 
 
-    const movementElement =
-        document.getElementById(
-            "combat-movement-value"
-        );
+    updateBar(
+        "combat-pm-bar",
+        currentPM,
+        maxPM
+    );
 
 
-    const criticalElement =
-        document.getElementById(
-            "combat-critical-value"
-        );
-
-
-    // ========================================================
-    // NOME
-    // ========================================================
-
-    if (nameElement) {
-
-        nameElement.textContent =
-            currentCharacter.nome;
-
-    }
-
-
-    // ========================================================
-    // PF
-    // ========================================================
-
-    if (pfElement) {
-
-        pfElement.textContent =
-            `${currentPF} / ${entityMaxPF}`;
-
-    }
-
-
-    if (pfBar) {
-
-        const pfPercentage =
-            entityMaxPF > 0
-                ? Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        (
-                            currentPF /
-                            entityMaxPF
-                        ) * 100
-                    )
-                )
-                : 0;
-
-
-        pfBar.style.width =
-            `${pfPercentage}%`;
-
-    }
-
-
-    // ========================================================
-    // PM
-    // ========================================================
-
-    if (pmElement) {
-
-    pmElement.textContent =
-        `${currentPM} / ${entityMaxPM}`;
+    updateTurnResourceIndicators();
 
 }
 
 
-if (pmBar) {
+// ============================================================
+// BARRE
+// ============================================================
 
-    const pmPercentage =
-        entityMaxPM > 0
+function updateBar(
+    id,
+    current,
+    max
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    const percentage =
+        max > 0
             ? Math.max(
                 0,
                 Math.min(
                     100,
                     (
-                        currentPM /
-                        entityMaxPM
+                        current /
+                        max
                     ) * 100
                 )
             )
             : 0;
 
 
-    pmBar.style.width =
-        `${pmPercentage}%`;
+    element.style.width =
+        `${percentage}%`;
 
 }
 
 
-    // ========================================================
-    // STATISTICHE
-    // ========================================================
+// ============================================================
+// TESTO
+// ============================================================
 
-    if (attackElement) {
+function setText(
+    id,
+    value
+) {
 
-        attackElement.textContent =
-            attack;
-
-    }
-
-
-    if (defenseElement) {
-
-        defenseElement.textContent =
-            defense;
-
-    }
+    const element =
+        document.getElementById(
+            id
+        );
 
 
-    if (movementElement) {
+    if (element) {
 
-        movementElement.textContent =
-            `${currentMovement} / ${maxMovement}`;
-
-    }
-
-
-    if (criticalElement) {
-
-        criticalElement.textContent =
-            `${critical}%`;
+        element.textContent =
+            value;
 
     }
 
@@ -1446,7 +1458,1138 @@ if (pmBar) {
 
 
 // ============================================================
-// NOTE PERSONALI PERSONAGGIO
+// TURNO CORRENTE
+// ============================================================
+
+function getCurrentTurnEntity() {
+
+    if (
+        !combatSession ||
+        !combatSession.current_turn_entity_id
+    ) {
+
+        return null;
+
+    }
+
+
+    return combatEntities.get(
+        combatSession.current_turn_entity_id
+    ) || null;
+
+}
+
+
+// ============================================================
+// È IL MIO TURNO?
+// ============================================================
+
+function isMyTurn() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter
+    ) {
+
+        return false;
+
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    return !!(
+        currentEntity &&
+        currentEntity.entity_type ===
+            "player"
+        &&
+        currentEntity.character_id ===
+            currentCharacter.id
+    );
+
+}
+
+
+// ============================================================
+// RISORSE TURNO
+// ============================================================
+
+function updateTurnResourceIndicators() {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    const movement =
+        document.getElementById(
+            "turn-resource-movement"
+        );
+
+
+    const action =
+        document.getElementById(
+            "turn-resource-action"
+        );
+
+
+    const item =
+        document.getElementById(
+            "turn-resource-item"
+        );
+
+
+    if (!player) {
+
+        return;
+
+    }
+
+
+    setResourceIndicator(
+        movement,
+        Number(
+            player.movement_remaining
+        ) > 0
+    );
+
+
+    setResourceIndicator(
+        action,
+        player.action_used !== true
+    );
+
+
+    setResourceIndicator(
+        item,
+        player.item_used !== true
+    );
+
+}
+
+
+function setResourceIndicator(
+    element,
+    available
+) {
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.classList.toggle(
+        "available",
+        available
+    );
+
+
+    element.classList.toggle(
+        "used",
+        !available
+    );
+
+}
+
+
+// ============================================================
+// BOTTONI
+// ============================================================
+
+function setupCombatActions() {
+
+    const attack =
+        document.getElementById(
+            "combat-action-attack"
+        );
+
+
+    const abilities =
+        document.getElementById(
+            "combat-action-abilities"
+        );
+
+
+    const backpack =
+        document.getElementById(
+            "combat-action-backpack"
+        );
+
+
+    const pass =
+        document.getElementById(
+            "combat-action-pass"
+        );
+
+
+    const close =
+        document.getElementById(
+            "combat-drawer-close"
+        );
+
+
+    attack?.addEventListener(
+        "click",
+        () => {
+
+            if (
+                !canUseMainAction()
+            ) {
+
+                return;
+
+            }
+
+
+            closeCombatDrawer();
+
+
+            addCombatLog(
+                "Attacco Base selezionato. La selezione del bersaglio verrà collegata nel prossimo passaggio."
+            );
+
+        }
+    );
+
+
+    abilities?.addEventListener(
+        "click",
+        () => {
+
+            openAbilityPanel();
+
+        }
+    );
+
+
+    backpack?.addEventListener(
+        "click",
+        () => {
+
+            openBackpackPanel();
+
+        }
+    );
+
+
+    pass?.addEventListener(
+        "click",
+        async () => {
+
+            await passTurn();
+
+        }
+    );
+
+
+    close?.addEventListener(
+        "click",
+        () => {
+
+            closeCombatDrawer();
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// ABILITÀ
+// ============================================================
+
+function openAbilityPanel() {
+
+    activeDrawer =
+        "abilities";
+
+
+    document.body.classList.add(
+        "combat-drawer-open"
+    );
+
+
+    setText(
+        "combat-drawer-title",
+        "ABILITÀ"
+    );
+
+
+    renderAbilityPanel();
+
+}
+
+
+function renderAbilityPanel() {
+
+    if (
+        activeDrawer !==
+        "abilities"
+    ) {
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "combat-drawer-body"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.replaceChildren();
+
+
+    if (
+        characterAbilities.length ===
+        0
+    ) {
+
+        renderDrawerMessage(
+            container,
+            "Il personaggio non conosce abilità."
+        );
+
+
+        return;
+
+    }
+
+
+    const player =
+        getMyPlayerEntity();
+
+
+    characterAbilities.forEach(
+        entry => {
+
+            if (!entry.ability) {
+
+                return;
+
+            }
+
+
+            const ability =
+                entry.ability;
+
+
+            const pmCost =
+                Number(
+                    ability.pm_cost
+                ) || 0;
+
+
+            const currentPM =
+                Number(
+                    player?.current_pm
+                ) || 0;
+
+
+            const unavailable =
+                !isMyTurn()
+                ||
+                player?.action_used === true
+                ||
+                currentPM < pmCost;
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "combat-ability-card";
+
+
+            if (unavailable) {
+
+                card.classList.add(
+                    "disabled"
+                );
+
+            }
+
+
+            const header =
+                document.createElement(
+                    "div"
+                );
+
+
+            header.className =
+                "combat-ability-header";
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "combat-ability-name";
+
+
+            name.textContent =
+                ability.name;
+
+
+            const level =
+                document.createElement(
+                    "div"
+                );
+
+
+            level.className =
+                "combat-ability-level";
+
+
+            level.textContent =
+                `LV.${entry.level || 1}`;
+
+
+            header.append(
+                name,
+                level
+            );
+
+
+            const description =
+                document.createElement(
+                    "div"
+                );
+
+
+            description.className =
+                "combat-ability-description";
+
+
+            description.textContent =
+                ability.description || "";
+
+
+            const footer =
+                document.createElement(
+                    "div"
+                );
+
+
+            footer.className =
+                "combat-ability-footer";
+
+
+            const cost =
+                document.createElement(
+                    "div"
+                );
+
+
+            cost.className =
+                "combat-ability-cost";
+
+
+            cost.textContent =
+                `${pmCost} PM`;
+
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "combat-button";
+
+
+            button.textContent =
+                "USA";
+
+
+            button.disabled =
+                unavailable;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    addCombatLog(
+                        `${ability.name} selezionata. Bersaglio ed effetto verranno collegati nel prossimo passaggio.`
+                    );
+
+                }
+            );
+
+
+            footer.append(
+                cost,
+                button
+            );
+
+
+            card.append(
+                header,
+                description,
+                footer
+            );
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// ZAINO
+// ============================================================
+
+function openBackpackPanel() {
+
+    activeDrawer =
+        "backpack";
+
+
+    document.body.classList.add(
+        "combat-drawer-open"
+    );
+
+
+    setText(
+        "combat-drawer-title",
+        "ZAINO"
+    );
+
+
+    renderBackpackPanel();
+
+}
+
+
+function renderBackpackPanel() {
+
+    if (
+        activeDrawer !==
+        "backpack"
+    ) {
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "combat-drawer-body"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.replaceChildren();
+
+
+    const usableItems =
+        characterInventory.filter(
+            entry =>
+                entry.item &&
+                entry.item.item_type ===
+                    "consumable"
+        );
+
+
+    if (
+        usableItems.length ===
+        0
+    ) {
+
+        renderDrawerMessage(
+            container,
+            "Non hai oggetti utilizzabili in combattimento."
+        );
+
+
+        return;
+
+    }
+
+
+    const player =
+        getMyPlayerEntity();
+
+
+    usableItems.forEach(
+        entry => {
+
+            const item =
+                entry.item;
+
+
+            const unavailable =
+                !isMyTurn()
+                ||
+                player?.item_used === true;
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "combat-backpack-item";
+
+
+            if (unavailable) {
+
+                card.classList.add(
+                    "disabled"
+                );
+
+            }
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "combat-backpack-name";
+
+
+            name.textContent =
+                item.name;
+
+
+            const description =
+                document.createElement(
+                    "div"
+                );
+
+
+            description.className =
+                "combat-backpack-description";
+
+
+            description.textContent =
+                item.description || "";
+
+
+            const footer =
+                document.createElement(
+                    "div"
+                );
+
+
+            footer.className =
+                "combat-backpack-footer";
+
+
+            const quantity =
+                document.createElement(
+                    "div"
+                );
+
+
+            quantity.className =
+                "combat-backpack-quantity";
+
+
+            quantity.textContent =
+                `×${Number(entry.quantity) || 1}`;
+
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "combat-button";
+
+
+            button.textContent =
+                "USA";
+
+
+            button.disabled =
+                unavailable;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    addCombatLog(
+                        `${item.name} selezionato. L'uso effettivo verrà collegato nel prossimo passaggio.`
+                    );
+
+                }
+            );
+
+
+            footer.append(
+                quantity,
+                button
+            );
+
+
+            card.append(
+                name,
+                description,
+                footer
+            );
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// DRAWER
+// ============================================================
+
+function closeCombatDrawer() {
+
+    activeDrawer =
+        null;
+
+
+    document.body.classList.remove(
+        "combat-drawer-open"
+    );
+
+
+    setText(
+        "combat-drawer-title",
+        "AZIONI"
+    );
+
+
+    const container =
+        document.getElementById(
+            "combat-drawer-body"
+        );
+
+
+    if (container) {
+
+        container.innerHTML =
+            `
+            <div class="combat-drawer-placeholder">
+                Seleziona ABILITÀ oppure ZAINO.
+            </div>
+            `;
+
+    }
+
+
+    setTimeout(
+        () => {
+
+            renderCombatTokens();
+
+        },
+        200
+    );
+
+}
+
+
+function renderDrawerMessage(
+    container,
+    text
+) {
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+
+    message.className =
+        "combat-drawer-placeholder";
+
+
+    message.textContent =
+        text;
+
+
+    container.appendChild(
+        message
+    );
+
+}
+
+
+// ============================================================
+// AZIONE DISPONIBILE
+// ============================================================
+
+function canUseMainAction() {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    return !!(
+        player &&
+        isMyTurn() &&
+        player.action_used !== true
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA BOTTONI
+// ============================================================
+
+function updateActionButtons() {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    const myTurn =
+        isMyTurn();
+
+
+    const actionAvailable =
+        !!(
+            player &&
+            myTurn &&
+            player.action_used !== true
+        );
+
+
+    const itemAvailable =
+        !!(
+            player &&
+            myTurn &&
+            player.item_used !== true
+        );
+
+
+    const attack =
+        document.getElementById(
+            "combat-action-attack"
+        );
+
+
+    const abilities =
+        document.getElementById(
+            "combat-action-abilities"
+        );
+
+
+    const backpack =
+        document.getElementById(
+            "combat-action-backpack"
+        );
+
+
+    const pass =
+        document.getElementById(
+            "combat-action-pass"
+        );
+
+
+    if (attack) {
+
+        attack.disabled =
+            !actionAvailable;
+
+    }
+
+
+    if (abilities) {
+
+        abilities.disabled =
+            !myTurn;
+
+    }
+
+
+    if (backpack) {
+
+        backpack.disabled =
+            !myTurn;
+
+    }
+
+
+    if (pass) {
+
+        pass.disabled =
+            !myTurn;
+
+    }
+
+
+    if (
+        activeDrawer ===
+        "abilities"
+    ) {
+
+        renderAbilityPanel();
+
+    }
+
+
+    if (
+        activeDrawer ===
+        "backpack"
+    ) {
+
+        renderBackpackPanel();
+
+    }
+
+
+    updateTurnResourceIndicators();
+
+}
+
+
+// ============================================================
+// SALTA TURNO
+// ============================================================
+
+async function passTurn() {
+
+    if (!isMyTurn()) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "combat-action-pass"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } =
+            await db.rpc(
+                "next_combat_turn",
+                {
+                    p_combat_id:
+                        combatId
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        closeCombatDrawer();
+
+
+        await refreshCombatState();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salto turno:",
+            error
+        );
+
+
+        setCombatStatus(
+            "Errore durante il cambio turno."
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// UI TURNO
+// ============================================================
+
+function updateCombatTurnUI() {
+
+    if (!combatSession) {
+
+        return;
+
+    }
+
+
+    if (
+        combatSession.status !==
+        "active"
+    ) {
+
+        setCombatStatus(
+            `Stato: ${combatSession.status}`
+        );
+
+
+        updateActionButtons();
+
+        return;
+
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    if (!currentEntity) {
+
+        setCombatStatus(
+            "Turno non disponibile."
+        );
+
+
+        updateActionButtons();
+
+        return;
+
+    }
+
+
+    const round =
+        Number(
+            combatSession.round_number
+        ) || 1;
+
+
+    if (
+        currentEntity.entity_type ===
+        "enemy"
+    ) {
+
+        setCombatStatus(
+            `Round ${round} · Turno di ${currentEntity.display_name}`
+        );
+
+
+        updateActionButtons();
+
+        return;
+
+    }
+
+
+    const duration =
+        Number(
+            combatSession.turn_duration_seconds
+        ) || 30;
+
+
+    const startedAt =
+        combatSession.turn_started_at
+            ? new Date(
+                combatSession.turn_started_at
+            ).getTime()
+            : Date.now();
+
+
+    const elapsedSeconds =
+        (
+            Date.now() -
+            startedAt
+        ) /
+        1000;
+
+
+    const remaining =
+        Math.max(
+            0,
+            Math.ceil(
+                duration -
+                elapsedSeconds
+            )
+        );
+
+
+    if (isMyTurn()) {
+
+        setCombatStatus(
+            `Round ${round} · IL TUO TURNO · ${remaining}s`
+        );
+
+    } else {
+
+        setCombatStatus(
+            `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
+        );
+
+    }
+
+
+    updateActionButtons();
+
+}
+
+
+// ============================================================
+// NOTE
 // ============================================================
 
 function setupCombatNotes() {
@@ -1483,29 +2626,13 @@ function setupCombatNotes() {
     }
 
 
-    // ========================================================
-    // CARICA NOTE DELLA SCHEDA
-    // ========================================================
-
     notesElement.value =
         currentCharacter.notes || "";
 
 
-    saveButton.disabled =
-        false;
-
-
-    // ========================================================
-    // SALVA NOTE
-    // ========================================================
-
     saveButton.addEventListener(
         "click",
         async () => {
-
-            const newNotes =
-                notesElement.value;
-
 
             saveButton.disabled =
                 true;
@@ -1517,19 +2644,19 @@ function setupCombatNotes() {
 
             try {
 
+                const newNotes =
+                    notesElement.value;
+
+
                 const {
                     error
                 } =
                     await db
-                        .from(
-                            "characters"
-                        )
-                        .update(
-                            {
-                                notes:
-                                    newNotes
-                            }
-                        )
+                        .from("characters")
+                        .update({
+                            notes:
+                                newNotes
+                        })
                         .eq(
                             "id",
                             currentCharacter.id
@@ -1551,24 +2678,10 @@ function setupCombatNotes() {
                     "SALVATO ✓";
 
 
-                setTimeout(
-                    () => {
-
-                        saveButton.textContent =
-                            "SALVA NOTE";
-
-                        saveButton.disabled =
-                            false;
-
-                    },
-                    1200
-                );
-
-
             } catch (error) {
 
                 console.error(
-                    "Errore salvataggio note:",
+                    "Errore note:",
                     error
                 );
 
@@ -1577,17 +2690,20 @@ function setupCombatNotes() {
                     "ERRORE";
 
 
+            } finally {
+
                 setTimeout(
                     () => {
 
                         saveButton.textContent =
                             "SALVA NOTE";
 
+
                         saveButton.disabled =
                             false;
 
                     },
-                    1500
+                    1200
                 );
 
             }
@@ -1599,7 +2715,7 @@ function setupCombatNotes() {
 
 
 // ============================================================
-// MODALITÀ MASTER
+// MASTER
 // ============================================================
 
 function updateCombatMode() {
@@ -1610,17 +2726,75 @@ function updateCombatMode() {
         );
 
 
-    if (!badge) {
+    if (badge) {
+
+        badge.classList.toggle(
+            "visible",
+            masterObserverMode
+        );
+
+    }
+
+
+    document.body.classList.toggle(
+        "master-observer",
+        masterObserverMode
+    );
+
+}
+
+
+// ============================================================
+// LOG COMBATTIMENTO
+// ============================================================
+
+function addCombatLog(
+    text
+) {
+
+    const container =
+        document.getElementById(
+            "combat-log"
+        );
+
+
+    if (!container) {
 
         return;
 
     }
 
 
-    badge.classList.toggle(
-        "visible",
-        masterObserverMode
+    const placeholder =
+        container.querySelector(
+            ".combat-log-placeholder"
+        );
+
+
+    placeholder?.remove();
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "combat-log-entry";
+
+
+    row.textContent =
+        text;
+
+
+    container.appendChild(
+        row
     );
+
+
+    container.scrollTop =
+        container.scrollHeight;
 
 }
 
@@ -1650,15 +2824,12 @@ function setCombatStatus(
 
 
 // ============================================================
-// LOOP STATO COMBATTIMENTO
+// LOOP
 // ============================================================
 
 function startCombatStateLoop() {
 
     stopCombatStateLoop();
-
-
-    updateCombatTurnUI();
 
 
     combatTimerInterval =
@@ -1686,18 +2857,17 @@ function startCombatStateLoop() {
 
 
 // ============================================================
-// FERMA LOOP
+// STOP LOOP
 // ============================================================
 
 function stopCombatStateLoop() {
 
-    if (
-        combatTimerInterval
-    ) {
+    if (combatTimerInterval) {
 
         clearInterval(
             combatTimerInterval
         );
+
 
         combatTimerInterval =
             null;
@@ -1705,13 +2875,12 @@ function stopCombatStateLoop() {
     }
 
 
-    if (
-        combatStateInterval
-    ) {
+    if (combatStateInterval) {
 
         clearInterval(
             combatStateInterval
         );
+
 
         combatStateInterval =
             null;
@@ -1722,16 +2891,8 @@ function stopCombatStateLoop() {
 
 
 // ============================================================
-// AGGIORNA STATO DAL DATABASE
+// REFRESH
 // ============================================================
-
-let combatRefreshInProgress =
-    false;
-
-
-let lastCombatEntitiesSnapshot =
-    "";
-
 
 async function refreshCombatState() {
 
@@ -1764,65 +2925,9 @@ async function refreshCombatState() {
         await loadCombatEntities();
 
 
-        // ====================================================
-        // CREA SNAPSHOT DELLO STATO ENTITÀ
-        // ====================================================
-
         const snapshot =
-            JSON.stringify(
-                Array.from(
-                    combatEntities.values()
-                )
-                    .map(
-                        entity => ({
+            createCombatSnapshot();
 
-                            id:
-                                entity.id,
-
-                            x:
-                                entity.x,
-
-                            y:
-                                entity.y,
-
-                            current_hp:
-                                entity.current_hp,
-
-                            max_hp:
-                                entity.max_hp,
-
-                            movement_remaining:
-                                entity.movement_remaining,
-
-                            status:
-                                entity.status,
-
-                            entity_type:
-                                entity.entity_type,
-
-                            display_name:
-                                entity.display_name,
-
-                            character_id:
-                                entity.character_id,
-
-                            monster_type:
-                                entity.monster_type
-
-                        })
-                    )
-                    .sort(
-                        (a, b) =>
-                            a.id.localeCompare(
-                                b.id
-                            )
-                    )
-            );
-
-
-        // ====================================================
-        // RIDISEGNA SOLO SE QUALCOSA È CAMBIATO
-        // ====================================================
 
         if (
             snapshot !==
@@ -1833,11 +2938,7 @@ async function refreshCombatState() {
                 snapshot;
 
 
-            renderCombatTokens();
-
-            renderCombatEntityList();
-
-            renderPlayerCombatSheet();
+            renderCombat();
 
         }
 
@@ -1864,181 +2965,8 @@ async function refreshCombatState() {
 
 
 // ============================================================
-// ENTITÀ DI TURNO
+// MOVIMENTO
 // ============================================================
-
-function getCurrentTurnEntity() {
-
-    if (
-        !combatSession ||
-        !combatSession.current_turn_entity_id
-    ) {
-
-        return null;
-
-    }
-
-
-    return combatEntities.get(
-        combatSession.current_turn_entity_id
-    ) || null;
-
-}
-
-
-// ============================================================
-// UI TURNO
-// ============================================================
-
-function updateCombatTurnUI() {
-
-    if (
-        !combatSession
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        combatSession.status !==
-        "active"
-    ) {
-
-        setCombatStatus(
-            `Stato: ${combatSession.status}`
-        );
-
-        return;
-
-    }
-
-
-    const currentEntity =
-        getCurrentTurnEntity();
-
-
-    if (
-        !currentEntity
-    ) {
-
-        setCombatStatus(
-            "Turno non disponibile."
-        );
-
-        return;
-
-    }
-
-
-    const round =
-        Number(
-            combatSession.round_number
-        ) || 1;
-
-
-    // ========================================================
-    // TURNO MOSTRO
-    // ========================================================
-
-    if (
-        currentEntity.entity_type ===
-        "enemy"
-    ) {
-
-        setCombatStatus(
-            `Round ${round} · Turno di ${currentEntity.display_name}`
-        );
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // TIMER PLAYER
-    // ========================================================
-
-    const duration =
-        Number(
-            combatSession.turn_duration_seconds
-        ) || 30;
-
-
-    const startedAt =
-        combatSession.turn_started_at
-            ? new Date(
-                combatSession.turn_started_at
-            ).getTime()
-            : Date.now();
-
-
-    const elapsedSeconds =
-        (
-            Date.now() -
-            startedAt
-        ) /
-        1000;
-
-
-    const remaining =
-        Math.max(
-            0,
-            Math.ceil(
-                duration -
-                elapsedSeconds
-            )
-        );
-
-
-    const isMyTurn =
-        currentCharacter &&
-        currentEntity.character_id ===
-            currentCharacter.id;
-
-
-    if (
-        isMyTurn
-    ) {
-
-        setCombatStatus(
-            `Round ${round} · IL TUO TURNO · ${remaining}s`
-        );
-
-        return;
-
-    }
-
-
-    setCombatStatus(
-        `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
-    );
-
-}
-
-
-// ============================================================
-// RESIZE
-// ============================================================
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        renderCombatTokens();
-
-    }
-);
-
-
-// ============================================================
-// MOVIMENTO PLAYER
-// ============================================================
-
-let combatMoveInProgress =
-    false;
-
 
 window.moveCombatPlayer =
     async function (
@@ -2051,7 +2979,8 @@ window.moveCombatPlayer =
             masterObserverMode ||
             !currentCharacter ||
             !combatSession ||
-            combatSession.status !== "active"
+            combatSession.status !==
+                "active"
         ) {
 
             return;
@@ -2059,15 +2988,7 @@ window.moveCombatPlayer =
         }
 
 
-        const currentEntity =
-            getCurrentTurnEntity();
-
-
-        if (
-            !currentEntity ||
-            currentEntity.entity_type !== "player" ||
-            currentEntity.character_id !== currentCharacter.id
-        ) {
+        if (!isMyTurn()) {
 
             return;
 
@@ -2111,10 +3032,6 @@ window.moveCombatPlayer =
 
             if (!data) {
 
-                console.log(
-                    "Movimento non consentito."
-                );
-
                 return;
 
             }
@@ -2122,63 +3039,12 @@ window.moveCombatPlayer =
 
             await loadCombatEntities();
 
-            renderCombatTokens();
-
-            renderCombatEntityList();
-
-            renderPlayerCombatSheet();
-
 
             lastCombatEntitiesSnapshot =
-                JSON.stringify(
-                    Array.from(
-                        combatEntities.values()
-                    )
-                        .map(
-                            entity => ({
+                createCombatSnapshot();
 
-                                id:
-                                    entity.id,
 
-                                x:
-                                    entity.x,
-
-                                y:
-                                    entity.y,
-
-                                current_hp:
-                                    entity.current_hp,
-
-                                max_hp:
-                                    entity.max_hp,
-
-                                movement_remaining:
-                                    entity.movement_remaining,
-
-                                status:
-                                    entity.status,
-
-                                entity_type:
-                                    entity.entity_type,
-
-                                display_name:
-                                    entity.display_name,
-
-                                character_id:
-                                    entity.character_id,
-
-                                monster_type:
-                                    entity.monster_type
-
-                            })
-                        )
-                        .sort(
-                            (a, b) =>
-                                a.id.localeCompare(
-                                    b.id
-                                )
-                        )
-                );
+            renderCombat();
 
 
         } catch (error) {
@@ -2200,7 +3066,7 @@ window.moveCombatPlayer =
 
 
 // ============================================================
-// TASTIERA MOVIMENTO
+// TASTIERA
 // ============================================================
 
 document.addEventListener(
@@ -2223,20 +3089,15 @@ document.addEventListener(
         }
 
 
-        if (
-            event.repeat
-        ) {
+        if (event.repeat) {
 
             return;
 
         }
 
 
-        let dx =
-            0;
-
-        let dy =
-            0;
+        let dx = 0;
+        let dy = 0;
 
 
         switch (
@@ -2246,8 +3107,7 @@ document.addEventListener(
             case "w":
             case "arrowup":
 
-                dy =
-                    -1;
+                dy = -1;
 
                 break;
 
@@ -2255,8 +3115,7 @@ document.addEventListener(
             case "s":
             case "arrowdown":
 
-                dy =
-                    1;
+                dy = 1;
 
                 break;
 
@@ -2264,8 +3123,7 @@ document.addEventListener(
             case "a":
             case "arrowleft":
 
-                dx =
-                    -1;
+                dx = -1;
 
                 break;
 
@@ -2273,8 +3131,7 @@ document.addEventListener(
             case "d":
             case "arrowright":
 
-                dx =
-                    1;
+                dx = 1;
 
                 break;
 
@@ -2297,6 +3154,24 @@ document.addEventListener(
     }
 );
 
+
+// ============================================================
+// RESIZE
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        renderCombatTokens();
+
+    }
+);
+
+
+// ============================================================
+// USCITA
+// ============================================================
 
 window.addEventListener(
     "beforeunload",
