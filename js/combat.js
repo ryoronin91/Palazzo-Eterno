@@ -116,66 +116,66 @@ document.addEventListener(
 
             await loadCombatSession();
 
-await loadCombatEntities();
+            await loadCombatEntities();
 
-lastCombatEntitiesSnapshot =
-    JSON.stringify(
-        Array.from(
-            combatEntities.values()
-        )
-            .map(
-                entity => ({
-
-                    id:
-                        entity.id,
-
-                    x:
-                        entity.x,
-
-                    y:
-                        entity.y,
-
-                    current_hp:
-                        entity.current_hp,
-
-                    max_hp:
-                        entity.max_hp,
-
-                    movement_remaining:
-                        entity.movement_remaining,
-
-                    status:
-                        entity.status,
-
-                    entity_type:
-                        entity.entity_type,
-
-                    display_name:
-                        entity.display_name,
-
-                    character_id:
-                        entity.character_id,
-
-                    monster_type:
-                        entity.monster_type
-
-                })
-            )
-            .sort(
-                (a, b) =>
-                    a.id.localeCompare(
-                        b.id
+            lastCombatEntitiesSnapshot =
+                JSON.stringify(
+                    Array.from(
+                        combatEntities.values()
                     )
-            )
-    );
+                        .map(
+                            entity => ({
 
-renderCombat();
+                                id:
+                                    entity.id,
 
-updateCombatMode();
+                                x:
+                                    entity.x,
 
-setupCombatNotes();
+                                y:
+                                    entity.y,
 
-startCombatStateLoop();
+                                current_hp:
+                                    entity.current_hp,
+
+                                max_hp:
+                                    entity.max_hp,
+
+                                movement_remaining:
+                                    entity.movement_remaining,
+
+                                status:
+                                    entity.status,
+
+                                entity_type:
+                                    entity.entity_type,
+
+                                display_name:
+                                    entity.display_name,
+
+                                character_id:
+                                    entity.character_id,
+
+                                monster_type:
+                                    entity.monster_type
+
+                            })
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.id.localeCompare(
+                                    b.id
+                                )
+                        )
+                );
+
+            renderCombat();
+
+            updateCombatMode();
+
+            setupCombatNotes();
+
+            startCombatStateLoop();
 
 
         } catch (error) {
@@ -291,6 +291,7 @@ function getCombatIdFromUrl() {
 
 }
 
+
 // ============================================================
 // MODALITÀ MASTER DALL'URL
 // ============================================================
@@ -311,6 +312,8 @@ function getMasterObserverModeFromUrl() {
     );
 
 }
+
+
 // ============================================================
 // PERSONAGGIO CORRENTE
 // ============================================================
@@ -318,12 +321,12 @@ function getMasterObserverModeFromUrl() {
 async function loadCurrentCharacter() {
 
     if (
-    masterObserverMode
-) {
+        masterObserverMode
+    ) {
 
-    return;
+        return;
 
-}
+    }
 
 
     const {
@@ -335,19 +338,19 @@ async function loadCurrentCharacter() {
                 "characters"
             )
             .select(
-    `
-    id,
-    nome,
-    token,
-    forza,
-    resistenza,
-    costituzione,
-    intelligenza,
-    destrezza,
-    fortuna,
-    notes
-    `
-)
+                `
+                id,
+                nome,
+                token,
+                forza,
+                resistenza,
+                costituzione,
+                intelligenza,
+                destrezza,
+                fortuna,
+                notes
+                `
+            )
             .eq(
                 "user_id",
                 currentUser.id
@@ -366,6 +369,7 @@ async function loadCurrentCharacter() {
         data;
 
 }
+
 
 // ============================================================
 // CARICA SESSIONE COMBATTIMENTO
@@ -411,6 +415,7 @@ async function loadCombatSession() {
 
 }
 
+
 // ============================================================
 // CARICA ENTITÀ
 // ============================================================
@@ -422,28 +427,28 @@ async function loadCombatEntities() {
         error
     } =
         await db
-    .from(
-        "combat_entities"
-    )
-    .select(
-        `
-        id,
-        entity_type,
-        character_id,
-        monster_type,
-        display_name,
-        x,
-        y,
-        current_hp,
-        max_hp,
-        movement_remaining,
-        status
-        `
-    )
-    .eq(
-        "combat_id",
-        combatId
-    );
+            .from(
+                "combat_entities"
+            )
+            .select(
+                `
+                id,
+                entity_type,
+                character_id,
+                monster_type,
+                display_name,
+                x,
+                y,
+                current_hp,
+                max_hp,
+                movement_remaining,
+                status
+                `
+            )
+            .eq(
+                "combat_id",
+                combatId
+            );
 
 
     if (error) {
@@ -724,6 +729,7 @@ function renderCombatTokens() {
 
 }
 
+
 // ============================================================
 // TOKEN PLAYER
 // ============================================================
@@ -919,22 +925,22 @@ function renderCombatEntityList() {
 
 
             meta.textContent =
-    `${
-        entity.entity_type ===
-        "player"
-            ? "Giocatore"
-            : "Nemico"
-    } · PF ${
-        entity.current_hp
-    }/${
-        entity.max_hp
-    } · Movimento ${
-        entity.movement_remaining ?? 0
-    } · X ${
-        entity.x
-    } Y ${
-        entity.y
-    }`;
+                `${
+                    entity.entity_type ===
+                    "player"
+                        ? "Giocatore"
+                        : "Nemico"
+                } · PF ${
+                    entity.current_hp
+                }/${
+                    entity.max_hp
+                } · Movimento ${
+                    entity.movement_remaining ?? 0
+                } · X ${
+                    entity.x
+                } Y ${
+                    entity.y
+                }`;
 
 
             item.appendChild(
@@ -956,6 +962,24 @@ function renderCombatEntityList() {
 
 }
 
+
+// ============================================================
+// LIMITI ATTRIBUTI
+// ============================================================
+
+function clampAttribute(value) {
+
+    return Math.max(
+        1,
+        Math.min(
+            30,
+            Number(value) || 1
+        )
+    );
+
+}
+
+
 // ============================================================
 // SCHEDA PERSONAGGIO COMBATTIMENTO
 // ============================================================
@@ -972,7 +996,6 @@ function renderPlayerCombatSheet() {
     }
 
 
-    
     // ========================================================
     // ENTITÀ DEL PERSONAGGIO NEL COMBATTIMENTO
     // ========================================================
@@ -999,39 +1022,39 @@ function renderPlayerCombatSheet() {
     // ========================================================
 
     const forza =
-        Number(
+        clampAttribute(
             currentCharacter.forza
-        ) || 1;
+        );
 
 
     const resistenza =
-        Number(
+        clampAttribute(
             currentCharacter.resistenza
-        ) || 1;
+        );
 
 
     const costituzione =
-        Number(
+        clampAttribute(
             currentCharacter.costituzione
-        ) || 1;
+        );
 
 
     const intelligenza =
-        Number(
+        clampAttribute(
             currentCharacter.intelligenza
-        ) || 1;
+        );
 
 
     const destrezza =
-        Number(
+        clampAttribute(
             currentCharacter.destrezza
-        ) || 1;
+        );
 
 
     const fortuna =
-        Number(
+        clampAttribute(
             currentCharacter.fortuna
-        ) || 1;
+        );
 
 
     // ========================================================
@@ -1216,10 +1239,6 @@ function renderPlayerCombatSheet() {
 
     // ========================================================
     // PM
-    //
-    // Per ora non abbiamo ancora current_pm nel database.
-    // Finché non implementiamo il consumo PM, viene mostrato
-    // come pieno.
     // ========================================================
 
     if (pmElement) {
@@ -1274,6 +1293,7 @@ function renderPlayerCombatSheet() {
     }
 
 }
+
 
 // ============================================================
 // NOTE PERSONALI PERSONAGGIO
@@ -1427,6 +1447,7 @@ function setupCombatNotes() {
 
 }
 
+
 // ============================================================
 // MODALITÀ MASTER
 // ============================================================
@@ -1476,6 +1497,7 @@ function setCombatStatus(
     }
 
 }
+
 
 // ============================================================
 // LOOP STATO COMBATTIMENTO
@@ -1621,7 +1643,7 @@ async function refreshCombatState() {
 
                             movement_remaining:
                                 entity.movement_remaining,
-                            
+
                             status:
                                 entity.status,
 
@@ -1845,6 +1867,7 @@ function updateCombatTurnUI() {
 
 }
 
+
 // ============================================================
 // RESIZE
 // ============================================================
@@ -1857,6 +1880,7 @@ window.addEventListener(
 
     }
 );
+
 
 // ============================================================
 // MOVIMENTO PLAYER
@@ -1872,157 +1896,157 @@ window.moveCombatPlayer =
         dy
     ) {
 
-    if (
-        combatMoveInProgress ||
-        masterObserverMode ||
-        !currentCharacter ||
-        !combatSession ||
-        combatSession.status !== "active"
-    ) {
-
-        return;
-
-    }
-
-
-    const currentEntity =
-        getCurrentTurnEntity();
-
-
-    if (
-        !currentEntity ||
-        currentEntity.entity_type !== "player" ||
-        currentEntity.character_id !== currentCharacter.id
-    ) {
-
-        return;
-
-    }
-
-
-    combatMoveInProgress =
-        true;
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "move_combat_player",
-                {
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_dx:
-                        dx,
-
-                    p_dy:
-                        dy
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        if (!data) {
-
-            console.log(
-                "Movimento non consentito."
-            );
+        if (
+            combatMoveInProgress ||
+            masterObserverMode ||
+            !currentCharacter ||
+            !combatSession ||
+            combatSession.status !== "active"
+        ) {
 
             return;
 
         }
 
 
-        await loadCombatEntities();
-
-        renderCombatTokens();
-
-        renderCombatEntityList();
-
-        renderPlayerCombatSheet();
+        const currentEntity =
+            getCurrentTurnEntity();
 
 
-        lastCombatEntitiesSnapshot =
-            JSON.stringify(
-                Array.from(
-                    combatEntities.values()
-                )
-                    .map(
-                        entity => ({
+        if (
+            !currentEntity ||
+            currentEntity.entity_type !== "player" ||
+            currentEntity.character_id !== currentCharacter.id
+        ) {
 
-                            id:
-                                entity.id,
+            return;
 
-                            x:
-                                entity.x,
+        }
 
-                            y:
-                                entity.y,
 
-                            current_hp:
-                                entity.current_hp,
+        combatMoveInProgress =
+            true;
 
-                           max_hp:
-                                entity.max_hp,
 
-                           movement_remaining:
-                                entity.movement_remaining,
+        try {
 
-                           status:
-                                entity.status,
+            const {
+                data,
+                error
+            } =
+                await db.rpc(
+                    "move_combat_player",
+                    {
+                        p_combat_id:
+                            combatId,
 
-                            entity_type:
-                                entity.entity_type,
+                        p_character_id:
+                            currentCharacter.id,
 
-                            display_name:
-                                entity.display_name,
+                        p_dx:
+                            dx,
 
-                            character_id:
-                                entity.character_id,
+                        p_dy:
+                            dy
+                    }
+                );
 
-                            monster_type:
-                                entity.monster_type
 
-                        })
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            if (!data) {
+
+                console.log(
+                    "Movimento non consentito."
+                );
+
+                return;
+
+            }
+
+
+            await loadCombatEntities();
+
+            renderCombatTokens();
+
+            renderCombatEntityList();
+
+            renderPlayerCombatSheet();
+
+
+            lastCombatEntitiesSnapshot =
+                JSON.stringify(
+                    Array.from(
+                        combatEntities.values()
                     )
-                    .sort(
-                        (a, b) =>
-                            a.id.localeCompare(
-                                b.id
-                            )
-                    )
+                        .map(
+                            entity => ({
+
+                                id:
+                                    entity.id,
+
+                                x:
+                                    entity.x,
+
+                                y:
+                                    entity.y,
+
+                                current_hp:
+                                    entity.current_hp,
+
+                                max_hp:
+                                    entity.max_hp,
+
+                                movement_remaining:
+                                    entity.movement_remaining,
+
+                                status:
+                                    entity.status,
+
+                                entity_type:
+                                    entity.entity_type,
+
+                                display_name:
+                                    entity.display_name,
+
+                                character_id:
+                                    entity.character_id,
+
+                                monster_type:
+                                    entity.monster_type
+
+                            })
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.id.localeCompare(
+                                    b.id
+                                )
+                        )
+                );
+
+
+        } catch (error) {
+
+            console.error(
+                "Errore movimento combattimento:",
+                error
             );
 
 
-    } catch (error) {
+        } finally {
 
-        console.error(
-            "Errore movimento combattimento:",
-            error
-        );
+            combatMoveInProgress =
+                false;
 
+        }
 
-    } finally {
-
-        combatMoveInProgress =
-            false;
-
-    }
-
-}
+    };
 
 
 // ============================================================
@@ -2056,7 +2080,7 @@ document.addEventListener(
             return;
 
         }
-        
+
 
         let dx =
             0;
@@ -2116,12 +2140,13 @@ document.addEventListener(
 
 
         await window.moveCombatPlayer(
-    dx,
-    dy
-);
+            dx,
+            dy
+        );
 
     }
 );
+
 
 window.addEventListener(
     "beforeunload",
