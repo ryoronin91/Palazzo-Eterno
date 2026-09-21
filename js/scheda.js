@@ -11,6 +11,9 @@
 // - visualizzazione degli attributi
 // - calcolo delle statistiche secondarie
 // - caricamento del token
+// - caricamento inventario
+// - visualizzazione equipaggiamento
+// - visualizzazione zaino
 // - caricamento delle note
 // - salvataggio delle note
 // - accesso modalità Master
@@ -34,8 +37,12 @@ const db = supabaseClient;
 // ============================================================
 
 let currentUser = null;
+
 let character = null;
+
 let currentUserRole = "player";
+
+let characterInventory = [];
 
 
 // ============================================================
@@ -58,7 +65,11 @@ document.addEventListener(
 
             await loadCharacter();
 
+            await loadInventory();
+
             displayCharacter();
+
+            displayInventory();
 
             updateMasterEntryButton();
 
@@ -100,6 +111,7 @@ async function checkUser() {
     if (error) {
 
         throw error;
+
     }
 
 
@@ -109,6 +121,7 @@ async function checkUser() {
             "login.html";
 
         return;
+
     }
 
 
@@ -166,6 +179,7 @@ async function loadUserRole() {
     if (error) {
 
         throw error;
+
     }
 
 
@@ -197,6 +211,7 @@ function updateMasterEntryButton() {
     if (!masterButton) {
 
         return;
+
     }
 
 
@@ -246,6 +261,7 @@ async function loadCharacter() {
     if (error) {
 
         throw error;
+
     }
 
 
@@ -260,6 +276,7 @@ async function loadCharacter() {
             "personaggio.html";
 
         return;
+
     }
 
 
@@ -276,6 +293,96 @@ async function loadCharacter() {
 
 
 // ============================================================
+// CARICAMENTO INVENTARIO
+// ============================================================
+
+async function loadInventory() {
+
+    console.log(
+        "Caricamento inventario..."
+    );
+
+
+    if (!character) {
+
+        characterInventory = [];
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("character_inventory")
+            .select(`
+                id,
+                character_id,
+                item_id,
+                quantity,
+                equipped_slot,
+                created_at,
+                updated_at,
+                item:items (
+                    id,
+                    name,
+                    description,
+                    item_type,
+                    equip_slot,
+                    hand_rule,
+                    stackable,
+                    max_stack,
+                    attack_bonus,
+                    defense_bonus,
+                    forza_bonus,
+                    resistenza_bonus,
+                    costituzione_bonus,
+                    intelligenza_bonus,
+                    destrezza_bonus,
+                    fortuna_bonus,
+                    heal_pf,
+                    heal_pm,
+                    gold_value,
+                    unique_world,
+                    vendor_unlimited,
+                    recipe_only
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterInventory =
+        data || [];
+
+
+    console.log(
+        "Inventario caricato:",
+        characterInventory
+    );
+
+}
+
+
+// ============================================================
 // VISUALIZZAZIONE PERSONAGGIO
 // ============================================================
 
@@ -284,6 +391,7 @@ function displayCharacter() {
     if (!character) {
 
         return;
+
     }
 
 
@@ -402,6 +510,7 @@ function displayAttribute(
         );
 
         return;
+
     }
 
 
@@ -443,6 +552,7 @@ function displayToken() {
     if (!tokenElement) {
 
         return;
+
     }
 
 
@@ -458,6 +568,7 @@ function displayToken() {
         );
 
         return;
+
     }
 
 
@@ -505,6 +616,15 @@ function displayToken() {
 
 // ============================================================
 // CALCOLO STATISTICHE SECONDARIE
+// ============================================================
+//
+// PER ORA:
+//
+// gli oggetti vengono visualizzati ma i loro bonus NON vengono
+// ancora applicati alle statistiche.
+//
+// Lo faremo nel prossimo passaggio.
+//
 // ============================================================
 
 function calculateSecondaryStats() {
@@ -695,11 +815,536 @@ function setSecondaryValue(
         );
 
         return;
+
     }
 
 
     element.textContent =
         value;
+
+}
+
+
+// ============================================================
+// VISUALIZZAZIONE INVENTARIO
+// ============================================================
+
+function displayInventory() {
+
+    displayEquipment();
+
+    displayBackpack();
+
+}
+
+
+// ============================================================
+// EQUIPAGGIAMENTO
+// ============================================================
+
+function displayEquipment() {
+
+    const slots = {
+
+        hand_1: {
+            htmlKey: "hand-1",
+            label: "Mano 1"
+        },
+
+        hand_2: {
+            htmlKey: "hand-2",
+            label: "Mano 2"
+        },
+
+        armor: {
+            htmlKey: "armor",
+            label: "Armatura"
+        },
+
+        accessory_1: {
+            htmlKey: "accessory-1",
+            label: "Accessorio 1"
+        },
+
+        accessory_2: {
+            htmlKey: "accessory-2",
+            label: "Accessorio 2"
+        },
+
+        accessory_3: {
+            htmlKey: "accessory-3",
+            label: "Accessorio 3"
+        }
+
+    };
+
+
+    for (
+        const [
+            slotName,
+            slotInfo
+        ]
+        of Object.entries(slots)
+    ) {
+
+        const inventoryEntry =
+            characterInventory.find(
+                entry =>
+                    entry.equipped_slot ===
+                    slotName
+            ) || null;
+
+
+        renderEquipmentSlot(
+            slotInfo.htmlKey,
+            slotInfo.label,
+            inventoryEntry
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// DISEGNA UNO SLOT EQUIPAGGIAMENTO
+// ============================================================
+
+function renderEquipmentSlot(
+    htmlKey,
+    slotLabel,
+    inventoryEntry
+) {
+
+    const container =
+        document.getElementById(
+            `equipment-slot-${htmlKey}`
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    let content =
+        container.querySelector(
+            "[data-equipment-content]"
+        );
+
+
+    if (!content) {
+
+        content =
+            document.createElement(
+                "div"
+            );
+
+
+        content.setAttribute(
+            "data-equipment-content",
+            "true"
+        );
+
+
+        content.className =
+            "equipment-dynamic-content";
+
+
+        container.appendChild(
+            content
+        );
+
+    }
+
+
+    content.replaceChildren();
+
+
+    if (
+        !inventoryEntry ||
+        !inventoryEntry.item
+    ) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+
+        empty.className =
+            "equipment-empty";
+
+
+        empty.textContent =
+            "Vuoto";
+
+
+        content.appendChild(
+            empty
+        );
+
+
+        return;
+
+    }
+
+
+    const item =
+        inventoryEntry.item;
+
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "equipment-item-name";
+
+
+    name.textContent =
+        item.name;
+
+
+    content.appendChild(
+        name
+    );
+
+
+    if (item.description) {
+
+        const description =
+            document.createElement(
+                "div"
+            );
+
+
+        description.className =
+            "equipment-item-description";
+
+
+        description.textContent =
+            item.description;
+
+
+        content.appendChild(
+            description
+        );
+
+    }
+
+
+    const value =
+        document.createElement(
+            "div"
+        );
+
+
+    value.className =
+        "equipment-item-value";
+
+
+    value.textContent =
+        `Valore: ${Number(item.gold_value) || 0} MO`;
+
+
+    content.appendChild(
+        value
+    );
+
+}
+
+
+// ============================================================
+// ZAINO
+// ============================================================
+
+function displayBackpack() {
+
+    const backpackList =
+        document.getElementById(
+            "backpack-list"
+        );
+
+
+    const backpackCount =
+        document.getElementById(
+            "backpack-count"
+        );
+
+
+    const backpackEmpty =
+        document.getElementById(
+            "backpack-empty"
+        );
+
+
+    const backpackItems =
+        characterInventory.filter(
+            entry =>
+                !entry.equipped_slot
+        );
+
+
+    const totalObjects =
+        backpackItems.reduce(
+            (
+                total,
+                entry
+            ) =>
+                total +
+                (
+                    Number(
+                        entry.quantity
+                    ) || 0
+                ),
+            0
+        );
+
+
+    if (backpackCount) {
+
+        backpackCount.textContent =
+            totalObjects === 1
+                ? "1 oggetto"
+                : `${totalObjects} oggetti`;
+
+    }
+
+
+    if (backpackEmpty) {
+
+        backpackEmpty.style.display =
+            backpackItems.length === 0
+                ? ""
+                : "none";
+
+    }
+
+
+    if (!backpackList) {
+
+        return;
+
+    }
+
+
+    backpackList.replaceChildren();
+
+
+    if (
+        backpackItems.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    for (
+        const inventoryEntry
+        of backpackItems
+    ) {
+
+        renderBackpackItem(
+            backpackList,
+            inventoryEntry
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// DISEGNA UN OGGETTO NELLO ZAINO
+// ============================================================
+
+function renderBackpackItem(
+    backpackList,
+    inventoryEntry
+) {
+
+    const item =
+        inventoryEntry.item;
+
+
+    if (!item) {
+
+        return;
+
+    }
+
+
+    const quantity =
+        Number(
+            inventoryEntry.quantity
+        ) || 1;
+
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+
+    card.className =
+        "backpack-item";
+
+
+    card.dataset.inventoryId =
+        inventoryEntry.id;
+
+
+    card.dataset.itemId =
+        inventoryEntry.item_id;
+
+
+    // --------------------------------------------------------
+    // PARTE PRINCIPALE
+    // --------------------------------------------------------
+
+    const main =
+        document.createElement(
+            "div"
+        );
+
+
+    main.className =
+        "backpack-item-main";
+
+
+    // --------------------------------------------------------
+    // NOME
+    // --------------------------------------------------------
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "backpack-item-name";
+
+
+    name.textContent =
+        item.name;
+
+
+    if (
+        quantity > 1
+    ) {
+
+        const quantityElement =
+            document.createElement(
+                "span"
+            );
+
+
+        quantityElement.className =
+            "backpack-item-quantity";
+
+
+        quantityElement.textContent =
+            ` ×${quantity}`;
+
+
+        name.appendChild(
+            quantityElement
+        );
+
+    }
+
+
+    main.appendChild(
+        name
+    );
+
+
+    // --------------------------------------------------------
+    // DESCRIZIONE
+    // --------------------------------------------------------
+
+    if (item.description) {
+
+        const description =
+            document.createElement(
+                "div"
+            );
+
+
+        description.className =
+            "backpack-item-description";
+
+
+        description.textContent =
+            item.description;
+
+
+        main.appendChild(
+            description
+        );
+
+    }
+
+
+    // --------------------------------------------------------
+    // VALORE ECONOMICO
+    // --------------------------------------------------------
+
+    const value =
+        document.createElement(
+            "div"
+        );
+
+
+    value.className =
+        "backpack-item-value";
+
+
+    const unitValue =
+        Number(
+            item.gold_value
+        ) || 0;
+
+
+    value.textContent =
+        `Valore: ${unitValue} MO`;
+
+
+    if (
+        quantity > 1
+    ) {
+
+        const totalValue =
+            unitValue *
+            quantity;
+
+
+        value.textContent +=
+            ` ciascuno · Totale: ${totalValue} MO`;
+
+    }
+
+
+    main.appendChild(
+        value
+    );
+
+
+    card.appendChild(
+        main
+    );
+
+
+    backpackList.appendChild(
+        card
+    );
 
 }
 
@@ -759,6 +1404,7 @@ async function saveNotes() {
     if (!notesElement) {
 
         return;
+
     }
 
 
@@ -811,6 +1457,7 @@ async function saveNotes() {
         if (error) {
 
             throw error;
+
         }
 
 
@@ -879,6 +1526,7 @@ async function logout() {
         );
 
         return;
+
     }
 
 
@@ -905,6 +1553,7 @@ function showMessage(
     if (!element) {
 
         return;
+
     }
 
 
