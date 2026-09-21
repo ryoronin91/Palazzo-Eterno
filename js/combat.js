@@ -924,7 +924,7 @@ function renderCombatEntityList() {
         "player"
             ? "Giocatore"
             : "Nemico"
-    } · HP ${
+    } · PF ${
         entity.current_hp
     }/${
         entity.max_hp
@@ -971,157 +971,7 @@ function renderPlayerCombatSheet() {
 
     }
 
-// ============================================================
-// NOTE PERSONALI PERSONAGGIO
-// ============================================================
 
-function setupCombatNotes() {
-
-    if (
-        masterObserverMode ||
-        !currentCharacter
-    ) {
-
-        return;
-
-    }
-
-
-    const notesElement =
-        document.getElementById(
-            "combat-notes"
-        );
-
-
-    const saveButton =
-        document.getElementById(
-            "combat-notes-save"
-        );
-
-
-    if (
-        !notesElement ||
-        !saveButton
-    ) {
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // CARICA NOTE DELLA SCHEDA
-    // ========================================================
-
-    notesElement.value =
-        currentCharacter.notes || "";
-
-
-    saveButton.disabled =
-        false;
-
-
-    // ========================================================
-    // SALVA NOTE
-    // ========================================================
-
-    saveButton.addEventListener(
-        "click",
-        async () => {
-
-            const newNotes =
-                notesElement.value;
-
-
-            saveButton.disabled =
-                true;
-
-
-            saveButton.textContent =
-                "SALVATAGGIO...";
-
-
-            try {
-
-                const {
-                    error
-                } =
-                    await db
-                        .from(
-                            "characters"
-                        )
-                        .update(
-                            {
-                                notes:
-                                    newNotes
-                            }
-                        )
-                        .eq(
-                            "id",
-                            currentCharacter.id
-                        );
-
-
-                if (error) {
-
-                    throw error;
-
-                }
-
-
-                currentCharacter.notes =
-                    newNotes;
-
-
-                saveButton.textContent =
-                    "SALVATO ✓";
-
-
-                setTimeout(
-                    () => {
-
-                        saveButton.textContent =
-                            "SALVA NOTE";
-
-                        saveButton.disabled =
-                            false;
-
-                    },
-                    1200
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Errore salvataggio note:",
-                    error
-                );
-
-
-                saveButton.textContent =
-                    "ERRORE";
-
-
-                setTimeout(
-                    () => {
-
-                        saveButton.textContent =
-                            "SALVA NOTE";
-
-                        saveButton.disabled =
-                            false;
-
-                    },
-                    1500
-                );
-
-            }
-
-        }
-    );
-
-}
     
     // ========================================================
     // ENTITÀ DEL PERSONAGGIO NEL COMBATTIMENTO
@@ -1426,6 +1276,158 @@ function setupCombatNotes() {
 }
 
 // ============================================================
+// NOTE PERSONALI PERSONAGGIO
+// ============================================================
+
+function setupCombatNotes() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter
+    ) {
+
+        return;
+
+    }
+
+
+    const notesElement =
+        document.getElementById(
+            "combat-notes"
+        );
+
+
+    const saveButton =
+        document.getElementById(
+            "combat-notes-save"
+        );
+
+
+    if (
+        !notesElement ||
+        !saveButton
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // CARICA NOTE DELLA SCHEDA
+    // ========================================================
+
+    notesElement.value =
+        currentCharacter.notes || "";
+
+
+    saveButton.disabled =
+        false;
+
+
+    // ========================================================
+    // SALVA NOTE
+    // ========================================================
+
+    saveButton.addEventListener(
+        "click",
+        async () => {
+
+            const newNotes =
+                notesElement.value;
+
+
+            saveButton.disabled =
+                true;
+
+
+            saveButton.textContent =
+                "SALVATAGGIO...";
+
+
+            try {
+
+                const {
+                    error
+                } =
+                    await db
+                        .from(
+                            "characters"
+                        )
+                        .update(
+                            {
+                                notes:
+                                    newNotes
+                            }
+                        )
+                        .eq(
+                            "id",
+                            currentCharacter.id
+                        );
+
+
+                if (error) {
+
+                    throw error;
+
+                }
+
+
+                currentCharacter.notes =
+                    newNotes;
+
+
+                saveButton.textContent =
+                    "SALVATO ✓";
+
+
+                setTimeout(
+                    () => {
+
+                        saveButton.textContent =
+                            "SALVA NOTE";
+
+                        saveButton.disabled =
+                            false;
+
+                    },
+                    1200
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Errore salvataggio note:",
+                    error
+                );
+
+
+                saveButton.textContent =
+                    "ERRORE";
+
+
+                setTimeout(
+                    () => {
+
+                        saveButton.textContent =
+                            "SALVA NOTE";
+
+                        saveButton.disabled =
+                            false;
+
+                    },
+                    1500
+                );
+
+            }
+
+        }
+    );
+
+}
+
+// ============================================================
 // MODALITÀ MASTER
 // ============================================================
 
@@ -1662,6 +1664,8 @@ async function refreshCombatState() {
             renderCombatTokens();
 
             renderCombatEntityList();
+
+            renderPlayerCombatSheet();
 
         }
 
