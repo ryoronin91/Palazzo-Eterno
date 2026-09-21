@@ -418,6 +418,59 @@ async function loadCombatSession() {
         data;
 
 }
+
+// ============================================================
+// ENTRA NEL COMBATTIMENTO COME GIOCATORE
+// ============================================================
+
+async function joinCombatAsPlayer() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter
+    ) {
+
+        return;
+
+    }
+
+
+    console.log(
+        "Ingresso del personaggio nel combattimento..."
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "join_combat_player",
+            {
+                p_combat_id:
+                    combatId,
+
+                p_character_id:
+                    currentCharacter.id
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    console.log(
+        "Entità giocatore:",
+        data
+    );
+
+}
+
+
 // ============================================================
 // GENERA NEMICI DELL'INCONTRO
 // ============================================================
@@ -1196,6 +1249,23 @@ function renderPlayerCombatSheet() {
             playerEntity.movement_remaining
         ) || 0;
 
+    
+const currentPM =
+    playerEntity.current_pm === null ||
+    playerEntity.current_pm === undefined
+        ? maxPM
+        : Math.max(
+            0,
+            Number(
+                playerEntity.current_pm
+            )
+        );
+
+
+const entityMaxPM =
+    Number(
+        playerEntity.max_pm
+    ) || maxPM;
 
     // ========================================================
     // ELEMENTI HTML
@@ -1308,18 +1378,33 @@ function renderPlayerCombatSheet() {
 
     if (pmElement) {
 
-        pmElement.textContent =
-            `${maxPM} / ${maxPM}`;
+    pmElement.textContent =
+        `${currentPM} / ${entityMaxPM}`;
 
-    }
+}
 
 
-    if (pmBar) {
+if (pmBar) {
 
-        pmBar.style.width =
-            "100%";
+    const pmPercentage =
+        entityMaxPM > 0
+            ? Math.max(
+                0,
+                Math.min(
+                    100,
+                    (
+                        currentPM /
+                        entityMaxPM
+                    ) * 100
+                )
+            )
+            : 0;
 
-    }
+
+    pmBar.style.width =
+        `${pmPercentage}%`;
+
+}
 
 
     // ========================================================
