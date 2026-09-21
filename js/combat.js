@@ -333,8 +333,18 @@ async function loadCurrentCharacter() {
                 "characters"
             )
             .select(
-                "id, nome, token"
-            )
+    `
+    id,
+    nome,
+    token,
+    forza,
+    resistenza,
+    costituzione,
+    intelligenza,
+    destrezza,
+    fortuna
+    `
+)
             .eq(
                 "user_id",
                 currentUser.id
@@ -469,6 +479,8 @@ function renderCombat() {
     renderCombatTokens();
 
     renderCombatEntityList();
+
+    renderPlayerCombatSheet();
 
     setCombatStatus(
         `Sessione: ${combatId}`
@@ -941,6 +953,323 @@ function renderCombatEntityList() {
 
 }
 
+// ============================================================
+// SCHEDA PERSONAGGIO COMBATTIMENTO
+// ============================================================
+
+function renderPlayerCombatSheet() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // ENTITÀ DEL PERSONAGGIO NEL COMBATTIMENTO
+    // ========================================================
+
+    const playerEntity =
+        Array.from(
+            combatEntities.values()
+        ).find(
+            entity =>
+                entity.entity_type === "player" &&
+                entity.character_id === currentCharacter.id
+        );
+
+
+    if (!playerEntity) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // CARATTERISTICHE
+    // ========================================================
+
+    const forza =
+        Number(
+            currentCharacter.forza
+        ) || 1;
+
+
+    const resistenza =
+        Number(
+            currentCharacter.resistenza
+        ) || 1;
+
+
+    const costituzione =
+        Number(
+            currentCharacter.costituzione
+        ) || 1;
+
+
+    const intelligenza =
+        Number(
+            currentCharacter.intelligenza
+        ) || 1;
+
+
+    const destrezza =
+        Number(
+            currentCharacter.destrezza
+        ) || 1;
+
+
+    const fortuna =
+        Number(
+            currentCharacter.fortuna
+        ) || 1;
+
+
+    // ========================================================
+    // STATISTICHE DERIVATE
+    // ========================================================
+
+    const attack =
+        Math.ceil(
+            forza / 2
+        );
+
+
+    const defense =
+        Math.ceil(
+            7 +
+            resistenza / 2
+        );
+
+
+    const maxPF =
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
+
+
+    const maxPM =
+        Math.ceil(
+            5 *
+            (
+                intelligenza / 2
+            )
+        );
+
+
+    const maxMovement =
+        Math.ceil(
+            4 +
+            destrezza / 2
+        );
+
+
+    const critical =
+        (
+            fortuna *
+            (
+                50 / 30
+            )
+        ).toFixed(
+            2
+        );
+
+
+    // ========================================================
+    // VALORI ATTUALI DAL COMBATTIMENTO
+    // ========================================================
+
+    const currentPF =
+        Number(
+            playerEntity.current_hp
+        ) || 0;
+
+
+    const entityMaxPF =
+        Number(
+            playerEntity.max_hp
+        ) || maxPF;
+
+
+    const currentMovement =
+        Number(
+            playerEntity.movement_remaining
+        ) || 0;
+
+
+    // ========================================================
+    // ELEMENTI HTML
+    // ========================================================
+
+    const nameElement =
+        document.getElementById(
+            "combat-character-name"
+        );
+
+
+    const pfElement =
+        document.getElementById(
+            "combat-pf-value"
+        );
+
+
+    const pfBar =
+        document.getElementById(
+            "combat-pf-bar"
+        );
+
+
+    const pmElement =
+        document.getElementById(
+            "combat-pm-value"
+        );
+
+
+    const pmBar =
+        document.getElementById(
+            "combat-pm-bar"
+        );
+
+
+    const attackElement =
+        document.getElementById(
+            "combat-attack-value"
+        );
+
+
+    const defenseElement =
+        document.getElementById(
+            "combat-defense-value"
+        );
+
+
+    const movementElement =
+        document.getElementById(
+            "combat-movement-value"
+        );
+
+
+    const criticalElement =
+        document.getElementById(
+            "combat-critical-value"
+        );
+
+
+    // ========================================================
+    // NOME
+    // ========================================================
+
+    if (nameElement) {
+
+        nameElement.textContent =
+            currentCharacter.nome;
+
+    }
+
+
+    // ========================================================
+    // PF
+    // ========================================================
+
+    if (pfElement) {
+
+        pfElement.textContent =
+            `${currentPF} / ${entityMaxPF}`;
+
+    }
+
+
+    if (pfBar) {
+
+        const pfPercentage =
+            entityMaxPF > 0
+                ? Math.max(
+                    0,
+                    Math.min(
+                        100,
+                        (
+                            currentPF /
+                            entityMaxPF
+                        ) * 100
+                    )
+                )
+                : 0;
+
+
+        pfBar.style.width =
+            `${pfPercentage}%`;
+
+    }
+
+
+    // ========================================================
+    // PM
+    //
+    // Per ora non abbiamo ancora current_pm nel database.
+    // Finché non implementiamo il consumo PM, viene mostrato
+    // come pieno.
+    // ========================================================
+
+    if (pmElement) {
+
+        pmElement.textContent =
+            `${maxPM} / ${maxPM}`;
+
+    }
+
+
+    if (pmBar) {
+
+        pmBar.style.width =
+            "100%";
+
+    }
+
+
+    // ========================================================
+    // STATISTICHE
+    // ========================================================
+
+    if (attackElement) {
+
+        attackElement.textContent =
+            attack;
+
+    }
+
+
+    if (defenseElement) {
+
+        defenseElement.textContent =
+            defense;
+
+    }
+
+
+    if (movementElement) {
+
+        movementElement.textContent =
+            `${currentMovement} / ${maxMovement}`;
+
+    }
+
+
+    if (criticalElement) {
+
+        criticalElement.textContent =
+            `${critical}%`;
+
+    }
+
+}
 
 // ============================================================
 // MODALITÀ MASTER
@@ -1464,6 +1793,8 @@ window.moveCombatPlayer =
         renderCombatTokens();
 
         renderCombatEntityList();
+
+        renderPlayerCombatSheet();
 
 
         lastCombatEntitiesSnapshot =
