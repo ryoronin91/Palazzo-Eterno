@@ -116,6 +116,8 @@ document.addEventListener(
 
             await loadCombatSession();
 
+            await generateCombatEnemies();
+
             await loadCombatEntities();
 
             lastCombatEntitiesSnapshot =
@@ -414,7 +416,43 @@ async function loadCombatSession() {
         data;
 
 }
+// ============================================================
+// GENERA NEMICI DELL'INCONTRO
+// ============================================================
 
+async function generateCombatEnemies() {
+
+    console.log(
+        "Controllo generazione nemici..."
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "generate_combat_enemies",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    console.log(
+        "Nemici presenti nell'incontro:",
+        data
+    );
+
+}
 
 // ============================================================
 // CARICA ENTITÀ
@@ -431,20 +469,23 @@ async function loadCombatEntities() {
                 "combat_entities"
             )
             .select(
-                `
-                id,
-                entity_type,
-                character_id,
-                monster_type,
-                display_name,
-                x,
-                y,
-                current_hp,
-                max_hp,
-                movement_remaining,
-                status
-                `
-            )
+    `
+    id,
+    entity_type,
+    character_id,
+    monster_type,
+    enemy_id,
+    display_name,
+    x,
+    y,
+    current_hp,
+    max_hp,
+    current_pm,
+    max_pm,
+    movement_remaining,
+    status
+    `
+)
             .eq(
                 "combat_id",
                 combatId
@@ -815,54 +856,55 @@ function renderEnemyTokenContent(
     entity
 ) {
 
-    const marker =
+    const image =
         document.createElement(
-            "div"
+            "img"
         );
 
 
-    marker.style.width =
+    image.style.width =
         "100%";
 
 
-    marker.style.height =
+    image.style.height =
         "100%";
 
 
-    marker.style.display =
-        "flex";
+    image.style.objectFit =
+        "contain";
 
 
-    marker.style.alignItems =
-        "center";
+    image.style.display =
+        "block";
 
 
-    marker.style.justifyContent =
-        "center";
+    image.alt =
+        entity.display_name ||
+        "Nemico";
 
 
-    marker.style.borderRadius =
-        "50%";
+    // ========================================================
+    // TOKEN DEL NEMICO
+    // ========================================================
 
+    if (
+        entity.enemy_id
+    ) {
 
-    marker.style.background =
-        "#7d2020";
+        image.src =
+            `immagini/nemici/${entity.enemy_id}.png`;
 
+    } else {
 
-    marker.style.color =
-        "#ffffff";
+        // Fallback per eventuali vecchi mostri
+        image.src =
+            "immagini/nemici/goblin.png";
 
-
-    marker.style.fontWeight =
-        "700";
-
-
-    marker.textContent =
-        "M";
+    }
 
 
     token.appendChild(
-        marker
+        image
     );
 
 }
@@ -924,23 +966,44 @@ function renderCombatEntityList() {
                 "combat-entity-meta";
 
 
-            meta.textContent =
-                `${
-                    entity.entity_type ===
-                    "player"
-                        ? "Giocatore"
-                        : "Nemico"
-                } · PF ${
-                    entity.current_hp
-                }/${
-                    entity.max_hp
-                } · Movimento ${
-                    entity.movement_remaining ?? 0
-                } · X ${
-                    entity.x
-                } Y ${
-                    entity.y
-                }`;
+            if (
+    entity.entity_type ===
+    "enemy"
+) {
+
+    meta.textContent =
+        `Nemico · PF ${
+            entity.current_hp
+        }/${
+            entity.max_hp
+        } · PM ${
+            entity.current_pm ?? 0
+        }/${
+            entity.max_pm ?? 0
+        } · Movimento ${
+            entity.movement_remaining ?? 0
+        } · X ${
+            entity.x
+        } Y ${
+            entity.y
+        }`;
+
+} else {
+
+    meta.textContent =
+        `Giocatore · PF ${
+            entity.current_hp
+        }/${
+            entity.max_hp
+        } · Movimento ${
+            entity.movement_remaining ?? 0
+        } · X ${
+            entity.x
+        } Y ${
+            entity.y
+        }`;
+
+}
 
 
             item.appendChild(
