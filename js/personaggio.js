@@ -1,17 +1,33 @@
 // ============================================================
-// PALAZZO ETERNO - PERSONAGGIO.JS
+// PALAZZO ETERNO
+// PERSONAGGIO.JS
 // ============================================================
-// Gestisce creazione personaggio, point-buy, token e corredo iniziale.
 //
-// Corredo iniziale:
-// - 3 oggetti equipaggiabili scelti dal giocatore
-// - 1 Pozione cura mana
-// - 1 Pozione cura vita
-// - 10 Monete d'oro
+// Gestisce:
+//
+// - autenticazione Supabase
+// - creazione del personaggio
+// - controllo personaggio già esistente
+// - 10 punti abilità iniziali
+// - 6 attributi primari
+// - minimo 1 / massimo 30 per attributo
+// - calcolo statistiche secondarie
+// - scelta del token
+// - scelta di 3 oggetti iniziali
+// - possibilità di scegliere più copie dello stesso oggetto
+// - inventario iniziale
+// - salvataggio su Supabase
+// - redirect alla scheda
+//
 // ============================================================
+
 
 console.log("PERSONAGGIO.JS CARICATO");
 
+
+// ============================================================
+// AVVIO
+// ============================================================
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -80,9 +96,7 @@ document.addEventListener(
 
         let startingItems = [];
 
-
-        const selectedStartingItems =
-            new Set();
+        let selectedStartingItems = [];
 
 
         // ====================================================
@@ -105,6 +119,52 @@ document.addEventListener(
             document.getElementById(
                 "logout-button"
             );
+
+
+        // ====================================================
+        // MESSAGGI
+        // ====================================================
+
+        function showMessage(
+            text
+        ) {
+
+            if (!message) {
+
+                return;
+
+            }
+
+
+            message.textContent =
+                text;
+
+        }
+
+
+        // ====================================================
+        // IMPOSTA TESTO ELEMENTO
+        // ====================================================
+
+        function setText(
+            id,
+            value
+        ) {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    value;
+
+            }
+
+        }
 
 
         // ====================================================
@@ -167,27 +227,6 @@ document.addEventListener(
 
 
         // ====================================================
-        // MESSAGGI
-        // ====================================================
-
-        function showMessage(
-            text
-        ) {
-
-            if (!message) {
-
-                return;
-
-            }
-
-
-            message.textContent =
-                text;
-
-        }
-
-
-        // ====================================================
         // CONTROLLO PERSONAGGIO ESISTENTE
         // ====================================================
 
@@ -232,6 +271,11 @@ document.addEventListener(
 
             if (data) {
 
+                console.log(
+                    "Personaggio già esistente."
+                );
+
+
                 currentCharacter =
                     data;
 
@@ -243,6 +287,11 @@ document.addEventListener(
                 return true;
 
             }
+
+
+            console.log(
+                "Nessun personaggio trovato."
+            );
 
 
             return false;
@@ -280,11 +329,15 @@ document.addEventListener(
                 attributeValues.fortuna;
 
 
+            // ATTACCO
+
             const attack =
                 Math.ceil(
                     forza / 2
                 );
 
+
+            // DIFESA
 
             const defense =
                 Math.ceil(
@@ -295,6 +348,8 @@ document.addEventListener(
                 );
 
 
+            // VITA
+
             const hp =
                 Math.ceil(
                     5 *
@@ -303,6 +358,8 @@ document.addEventListener(
                     )
                 );
 
+
+            // MANA
 
             const mana =
                 Math.ceil(
@@ -313,6 +370,8 @@ document.addEventListener(
                 );
 
 
+            // MOVIMENTO
+
             const movement =
                 Math.ceil(
                     4 +
@@ -322,14 +381,16 @@ document.addEventListener(
                 );
 
 
+            // CRITICO
+
             const critical =
                 Math.min(
                     50,
                     Math.ceil(
+                        fortuna *
                         (
-                            fortuna / 60
-                        ) *
-                        100
+                            50 / 30
+                        )
                     )
                 );
 
@@ -349,31 +410,6 @@ document.addEventListener(
                 critical
 
             };
-
-        }
-
-
-        // ====================================================
-        // IMPOSTA TESTO
-        // ====================================================
-
-        function setText(
-            id,
-            value
-        ) {
-
-            const element =
-                document.getElementById(
-                    id
-                );
-
-
-            if (element) {
-
-                element.textContent =
-                    value;
-
-            }
 
         }
 
@@ -599,10 +635,14 @@ document.addEventListener(
                             }
 
 
-                            if (
+                            const currentValue =
                                 attributeValues[
                                     attribute
-                                ] >=
+                                ];
+
+
+                            if (
+                                currentValue >=
                                 MAX_ATTRIBUTE
                             ) {
 
@@ -612,8 +652,7 @@ document.addEventListener(
 
 
                             if (
-                                getRemainingPoints() <=
-                                0
+                                getRemainingPoints() <= 0
                             ) {
 
                                 return;
@@ -623,7 +662,8 @@ document.addEventListener(
 
                             attributeValues[
                                 attribute
-                            ] += 1;
+                            ] =
+                                currentValue + 1;
 
 
                             updateAttributesDisplay();
@@ -665,10 +705,14 @@ document.addEventListener(
                             }
 
 
-                            if (
+                            const currentValue =
                                 attributeValues[
                                     attribute
-                                ] <=
+                                ];
+
+
+                            if (
+                                currentValue <=
                                 MIN_ATTRIBUTE
                             ) {
 
@@ -679,7 +723,8 @@ document.addEventListener(
 
                             attributeValues[
                                 attribute
-                            ] -= 1;
+                            ] =
+                                currentValue - 1;
 
 
                             updateAttributesDisplay();
@@ -742,6 +787,12 @@ document.addEventListener(
                                 token.dataset.token;
 
 
+                            console.log(
+                                "Token selezionato:",
+                                selectedToken
+                            );
+
+
                             if (preview) {
 
                                 preview.innerHTML =
@@ -786,12 +837,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // CREA INTERFACCIA OGGETTI INIZIALI
-        // ====================================================
-        //
-        // La sezione viene aggiunta automaticamente.
-        // Non serve modificare personaggio.html.
-        //
+        // CREA INTERFACCIA EQUIPAGGIAMENTO INIZIALE
         // ====================================================
 
         function ensureStartingItemsUI() {
@@ -814,9 +860,9 @@ document.addEventListener(
             }
 
 
-            // ------------------------------------------------
+            // =================================================
             // CSS
-            // ------------------------------------------------
+            // =================================================
 
             const style =
                 document.createElement(
@@ -828,9 +874,9 @@ document.addEventListener(
 
                 .starting-items-section {
 
-                    margin-top: 35px;
+                    margin-top: 32px;
 
-                    margin-bottom: 30px;
+                    margin-bottom: 28px;
 
                 }
 
@@ -839,20 +885,78 @@ document.addEventListener(
 
                     color: #aaa;
 
-                    line-height: 1.6;
+                    line-height: 1.5;
 
-                    margin-bottom: 14px;
+                    margin-bottom: 12px;
 
                 }
 
 
                 .starting-items-counter {
 
-                    margin-bottom: 18px;
+                    display: inline-flex;
+
+                    align-items: center;
+
+                    padding: 7px 12px;
+
+                    margin-bottom: 20px;
+
+                    border-radius: 7px;
+
+                    background:
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.10
+                        );
+
+                    border:
+                        1px solid
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.30
+                        );
+
+                    color: #d4af67;
+
+                    font-size: 13px;
 
                     font-weight: bold;
 
+                }
+
+
+                .starting-item-category {
+
+                    margin-bottom: 22px;
+
+                }
+
+
+                .starting-item-category-title {
+
+                    margin: 0 0 10px;
+
+                    padding-bottom: 6px;
+
+                    border-bottom:
+                        1px solid
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.25
+                        );
+
                     color: #d4af67;
+
+                    font-size: 14px;
+
+                    letter-spacing: 1px;
 
                 }
 
@@ -863,63 +967,75 @@ document.addEventListener(
 
                     grid-template-columns:
                         repeat(
-                            auto-fit,
-                            minmax(220px, 1fr)
+                            auto-fill,
+                            minmax(
+                                145px,
+                                1fr
+                            )
                         );
 
-                    gap: 14px;
+                    gap: 8px;
 
                 }
 
 
                 .starting-item {
 
+                    position: relative;
+
+                    min-height: 82px;
+
+                    padding: 9px 10px;
+
+                    box-sizing: border-box;
+
                     text-align: left;
 
-                    padding: 16px;
-
-                    border-radius: 12px;
+                    border-radius: 7px;
 
                     border:
-                        2px solid
+                        1px solid
                         rgba(
                             255,
                             255,
                             255,
-                            0.12
+                            0.10
                         );
 
                     background:
                         rgba(
-                            0,
-                            0,
-                            0,
-                            0.28
+                            255,
+                            255,
+                            255,
+                            0.025
                         );
 
                     color: inherit;
 
-                    cursor: pointer;
-
                     transition:
-                        border-color 0.15s ease,
-                        transform 0.15s ease,
-                        background 0.15s ease;
+                        border-color 0.12s ease,
+                        background 0.12s ease,
+                        transform 0.12s ease;
 
                 }
 
 
                 .starting-item:hover {
 
-                    transform:
-                        translateY(-2px);
-
                     border-color:
                         rgba(
                             184,
                             138,
                             59,
-                            0.7
+                            0.55
+                        );
+
+                    background:
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.05
                         );
 
                 }
@@ -935,16 +1051,7 @@ document.addEventListener(
                             184,
                             138,
                             59,
-                            0.14
-                        );
-
-                    box-shadow:
-                        0 0 0 2px
-                        rgba(
-                            184,
-                            138,
-                            59,
-                            0.18
+                            0.12
                         );
 
                 }
@@ -952,37 +1059,143 @@ document.addEventListener(
 
                 .starting-item-name {
 
+                    padding-right: 30px;
+
+                    font-size: 12px;
+
                     font-weight: bold;
 
-                    font-size: 17px;
-
-                    margin-bottom: 8px;
+                    margin-bottom: 4px;
 
                 }
 
 
                 .starting-item-description {
 
-                    color: #bbb;
+                    color: #aaa;
 
-                    font-size: 14px;
+                    font-size: 10px;
 
-                    line-height: 1.45;
-
-                    min-height: 40px;
+                    line-height: 1.3;
 
                 }
 
 
                 .starting-item-meta {
 
-                    margin-top: 10px;
+                    margin-top: 6px;
+
+                    color: #cda65b;
+
+                    font-size: 9px;
+
+                    font-weight: bold;
+
+                }
+
+
+                .starting-item-quantity {
+
+                    position: absolute;
+
+                    top: 6px;
+
+                    right: 6px;
+
+                    min-width: 22px;
+
+                    height: 22px;
+
+                    padding: 0 5px;
+
+                    box-sizing: border-box;
+
+                    display: flex;
+
+                    align-items: center;
+
+                    justify-content: center;
+
+                    border-radius: 20px;
+
+                    background: #b88a3b;
+
+                    color: #111;
+
+                    font-size: 10px;
+
+                    font-weight: bold;
+
+                }
+
+
+                .starting-item-controls {
+
+                    display: flex;
+
+                    gap: 5px;
+
+                    margin-top: 7px;
+
+                }
+
+
+                .starting-item-control {
+
+                    flex: 1;
+
+                    height: 23px;
+
+                    padding: 0;
+
+                    border-radius: 4px;
+
+                    border:
+                        1px solid
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.35
+                        );
+
+                    background:
+                        rgba(
+                            0,
+                            0,
+                            0,
+                            0.25
+                        );
 
                     color: #d4af67;
 
-                    font-size: 13px;
+                    font-size: 14px;
 
-                    font-weight: bold;
+                    line-height: 20px;
+
+                    cursor: pointer;
+
+                }
+
+
+                .starting-item-control:hover:not(:disabled) {
+
+                    background:
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.15
+                        );
+
+                }
+
+
+                .starting-item-control:disabled {
+
+                    opacity: 0.25;
+
+                    cursor: default;
 
                 }
 
@@ -991,28 +1204,46 @@ document.addEventListener(
 
                     margin-top: 18px;
 
-                    padding:
-                        14px 16px;
+                    padding: 11px 13px;
 
-                    border-radius: 10px;
+                    border-radius: 7px;
 
                     background:
                         rgba(
                             255,
                             255,
                             255,
-                            0.05
+                            0.035
                         );
 
-                    color: #ccc;
+                    color: #bbb;
 
-                    line-height: 1.55;
+                    font-size: 11px;
+
+                    line-height: 1.5;
 
                 }
 
 
                 @media (
                     max-width: 600px
+                ) {
+
+                    .starting-items-grid {
+
+                        grid-template-columns:
+                            repeat(
+                                2,
+                                1fr
+                            );
+
+                    }
+
+                }
+
+
+                @media (
+                    max-width: 390px
                 ) {
 
                     .starting-items-grid {
@@ -1032,9 +1263,9 @@ document.addEventListener(
             );
 
 
-            // ------------------------------------------------
+            // =================================================
             // HTML
-            // ------------------------------------------------
+            // =================================================
 
             const section =
                 document.createElement(
@@ -1056,33 +1287,33 @@ document.addEventListener(
                 <p class="starting-items-description">
 
                     Scegli
+
                     <strong>
-                        3 oggetti equipaggiabili
+                        3 oggetti
                     </strong>
+
                     con cui iniziare l'avventura.
 
-                    Gli oggetti scelti verranno messi
-                    nello zaino e potrai equipaggiarli
-                    dalla scheda del personaggio.
+                    Puoi scegliere anche più copie
+                    dello stesso oggetto.
 
                 </p>
 
 
                 <div class="starting-items-counter">
 
-                    Oggetti scelti:
+                    Oggetti scelti:&nbsp;
 
                     <span id="starting-items-count">
                         0
-                    </span>/3
+                    </span>
+
+                    /3
 
                 </div>
 
 
-                <div
-                    id="starting-items-list"
-                    class="starting-items-grid"
-                ></div>
+                <div id="starting-items-list"></div>
 
 
                 <div class="starting-kit-note">
@@ -1188,13 +1419,371 @@ document.addEventListener(
                 data || [];
 
 
+            console.log(
+                "Oggetti iniziali caricati:",
+                startingItems
+            );
+
+
             renderStartingItems();
 
         }
 
 
         // ====================================================
-        // MOSTRA OGGETTI EQUIPAGGIABILI
+        // QUANTITÀ SELEZIONATA DI UN OGGETTO
+        // ====================================================
+
+        function getSelectedItemQuantity(
+            itemId
+        ) {
+
+            return selectedStartingItems.filter(
+                selectedId =>
+                    selectedId ===
+                    itemId
+            ).length;
+
+        }
+
+
+        // ====================================================
+        // AGGIUNGI OGGETTO
+        // ====================================================
+
+        function addStartingItem(
+            itemId
+        ) {
+
+            if (
+                selectedStartingItems.length >=
+                REQUIRED_STARTING_ITEMS
+            ) {
+
+                showMessage(
+                    "Hai già scelto 3 oggetti."
+                );
+
+
+                return;
+
+            }
+
+
+            selectedStartingItems.push(
+                itemId
+            );
+
+
+            showMessage(
+                ""
+            );
+
+
+            renderStartingItems();
+
+        }
+
+
+        // ====================================================
+        // RIMUOVI OGGETTO
+        // ====================================================
+
+        function removeStartingItem(
+            itemId
+        ) {
+
+            const index =
+                selectedStartingItems.indexOf(
+                    itemId
+                );
+
+
+            if (
+                index === -1
+            ) {
+
+                return;
+
+            }
+
+
+            selectedStartingItems.splice(
+                index,
+                1
+            );
+
+
+            showMessage(
+                ""
+            );
+
+
+            renderStartingItems();
+
+        }
+
+
+        // ====================================================
+        // CONTATORE OGGETTI
+        // ====================================================
+
+        function updateStartingItemsCounter() {
+
+            setText(
+                "starting-items-count",
+                selectedStartingItems.length
+            );
+
+        }
+
+
+        // ====================================================
+        // CREA CARTA OGGETTO
+        // ====================================================
+
+        function createStartingItemCard(
+            item
+        ) {
+
+            const quantity =
+                getSelectedItemQuantity(
+                    item.id
+                );
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "starting-item";
+
+
+            if (
+                quantity > 0
+            ) {
+
+                card.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+            // =================================================
+            // QUANTITÀ
+            // =================================================
+
+            if (
+                quantity > 0
+            ) {
+
+                const quantityElement =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                quantityElement.className =
+                    "starting-item-quantity";
+
+
+                quantityElement.textContent =
+                    `×${quantity}`;
+
+
+                card.appendChild(
+                    quantityElement
+                );
+
+            }
+
+
+            // =================================================
+            // NOME
+            // =================================================
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "starting-item-name";
+
+
+            name.textContent =
+                item.name;
+
+
+            card.appendChild(
+                name
+            );
+
+
+            // =================================================
+            // DESCRIZIONE
+            // =================================================
+
+            const description =
+                document.createElement(
+                    "div"
+                );
+
+
+            description.className =
+                "starting-item-description";
+
+
+            description.textContent =
+                item.description || "";
+
+
+            card.appendChild(
+                description
+            );
+
+
+            // =================================================
+            // PREZZO
+            // =================================================
+
+            const value =
+                document.createElement(
+                    "div"
+                );
+
+
+            value.className =
+                "starting-item-meta";
+
+
+            value.textContent =
+                `Valore: ${
+                    Number(
+                        item.gold_value
+                    ) || 0
+                } MO`;
+
+
+            card.appendChild(
+                value
+            );
+
+
+            // =================================================
+            // CONTROLLI
+            // =================================================
+
+            const controls =
+                document.createElement(
+                    "div"
+                );
+
+
+            controls.className =
+                "starting-item-controls";
+
+
+            // -------------------------------------------------
+            // MENO
+            // -------------------------------------------------
+
+            const minus =
+                document.createElement(
+                    "button"
+                );
+
+
+            minus.type =
+                "button";
+
+
+            minus.className =
+                "starting-item-control";
+
+
+            minus.textContent =
+                "−";
+
+
+            minus.disabled =
+                quantity <= 0;
+
+
+            minus.addEventListener(
+                "click",
+                () => {
+
+                    removeStartingItem(
+                        item.id
+                    );
+
+                }
+            );
+
+
+            // -------------------------------------------------
+            // PIÙ
+            // -------------------------------------------------
+
+            const plus =
+                document.createElement(
+                    "button"
+                );
+
+
+            plus.type =
+                "button";
+
+
+            plus.className =
+                "starting-item-control";
+
+
+            plus.textContent =
+                "+";
+
+
+            plus.disabled =
+                selectedStartingItems.length >=
+                REQUIRED_STARTING_ITEMS;
+
+
+            plus.addEventListener(
+                "click",
+                () => {
+
+                    addStartingItem(
+                        item.id
+                    );
+
+                }
+            );
+
+
+            controls.append(
+                minus,
+                plus
+            );
+
+
+            card.appendChild(
+                controls
+            );
+
+
+            return card;
+
+        }
+
+
+        // ====================================================
+        // MOSTRA OGGETTI DIVISI PER CATEGORIA
         // ====================================================
 
         function renderStartingItems() {
@@ -1215,120 +1804,113 @@ document.addEventListener(
             container.replaceChildren();
 
 
-            startingItems.forEach(
-                item => {
+            const categories = [
 
-                    const button =
-                        document.createElement(
-                            "button"
+                {
+                    type: "weapon",
+                    label: "ARMI"
+                },
+
+                {
+                    type: "armor",
+                    label: "ARMATURE"
+                },
+
+                {
+                    type: "accessory",
+                    label: "ACCESSORI"
+                }
+
+            ];
+
+
+            categories.forEach(
+                category => {
+
+                    const categoryItems =
+                        startingItems.filter(
+                            item =>
+                                item.item_type ===
+                                category.type
                         );
-
-
-                    button.type =
-                        "button";
-
-
-                    button.className =
-                        "starting-item";
-
-
-                    button.dataset.itemId =
-                        item.id;
 
 
                     if (
-                        selectedStartingItems.has(
-                            item.id
-                        )
+                        categoryItems.length === 0
                     ) {
 
-                        button.classList.add(
-                            "selected"
-                        );
+                        return;
 
                     }
 
 
-                    // -----------------------------------------
-                    // NOME
-                    // -----------------------------------------
-
-                    const name =
+                    const section =
                         document.createElement(
                             "div"
                         );
 
 
-                    name.className =
-                        "starting-item-name";
+                    section.className =
+                        "starting-item-category";
 
 
-                    name.textContent =
-                        item.name;
+                    // =========================================
+                    // TITOLO
+                    // =========================================
 
-
-                    // -----------------------------------------
-                    // DESCRIZIONE
-                    // -----------------------------------------
-
-                    const description =
+                    const title =
                         document.createElement(
-                            "div"
+                            "h3"
                         );
 
 
-                    description.className =
-                        "starting-item-description";
+                    title.className =
+                        "starting-item-category-title";
 
 
-                    description.textContent =
-                        item.description ||
-                        "Nessuna descrizione.";
+                    title.textContent =
+                        category.label;
 
 
-                    // -----------------------------------------
-                    // VALORE
-                    // -----------------------------------------
-
-                    const meta =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    meta.className =
-                        "starting-item-meta";
-
-
-                    meta.textContent =
-                        `Valore: ${
-                            Number(
-                                item.gold_value
-                            ) || 0
-                        } MO`;
-
-
-                    button.append(
-                        name,
-                        description,
-                        meta
+                    section.appendChild(
+                        title
                     );
 
 
-                    button.addEventListener(
-                        "click",
-                        () => {
+                    // =========================================
+                    // GRIGLIA
+                    // =========================================
 
-                            toggleStartingItem(
-                                item.id
+                    const grid =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    grid.className =
+                        "starting-items-grid";
+
+
+                    categoryItems.forEach(
+                        item => {
+
+                            grid.appendChild(
+                                createStartingItemCard(
+                                    item
+                                )
                             );
 
                         }
                     );
 
 
+                    section.appendChild(
+                        grid
+                    );
+
+
                     container.appendChild(
-                        button
+                        section
                     );
 
                 }
@@ -1341,101 +1923,58 @@ document.addEventListener(
 
 
         // ====================================================
-        // SELEZIONE / DESELEZIONE
-        // ====================================================
-
-        function toggleStartingItem(
-            itemId
-        ) {
-
-            // ------------------------------------------------
-            // DESELEZIONA
-            // ------------------------------------------------
-
-            if (
-                selectedStartingItems.has(
-                    itemId
-                )
-            ) {
-
-                selectedStartingItems.delete(
-                    itemId
-                );
-
-
-                renderStartingItems();
-
-
-                return;
-
-            }
-
-
-            // ------------------------------------------------
-            // MASSIMO 3
-            // ------------------------------------------------
-
-            if (
-                selectedStartingItems.size >=
-                REQUIRED_STARTING_ITEMS
-            ) {
-
-                showMessage(
-                    "Puoi scegliere al massimo 3 oggetti iniziali."
-                );
-
-
-                return;
-
-            }
-
-
-            // ------------------------------------------------
-            // SELEZIONA
-            // ------------------------------------------------
-
-            selectedStartingItems.add(
-                itemId
-            );
-
-
-            renderStartingItems();
-
-        }
-
-
-        // ====================================================
-        // CONTATORE
-        // ====================================================
-
-        function updateStartingItemsCounter() {
-
-            setText(
-                "starting-items-count",
-                selectedStartingItems.size
-            );
-
-        }
-
-
-        // ====================================================
-        // CREA INVENTARIO INIZIALE
+        // SALVA INVENTARIO INIZIALE
         // ====================================================
 
         async function saveStartingInventory(
             characterId
         ) {
 
-            const inventoryRows = [
+            // =================================================
+            // RAGGRUPPA EVENTUALI DUPLICATI
+            // =================================================
 
-                // --------------------------------------------
-                // 3 OGGETTI SCELTI
-                // --------------------------------------------
+            const selectedQuantities = {};
 
-                ...Array.from(
-                    selectedStartingItems
+
+            selectedStartingItems.forEach(
+                itemId => {
+
+                    if (
+                        !selectedQuantities[
+                            itemId
+                        ]
+                    ) {
+
+                        selectedQuantities[
+                            itemId
+                        ] = 0;
+
+                    }
+
+
+                    selectedQuantities[
+                        itemId
+                    ] += 1;
+
+                }
+            );
+
+
+            // =================================================
+            // OGGETTI SCELTI
+            // =================================================
+
+            const chosenRows =
+                Object.entries(
+                    selectedQuantities
                 ).map(
-                    itemId => ({
+                    (
+                        [
+                            itemId,
+                            quantity
+                        ]
+                    ) => ({
 
                         character_id:
                             characterId,
@@ -1444,18 +1983,27 @@ document.addEventListener(
                             itemId,
 
                         quantity:
-                            1,
+                            quantity,
 
                         equipped_slot:
                             null
 
                     })
-                ),
+                );
 
 
-                // --------------------------------------------
+            // =================================================
+            // INVENTARIO COMPLETO
+            // =================================================
+
+            const inventoryRows = [
+
+                ...chosenRows,
+
+
+                // ---------------------------------------------
                 // POZIONE MANA
-                // --------------------------------------------
+                // ---------------------------------------------
 
                 {
 
@@ -1474,9 +2022,9 @@ document.addEventListener(
                 },
 
 
-                // --------------------------------------------
+                // ---------------------------------------------
                 // POZIONE VITA
-                // --------------------------------------------
+                // ---------------------------------------------
 
                 {
 
@@ -1495,9 +2043,9 @@ document.addEventListener(
                 },
 
 
-                // --------------------------------------------
-                // 10 MONETE D'ORO
-                // --------------------------------------------
+                // ---------------------------------------------
+                // MONETE D'ORO
+                // ---------------------------------------------
 
                 {
 
@@ -1536,6 +2084,12 @@ document.addEventListener(
 
             }
 
+
+            console.log(
+                "Inventario iniziale creato:",
+                inventoryRows
+            );
+
         }
 
 
@@ -1552,9 +2106,9 @@ document.addEventListener(
                     event.preventDefault();
 
 
-                    // -----------------------------------------
-                    // NOME
-                    // -----------------------------------------
+                    // =========================================
+                    // CONTROLLO NOME
+                    // =========================================
 
                     const nameInput =
                         document.getElementById(
@@ -1580,9 +2134,9 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
-                    // PUNTI
-                    // -----------------------------------------
+                    // =========================================
+                    // CONTROLLO PUNTI
+                    // =========================================
 
                     if (
                         getRemainingPoints() !==
@@ -1599,9 +2153,9 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
-                    // TOKEN
-                    // -----------------------------------------
+                    // =========================================
+                    // CONTROLLO TOKEN
+                    // =========================================
 
                     if (!selectedToken) {
 
@@ -1615,12 +2169,12 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
-                    // OGGETTI
-                    // -----------------------------------------
+                    // =========================================
+                    // CONTROLLO OGGETTI
+                    // =========================================
 
                     if (
-                        selectedStartingItems.size !==
+                        selectedStartingItems.length !==
                         REQUIRED_STARTING_ITEMS
                     ) {
 
@@ -1634,9 +2188,9 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
-                    // PERSONAGGIO GIÀ ESISTENTE
-                    // -----------------------------------------
+                    // =========================================
+                    // CONTROLLO DUPLICATO PERSONAGGIO
+                    // =========================================
 
                     const alreadyExists =
                         await checkExistingCharacter();
@@ -1649,9 +2203,9 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
-                    // PULSANTE
-                    // -----------------------------------------
+                    // =========================================
+                    // PULSANTE SALVATAGGIO
+                    // =========================================
 
                     const submitButton =
                         form.querySelector(
@@ -1671,9 +2225,9 @@ document.addEventListener(
                     }
 
 
-                    // -----------------------------------------
+                    // =========================================
                     // DATI PERSONAGGIO
-                    // -----------------------------------------
+                    // =========================================
 
                     const characterData = {
 
@@ -1713,11 +2267,17 @@ document.addEventListener(
                     };
 
 
+                    console.log(
+                        "Dati da salvare:",
+                        characterData
+                    );
+
+
                     try {
 
-                        // -------------------------------------
+                        // =====================================
                         // CREA PERSONAGGIO
-                        // -------------------------------------
+                        // =====================================
 
                         const {
                             data,
@@ -1751,9 +2311,9 @@ document.addEventListener(
                         );
 
 
-                        // -------------------------------------
+                        // =====================================
                         // CREA INVENTARIO
-                        // -------------------------------------
+                        // =====================================
 
                         try {
 
@@ -1771,16 +2331,14 @@ document.addEventListener(
                             );
 
 
-                            // ---------------------------------
+                            // =================================
                             // ROLLBACK
-                            // ---------------------------------
+                            // =================================
                             //
-                            // Se l'inventario non viene creato,
-                            // eliminiamo il personaggio appena
-                            // creato per non lasciare un PG
-                            // incompleto.
+                            // Se l'inventario fallisce,
+                            // cancelliamo il PG appena creato.
                             //
-                            // ---------------------------------
+                            // =================================
 
                             await supabaseClient
                                 .from(
@@ -1805,9 +2363,9 @@ document.addEventListener(
                         }
 
 
-                        // -------------------------------------
-                        // SCHEDA
-                        // -------------------------------------
+                        // =====================================
+                        // REDIRECT ALLA SCHEDA
+                        // =====================================
 
                         window.location.href =
                             "scheda.html";
@@ -1871,7 +2429,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // AVVIO
+        // AVVIO INTERFACCIA
         // ====================================================
 
         updateAttributesDisplay();
@@ -1881,7 +2439,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // SE ESISTE GIÀ IL PERSONAGGIO
+        // SE ESISTE GIÀ UN PERSONAGGIO
         // ====================================================
 
         const alreadyExists =
@@ -1896,7 +2454,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // OGGETTI INIZIALI
+        // EQUIPAGGIAMENTO INIZIALE
         // ====================================================
 
         ensureStartingItemsUI();
