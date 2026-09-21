@@ -497,7 +497,186 @@
 
         }
 
+/* =====================================================
+   ZAINO
+===================================================== */
 
+.backpack-section {
+
+    margin-top: 35px;
+
+    margin-bottom: 10px;
+
+}
+
+
+.backpack-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.backpack-header h2 {
+
+    margin: 0;
+
+}
+
+
+.backpack-count {
+
+    font-size: 13px;
+
+    opacity: 0.55;
+
+}
+
+
+.backpack-list {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 12px;
+
+}
+
+
+.backpack-item {
+
+    min-height: 90px;
+
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.045
+        );
+
+    border:
+        1px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.1
+        );
+
+    border-radius: 10px;
+
+}
+
+
+.backpack-item-top {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+}
+
+
+.backpack-item-name {
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+}
+
+
+.backpack-item-quantity {
+
+    flex-shrink: 0;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    opacity: 0.8;
+
+}
+
+
+.backpack-item-description {
+
+    margin-top: 7px;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+
+    opacity: 0.6;
+
+}
+
+
+.backpack-empty {
+
+    grid-column:
+        1 / -1;
+
+    min-height: 100px;
+
+    padding: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    border:
+        1px dashed
+        rgba(
+            255,
+            255,
+            255,
+            0.15
+        );
+
+    border-radius: 12px;
+
+    opacity: 0.45;
+
+    font-style: italic;
+
+}
+
+
+@media (max-width: 700px) {
+
+    .backpack-list {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+}
+        
         /* =====================================================
            NOTE
         ===================================================== */
@@ -1353,7 +1532,43 @@
 
 
                 </div>
+<!-- =========================================
+     ZAINO
+========================================== -->
 
+<section class="backpack-section">
+
+    <div class="backpack-header">
+
+        <h2>
+            Zaino
+        </h2>
+
+        <div
+            id="backpack-count"
+            class="backpack-count"
+        >
+            0 oggetti
+        </div>
+
+    </div>
+
+
+    <div
+        id="backpack-list"
+        class="backpack-list"
+    >
+
+        <div
+            id="backpack-empty"
+            class="backpack-empty"
+        >
+            Lo zaino è vuoto.
+        </div>
+
+    </div>
+
+</section>
 
                 <!-- =============================================
                      COLONNA DESTRA - NOTE
