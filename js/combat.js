@@ -116,6 +116,8 @@ document.addEventListener(
 
             await loadCombatSession();
 
+            await joinCombatAsPlayer();
+
             await generateCombatEnemies();
 
             await loadCombatEntities();
