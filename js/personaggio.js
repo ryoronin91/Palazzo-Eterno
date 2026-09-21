@@ -1,36 +1,21 @@
 // ============================================================
-// PALAZZO ETERNO
-// PERSONAGGIO.JS
+// PALAZZO ETERNO - PERSONAGGIO.JS
 // ============================================================
+// Gestisce creazione personaggio, point-buy, token e corredo iniziale.
 //
-// Gestisce:
-//
-// - autenticazione Supabase
-// - creazione del personaggio
-// - controllo personaggio già esistente
-// - 10 punti abilità iniziali
-// - 6 attributi primari
-// - massimo 30 per attributo
-// - calcolo statistiche secondarie
-// - scelta del token
-// - salvataggio su Supabase
-// - redirect alla scheda
-//
+// Corredo iniziale:
+// - 3 oggetti equipaggiabili scelti dal giocatore
+// - 1 Pozione cura mana
+// - 1 Pozione cura vita
+// - 10 Monete d'oro
 // ============================================================
 
+console.log("PERSONAGGIO.JS CARICATO");
 
-// ============================================================
-// AVVIO
-// ============================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
-
-        console.log(
-            "PERSONAGGIO.JS CARICATO"
-        );
-
 
         // ====================================================
         // CONFIGURAZIONE
@@ -41,6 +26,8 @@ document.addEventListener(
         const MIN_ATTRIBUTE = 1;
 
         const MAX_ATTRIBUTE = 30;
+
+        const REQUIRED_STARTING_ITEMS = 3;
 
 
         const attributes = [
@@ -81,11 +68,21 @@ document.addEventListener(
         };
 
 
+        // ====================================================
+        // VARIABILI
+        // ====================================================
+
         let currentUser = null;
 
         let currentCharacter = null;
 
         let selectedToken = null;
+
+        let startingItems = [];
+
+
+        const selectedStartingItems =
+            new Set();
 
 
         // ====================================================
@@ -170,727 +167,22 @@ document.addEventListener(
 
 
         // ====================================================
-        // CALCOLO STATISTICHE SECONDARIE
+        // MESSAGGI
         // ====================================================
 
-        function calculateSecondaryStats() {
+        function showMessage(
+            text
+        ) {
 
-            const forza =
-                attributeValues.forza;
+            if (!message) {
 
-
-            const resistenza =
-                attributeValues.resistenza;
-
-
-            const costituzione =
-                attributeValues.costituzione;
-
-
-            const intelligenza =
-                attributeValues.intelligenza;
-
-
-            const destrezza =
-                attributeValues.destrezza;
-
-
-            const fortuna =
-                attributeValues.fortuna;
-
-
-            // ---------------------------------------------
-            // ATTACCO
-            // Forza / 2
-            // ---------------------------------------------
-
-            const attack =
-                Math.ceil(
-                    forza / 2
-                );
-
-
-            // ---------------------------------------------
-            // DIFESA
-            // 7 + Resistenza / 2
-            // ---------------------------------------------
-
-            const defense =
-                Math.ceil(
-                    7 +
-                    (resistenza / 2)
-                );
-
-
-            // ---------------------------------------------
-            // VITA
-            // 5 * (Costituzione / 2)
-            // ---------------------------------------------
-
-            const hp =
-                Math.ceil(
-                    5 *
-                    (costituzione / 2)
-                );
-
-
-            // ---------------------------------------------
-            // MANA
-            // 5 * (Intelligenza / 2)
-            // ---------------------------------------------
-
-            const mana =
-                Math.ceil(
-                    5 *
-                    (intelligenza / 2)
-                );
-
-
-            // ---------------------------------------------
-            // MOVIMENTO
-            // 4 + Destrezza / 2
-            // ---------------------------------------------
-
-            const movement =
-                Math.ceil(
-                    4 +
-                    (destrezza / 2)
-                );
-
-
-            // ---------------------------------------------
-            // CRITICO
-            //
-            // Fortuna 30 = 50%
-            //
-            // Fortuna 1 ≈ 1,67%
-            // visualizzato arrotondato per eccesso
-            // ---------------------------------------------
-
-            const critical =
-                Math.min(
-                    50,
-                    Math.ceil(
-                        (fortuna / 60) *
-                        100
-                    )
-                );
-
-
-            return {
-
-                attack,
-
-                defense,
-
-                hp,
-
-                mana,
-
-                movement,
-
-                critical
-
-            };
-
-        }
-
-
-        // ====================================================
-        // AGGIORNA STATISTICHE SECONDARIE
-        // ====================================================
-
-        function updateSecondaryStats() {
-
-            const secondary =
-                calculateSecondaryStats();
-
-
-            // ---------------------------------------------
-            // ATTACCO
-            // ---------------------------------------------
-
-            const attackElement =
-                document.getElementById(
-                    "attack-display"
-                );
-
-
-            if (attackElement) {
-
-                attackElement.textContent =
-                    secondary.attack;
+                return;
 
             }
 
 
-            const attackSecondary =
-                document.getElementById(
-                    "attacco-secondary"
-                );
-
-
-            if (attackSecondary) {
-
-                attackSecondary.textContent =
-                    `Attacco: ${secondary.attack}`;
-
-            }
-
-
-            // ---------------------------------------------
-            // DIFESA
-            // ---------------------------------------------
-
-            const defenseElement =
-                document.getElementById(
-                    "defense-display"
-                );
-
-
-            if (defenseElement) {
-
-                defenseElement.textContent =
-                    secondary.defense;
-
-            }
-
-
-            const defenseSecondary =
-                document.getElementById(
-                    "difesa-secondary"
-                );
-
-
-            if (defenseSecondary) {
-
-                defenseSecondary.textContent =
-                    `Difesa: ${secondary.defense}`;
-
-            }
-
-
-            // ---------------------------------------------
-            // VITA
-            // ---------------------------------------------
-
-            const healthElement =
-                document.getElementById(
-                    "health-display"
-                );
-
-
-            if (healthElement) {
-
-                healthElement.textContent =
-                    secondary.hp;
-
-            }
-
-
-            const healthSecondary =
-                document.getElementById(
-                    "costituzione-secondary"
-                );
-
-
-            if (healthSecondary) {
-
-                healthSecondary.textContent =
-                    `Vita: ${secondary.hp}`;
-
-            }
-
-
-            // ---------------------------------------------
-            // MANA
-            // ---------------------------------------------
-
-            const manaElement =
-                document.getElementById(
-                    "mana-display"
-                );
-
-
-            if (manaElement) {
-
-                manaElement.textContent =
-                    secondary.mana;
-
-            }
-
-
-            const manaSecondary =
-                document.getElementById(
-                    "intelligenza-secondary"
-                );
-
-
-            if (manaSecondary) {
-
-                manaSecondary.textContent =
-                    `Mana: ${secondary.mana}`;
-
-            }
-
-
-            // ---------------------------------------------
-            // MOVIMENTO
-            // ---------------------------------------------
-
-            const movementElement =
-                document.getElementById(
-                    "movement-display"
-                );
-
-
-            if (movementElement) {
-
-                movementElement.textContent =
-                    secondary.movement;
-
-            }
-
-
-            const movementSecondary =
-                document.getElementById(
-                    "destrezza-secondary"
-                );
-
-
-            if (movementSecondary) {
-
-                movementSecondary.textContent =
-                    `Movimento: ${secondary.movement}`;
-
-            }
-
-
-            // ---------------------------------------------
-            // CRITICO
-            // ---------------------------------------------
-
-            const criticalElement =
-                document.getElementById(
-                    "critical-display"
-                );
-
-
-            if (criticalElement) {
-
-                criticalElement.textContent =
-                    `${secondary.critical}%`;
-
-            }
-
-
-            const criticalSecondary =
-                document.getElementById(
-                    "fortuna-secondary"
-                );
-
-
-            if (criticalSecondary) {
-
-                criticalSecondary.textContent =
-                    `Critico: ${secondary.critical}%`;
-
-            }
-
-        }
-
-
-        // ====================================================
-        // CALCOLO PUNTI SPESI
-        // ====================================================
-
-        function calculateSpentPoints() {
-
-            return attributes.reduce(
-
-                (
-                    total,
-                    attribute
-                ) => {
-
-                    return total +
-                        (
-                            attributeValues[
-                                attribute
-                            ] - 1
-                        );
-
-                },
-
-                0
-
-            );
-
-        }
-
-
-        // ====================================================
-        // PUNTI RIMANENTI
-        // ====================================================
-
-        function getRemainingPoints() {
-
-            return INITIAL_POINTS -
-                calculateSpentPoints();
-
-        }
-
-
-        // ====================================================
-        // AGGIORNA PUNTI
-        // ====================================================
-
-        function updatePointsDisplay() {
-
-            const remaining =
-                getRemainingPoints();
-
-
-            const pointsElement =
-                document.getElementById(
-                    "points-remaining"
-                );
-
-
-            if (pointsElement) {
-
-                pointsElement.textContent =
-                    remaining;
-
-            }
-
-        }
-
-
-        // ====================================================
-        // AGGIORNA ATTRIBUTI
-        // ====================================================
-
-        function updateAttributesDisplay() {
-
-            attributes.forEach(
-                attribute => {
-
-                    const value =
-                        attributeValues[
-                            attribute
-                        ];
-
-
-                    // -----------------------------------------
-                    // VALORE
-                    // -----------------------------------------
-
-                    const valueElement =
-                        document.getElementById(
-                            `${attribute}-value`
-                        );
-
-
-                    if (valueElement) {
-
-                        valueElement.textContent =
-                            value;
-
-                    }
-
-
-                    // -----------------------------------------
-                    // PULSANTE -
-                    // -----------------------------------------
-
-                    const minusButton =
-                        document.querySelector(
-                            `.stat-minus[data-stat="${attribute}"]`
-                        );
-
-
-                    if (minusButton) {
-
-                        minusButton.disabled =
-                            value <=
-                            MIN_ATTRIBUTE;
-
-                    }
-
-
-                    // -----------------------------------------
-                    // PULSANTE +
-                    // -----------------------------------------
-
-                    const plusButton =
-                        document.querySelector(
-                            `.stat-plus[data-stat="${attribute}"]`
-                        );
-
-
-                    if (plusButton) {
-
-                        plusButton.disabled =
-                            value >=
-                            MAX_ATTRIBUTE ||
-                            getRemainingPoints() <= 0;
-
-                    }
-
-                }
-            );
-
-
-            updatePointsDisplay();
-
-            updateSecondaryStats();
-
-        }
-
-
-        // ====================================================
-        // PULSANTI +
-        // ====================================================
-
-        document
-            .querySelectorAll(
-                ".stat-plus"
-            )
-            .forEach(
-                button => {
-
-                    button.addEventListener(
-                        "click",
-                        () => {
-
-                            const attribute =
-                                button.dataset.stat;
-
-
-                            if (
-                                !attributes.includes(
-                                    attribute
-                                )
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            const currentValue =
-                                attributeValues[
-                                    attribute
-                                ];
-
-
-                            if (
-                                currentValue >=
-                                MAX_ATTRIBUTE
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            if (
-                                getRemainingPoints() <= 0
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            attributeValues[
-                                attribute
-                            ] =
-                                currentValue + 1;
-
-
-                            updateAttributesDisplay();
-
-                        }
-                    );
-
-                }
-            );
-
-
-        // ====================================================
-        // PULSANTI -
-        // ====================================================
-
-        document
-            .querySelectorAll(
-                ".stat-minus"
-            )
-            .forEach(
-                button => {
-
-                    button.addEventListener(
-                        "click",
-                        () => {
-
-                            const attribute =
-                                button.dataset.stat;
-
-
-                            if (
-                                !attributes.includes(
-                                    attribute
-                                )
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            const currentValue =
-                                attributeValues[
-                                    attribute
-                                ];
-
-
-                            if (
-                                currentValue <=
-                                MIN_ATTRIBUTE
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            attributeValues[
-                                attribute
-                            ] =
-                                currentValue - 1;
-
-
-                            updateAttributesDisplay();
-
-                        }
-                    );
-
-                }
-            );
-
-
-        // ====================================================
-        // TOKEN
-        // ====================================================
-
-        function setupTokenSelection() {
-
-            const tokenOptions =
-                document.querySelectorAll(
-                    ".token-option"
-                );
-
-
-            const preview =
-                document.getElementById(
-                    "token-preview"
-                );
-
-
-            const selectedName =
-                document.getElementById(
-                    "selected-token-name"
-                );
-
-
-            tokenOptions.forEach(
-                token => {
-
-                    token.addEventListener(
-                        "click",
-                        () => {
-
-                            // ---------------------------------
-                            // Rimuove selezione precedente
-                            // ---------------------------------
-
-                            tokenOptions.forEach(
-                                option => {
-
-                                    option.classList.remove(
-                                        "selected"
-                                    );
-
-                                }
-                            );
-
-
-                            // ---------------------------------
-                            // Seleziona token
-                            // ---------------------------------
-
-                            token.classList.add(
-                                "selected"
-                            );
-
-
-                            selectedToken =
-                                token.dataset.token;
-
-
-                            console.log(
-                                "Token selezionato:",
-                                selectedToken
-                            );
-
-
-                            // ---------------------------------
-                            // Anteprima
-                            // ---------------------------------
-
-                            if (preview) {
-
-                                preview.innerHTML =
-                                    "";
-
-                                const image =
-                                    document.createElement(
-                                        "img"
-                                    );
-
-
-                                image.src =
-                                    `immagini/token/${selectedToken}`;
-
-
-                                image.alt =
-                                    "Token selezionato";
-
-
-                                preview.appendChild(
-                                    image
-                                );
-
-                            }
-
-
-                            // ---------------------------------
-                            // Nome
-                            // ---------------------------------
-
-                            if (selectedName) {
-
-                                selectedName.textContent =
-                                    "Token selezionato";
-
-                            }
-
-                        }
-                    );
-
-                }
-            );
+            message.textContent =
+                text;
 
         }
 
@@ -940,18 +232,9 @@ document.addEventListener(
 
             if (data) {
 
-                console.log(
-                    "Personaggio già esistente."
-                );
-
-
                 currentCharacter =
                     data;
 
-
-                // -----------------------------------------
-                // REDIRECT
-                // -----------------------------------------
 
                 window.location.href =
                     "scheda.html";
@@ -962,18 +245,1302 @@ document.addEventListener(
             }
 
 
-            console.log(
-                "Nessun personaggio trovato."
-            );
-
-
             return false;
 
         }
 
 
         // ====================================================
-        // SALVATAGGIO
+        // CALCOLO STATISTICHE SECONDARIE
+        // ====================================================
+
+        function calculateSecondaryStats() {
+
+            const forza =
+                attributeValues.forza;
+
+
+            const resistenza =
+                attributeValues.resistenza;
+
+
+            const costituzione =
+                attributeValues.costituzione;
+
+
+            const intelligenza =
+                attributeValues.intelligenza;
+
+
+            const destrezza =
+                attributeValues.destrezza;
+
+
+            const fortuna =
+                attributeValues.fortuna;
+
+
+            const attack =
+                Math.ceil(
+                    forza / 2
+                );
+
+
+            const defense =
+                Math.ceil(
+                    7 +
+                    (
+                        resistenza / 2
+                    )
+                );
+
+
+            const hp =
+                Math.ceil(
+                    5 *
+                    (
+                        costituzione / 2
+                    )
+                );
+
+
+            const mana =
+                Math.ceil(
+                    5 *
+                    (
+                        intelligenza / 2
+                    )
+                );
+
+
+            const movement =
+                Math.ceil(
+                    4 +
+                    (
+                        destrezza / 2
+                    )
+                );
+
+
+            const critical =
+                Math.min(
+                    50,
+                    Math.ceil(
+                        (
+                            fortuna / 60
+                        ) *
+                        100
+                    )
+                );
+
+
+            return {
+
+                attack,
+
+                defense,
+
+                hp,
+
+                mana,
+
+                movement,
+
+                critical
+
+            };
+
+        }
+
+
+        // ====================================================
+        // IMPOSTA TESTO
+        // ====================================================
+
+        function setText(
+            id,
+            value
+        ) {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    value;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // AGGIORNA STATISTICHE SECONDARIE
+        // ====================================================
+
+        function updateSecondaryStats() {
+
+            const secondary =
+                calculateSecondaryStats();
+
+
+            setText(
+                "attack-display",
+                secondary.attack
+            );
+
+
+            setText(
+                "attacco-secondary",
+                `Attacco: ${secondary.attack}`
+            );
+
+
+            setText(
+                "defense-display",
+                secondary.defense
+            );
+
+
+            setText(
+                "difesa-secondary",
+                `Difesa: ${secondary.defense}`
+            );
+
+
+            setText(
+                "health-display",
+                secondary.hp
+            );
+
+
+            setText(
+                "costituzione-secondary",
+                `Vita: ${secondary.hp}`
+            );
+
+
+            setText(
+                "mana-display",
+                secondary.mana
+            );
+
+
+            setText(
+                "intelligenza-secondary",
+                `Mana: ${secondary.mana}`
+            );
+
+
+            setText(
+                "movement-display",
+                secondary.movement
+            );
+
+
+            setText(
+                "destrezza-secondary",
+                `Movimento: ${secondary.movement}`
+            );
+
+
+            setText(
+                "critical-display",
+                `${secondary.critical}%`
+            );
+
+
+            setText(
+                "fortuna-secondary",
+                `Critico: ${secondary.critical}%`
+            );
+
+        }
+
+
+        // ====================================================
+        // CALCOLO PUNTI SPESI
+        // ====================================================
+
+        function calculateSpentPoints() {
+
+            return attributes.reduce(
+
+                (
+                    total,
+                    attribute
+                ) => {
+
+                    return total +
+                        (
+                            attributeValues[
+                                attribute
+                            ] - 1
+                        );
+
+                },
+
+                0
+
+            );
+
+        }
+
+
+        // ====================================================
+        // PUNTI RIMANENTI
+        // ====================================================
+
+        function getRemainingPoints() {
+
+            return INITIAL_POINTS -
+                calculateSpentPoints();
+
+        }
+
+
+        // ====================================================
+        // AGGIORNA ATTRIBUTI
+        // ====================================================
+
+        function updateAttributesDisplay() {
+
+            attributes.forEach(
+                attribute => {
+
+                    const value =
+                        attributeValues[
+                            attribute
+                        ];
+
+
+                    setText(
+                        `${attribute}-value`,
+                        value
+                    );
+
+
+                    const minusButton =
+                        document.querySelector(
+                            `.stat-minus[data-stat="${attribute}"]`
+                        );
+
+
+                    const plusButton =
+                        document.querySelector(
+                            `.stat-plus[data-stat="${attribute}"]`
+                        );
+
+
+                    if (minusButton) {
+
+                        minusButton.disabled =
+                            value <=
+                            MIN_ATTRIBUTE;
+
+                    }
+
+
+                    if (plusButton) {
+
+                        plusButton.disabled =
+                            value >=
+                            MAX_ATTRIBUTE ||
+                            getRemainingPoints() <= 0;
+
+                    }
+
+                }
+            );
+
+
+            setText(
+                "points-remaining",
+                getRemainingPoints()
+            );
+
+
+            updateSecondaryStats();
+
+        }
+
+
+        // ====================================================
+        // PULSANTI +
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".stat-plus"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const attribute =
+                                button.dataset.stat;
+
+
+                            if (
+                                !attributes.includes(
+                                    attribute
+                                )
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            if (
+                                attributeValues[
+                                    attribute
+                                ] >=
+                                MAX_ATTRIBUTE
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            if (
+                                getRemainingPoints() <=
+                                0
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            attributeValues[
+                                attribute
+                            ] += 1;
+
+
+                            updateAttributesDisplay();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // PULSANTI -
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".stat-minus"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const attribute =
+                                button.dataset.stat;
+
+
+                            if (
+                                !attributes.includes(
+                                    attribute
+                                )
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            if (
+                                attributeValues[
+                                    attribute
+                                ] <=
+                                MIN_ATTRIBUTE
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            attributeValues[
+                                attribute
+                            ] -= 1;
+
+
+                            updateAttributesDisplay();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // TOKEN
+        // ====================================================
+
+        function setupTokenSelection() {
+
+            const tokenOptions =
+                document.querySelectorAll(
+                    ".token-option"
+                );
+
+
+            const preview =
+                document.getElementById(
+                    "token-preview"
+                );
+
+
+            const selectedName =
+                document.getElementById(
+                    "selected-token-name"
+                );
+
+
+            tokenOptions.forEach(
+                token => {
+
+                    token.addEventListener(
+                        "click",
+                        () => {
+
+                            tokenOptions.forEach(
+                                option => {
+
+                                    option.classList.remove(
+                                        "selected"
+                                    );
+
+                                }
+                            );
+
+
+                            token.classList.add(
+                                "selected"
+                            );
+
+
+                            selectedToken =
+                                token.dataset.token;
+
+
+                            if (preview) {
+
+                                preview.innerHTML =
+                                    "";
+
+
+                                const image =
+                                    document.createElement(
+                                        "img"
+                                    );
+
+
+                                image.src =
+                                    `immagini/token/${selectedToken}`;
+
+
+                                image.alt =
+                                    "Token selezionato";
+
+
+                                preview.appendChild(
+                                    image
+                                );
+
+                            }
+
+
+                            if (selectedName) {
+
+                                selectedName.textContent =
+                                    "Token selezionato";
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // CREA INTERFACCIA OGGETTI INIZIALI
+        // ====================================================
+        //
+        // La sezione viene aggiunta automaticamente.
+        // Non serve modificare personaggio.html.
+        //
+        // ====================================================
+
+        function ensureStartingItemsUI() {
+
+            if (
+                document.getElementById(
+                    "starting-items-list"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            if (!form) {
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // CSS
+            // ------------------------------------------------
+
+            const style =
+                document.createElement(
+                    "style"
+                );
+
+
+            style.textContent = `
+
+                .starting-items-section {
+
+                    margin-top: 35px;
+
+                    margin-bottom: 30px;
+
+                }
+
+
+                .starting-items-description {
+
+                    color: #aaa;
+
+                    line-height: 1.6;
+
+                    margin-bottom: 14px;
+
+                }
+
+
+                .starting-items-counter {
+
+                    margin-bottom: 18px;
+
+                    font-weight: bold;
+
+                    color: #d4af67;
+
+                }
+
+
+                .starting-items-grid {
+
+                    display: grid;
+
+                    grid-template-columns:
+                        repeat(
+                            auto-fit,
+                            minmax(220px, 1fr)
+                        );
+
+                    gap: 14px;
+
+                }
+
+
+                .starting-item {
+
+                    text-align: left;
+
+                    padding: 16px;
+
+                    border-radius: 12px;
+
+                    border:
+                        2px solid
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.12
+                        );
+
+                    background:
+                        rgba(
+                            0,
+                            0,
+                            0,
+                            0.28
+                        );
+
+                    color: inherit;
+
+                    cursor: pointer;
+
+                    transition:
+                        border-color 0.15s ease,
+                        transform 0.15s ease,
+                        background 0.15s ease;
+
+                }
+
+
+                .starting-item:hover {
+
+                    transform:
+                        translateY(-2px);
+
+                    border-color:
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.7
+                        );
+
+                }
+
+
+                .starting-item.selected {
+
+                    border-color:
+                        #b88a3b;
+
+                    background:
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.14
+                        );
+
+                    box-shadow:
+                        0 0 0 2px
+                        rgba(
+                            184,
+                            138,
+                            59,
+                            0.18
+                        );
+
+                }
+
+
+                .starting-item-name {
+
+                    font-weight: bold;
+
+                    font-size: 17px;
+
+                    margin-bottom: 8px;
+
+                }
+
+
+                .starting-item-description {
+
+                    color: #bbb;
+
+                    font-size: 14px;
+
+                    line-height: 1.45;
+
+                    min-height: 40px;
+
+                }
+
+
+                .starting-item-meta {
+
+                    margin-top: 10px;
+
+                    color: #d4af67;
+
+                    font-size: 13px;
+
+                    font-weight: bold;
+
+                }
+
+
+                .starting-kit-note {
+
+                    margin-top: 18px;
+
+                    padding:
+                        14px 16px;
+
+                    border-radius: 10px;
+
+                    background:
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.05
+                        );
+
+                    color: #ccc;
+
+                    line-height: 1.55;
+
+                }
+
+
+                @media (
+                    max-width: 600px
+                ) {
+
+                    .starting-items-grid {
+
+                        grid-template-columns:
+                            1fr;
+
+                    }
+
+                }
+
+            `;
+
+
+            document.head.appendChild(
+                style
+            );
+
+
+            // ------------------------------------------------
+            // HTML
+            // ------------------------------------------------
+
+            const section =
+                document.createElement(
+                    "section"
+                );
+
+
+            section.className =
+                "starting-items-section";
+
+
+            section.innerHTML = `
+
+                <h2>
+                    Equipaggiamento iniziale
+                </h2>
+
+
+                <p class="starting-items-description">
+
+                    Scegli
+                    <strong>
+                        3 oggetti equipaggiabili
+                    </strong>
+                    con cui iniziare l'avventura.
+
+                    Gli oggetti scelti verranno messi
+                    nello zaino e potrai equipaggiarli
+                    dalla scheda del personaggio.
+
+                </p>
+
+
+                <div class="starting-items-counter">
+
+                    Oggetti scelti:
+
+                    <span id="starting-items-count">
+                        0
+                    </span>/3
+
+                </div>
+
+
+                <div
+                    id="starting-items-list"
+                    class="starting-items-grid"
+                ></div>
+
+
+                <div class="starting-kit-note">
+
+                    Riceverai inoltre automaticamente:
+
+                    <strong>
+                        1 Pozione cura mana
+                    </strong>,
+
+                    <strong>
+                        1 Pozione cura vita
+                    </strong>
+
+                    e
+
+                    <strong>
+                        10 Monete d'oro
+                    </strong>.
+
+                </div>
+
+            `;
+
+
+            form.parentNode.insertBefore(
+                section,
+                form
+            );
+
+        }
+
+
+        // ====================================================
+        // CARICA OGGETTI EQUIPAGGIABILI
+        // ====================================================
+
+        async function loadStartingItems() {
+
+            console.log(
+                "Caricamento oggetti iniziali..."
+            );
+
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from("items")
+                    .select(`
+                        id,
+                        name,
+                        description,
+                        item_type,
+                        equip_slot,
+                        hand_rule,
+                        gold_value,
+                        recipe_only
+                    `)
+                    .neq(
+                        "equip_slot",
+                        "none"
+                    )
+                    .eq(
+                        "recipe_only",
+                        false
+                    )
+                    .order(
+                        "item_type",
+                        {
+                            ascending: true
+                        }
+                    )
+                    .order(
+                        "name",
+                        {
+                            ascending: true
+                        }
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Errore caricamento oggetti iniziali:",
+                    error
+                );
+
+
+                showMessage(
+                    "Impossibile caricare gli oggetti iniziali: " +
+                    error.message
+                );
+
+
+                return;
+
+            }
+
+
+            startingItems =
+                data || [];
+
+
+            renderStartingItems();
+
+        }
+
+
+        // ====================================================
+        // MOSTRA OGGETTI EQUIPAGGIABILI
+        // ====================================================
+
+        function renderStartingItems() {
+
+            const container =
+                document.getElementById(
+                    "starting-items-list"
+                );
+
+
+            if (!container) {
+
+                return;
+
+            }
+
+
+            container.replaceChildren();
+
+
+            startingItems.forEach(
+                item => {
+
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    button.type =
+                        "button";
+
+
+                    button.className =
+                        "starting-item";
+
+
+                    button.dataset.itemId =
+                        item.id;
+
+
+                    if (
+                        selectedStartingItems.has(
+                            item.id
+                        )
+                    ) {
+
+                        button.classList.add(
+                            "selected"
+                        );
+
+                    }
+
+
+                    // -----------------------------------------
+                    // NOME
+                    // -----------------------------------------
+
+                    const name =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    name.className =
+                        "starting-item-name";
+
+
+                    name.textContent =
+                        item.name;
+
+
+                    // -----------------------------------------
+                    // DESCRIZIONE
+                    // -----------------------------------------
+
+                    const description =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    description.className =
+                        "starting-item-description";
+
+
+                    description.textContent =
+                        item.description ||
+                        "Nessuna descrizione.";
+
+
+                    // -----------------------------------------
+                    // VALORE
+                    // -----------------------------------------
+
+                    const meta =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    meta.className =
+                        "starting-item-meta";
+
+
+                    meta.textContent =
+                        `Valore: ${
+                            Number(
+                                item.gold_value
+                            ) || 0
+                        } MO`;
+
+
+                    button.append(
+                        name,
+                        description,
+                        meta
+                    );
+
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            toggleStartingItem(
+                                item.id
+                            );
+
+                        }
+                    );
+
+
+                    container.appendChild(
+                        button
+                    );
+
+                }
+            );
+
+
+            updateStartingItemsCounter();
+
+        }
+
+
+        // ====================================================
+        // SELEZIONE / DESELEZIONE
+        // ====================================================
+
+        function toggleStartingItem(
+            itemId
+        ) {
+
+            // ------------------------------------------------
+            // DESELEZIONA
+            // ------------------------------------------------
+
+            if (
+                selectedStartingItems.has(
+                    itemId
+                )
+            ) {
+
+                selectedStartingItems.delete(
+                    itemId
+                );
+
+
+                renderStartingItems();
+
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // MASSIMO 3
+            // ------------------------------------------------
+
+            if (
+                selectedStartingItems.size >=
+                REQUIRED_STARTING_ITEMS
+            ) {
+
+                showMessage(
+                    "Puoi scegliere al massimo 3 oggetti iniziali."
+                );
+
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // SELEZIONA
+            // ------------------------------------------------
+
+            selectedStartingItems.add(
+                itemId
+            );
+
+
+            renderStartingItems();
+
+        }
+
+
+        // ====================================================
+        // CONTATORE
+        // ====================================================
+
+        function updateStartingItemsCounter() {
+
+            setText(
+                "starting-items-count",
+                selectedStartingItems.size
+            );
+
+        }
+
+
+        // ====================================================
+        // CREA INVENTARIO INIZIALE
+        // ====================================================
+
+        async function saveStartingInventory(
+            characterId
+        ) {
+
+            const inventoryRows = [
+
+                // --------------------------------------------
+                // 3 OGGETTI SCELTI
+                // --------------------------------------------
+
+                ...Array.from(
+                    selectedStartingItems
+                ).map(
+                    itemId => ({
+
+                        character_id:
+                            characterId,
+
+                        item_id:
+                            itemId,
+
+                        quantity:
+                            1,
+
+                        equipped_slot:
+                            null
+
+                    })
+                ),
+
+
+                // --------------------------------------------
+                // POZIONE MANA
+                // --------------------------------------------
+
+                {
+
+                    character_id:
+                        characterId,
+
+                    item_id:
+                        "pozione_mana",
+
+                    quantity:
+                        1,
+
+                    equipped_slot:
+                        null
+
+                },
+
+
+                // --------------------------------------------
+                // POZIONE VITA
+                // --------------------------------------------
+
+                {
+
+                    character_id:
+                        characterId,
+
+                    item_id:
+                        "pozione_vita",
+
+                    quantity:
+                        1,
+
+                    equipped_slot:
+                        null
+
+                },
+
+
+                // --------------------------------------------
+                // 10 MONETE D'ORO
+                // --------------------------------------------
+
+                {
+
+                    character_id:
+                        characterId,
+
+                    item_id:
+                        "moneta_oro",
+
+                    quantity:
+                        10,
+
+                    equipped_slot:
+                        null
+
+                }
+
+            ];
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "character_inventory"
+                    )
+                    .insert(
+                        inventoryRows
+                    );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // SALVATAGGIO PERSONAGGIO
         // ====================================================
 
         if (form) {
@@ -986,7 +1553,7 @@ document.addEventListener(
 
 
                     // -----------------------------------------
-                    // CONTROLLO NOME
+                    // NOME
                     // -----------------------------------------
 
                     const nameInput =
@@ -1014,11 +1581,12 @@ document.addEventListener(
 
 
                     // -----------------------------------------
-                    // CONTROLLO PUNTI
+                    // PUNTI
                     // -----------------------------------------
 
                     if (
-                        getRemainingPoints() !== 0
+                        getRemainingPoints() !==
+                        0
                     ) {
 
                         showMessage(
@@ -1032,7 +1600,7 @@ document.addEventListener(
 
 
                     // -----------------------------------------
-                    // CONTROLLO TOKEN
+                    // TOKEN
                     // -----------------------------------------
 
                     if (!selectedToken) {
@@ -1048,7 +1616,26 @@ document.addEventListener(
 
 
                     // -----------------------------------------
-                    // CONTROLLO DUPLICATO
+                    // OGGETTI
+                    // -----------------------------------------
+
+                    if (
+                        selectedStartingItems.size !==
+                        REQUIRED_STARTING_ITEMS
+                    ) {
+
+                        showMessage(
+                            "Devi scegliere esattamente 3 oggetti iniziali."
+                        );
+
+
+                        return;
+
+                    }
+
+
+                    // -----------------------------------------
+                    // PERSONAGGIO GIÀ ESISTENTE
                     // -----------------------------------------
 
                     const alreadyExists =
@@ -1063,7 +1650,29 @@ document.addEventListener(
 
 
                     // -----------------------------------------
-                    // DATI DATABASE
+                    // PULSANTE
+                    // -----------------------------------------
+
+                    const submitButton =
+                        form.querySelector(
+                            'button[type="submit"]'
+                        );
+
+
+                    if (submitButton) {
+
+                        submitButton.disabled =
+                            true;
+
+
+                        submitButton.textContent =
+                            "SALVATAGGIO...";
+
+                    }
+
+
+                    // -----------------------------------------
+                    // DATI PERSONAGGIO
                     // -----------------------------------------
 
                     const characterData = {
@@ -1104,64 +1713,132 @@ document.addEventListener(
                     };
 
 
-                    console.log(
-                        "Dati da salvare:",
-                        characterData
-                    );
+                    try {
+
+                        // -------------------------------------
+                        // CREA PERSONAGGIO
+                        // -------------------------------------
+
+                        const {
+                            data,
+                            error
+                        } =
+                            await supabaseClient
+                                .from(
+                                    "characters"
+                                )
+                                .insert(
+                                    characterData
+                                )
+                                .select()
+                                .single();
 
 
-                    // -----------------------------------------
-                    // INSERT
-                    // -----------------------------------------
+                        if (error) {
 
-                    const {
-                        data,
-                        error
-                    } =
-                        await supabaseClient
-                            .from("characters")
-                            .insert(
-                                characterData
-                            )
-                            .select()
-                            .single();
+                            throw error;
+
+                        }
 
 
-                    if (error) {
+                        currentCharacter =
+                            data;
+
+
+                        console.log(
+                            "Personaggio salvato:",
+                            currentCharacter
+                        );
+
+
+                        // -------------------------------------
+                        // CREA INVENTARIO
+                        // -------------------------------------
+
+                        try {
+
+                            await saveStartingInventory(
+                                currentCharacter.id
+                            );
+
+                        } catch (
+                            inventoryError
+                        ) {
+
+                            console.error(
+                                "Errore inventario iniziale:",
+                                inventoryError
+                            );
+
+
+                            // ---------------------------------
+                            // ROLLBACK
+                            // ---------------------------------
+                            //
+                            // Se l'inventario non viene creato,
+                            // eliminiamo il personaggio appena
+                            // creato per non lasciare un PG
+                            // incompleto.
+                            //
+                            // ---------------------------------
+
+                            await supabaseClient
+                                .from(
+                                    "characters"
+                                )
+                                .delete()
+                                .eq(
+                                    "id",
+                                    currentCharacter.id
+                                );
+
+
+                            currentCharacter =
+                                null;
+
+
+                            throw new Error(
+                                "Inventario iniziale non creato: " +
+                                inventoryError.message
+                            );
+
+                        }
+
+
+                        // -------------------------------------
+                        // SCHEDA
+                        // -------------------------------------
+
+                        window.location.href =
+                            "scheda.html";
+
+
+                    } catch (error) {
 
                         console.error(
-                            "Errore salvataggio:",
+                            "Errore creazione personaggio:",
                             error
                         );
 
 
                         showMessage(
-                            "Errore durante il salvataggio: " +
+                            "Errore durante la creazione del personaggio: " +
                             error.message
                         );
 
 
-                        return;
+                        if (submitButton) {
+
+                            submitButton.disabled =
+                                false;
+
+
+                            submitButton.textContent =
+                                "SALVA PERSONAGGIO";
+
+                        }
 
                     }
-
-
-                    currentCharacter =
-                        data;
-
-
-                    console.log(
-                        "Personaggio salvato:",
-                        currentCharacter
-                    );
-
-
-                    // -----------------------------------------
-                    // REDIRECT ALLA SCHEDA
-                    // -----------------------------------------
-
-                    window.location.href =
-                        "scheda.html";
 
                 }
             );
@@ -1194,41 +1871,38 @@ document.addEventListener(
 
 
         // ====================================================
-        // MESSAGGIO
-        // ====================================================
-
-        function showMessage(
-            text
-        ) {
-
-            if (!message) {
-
-                return;
-
-            }
-
-
-            message.textContent =
-                text;
-
-        }
-
-
-        // ====================================================
         // AVVIO
         // ====================================================
 
         updateAttributesDisplay();
 
+
         setupTokenSelection();
 
 
         // ====================================================
-        // SE ESISTE GIÀ UN PERSONAGGIO,
-        // VAI ALLA SCHEDA
+        // SE ESISTE GIÀ IL PERSONAGGIO
         // ====================================================
 
-        await checkExistingCharacter();
+        const alreadyExists =
+            await checkExistingCharacter();
+
+
+        if (alreadyExists) {
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // OGGETTI INIZIALI
+        // ====================================================
+
+        ensureStartingItemsUI();
+
+
+        await loadStartingItems();
 
     }
 );
