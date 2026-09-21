@@ -41,6 +41,28 @@ let tokenElement = null;
 
 let movementLocked = false;
 
+let characterInventory = [];
+
+let equipmentBonuses = {
+
+    attack_bonus: 0,
+
+    defense_bonus: 0,
+
+    forza_bonus: 0,
+
+    resistenza_bonus: 0,
+
+    costituzione_bonus: 0,
+
+    intelligenza_bonus: 0,
+
+    destrezza_bonus: 0,
+
+    fortuna_bonus: 0
+
+};
+
 
 // ============================================================
 // REALTIME
@@ -414,18 +436,233 @@ async function loadCharacter() {
     }
 
 
-    character =
-        data;
+   character =
+    data;
 
 
-    console.log(
-        "Personaggio caricato:",
-        character
+console.log(
+    "Personaggio caricato:",
+    character
+);
+
+
+await loadCharacterEquipment();
+
+// ============================================================
+// CARICAMENTO EQUIPAGGIAMENTO
+// ============================================================
+
+async function loadCharacterEquipment() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("character_inventory")
+            .select(`
+                id,
+                quantity,
+                equipped_slot,
+                item:items (
+                    id,
+                    attack_bonus,
+                    defense_bonus,
+                    forza_bonus,
+                    resistenza_bonus,
+                    costituzione_bonus,
+                    intelligenza_bonus,
+                    destrezza_bonus,
+                    fortuna_bonus
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            )
+            .not(
+                "equipped_slot",
+                "is",
+                null
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterInventory =
+        data || [];
+
+
+    calculateDungeonEquipmentBonuses();
+
+}
+
+
+// ============================================================
+// CALCOLO BONUS EQUIPAGGIAMENTO
+// ============================================================
+
+function calculateDungeonEquipmentBonuses() {
+
+    equipmentBonuses = {
+
+        attack_bonus: 0,
+
+        defense_bonus: 0,
+
+        forza_bonus: 0,
+
+        resistenza_bonus: 0,
+
+        costituzione_bonus: 0,
+
+        intelligenza_bonus: 0,
+
+        destrezza_bonus: 0,
+
+        fortuna_bonus: 0
+
+    };
+
+
+    characterInventory.forEach(
+        entry => {
+
+            if (!entry.item) {
+
+                return;
+
+            }
+
+
+            equipmentBonuses.attack_bonus +=
+                Number(
+                    entry.item.attack_bonus
+                ) || 0;
+
+
+            equipmentBonuses.defense_bonus +=
+                Number(
+                    entry.item.defense_bonus
+                ) || 0;
+
+
+            equipmentBonuses.forza_bonus +=
+                Number(
+                    entry.item.forza_bonus
+                ) || 0;
+
+
+            equipmentBonuses.resistenza_bonus +=
+                Number(
+                    entry.item.resistenza_bonus
+                ) || 0;
+
+
+            equipmentBonuses.costituzione_bonus +=
+                Number(
+                    entry.item.costituzione_bonus
+                ) || 0;
+
+
+            equipmentBonuses.intelligenza_bonus +=
+                Number(
+                    entry.item.intelligenza_bonus
+                ) || 0;
+
+
+            equipmentBonuses.destrezza_bonus +=
+                Number(
+                    entry.item.destrezza_bonus
+                ) || 0;
+
+
+            equipmentBonuses.fortuna_bonus +=
+                Number(
+                    entry.item.fortuna_bonus
+                ) || 0;
+
+        }
     );
 
+}
 
-    updateCharacterPanel();
 
+// ============================================================
+// ATTRIBUTO EFFETTIVO
+// ============================================================
+
+function getDungeonEffectiveAttribute(
+    attribute
+) {
+
+    const base =
+        Number(
+            character?.[attribute]
+        ) || 1;
+
+
+    const bonus =
+        Number(
+            equipmentBonuses[
+                `${attribute}_bonus`
+            ]
+        ) || 0;
+
+
+    return Math.max(
+        1,
+        Math.min(
+            30,
+            base + bonus
+        )
+    );
+
+}
+    
+updateCharacterPanel();
+    const forza =
+    Number(
+        character.forza
+    ) || 1;
+
+
+const resistenza =
+    Number(
+        character.resistenza
+    ) || 1;
+
+
+const costituzione =
+    Number(
+        character.costituzione
+    ) || 1;
+
+
+const intelligenza =
+    Number(
+        character.intelligenza
+    ) || 1;
+
+
+const destrezza =
+    Number(
+        character.destrezza
+    ) || 1;
+
+
+const fortuna =
+    Number(
+        character.fortuna
+    ) || 1;
+
+
+    
 
     // ========================================================
     // CONTROLLO MORTE AL CARICAMENTO
@@ -576,92 +813,144 @@ function updateCharacterPanel() {
     );
 
 
-    // --------------------------------------------------------
-    // STATISTICHE
-    // --------------------------------------------------------
+// --------------------------------------------------------
+// STATISTICHE
+// --------------------------------------------------------
 
-    const attack =
-        Math.ceil(
-            forza / 2
-        );
+const attack =
+    Math.ceil(
+        forza / 2
+    )
+    +
+    equipmentBonuses.attack_bonus;
 
-    const defense =
+
+const defense =
+    Math.ceil(
         7 +
-        Math.ceil(
+        (
             resistenza / 2
-        );
-
-    const maxHealth =
-        Math.ceil(
-            5 *
-            (
-                costituzione / 2
-            )
-        );
+        )
+    )
+    +
+    equipmentBonuses.defense_bonus;
 
 
-    const health =
-        character.current_hp !== null &&
-        character.current_hp !== undefined
-            ? Number(
-                character.current_hp
-            )
-            : maxHealth;
-
-    const mana =
+const health =
+    Math.ceil(
         5 *
-        Math.ceil(
+        (
+            costituzione / 2
+        )
+    );
+
+
+const mana =
+    Math.ceil(
+        5 *
+        (
             intelligenza / 2
-        );
+        )
+    );
 
-    const movement =
+
+const movement =
+    Math.ceil(
         4 +
-        Math.ceil(
+        (
             destrezza / 2
+        )
+    );
+
+
+const critical =
+    Math.round(
+        (
+            fortuna *
+            (50 / 30)
+        ) *
+        100
+    ) / 100;
+
+
+// --------------------------------------------------------
+// PF ATTUALI / MASSIMI
+// --------------------------------------------------------
+
+const currentPF =
+    character.current_hp === null ||
+    character.current_hp === undefined
+        ? health
+        : Math.max(
+            0,
+            Math.min(
+                Number(
+                    character.current_hp
+                ),
+                health
+            )
         );
 
-    const critical =
-        Math.round(
-            (
-                fortuna *
-                (50 / 30)
-            ) *
-            100
-        ) / 100;
+
+// --------------------------------------------------------
+// PM ATTUALI / MASSIMI
+// --------------------------------------------------------
+
+const currentPM =
+    character.current_pm === null ||
+    character.current_pm === undefined
+        ? mana
+        : Math.max(
+            0,
+            Math.min(
+                Number(
+                    character.current_pm
+                ),
+                mana
+            )
+        );
 
 
-    setText(
-        "attack-display",
-        attack
-    );
+// --------------------------------------------------------
+// VISUALIZZAZIONE
+// --------------------------------------------------------
 
-    setText(
-        "defense-display",
-        defense
-    );
+setText(
+    "attack-display",
+    attack
+);
 
-    setText(
-        "health-display",
-        health
-    );
 
-    setText(
-        "mana-display",
-        mana
-    );
+setText(
+    "defense-display",
+    defense
+);
 
-    setText(
-        "movement-display",
-        movement
-    );
 
-    setText(
-        "critical-display",
-        critical + "%"
-    );
+setText(
+    "health-display",
+    `${currentPF}/${health}`
+);
+
+
+setText(
+    "mana-display",
+    `${currentPM}/${mana}`
+);
+
+
+setText(
+    "movement-display",
+    movement
+);
+
+
+setText(
+    "critical-display",
+    critical + "%"
+);
 
 }
-
 
 // ============================================================
 // SET TEXT
