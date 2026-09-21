@@ -12,6 +12,7 @@
 // - attributi base
 // - bonus equipaggiamento
 // - statistiche secondarie
+// - abilità
 // - inventario
 // - zaino
 // - equipaggia
@@ -45,6 +46,8 @@ let character = null;
 let currentUserRole = "player";
 
 let characterInventory = [];
+
+let characterAbilities = [];
 
 let equipmentBonuses = {
 
@@ -90,11 +93,20 @@ document.addEventListener(
 
             ensureInventoryInterface();
 
-            await loadInventory();
+            await Promise.all([
+
+                loadInventory(),
+
+                loadAbilities()
+
+            ]);
+
 
             displayCharacter();
 
             displayInventory();
+
+            displayAbilities();
 
             updateMasterEntryButton();
 
@@ -278,6 +290,313 @@ async function loadCharacter() {
         "Personaggio:",
         character
     );
+
+}
+
+
+// ============================================================
+// ABILITÀ
+// ============================================================
+
+async function loadAbilities() {
+
+    if (!character) {
+
+        characterAbilities = [];
+
+        return;
+
+    }
+
+
+    console.log(
+        "Caricamento abilità personaggio..."
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "character_abilities"
+            )
+            .select(`
+                id,
+                character_id,
+                ability_id,
+                level,
+                created_at,
+                ability:abilities (
+                    id,
+                    name,
+                    description,
+                    ability_type,
+                    pm_cost,
+                    max_level
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterAbilities =
+        data || [];
+
+
+    console.log(
+        "Abilità personaggio:",
+        characterAbilities
+    );
+
+}
+
+
+// ============================================================
+// MOSTRA ABILITÀ
+// ============================================================
+
+function displayAbilities() {
+
+    const container =
+        document.getElementById(
+            "abilities-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.replaceChildren();
+
+
+    if (
+        characterAbilities.length === 0
+    ) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+
+        empty.className =
+            "abilities-empty";
+
+
+        empty.textContent =
+            "Nessuna abilità conosciuta.";
+
+
+        container.appendChild(
+            empty
+        );
+
+
+        return;
+
+    }
+
+
+    characterAbilities.forEach(
+        entry => {
+
+            if (!entry.ability) {
+
+                return;
+
+            }
+
+
+            container.appendChild(
+                createAbilityCard(
+                    entry
+                )
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// CREA CARTA ABILITÀ
+// ============================================================
+
+function createAbilityCard(
+    entry
+) {
+
+    const ability =
+        entry.ability;
+
+
+    const level =
+        Math.max(
+            1,
+            Math.min(
+                6,
+                Number(
+                    entry.level
+                ) || 1
+            )
+        );
+
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+
+    card.className =
+        "ability-sheet-card";
+
+
+    // ========================================================
+    // HEADER
+    // ========================================================
+
+    const header =
+        document.createElement(
+            "div"
+        );
+
+
+    header.className =
+        "ability-sheet-header";
+
+
+    // --------------------------------------------------------
+    // NOME
+    // --------------------------------------------------------
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "ability-sheet-name";
+
+
+    name.textContent =
+        ability.name ||
+        "Abilità";
+
+
+    header.appendChild(
+        name
+    );
+
+
+    // --------------------------------------------------------
+    // LIVELLO
+    // --------------------------------------------------------
+
+    const levelElement =
+        document.createElement(
+            "div"
+        );
+
+
+    levelElement.className =
+        "ability-sheet-level";
+
+
+    levelElement.textContent =
+        `LV.${level}`;
+
+
+    header.appendChild(
+        levelElement
+    );
+
+
+    card.appendChild(
+        header
+    );
+
+
+    // ========================================================
+    // DESCRIZIONE
+    // ========================================================
+
+    if (
+        ability.description
+    ) {
+
+        const description =
+            document.createElement(
+                "div"
+            );
+
+
+        description.className =
+            "ability-sheet-description";
+
+
+        description.textContent =
+            ability.description;
+
+
+        card.appendChild(
+            description
+        );
+
+    }
+
+
+    // ========================================================
+    // COSTO PM
+    // ========================================================
+
+    const cost =
+        document.createElement(
+            "div"
+        );
+
+
+    cost.className =
+        "ability-sheet-cost";
+
+
+    cost.textContent =
+        `Costo: ${
+            Number(
+                ability.pm_cost
+            ) || 0
+        } PM`;
+
+
+    card.appendChild(
+        cost
+    );
+
+
+    return card;
 
 }
 
@@ -638,19 +957,20 @@ function displayAttributes() {
             }
 
 
+            element.textContent =
+                effective;
+
+
             if (
                 base ===
                 effective
             ) {
 
-                element.textContent =
-                    effective;
+                element.removeAttribute(
+                    "title"
+                );
 
             } else {
-
-                element.textContent =
-                    effective;
-
 
                 element.title =
                     `Base ${base} · Equipaggiamento ${
@@ -981,361 +1301,6 @@ function ensureInventoryInterface() {
     }
 
 
-    const style =
-        document.createElement(
-            "style"
-        );
-
-
-    style.textContent = `
-
-        .inventory-system-section {
-
-            margin: 30px 0;
-
-        }
-
-
-        .equipment-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    3,
-                    minmax(
-                        0,
-                        1fr
-                    )
-                );
-
-            gap: 10px;
-
-            margin-bottom: 25px;
-
-        }
-
-
-        .equipment-slot {
-
-            min-height: 100px;
-
-            padding: 12px;
-
-            box-sizing: border-box;
-
-            border-radius: 10px;
-
-            border:
-                1px solid
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.12
-                );
-
-            background:
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.04
-                );
-
-        }
-
-
-        .equipment-slot-title {
-
-            font-size: 11px;
-
-            opacity: 0.6;
-
-            margin-bottom: 7px;
-
-            text-transform: uppercase;
-
-        }
-
-
-        .equipment-item-name {
-
-            font-weight: bold;
-
-            font-size: 14px;
-
-        }
-
-
-        .equipment-item-description {
-
-            font-size: 11px;
-
-            opacity: 0.7;
-
-            margin-top: 4px;
-
-        }
-
-
-        .equipment-item-value {
-
-            margin-top: 5px;
-
-            font-size: 10px;
-
-            color: #d4af67;
-
-        }
-
-
-        .equipment-empty {
-
-            opacity: 0.35;
-
-            font-size: 12px;
-
-        }
-
-
-        .inventory-button {
-
-            margin-top: 8px;
-
-            padding: 5px 8px;
-
-            border-radius: 5px;
-
-            border:
-                1px solid
-                rgba(
-                    184,
-                    138,
-                    59,
-                    0.5
-                );
-
-            background:
-                rgba(
-                    184,
-                    138,
-                    59,
-                    0.12
-                );
-
-            color: #d4af67;
-
-            cursor: pointer;
-
-            font-size: 10px;
-
-            font-weight: bold;
-
-        }
-
-
-        .inventory-button:hover {
-
-            background:
-                rgba(
-                    184,
-                    138,
-                    59,
-                    0.22
-                );
-
-        }
-
-
-        .backpack-header {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            gap: 10px;
-
-            margin-bottom: 12px;
-
-        }
-
-
-        #backpack-count {
-
-            font-size: 12px;
-
-            opacity: 0.6;
-
-        }
-
-
-        #backpack-list {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fill,
-                    minmax(
-                        180px,
-                        1fr
-                    )
-                );
-
-            gap: 8px;
-
-        }
-
-
-        .backpack-item {
-
-            padding: 11px;
-
-            border-radius: 8px;
-
-            border:
-                1px solid
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.1
-                );
-
-            background:
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.03
-                );
-
-        }
-
-
-        .backpack-item-name {
-
-            font-weight: bold;
-
-            font-size: 13px;
-
-        }
-
-
-        .backpack-item-quantity {
-
-            color: #d4af67;
-
-        }
-
-
-        .backpack-item-description {
-
-            font-size: 11px;
-
-            opacity: 0.7;
-
-            margin-top: 4px;
-
-        }
-
-
-        .backpack-item-value {
-
-            font-size: 10px;
-
-            margin-top: 5px;
-
-            color: #d4af67;
-
-        }
-
-
-        .backpack-actions {
-
-            display: flex;
-
-            gap: 6px;
-
-            flex-wrap: wrap;
-
-            margin-top: 7px;
-
-        }
-
-
-        .backpack-slot-select {
-
-            width: 100%;
-
-            margin-top: 7px;
-
-            padding: 5px;
-
-            border-radius: 5px;
-
-            background: #181818;
-
-            color: #ddd;
-
-            border:
-                1px solid
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.15
-                );
-
-            font-size: 11px;
-
-        }
-
-
-        #backpack-empty {
-
-            opacity: 0.5;
-
-            padding: 10px 0;
-
-        }
-
-
-        @media (
-            max-width: 700px
-        ) {
-
-            .equipment-grid {
-
-                grid-template-columns:
-                    repeat(
-                        2,
-                        1fr
-                    );
-
-            }
-
-
-            #backpack-list {
-
-                grid-template-columns:
-                    1fr;
-
-            }
-
-        }
-
-    `;
-
-
-    document.head.appendChild(
-        style
-    );
-
-
     const section =
         document.createElement(
             "section"
@@ -1352,7 +1317,6 @@ function ensureInventoryInterface() {
             Equipaggiamento
         </h2>
 
-
         <div class="equipment-grid">
 
             <div
@@ -1364,7 +1328,6 @@ function ensureInventoryInterface() {
                 </div>
             </div>
 
-
             <div
                 id="equipment-slot-hand-2"
                 class="equipment-slot"
@@ -1373,7 +1336,6 @@ function ensureInventoryInterface() {
                     Mano 2
                 </div>
             </div>
-
 
             <div
                 id="equipment-slot-armor"
@@ -1384,7 +1346,6 @@ function ensureInventoryInterface() {
                 </div>
             </div>
 
-
             <div
                 id="equipment-slot-accessory-1"
                 class="equipment-slot"
@@ -1394,7 +1355,6 @@ function ensureInventoryInterface() {
                 </div>
             </div>
 
-
             <div
                 id="equipment-slot-accessory-2"
                 class="equipment-slot"
@@ -1403,7 +1363,6 @@ function ensureInventoryInterface() {
                     Accessorio 2
                 </div>
             </div>
-
 
             <div
                 id="equipment-slot-accessory-3"
@@ -1415,7 +1374,6 @@ function ensureInventoryInterface() {
             </div>
 
         </div>
-
 
         <div class="backpack-header">
 
@@ -1429,11 +1387,9 @@ function ensureInventoryInterface() {
 
         </div>
 
-
         <div id="backpack-empty">
             Lo zaino è vuoto.
         </div>
-
 
         <div id="backpack-list"></div>
 
@@ -1456,15 +1412,11 @@ function displayInventory() {
 
     calculateEquipmentBonuses();
 
-
     displayEquipment();
-
 
     displayBackpack();
 
-
     displayAttributes();
-
 
     calculateSecondaryStats();
 
@@ -1540,8 +1492,7 @@ function displayEquipment() {
 
 
             if (
-                slotName === "hand_2"
-                &&
+                slotName === "hand_2" &&
                 twoHanded
             ) {
 
@@ -1714,9 +1665,6 @@ function renderEquipmentSlot(
     );
 
 
-    // Nello slot Mano 2 bloccato dall'ascia non
-    // mostriamo un secondo pulsante RIMUOVI.
-
     if (!blockedByTwoHanded) {
 
         const removeButton =
@@ -1885,10 +1833,6 @@ function renderBackpackItem(
         "backpack-item";
 
 
-    // ========================================================
-    // NOME
-    // ========================================================
-
     const name =
         document.createElement(
             "div"
@@ -1933,10 +1877,6 @@ function renderBackpackItem(
     );
 
 
-    // ========================================================
-    // DESCRIZIONE
-    // ========================================================
-
     if (
         item.description
     ) {
@@ -1961,10 +1901,6 @@ function renderBackpackItem(
 
     }
 
-
-    // ========================================================
-    // VALORE
-    // ========================================================
 
     const value =
         document.createElement(
@@ -2003,10 +1939,6 @@ function renderBackpackItem(
         value
     );
 
-
-    // ========================================================
-    // CONSUMABILE
-    // ========================================================
 
     if (
         item.item_type ===
@@ -2064,10 +1996,6 @@ function renderBackpackItem(
 
     }
 
-
-    // ========================================================
-    // EQUIPAGGIABILE
-    // ========================================================
 
     if (
         item.equip_slot !==
