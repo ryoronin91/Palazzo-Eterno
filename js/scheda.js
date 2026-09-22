@@ -1942,9 +1942,140 @@ function displayBackpack() {
 
 
     const items =
-        characterInventory.filter(
+    characterInventory
+        .filter(
             entry =>
                 !entry.equipped_slot
+        )
+        .sort(
+            (a, b) => {
+
+                const getCategoryOrder =
+                    entry => {
+
+                        const item =
+                            entry.item || {};
+
+
+                        const itemId =
+                            String(
+                                item.id || ""
+                            ).toLowerCase();
+
+
+                        const itemName =
+                            String(
+                                item.name || ""
+                            ).toLowerCase();
+
+
+                        const itemType =
+                            String(
+                                item.item_type || ""
+                            ).toLowerCase();
+
+
+                        // =====================================
+                        // 1. MONETE
+                        // =====================================
+
+                        if (
+                            itemId.includes("monet") ||
+                            itemName.includes("monet")
+                        ) {
+
+                            return 1;
+
+                        }
+
+
+                        // =====================================
+                        // 2. CONSUMABILI
+                        // =====================================
+
+                        if (
+                            itemType ===
+                            "consumable"
+                        ) {
+
+                            return 2;
+
+                        }
+
+
+                        // =====================================
+                        // 3. EQUIPAGGIAMENTI
+                        //
+                        // Qualsiasi oggetto che possiede
+                        // uno slot equipaggiabile.
+                        // =====================================
+
+                        if (
+                            item.equip_slot
+                        ) {
+
+                            return 3;
+
+                        }
+
+
+                        // =====================================
+                        // 4. TUTTO IL RESTO
+                        // =====================================
+
+                        return 4;
+
+                    };
+
+
+                const categoryA =
+                    getCategoryOrder(a);
+
+
+                const categoryB =
+                    getCategoryOrder(b);
+
+
+                // Prima ordina per categoria
+
+                if (
+                    categoryA !==
+                    categoryB
+                ) {
+
+                    return (
+                        categoryA -
+                        categoryB
+                    );
+
+                }
+
+
+                // All'interno della stessa categoria
+                // ordine alfabetico
+
+                const nameA =
+                    String(
+                        a.item?.name || ""
+                    );
+
+
+                const nameB =
+                    String(
+                        b.item?.name || ""
+                    );
+
+
+                return nameA.localeCompare(
+                    nameB,
+                    "it",
+                    {
+                        sensitivity:
+                            "base"
+                    }
+                );
+
+            }
         );
 
 
