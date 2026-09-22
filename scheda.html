@@ -807,7 +807,111 @@
                 );
 
         }
+/* =====================================================
+   PAGINAZIONE ABILITÀ / ZAINO
+===================================================== */
 
+.sheet-pagination {
+
+    grid-column: 1 / -1;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+    padding-top: 10px;
+
+    border-top:
+        1px solid
+        rgba(
+            184,
+            138,
+            59,
+            0.28
+        );
+
+}
+
+
+.sheet-pagination-button {
+
+    min-width: 34px;
+
+    height: 30px;
+
+    padding: 0 10px;
+
+    border-radius: 6px;
+
+    border:
+        1px solid
+        rgba(
+            184,
+            138,
+            59,
+            0.45
+        );
+
+    background:
+        rgba(
+            184,
+            138,
+            59,
+            0.10
+        );
+
+    color: #d4af67;
+
+    cursor: pointer;
+
+    font-size: 18px;
+
+    line-height: 1;
+
+}
+
+
+.sheet-pagination-button:hover:not(:disabled) {
+
+    background:
+        rgba(
+            184,
+            138,
+            59,
+            0.20
+        );
+
+}
+
+
+.sheet-pagination-button:disabled {
+
+    opacity: 0.25;
+
+    cursor: default;
+
+}
+
+
+.sheet-pagination-label {
+
+    min-width: 55px;
+
+    color: #d4af67;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+}
 
         /* =====================================================
            NOTE + ZAINO
