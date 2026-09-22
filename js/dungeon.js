@@ -1,32 +1,10 @@
 // ============================================================
 // PALAZZO ETERNO
 // DUNGEON.JS
-// ============================================================
-//
-// Gestisce:
-//
-// - autenticazione Supabase
-// - caricamento personaggio
-// - caricamento dungeon.json
-// - posizione iniziale
-// - movimento WASD / frecce
-// - movimento tramite click su casella adiacente
-// - controllo muri
-// - salvataggio posizione
-// - token personale
-// - token degli altri giocatori online
-// - Supabase Realtime Presence
-// - Supabase Realtime Broadcast
-// - statistiche del personaggio
-// - BONUS EQUIPAGGIAMENTO
-// - PF / PM con attributi effettivi
-// - caricamento e salvataggio note
-// - chat realtime del piano
-//
+// VERSIONE NUOVA INTERFACCIA
 // ============================================================
 
-
-console.log("DUNGEON.JS MULTIPLAYER + EQUIPAGGIAMENTO CARICATO");
+console.log("DUNGEON.JS - NUOVA INTERFACCIA CARICATA");
 
 
 // ============================================================
@@ -37,22 +15,14 @@ const db = supabaseClient;
 
 
 // ============================================================
-// CONFIGURAZIONE MAPPA
+// MAPPA
 // ============================================================
 
 const MAP_COLUMNS = 23;
 const MAP_ROWS = 23;
 
-
-// Offset corretto JSON -> mappa visibile
-
 const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
-
-
-// ============================================================
-// POSIZIONE INIZIALE
-// ============================================================
 
 const INITIAL_PLAYER_X = 9;
 const INITIAL_PLAYER_Y = 0;
@@ -67,26 +37,11 @@ const DUNGEON_CHANNEL_NAME =
 
 
 // ============================================================
-// VARIABILI
+// PERSONAGGIO
 // ============================================================
-
-let dungeonData = null;
 
 let character = null;
-
 let currentUser = null;
-
-let playerX = null;
-let playerY = null;
-
-let tokenElement = null;
-
-let movementLocked = false;
-
-
-// ============================================================
-// EQUIPAGGIAMENTO / BONUS
-// ============================================================
 
 let characterInventory = [];
 
@@ -106,28 +61,85 @@ let equipmentBonuses = {
 
 
 // ============================================================
+// MAPPA / POSIZIONE
+// ============================================================
+
+let dungeonData = null;
+
+let playerX = null;
+let playerY = null;
+
+let tokenElement = null;
+
+
+// ============================================================
+// NUOVO SISTEMA MOVIMENTO
+// ============================================================
+//
+// IMPORTANTE:
+//
+// Il vecchio sistema bloccava il movimento mentre aspettava:
+//
+// 1. database
+// 2. Presence
+// 3. Broadcast
+// 4. evento casella
+//
+// Adesso invece:
+//
+// - il comando viene messo in coda;
+// - il token si sposta immediatamente;
+// - il salvataggio avviene dopo;
+// - i comandi successivi non vengono persi.
+//
+// ============================================================
+
+const movementQueue = [];
+
+let movementQueueRunning = false;
+
+let eventLocked = false;
+
+let positionSaveTimer = null;
+
+let positionSaveRunning = false;
+
+let positionSavePending = false;
+
+
+// ============================================================
 // REALTIME
 // ============================================================
 
 let dungeonChannel = null;
-
 let realtimeReady = false;
 
 
 // ============================================================
-// TOKEN DEGLI ALTRI GIOCATORI
+// ALTRI GIOCATORI
 // ============================================================
 
 const otherPlayerTokens =
     new Map();
 
-
-// ============================================================
-// DATI DEGLI ALTRI GIOCATORI
-// ============================================================
-
 const otherPlayers =
     new Map();
+
+
+// ============================================================
+// CURA
+// ============================================================
+
+let healModeActive = false;
+
+let healRangeElements = [];
+
+
+// ============================================================
+// REFRESH
+// ============================================================
+
+let dungeonCharacterRefreshInterval = null;
 
 
 // ============================================================
@@ -138,12 +150,12 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
-        console.log(
-            "Pagina dungeon pronta."
-        );
-
-
         try {
+
+            setMessage(
+                "Caricamento del dungeon..."
+            );
+
 
             // ------------------------------------------------
             // PERSONAGGIO
@@ -160,7 +172,7 @@ document.addEventListener(
 
 
             // ------------------------------------------------
-            // CHAT DEL PIANO
+            // CHAT
             // ------------------------------------------------
 
             setupFloorChat();
@@ -188,16 +200,35 @@ document.addEventListener(
 
 
             // ------------------------------------------------
+            // AZIONI RAPIDE
+            // ------------------------------------------------
+
+            setupDungeonActions();
+
+
+            // ------------------------------------------------
             // MULTIPLAYER
             // ------------------------------------------------
 
             await setupRealtimeMultiplayer();
 
 
+            // ------------------------------------------------
+            // REFRESH
+            // ------------------------------------------------
+
+            startDungeonCharacterRefresh();
+
+
+            setMessage(
+                "Usa WASD, le frecce o clicca una casella adiacente."
+            );
+
+
         } catch (error) {
 
             console.error(
-                "Errore durante l'avvio del dungeon:",
+                "Errore avvio dungeon:",
                 error
             );
 
@@ -214,15 +245,10 @@ document.addEventListener(
 
 
 // ============================================================
-// CARICAMENTO DUNGEON.JSON
+// CARICAMENTO DUNGEON
 // ============================================================
 
 async function loadDungeon() {
-
-    console.log(
-        "Caricamento dungeon.json..."
-    );
-
 
     const response =
         await fetch(
@@ -233,7 +259,7 @@ async function loadDungeon() {
     if (!response.ok) {
 
         throw new Error(
-            "Impossibile caricare dungeon.json"
+            "Impossibile caricare dungeon.json."
         );
 
     }
@@ -243,34 +269,23 @@ async function loadDungeon() {
         await response.json();
 
 
-    console.log(
-        "Dungeon JSON caricato:",
-        dungeonData
-    );
-
-
-    if (!dungeonData.cells) {
+    if (
+        !dungeonData ||
+        !Array.isArray(
+            dungeonData.cells
+        )
+    ) {
 
         throw new Error(
-            "Il file dungeon.json non contiene la matrice cells."
+            "dungeon.json non contiene una griglia valida."
         );
 
     }
 
 
     console.log(
-        "Griglia visibile:",
-        MAP_COLUMNS,
-        "x",
-        MAP_ROWS
-    );
-
-
-    console.log(
-        "Matrice interna:",
-        dungeonData.cells[0].length,
-        "x",
-        dungeonData.cells.length
+        "Dungeon caricato:",
+        dungeonData
     );
 
 }
@@ -281,15 +296,6 @@ async function loadDungeon() {
 // ============================================================
 
 async function loadCharacter() {
-
-    console.log(
-        "Caricamento personaggio..."
-    );
-
-
-    // --------------------------------------------------------
-    // UTENTE
-    // --------------------------------------------------------
 
     const {
         data: {
@@ -321,16 +327,6 @@ async function loadCharacter() {
         user;
 
 
-    console.log(
-        "Utente autenticato:",
-        currentUser.id
-    );
-
-
-    // --------------------------------------------------------
-    // PERSONAGGIO
-    // --------------------------------------------------------
-
     const {
         data,
         error
@@ -354,14 +350,8 @@ async function loadCharacter() {
 
     if (!data) {
 
-        alert(
-            "Non hai ancora creato un personaggio."
-        );
-
-
         window.location.href =
             "personaggio.html";
-
 
         return;
 
@@ -372,22 +362,7 @@ async function loadCharacter() {
         data;
 
 
-    console.log(
-        "Personaggio caricato:",
-        character
-    );
-
-
-    // --------------------------------------------------------
-    // EQUIPAGGIAMENTO
-    // --------------------------------------------------------
-
     await loadCharacterEquipment();
-
-
-    // --------------------------------------------------------
-    // PANNELLO PERSONAGGIO
-    // --------------------------------------------------------
 
     updateCharacterPanel();
 
@@ -395,7 +370,7 @@ async function loadCharacter() {
 
 
 // ============================================================
-// CARICAMENTO EQUIPAGGIAMENTO
+// EQUIPAGGIAMENTO
 // ============================================================
 
 async function loadCharacterEquipment() {
@@ -420,6 +395,11 @@ async function loadCharacterEquipment() {
 
                 item:items (
                     id,
+                    name,
+                    item_type,
+                    equip_slot,
+                    heal_pf,
+                    heal_pm,
                     attack_bonus,
                     defense_bonus,
                     forza_bonus,
@@ -433,11 +413,6 @@ async function loadCharacterEquipment() {
             .eq(
                 "character_id",
                 character.id
-            )
-            .not(
-                "equipped_slot",
-                "is",
-                null
             );
 
 
@@ -454,23 +429,13 @@ async function loadCharacterEquipment() {
 
     calculateDungeonEquipmentBonuses();
 
-
-    console.log(
-        "Equipaggiamento dungeon:",
-        characterInventory
-    );
-
-
-    console.log(
-        "Bonus equipaggiamento dungeon:",
-        equipmentBonuses
-    );
+    updateDungeonConsumables();
 
 }
 
 
 // ============================================================
-// CALCOLO BONUS EQUIPAGGIAMENTO
+// BONUS EQUIPAGGIAMENTO
 // ============================================================
 
 function calculateDungeonEquipmentBonuses() {
@@ -490,78 +455,74 @@ function calculateDungeonEquipmentBonuses() {
     };
 
 
-    characterInventory.forEach(
-        entry => {
+    characterInventory
+        .filter(
+            entry =>
+                entry.equipped_slot &&
+                entry.item
+        )
+        .forEach(
+            entry => {
 
-            if (!entry.item) {
+                const item =
+                    entry.item;
 
-                return;
+
+                equipmentBonuses.attack_bonus +=
+                    Number(
+                        item.attack_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.defense_bonus +=
+                    Number(
+                        item.defense_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.forza_bonus +=
+                    Number(
+                        item.forza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.resistenza_bonus +=
+                    Number(
+                        item.resistenza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.costituzione_bonus +=
+                    Number(
+                        item.costituzione_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.intelligenza_bonus +=
+                    Number(
+                        item.intelligenza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.destrezza_bonus +=
+                    Number(
+                        item.destrezza_bonus
+                    ) || 0;
+
+
+                equipmentBonuses.fortuna_bonus +=
+                    Number(
+                        item.fortuna_bonus
+                    ) || 0;
 
             }
-
-
-            const item =
-                entry.item;
-
-
-            equipmentBonuses.attack_bonus +=
-                Number(
-                    item.attack_bonus
-                ) || 0;
-
-
-            equipmentBonuses.defense_bonus +=
-                Number(
-                    item.defense_bonus
-                ) || 0;
-
-
-            equipmentBonuses.forza_bonus +=
-                Number(
-                    item.forza_bonus
-                ) || 0;
-
-
-            equipmentBonuses.resistenza_bonus +=
-                Number(
-                    item.resistenza_bonus
-                ) || 0;
-
-
-            equipmentBonuses.costituzione_bonus +=
-                Number(
-                    item.costituzione_bonus
-                ) || 0;
-
-
-            equipmentBonuses.intelligenza_bonus +=
-                Number(
-                    item.intelligenza_bonus
-                ) || 0;
-
-
-            equipmentBonuses.destrezza_bonus +=
-                Number(
-                    item.destrezza_bonus
-                ) || 0;
-
-
-            equipmentBonuses.fortuna_bonus +=
-                Number(
-                    item.fortuna_bonus
-                ) || 0;
-
-        }
-    );
+        );
 
 }
 
 
 // ============================================================
 // ATTRIBUTO EFFETTIVO
-//
-// Attributo base + bonus equipaggiamento.
-// Gli attributi finali sono sempre compresi tra 1 e 30.
 // ============================================================
 
 function getDungeonEffectiveAttribute(
@@ -594,111 +555,10 @@ function getDungeonEffectiveAttribute(
 
 
 // ============================================================
-// AGGIORNA PANNELLO PERSONAGGIO
+// STATISTICHE CALCOLATE
 // ============================================================
 
-function updateCharacterPanel() {
-
-    if (!character) {
-
-        return;
-
-    }
-
-
-    const name =
-        character.nome ||
-        "Avventuriero";
-
-
-    // --------------------------------------------------------
-    // NOME
-    // --------------------------------------------------------
-
-    const nameHeader =
-        document.getElementById(
-            "character-name"
-        );
-
-
-    const namePanel =
-        document.getElementById(
-            "character-name-panel"
-        );
-
-
-    if (nameHeader) {
-
-        nameHeader.textContent =
-            name;
-
-    }
-
-
-    if (namePanel) {
-
-        namePanel.textContent =
-            name;
-
-    }
-
-
-    // --------------------------------------------------------
-    // LIVELLO
-    // --------------------------------------------------------
-
-    const level =
-        Number(
-            character.livello
-        ) || 1;
-
-
-    const levelElement =
-        document.getElementById(
-            "character-level"
-        );
-
-
-    if (levelElement) {
-
-        levelElement.textContent =
-            level;
-
-    }
-
-
-    // --------------------------------------------------------
-    // TOKEN NELLA SCHEDA
-    // --------------------------------------------------------
-
-    const tokenImage =
-        document.getElementById(
-            "character-token"
-        );
-
-
-    if (tokenImage) {
-
-        const tokenFile =
-            character.token ||
-            "token_1.png";
-
-
-        tokenImage.src =
-            "immagini/token/" +
-            tokenFile;
-
-
-        tokenImage.alt =
-            "Token di " +
-            name;
-
-    }
-
-
-    // --------------------------------------------------------
-    // ATTRIBUTI EFFETTIVI
-    // --------------------------------------------------------
+function getDungeonCalculatedStats() {
 
     const forza =
         getDungeonEffectiveAttribute(
@@ -736,134 +596,190 @@ function updateCharacterPanel() {
         );
 
 
+    return {
+
+        forza,
+        resistenza,
+        costituzione,
+        intelligenza,
+        destrezza,
+        fortuna,
+
+        attack:
+            Math.ceil(
+                forza / 2
+            )
+            +
+            (
+                Number(
+                    equipmentBonuses.attack_bonus
+                ) || 0
+            ),
+
+        defense:
+            Math.ceil(
+                7 +
+                resistenza / 2
+            )
+            +
+            (
+                Number(
+                    equipmentBonuses.defense_bonus
+                ) || 0
+            ),
+
+        maxHealth:
+            Math.ceil(
+                5 *
+                costituzione / 2
+            ),
+
+        maxMana:
+            Math.ceil(
+                5 *
+                intelligenza / 2
+            ),
+
+        movement:
+            Math.ceil(
+                4 +
+                destrezza / 2
+            ),
+
+        critical:
+            Math.round(
+                fortuna *
+                (
+                    50 / 30
+                )
+                *
+                100
+            )
+            /
+            100
+
+    };
+
+}
+
+
+// ============================================================
+// PANNELLO PERSONAGGIO
+// ============================================================
+
+function updateCharacterPanel() {
+
+    if (!character) {
+
+        return;
+
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const name =
+        character.nome ||
+        "Avventuriero";
+
+
+    setText(
+        "character-name",
+        name
+    );
+
+
+    setText(
+        "character-name-panel",
+        name
+    );
+
+
+    setText(
+        "character-level",
+        Number(
+            character.livello
+        ) || 1
+    );
+
+
     // --------------------------------------------------------
-    // MOSTRA ATTRIBUTI EFFETTIVI
+    // RITRATTO LATERALE
+    // --------------------------------------------------------
+
+    const portrait =
+        document.getElementById(
+            "character-token"
+        );
+
+
+    if (portrait) {
+
+        portrait.src =
+            "immagini/token/" +
+            (
+                character.token ||
+                "token_1.png"
+            );
+
+
+        portrait.alt =
+            `Token di ${name}`;
+
+    }
+
+
+    // --------------------------------------------------------
+    // ATTRIBUTI
     // --------------------------------------------------------
 
     setText(
         "forza-display",
-        forza
+        stats.forza
     );
 
 
     setText(
         "resistenza-display",
-        resistenza
+        stats.resistenza
     );
 
 
     setText(
         "costituzione-display",
-        costituzione
+        stats.costituzione
     );
 
 
     setText(
         "intelligenza-display",
-        intelligenza
+        stats.intelligenza
     );
 
 
     setText(
         "destrezza-display",
-        destrezza
+        stats.destrezza
     );
 
 
     setText(
         "fortuna-display",
-        fortuna
+        stats.fortuna
     );
 
 
     // --------------------------------------------------------
-    // STATISTICHE SECONDARIE
-    // --------------------------------------------------------
-
-    const attack =
-        Math.ceil(
-            forza / 2
-        )
-        +
-        (
-            Number(
-                equipmentBonuses.attack_bonus
-            ) || 0
-        );
-
-
-    const defense =
-        Math.ceil(
-            7 +
-            (
-                resistenza / 2
-            )
-        )
-        +
-        (
-            Number(
-                equipmentBonuses.defense_bonus
-            ) || 0
-        );
-
-
-    const health =
-        Math.ceil(
-            5 *
-            (
-                costituzione / 2
-            )
-        );
-
-
-    const mana =
-        Math.ceil(
-            5 *
-            (
-                intelligenza / 2
-            )
-        );
-
-
-    const movement =
-        Math.ceil(
-            4 +
-            (
-                destrezza / 2
-            )
-        );
-
-
-    const critical =
-        (
-            fortuna *
-            (
-                50 / 30
-            )
-        ).toFixed(
-            2
-        );
-
-
-    // --------------------------------------------------------
-    // PF ATTUALI
-    //
-    // L'equipaggiamento modifica il MASSIMO.
-    // Non cura automaticamente il personaggio.
-    //
-    // Esempio:
-    //
-    // prima 3/3
-    // +2 COS
-    // dopo  3/8
-    //
+    // PF / PM ATTUALI
     // --------------------------------------------------------
 
     const currentPF =
         character.current_hp === null ||
         character.current_hp === undefined
 
-            ? health
+            ? stats.maxHealth
 
             : Math.max(
                 0,
@@ -871,23 +787,16 @@ function updateCharacterPanel() {
                     Number(
                         character.current_hp
                     ),
-                    health
+                    stats.maxHealth
                 )
             );
 
-
-    // --------------------------------------------------------
-    // PM ATTUALI
-    //
-    // Stessa logica dei PF.
-    //
-    // --------------------------------------------------------
 
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
 
-            ? mana
+            ? stats.maxMana
 
             : Math.max(
                 0,
@@ -895,49 +804,52 @@ function updateCharacterPanel() {
                     Number(
                         character.current_pm
                     ),
-                    mana
+                    stats.maxMana
                 )
             );
 
 
     // --------------------------------------------------------
-    // MOSTRA STATISTICHE
+    // SECONDARIE
     // --------------------------------------------------------
 
     setText(
         "attack-display",
-        attack
+        stats.attack
     );
 
 
     setText(
         "defense-display",
-        defense
+        stats.defense
     );
 
 
     setText(
         "health-display",
-        `${currentPF}/${health}`
+        `${currentPF}/${stats.maxHealth}`
     );
 
 
     setText(
         "mana-display",
-        `${currentPM}/${mana}`
+        `${currentPM}/${stats.maxMana}`
     );
 
 
     setText(
         "movement-display",
-        movement
+        stats.movement
     );
 
 
     setText(
         "critical-display",
-        `${critical}%`
+        `${stats.critical.toFixed(2)}%`
     );
+
+
+    updateDungeonActionAvailability();
 
 }
 
@@ -968,19 +880,10 @@ function setText(
 
 
 // ============================================================
-// INIZIALIZZAZIONE GIOCATORE
+// POSIZIONE INIZIALE
 // ============================================================
 
 async function initializePlayer() {
-
-    console.log(
-        "Controllo posizione del personaggio..."
-    );
-
-
-    // --------------------------------------------------------
-    // POSIZIONE GIÀ SALVATA
-    // --------------------------------------------------------
 
     if (
         character.dungeon_x !== null &&
@@ -1007,19 +910,10 @@ async function initializePlayer() {
         );
 
 
-        setMessage(
-            "Usa WASD o le frecce per muoverti."
-        );
-
-
         return;
 
     }
 
-
-    // --------------------------------------------------------
-    // PRIMO INGRESSO
-    // --------------------------------------------------------
 
     playerX =
         INITIAL_PLAYER_X;
@@ -1027,6 +921,20 @@ async function initializePlayer() {
 
     playerY =
         INITIAL_PLAYER_Y;
+
+
+    character.dungeon_x =
+        playerX;
+
+
+    character.dungeon_y =
+        playerY;
+
+
+    showToken(
+        playerX,
+        playerY
+    );
 
 
     const {
@@ -1055,767 +963,11 @@ async function initializePlayer() {
 
     }
 
-
-    character.dungeon_x =
-        playerX;
-
-
-    character.dungeon_y =
-        playerY;
-
-
-    showToken(
-        playerX,
-        playerY
-    );
-
-
-    setMessage(
-        "Usa WASD o le frecce per muoverti."
-    );
-
 }
 
 
 // ============================================================
-// REALTIME MULTIPLAYER
-// ============================================================
-
-async function setupRealtimeMultiplayer() {
-
-    console.log(
-        "Avvio multiplayer..."
-    );
-
-
-    if (
-        !character ||
-        !currentUser
-    ) {
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------------
-    // CREAZIONE CANALE
-    // --------------------------------------------------------
-
-    dungeonChannel =
-        db.channel(
-            DUNGEON_CHANNEL_NAME,
-            {
-
-                config: {
-
-                    presence: {
-
-                        key:
-                            character.id
-
-                    }
-
-                }
-
-            }
-        );
-
-
-    // ========================================================
-    // PRESENCE SYNC
-    // ========================================================
-
-    dungeonChannel.on(
-        "presence",
-        {
-            event: "sync"
-        },
-        () => {
-
-            console.log(
-                "Presence sincronizzata."
-            );
-
-
-            syncOnlinePlayers();
-
-
-            // Quando entra un nuovo giocatore,
-            // tutti gli utenti già presenti
-            // reinviano la loro posizione corrente.
-
-            broadcastMyState();
-
-        }
-    );
-
-
-    // ========================================================
-    // PRESENCE JOIN
-    // ========================================================
-
-    dungeonChannel.on(
-        "presence",
-        {
-            event: "join"
-        },
-        ({
-            newPresences
-        }) => {
-
-            console.log(
-                "Nuovo giocatore:",
-                newPresences
-            );
-
-        }
-    );
-
-
-    // ========================================================
-    // PRESENCE LEAVE
-    // ========================================================
-
-    dungeonChannel.on(
-        "presence",
-        {
-            event: "leave"
-        },
-        ({
-            leftPresences
-        }) => {
-
-            console.log(
-                "Giocatore uscito:",
-                leftPresences
-            );
-
-        }
-    );
-
-
-    // ========================================================
-    // MOVIMENTO DEGLI ALTRI GIOCATORI
-    // ========================================================
-
-    dungeonChannel.on(
-        "broadcast",
-        {
-            event: "player-move"
-        },
-        message => {
-
-            const data =
-                message.payload;
-
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            // Ignora il nostro stesso movimento.
-
-            if (
-                data.character_id ===
-                character.id
-            ) {
-
-                return;
-
-            }
-
-
-            updateRemotePlayer(
-                data
-            );
-
-        }
-    );
-        // ========================================================
-    // CHAT DEL PIANO
-    // ========================================================
-
-    dungeonChannel.on(
-        "broadcast",
-        {
-            event: "floor-chat"
-        },
-        message => {
-
-            const data =
-                message.payload;
-
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            addFloorChatMessage(
-                data
-            );
-
-        }
-    );
-
-
-    // ========================================================
-    // SOTTOSCRIZIONE
-    // ========================================================
-
-    await new Promise(
-        (
-            resolve,
-            reject
-        ) => {
-
-            dungeonChannel.subscribe(
-                async status => {
-
-                    console.log(
-                        "Stato canale:",
-                        status
-                    );
-
-
-                    if (
-                        status ===
-                        "SUBSCRIBED"
-                    ) {
-
-                        realtimeReady =
-                            true;
-
-
-                        try {
-
-                            await dungeonChannel.track({
-
-                                character_id:
-                                    character.id,
-
-                                user_id:
-                                    currentUser.id,
-
-                                name:
-                                    character.nome,
-
-                                token:
-                                    character.token,
-
-                                x:
-                                    playerX,
-
-                                y:
-                                    playerY,
-
-                                online_at:
-                                    new Date()
-                                        .toISOString()
-
-                            });
-
-
-                            console.log(
-                                "Presence registrata."
-                            );
-
-
-                            resolve();
-
-
-                        } catch (error) {
-
-                            reject(
-                                error
-                            );
-
-                        }
-
-                    }
-
-
-                    if (
-                        status ===
-                        "CHANNEL_ERROR"
-                    ) {
-
-                        reject(
-                            new Error(
-                                "Errore nel canale realtime."
-                            )
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-    syncOnlinePlayers();
-
-}
-
-
-// ============================================================
-// SINCRONIZZA GIOCATORI ONLINE
-// ============================================================
-
-function syncOnlinePlayers() {
-
-    if (!dungeonChannel) {
-
-        return;
-
-    }
-
-
-    const state =
-        dungeonChannel.presenceState();
-
-
-    const onlineIds =
-        new Set();
-
-
-    Object.values(
-        state
-    ).forEach(
-        presences => {
-
-            presences.forEach(
-                presence => {
-
-                    const id =
-                        presence.character_id;
-
-
-                    if (!id) {
-
-                        return;
-
-                    }
-
-
-                    if (
-                        id ===
-                        character.id
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    onlineIds.add(
-                        id
-                    );
-
-
-                    updateRemotePlayer(
-                        presence
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    // --------------------------------------------------------
-    // RIMUOVE GIOCATORI NON PIÙ ONLINE
-    // --------------------------------------------------------
-
-    for (
-        const [
-            id,
-            token
-        ]
-        of otherPlayerTokens
-    ) {
-
-        if (
-            !onlineIds.has(
-                id
-            )
-        ) {
-
-            token.remove();
-
-
-            otherPlayerTokens.delete(
-                id
-            );
-
-
-            otherPlayers.delete(
-                id
-            );
-
-        }
-
-    }
-
-}
-
-
-// ============================================================
-// AGGIORNA GIOCATORE REMOTO
-// ============================================================
-
-function updateRemotePlayer(
-    data
-) {
-
-    if (
-        !data ||
-        !data.character_id
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        data.character_id ===
-        character.id
-    ) {
-
-        return;
-
-    }
-
-
-    const x =
-        Number(
-            data.x
-        );
-
-
-    const y =
-        Number(
-            data.y
-        );
-
-
-    if (
-        !Number.isFinite(x) ||
-        !Number.isFinite(y)
-    ) {
-
-        return;
-
-    }
-
-
-    otherPlayers.set(
-        data.character_id,
-        {
-
-            character_id:
-                data.character_id,
-
-            name:
-                data.name ||
-                "Avventuriero",
-
-            token:
-                data.token ||
-                "token_1.png",
-
-            x:
-                x,
-
-            y:
-                y
-
-        }
-    );
-
-
-    showOtherPlayerToken(
-        data.character_id
-    );
-
-}
-
-
-// ============================================================
-// MOSTRA TOKEN ALTRO GIOCATORE
-// ============================================================
-
-function showOtherPlayerToken(
-    characterId
-) {
-
-    const map =
-        document.getElementById(
-            "dungeon-map"
-        );
-
-
-    if (!map) {
-
-        return;
-
-    }
-
-
-    const player =
-        otherPlayers.get(
-            characterId
-        );
-
-
-    if (!player) {
-
-        return;
-
-    }
-
-
-    let token =
-        otherPlayerTokens.get(
-            characterId
-        );
-
-
-    if (!token) {
-
-        token =
-            document.createElement(
-                "div"
-            );
-
-
-        token.className =
-            "dungeon-player-token other-player-token";
-
-
-        token.dataset.characterId =
-            characterId;
-
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-
-        image.alt =
-            player.name;
-
-
-        token.appendChild(
-            image
-        );
-
-
-        const label =
-            document.createElement(
-                "div"
-            );
-
-
-        label.className =
-            "other-player-name";
-
-
-        token.appendChild(
-            label
-        );
-
-
-        map.appendChild(
-            token
-        );
-
-
-        otherPlayerTokens.set(
-            characterId,
-            token
-        );
-
-    }
-
-
-    const image =
-        token.querySelector(
-            "img"
-        );
-
-
-    const label =
-        token.querySelector(
-            ".other-player-name"
-        );
-
-
-    if (image) {
-
-        image.src =
-            "immagini/token/" +
-            (
-                player.token ||
-                "token_1.png"
-            );
-
-
-        image.alt =
-            player.name;
-
-    }
-
-
-    if (label) {
-
-        label.textContent =
-            player.name;
-
-    }
-
-
-    positionTokenElement(
-        token,
-        player.x,
-        player.y
-    );
-
-}
-
-
-// ============================================================
-// INVIA IL PROPRIO STATO
-// ============================================================
-
-async function broadcastMyState() {
-
-    if (
-        !dungeonChannel ||
-        !realtimeReady ||
-        !character
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        await dungeonChannel.send({
-
-            type:
-                "broadcast",
-
-            event:
-                "player-move",
-
-            payload: {
-
-                character_id:
-                    character.id,
-
-                name:
-                    character.nome,
-
-                token:
-                    character.token,
-
-                x:
-                    playerX,
-
-                y:
-                    playerY
-
-            }
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore broadcast posizione:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// AGGIORNA PRESENCE PERSONALE
-// ============================================================
-
-async function updateMyPresence() {
-
-    if (
-        !dungeonChannel ||
-        !realtimeReady ||
-        !character
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        await dungeonChannel.track({
-
-            character_id:
-                character.id,
-
-            user_id:
-                currentUser.id,
-
-            name:
-                character.nome,
-
-            token:
-                character.token,
-
-            x:
-                playerX,
-
-            y:
-                playerY,
-
-            online_at:
-                new Date()
-                    .toISOString()
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore aggiornamento presence:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// MOSTRA TOKEN PERSONALE
+// TOKEN PERSONALE
 // ============================================================
 
 function showToken(
@@ -1846,6 +998,10 @@ function showToken(
 
         tokenElement.className =
             "dungeon-player-token";
+
+
+        tokenElement.dataset.characterId =
+            character.id;
 
 
         const image =
@@ -1918,6 +1074,16 @@ function positionTokenElement(
         map.getBoundingClientRect();
 
 
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
     const cellWidth =
         rect.width /
         MAP_COLUMNS;
@@ -1928,26 +1094,23 @@ function positionTokenElement(
         MAP_ROWS;
 
 
+    // Il token occupa il 90% della casella.
+    // È totalmente indipendente dal ritratto laterale.
+
     const tokenSize =
-    Math.min(
-        cellWidth,
-        cellHeight
-    );
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) *
+        0.90;
 
-element.style.width =
-    `${tokenSize}px`;
 
-element.style.height =
-    `${tokenSize}px`;
+    element.style.width =
+        `${tokenSize}px`;
 
-const tokenImage =
-    element.querySelector("img");
 
-if (tokenImage) {
-    tokenImage.style.width = "100%";
-    tokenImage.style.height = "100%";
-    tokenImage.style.objectFit = "contain";
-}
+    element.style.height =
+        `${tokenSize}px`;
 
 
     element.style.left =
@@ -1979,7 +1142,7 @@ if (tokenImage) {
 
 
 // ============================================================
-// RIPOSIZIONA TUTTI I TOKEN
+// RIPOSIZIONA TOKEN
 // ============================================================
 
 function repositionAllTokens() {
@@ -2008,21 +1171,25 @@ function repositionAllTokens() {
                 );
 
 
-            if (!token) {
+            if (token) {
 
-                return;
+                positionTokenElement(
+                    token,
+                    player.x,
+                    player.y
+                );
 
             }
 
-
-            positionTokenElement(
-                token,
-                player.x,
-                player.y
-            );
-
         }
     );
+
+
+    if (healModeActive) {
+
+        renderHealRange();
+
+    }
 
 }
 
@@ -2053,14 +1220,11 @@ function setupMovement() {
 
     document.addEventListener(
         "keydown",
-        async event => {
+        event => {
 
             const target =
                 event.target;
 
-
-            // Non intercettare i tasti mentre
-            // si scrive nelle note/chat/input.
 
             if (
                 target instanceof HTMLInputElement ||
@@ -2068,13 +1232,6 @@ function setupMovement() {
                 target instanceof HTMLSelectElement ||
                 target?.isContentEditable
             ) {
-
-                return;
-
-            }
-
-
-            if (event.repeat) {
 
                 return;
 
@@ -2131,7 +1288,18 @@ function setupMovement() {
             event.preventDefault();
 
 
-            await movePlayer(
+            // Evitiamo l'autorepeat del sistema operativo.
+            // Le pressioni reali successive vengono comunque
+            // accodate normalmente.
+
+            if (event.repeat) {
+
+                return;
+
+            }
+
+
+            queueMovement(
                 dx,
                 dy
             );
@@ -2141,7 +1309,7 @@ function setupMovement() {
 
 
     // --------------------------------------------------------
-    // CLICK SULLA MAPPA
+    // CLICK MAPPA
     // --------------------------------------------------------
 
     const map =
@@ -2159,10 +1327,19 @@ function setupMovement() {
 
     map.addEventListener(
         "click",
-        async event => {
+        event => {
+
+            // Se Cura è attiva, il click sulla mappa
+            // non deve causare movimento.
+
+            if (healModeActive) {
+
+                return;
+
+            }
+
 
             if (
-                movementLocked ||
                 playerX === null ||
                 playerY === null
             ) {
@@ -2218,24 +1395,21 @@ function setupMovement() {
                 playerY;
 
 
-            // Solo movimento ortogonale
-            // di una singola casella.
+            // Movimento normale solo ortogonale.
 
-            const isAdjacent =
-                (
-                    Math.abs(dx) +
-                    Math.abs(dy)
-                ) === 1;
-
-
-            if (!isAdjacent) {
+            if (
+                Math.abs(dx) +
+                Math.abs(dy)
+                !==
+                1
+            ) {
 
                 return;
 
             }
 
 
-            await movePlayer(
+            queueMovement(
                 dx,
                 dy
             );
@@ -2247,21 +1421,124 @@ function setupMovement() {
 
 
 // ============================================================
-// MUOVI GIOCATORE
+// ACCODA MOVIMENTO
 // ============================================================
 
-async function movePlayer(
+function queueMovement(
     dx,
     dy
 ) {
 
     if (
-        movementLocked ||
         !character ||
-        !dungeonData
+        !dungeonData ||
+        eventLocked
     ) {
 
         return;
+
+    }
+
+
+    // Impediamo che una raffica di input crei
+    // una coda enorme.
+
+    if (
+        movementQueue.length >= 8
+    ) {
+
+        return;
+
+    }
+
+
+    movementQueue.push({
+        dx,
+        dy
+    });
+
+
+    processMovementQueue();
+
+}
+
+
+// ============================================================
+// ESEGUE CODA MOVIMENTI
+// ============================================================
+
+async function processMovementQueue() {
+
+    if (movementQueueRunning) {
+
+        return;
+
+    }
+
+
+    movementQueueRunning =
+        true;
+
+
+    try {
+
+        while (
+            movementQueue.length > 0
+        ) {
+
+            if (eventLocked) {
+
+                break;
+
+            }
+
+
+            const movement =
+                movementQueue.shift();
+
+
+            await performMovement(
+                movement.dx,
+                movement.dy
+            );
+
+
+            // Piccolissima pausa grafica.
+            // Non dipende dalla risposta di Supabase.
+
+            await wait(
+                55
+            );
+
+        }
+
+
+    } finally {
+
+        movementQueueRunning =
+            false;
+
+    }
+
+}
+
+
+// ============================================================
+// ESEGUE UN PASSO
+// ============================================================
+
+async function performMovement(
+    dx,
+    dy
+) {
+
+    if (
+        !character ||
+        !dungeonData ||
+        eventLocked
+    ) {
+
+        return false;
 
     }
 
@@ -2277,7 +1554,7 @@ async function movePlayer(
 
 
     // --------------------------------------------------------
-    // LIMITI MAPPA
+    // CONFINI
     // --------------------------------------------------------
 
     if (
@@ -2292,13 +1569,13 @@ async function movePlayer(
         );
 
 
-        return;
+        return false;
 
     }
 
 
     // --------------------------------------------------------
-    // CONTROLLO MURO
+    // MURO
     // --------------------------------------------------------
 
     if (
@@ -2313,46 +1590,151 @@ async function movePlayer(
         );
 
 
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // IL TOKEN SI MUOVE SUBITO
+    // --------------------------------------------------------
+
+    playerX =
+        newX;
+
+
+    playerY =
+        newY;
+
+
+    character.dungeon_x =
+        playerX;
+
+
+    character.dungeon_y =
+        playerY;
+
+
+    showToken(
+        playerX,
+        playerY
+    );
+
+
+    // --------------------------------------------------------
+    // REALTIME SENZA BLOCCARE IL MOVIMENTO
+    // --------------------------------------------------------
+
+    broadcastMyState();
+
+    updateMyPresence();
+
+
+    // --------------------------------------------------------
+    // SALVATAGGIO DATABASE DEBOUNCED
+    // --------------------------------------------------------
+
+    schedulePositionSave();
+
+
+    // --------------------------------------------------------
+    // EVENTO CASELLA
+    // --------------------------------------------------------
+
+    const hasEvent =
+        await checkDungeonCellEvent();
+
+
+    if (!hasEvent) {
+
+        setMessage(
+            "Ti muovi nel dungeon."
+        );
+
+    }
+
+
+    return true;
+
+}
+
+
+// ============================================================
+// SALVATAGGIO POSIZIONE
+// ============================================================
+
+function schedulePositionSave() {
+
+    positionSavePending =
+        true;
+
+
+    if (positionSaveTimer) {
+
+        clearTimeout(
+            positionSaveTimer
+        );
+
+    }
+
+
+    positionSaveTimer =
+        setTimeout(
+            () => {
+
+                flushPositionSave();
+
+            },
+            120
+        );
+
+}
+
+
+// ============================================================
+// SALVA ULTIMA POSIZIONE
+// ============================================================
+
+async function flushPositionSave() {
+
+    if (
+        !character ||
+        playerX === null ||
+        playerY === null
+    ) {
+
         return;
 
     }
 
 
-    movementLocked =
+    if (positionSaveRunning) {
+
+        positionSavePending =
+            true;
+
+        return;
+
+    }
+
+
+    positionSaveRunning =
         true;
 
 
+    positionSavePending =
+        false;
+
+
+    const saveX =
+        playerX;
+
+
+    const saveY =
+        playerY;
+
+
     try {
-
-        const oldX =
-            playerX;
-
-
-        const oldY =
-            playerY;
-
-
-        playerX =
-            newX;
-
-
-        playerY =
-            newY;
-
-
-        // ----------------------------------------------------
-        // AGGIORNA SUBITO TOKEN
-        // ----------------------------------------------------
-
-        showToken(
-            playerX,
-            playerY
-        );
-
-
-        // ----------------------------------------------------
-        // SALVA POSIZIONE
-        // ----------------------------------------------------
 
         const {
             error
@@ -2362,10 +1744,10 @@ async function movePlayer(
                 .update({
 
                     dungeon_x:
-                        playerX,
+                        saveX,
 
                     dungeon_y:
-                        playerY
+                        saveY
 
                 })
                 .eq(
@@ -2376,81 +1758,63 @@ async function movePlayer(
 
         if (error) {
 
-            // Ripristina posizione precedente
-            // in caso di errore database.
-
-            playerX =
-                oldX;
-
-
-            playerY =
-                oldY;
-
-
-            showToken(
-                playerX,
-                playerY
-            );
-
-
             throw error;
 
         }
 
 
-        character.dungeon_x =
-            playerX;
-
-
-        character.dungeon_y =
-            playerY;
-
-
-        // ----------------------------------------------------
-        // PRESENCE
-        // ----------------------------------------------------
-
-        await updateMyPresence();
-
-
-        // ----------------------------------------------------
-        // BROADCAST
-        // ----------------------------------------------------
-
-        await broadcastMyState();
-
-
-        // ----------------------------------------------------
-        // EVENTUALE EVENTO DELLA CASELLA
-        // ----------------------------------------------------
-
-        await checkDungeonCellEvent();
-
-
-        setMessage(
-            "Ti muovi nel dungeon."
-        );
-
-
     } catch (error) {
 
         console.error(
-            "Errore movimento:",
+            "Errore salvataggio posizione:",
             error
         );
 
 
         setMessage(
-            "Errore durante il movimento."
+            "Movimento effettuato, ma c'è stato un problema nel salvataggio."
         );
 
 
     } finally {
 
-        movementLocked =
+        positionSaveRunning =
             false;
 
+
+        // Se mentre stavamo salvando il PG si è
+        // mosso ancora, salviamo l'ultima posizione.
+
+        if (
+            positionSavePending ||
+            saveX !== playerX ||
+            saveY !== playerY
+        ) {
+
+            flushPositionSave();
+
+        }
+
     }
+
+}
+
+
+// ============================================================
+// ATTESA
+// ============================================================
+
+function wait(
+    milliseconds
+) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                milliseconds
+            )
+    );
 
 }
 
@@ -2486,8 +1850,7 @@ function canMoveTo(
 
     if (
         jsonY < 0 ||
-        jsonY >=
-            dungeonData.cells.length
+        jsonY >= dungeonData.cells.length
     ) {
 
         return false;
@@ -2497,10 +1860,7 @@ function canMoveTo(
 
     if (
         jsonX < 0 ||
-        jsonX >=
-            dungeonData.cells[
-                jsonY
-            ].length
+        jsonX >= dungeonData.cells[jsonY].length
     ) {
 
         return false;
@@ -2516,10 +1876,6 @@ function canMoveTo(
         ];
 
 
-    // --------------------------------------------------------
-    // SUPPORTO A PIÙ FORMATI DEL JSON
-    // --------------------------------------------------------
-
     if (
         cell === null ||
         cell === undefined
@@ -2531,8 +1887,7 @@ function canMoveTo(
 
 
     if (
-        typeof cell ===
-        "number"
+        typeof cell === "number"
     ) {
 
         return cell !== 0;
@@ -2541,8 +1896,7 @@ function canMoveTo(
 
 
     if (
-        typeof cell ===
-        "string"
+        typeof cell === "string"
     ) {
 
         const value =
@@ -2563,13 +1917,11 @@ function canMoveTo(
 
 
     if (
-        typeof cell ===
-        "object"
+        typeof cell === "object"
     ) {
 
         if (
-            cell.walkable !==
-            undefined
+            cell.walkable !== undefined
         ) {
 
             return !!cell.walkable;
@@ -2578,8 +1930,7 @@ function canMoveTo(
 
 
         if (
-            cell.blocked !==
-            undefined
+            cell.blocked !== undefined
         ) {
 
             return !cell.blocked;
@@ -2587,9 +1938,7 @@ function canMoveTo(
         }
 
 
-        if (
-            cell.type
-        ) {
+        if (cell.type) {
 
             const type =
                 String(
@@ -2617,21 +1966,2321 @@ function canMoveTo(
     return false;
 
 }
+// ============================================================
+// REALTIME MULTIPLAYER
+// ============================================================
+
+async function setupRealtimeMultiplayer() {
+
+    if (
+        !character ||
+        !currentUser
+    ) {
+        return;
+    }
+
+
+    dungeonChannel =
+        db.channel(
+            DUNGEON_CHANNEL_NAME,
+            {
+                config: {
+                    presence: {
+                        key: character.id
+                    }
+                }
+            }
+        );
+
+
+    // ========================================================
+    // PRESENCE SYNC
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "sync"
+        },
+        () => {
+
+            syncOnlinePlayers();
+
+            broadcastMyState();
+
+        }
+    );
+
+
+    // ========================================================
+    // MOVIMENTO ALTRI GIOCATORI
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "player-move"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+                return;
+            }
+
+
+            if (
+                data.character_id ===
+                character.id
+            ) {
+                return;
+            }
+
+
+            updateRemotePlayer(
+                data
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // CHAT
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "floor-chat"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+                return;
+            }
+
+
+            addFloorChatMessage(
+                data
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // CURA REMOTA
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event: "player-healed"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+                return;
+            }
+
+
+            // Se siamo noi il bersaglio,
+            // aggiorniamo immediatamente i PF.
+
+            if (
+                data.target_character_id ===
+                character.id
+            ) {
+
+                character.current_hp =
+                    Number(
+                        data.new_hp
+                    );
+
+
+                updateCharacterPanel();
+
+
+                setMessage(
+                    `${data.caster_name || "Un alleato"} ti ha curato di ${data.healed_amount} PF.`
+                );
+
+            }
+
+        }
+    );
+
+
+    // ========================================================
+    // SOTTOSCRIZIONE
+    // ========================================================
+
+    await new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            dungeonChannel.subscribe(
+                async status => {
+
+                    console.log(
+                        "Realtime:",
+                        status
+                    );
+
+
+                    if (
+                        status ===
+                        "SUBSCRIBED"
+                    ) {
+
+                        realtimeReady =
+                            true;
+
+
+                        try {
+
+                            await dungeonChannel.track(
+                                getMyPresenceData()
+                            );
+
+
+                            resolve();
+
+
+                        } catch (error) {
+
+                            reject(
+                                error
+                            );
+
+                        }
+
+                    }
+
+
+                    if (
+                        status ===
+                        "CHANNEL_ERROR"
+                    ) {
+
+                        reject(
+                            new Error(
+                                "Errore nel canale realtime."
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    syncOnlinePlayers();
+
+}
 
 
 // ============================================================
-// OTTIENI CASELLA JSON CORRENTE
+// DATI PRESENCE PERSONALE
+// ============================================================
+
+function getMyPresenceData() {
+
+    return {
+
+        character_id:
+            character.id,
+
+        user_id:
+            currentUser.id,
+
+        name:
+            character.nome ||
+            "Avventuriero",
+
+        token:
+            character.token ||
+            "token_1.png",
+
+        x:
+            playerX,
+
+        y:
+            playerY,
+
+        current_hp:
+            character.current_hp,
+
+        online_at:
+            new Date()
+                .toISOString()
+
+    };
+
+}
+
+
+// ============================================================
+// AGGIORNA PRESENCE
+// ============================================================
+
+async function updateMyPresence() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady ||
+        !character
+    ) {
+        return;
+    }
+
+
+    try {
+
+        await dungeonChannel.track(
+            getMyPresenceData()
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento Presence:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BROADCAST POSIZIONE
+// ============================================================
+
+async function broadcastMyState() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady ||
+        !character
+    ) {
+        return;
+    }
+
+
+    try {
+
+        await dungeonChannel.send({
+
+            type:
+                "broadcast",
+
+            event:
+                "player-move",
+
+            payload: {
+
+                character_id:
+                    character.id,
+
+                name:
+                    character.nome ||
+                    "Avventuriero",
+
+                token:
+                    character.token ||
+                    "token_1.png",
+
+                x:
+                    playerX,
+
+                y:
+                    playerY,
+
+                current_hp:
+                    character.current_hp
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore broadcast posizione:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// SINCRONIZZA GIOCATORI ONLINE
+// ============================================================
+
+function syncOnlinePlayers() {
+
+    if (!dungeonChannel) {
+        return;
+    }
+
+
+    const state =
+        dungeonChannel.presenceState();
+
+
+    const onlineIds =
+        new Set();
+
+
+    Object.values(
+        state
+    ).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    const id =
+                        presence.character_id;
+
+
+                    if (!id) {
+                        return;
+                    }
+
+
+                    if (
+                        id ===
+                        character.id
+                    ) {
+                        return;
+                    }
+
+
+                    onlineIds.add(
+                        id
+                    );
+
+
+                    updateRemotePlayer(
+                        presence
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // ========================================================
+    // RIMUOVE TOKEN DEI GIOCATORI USCITI
+    // ========================================================
+
+    for (
+        const [
+            id,
+            token
+        ]
+        of otherPlayerTokens
+    ) {
+
+        if (
+            !onlineIds.has(
+                id
+            )
+        ) {
+
+            token.remove();
+
+
+            otherPlayerTokens.delete(
+                id
+            );
+
+
+            otherPlayers.delete(
+                id
+            );
+
+        }
+
+    }
+
+
+    // Se Cura è attiva, aggiorniamo
+    // immediatamente i bersagli disponibili.
+
+    if (healModeActive) {
+
+        renderHealRange();
+
+        updateHealTargets();
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA GIOCATORE REMOTO
+// ============================================================
+
+function updateRemotePlayer(
+    data
+) {
+
+    if (
+        !data ||
+        !data.character_id
+    ) {
+        return;
+    }
+
+
+    if (
+        data.character_id ===
+        character.id
+    ) {
+        return;
+    }
+
+
+    const x =
+        Number(
+            data.x
+        );
+
+
+    const y =
+        Number(
+            data.y
+        );
+
+
+    if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y)
+    ) {
+        return;
+    }
+
+
+    const oldData =
+        otherPlayers.get(
+            data.character_id
+        ) || {};
+
+
+    otherPlayers.set(
+        data.character_id,
+        {
+
+            ...oldData,
+
+            character_id:
+                data.character_id,
+
+            name:
+                data.name ||
+                oldData.name ||
+                "Avventuriero",
+
+            token:
+                data.token ||
+                oldData.token ||
+                "token_1.png",
+
+            x:
+                x,
+
+            y:
+                y,
+
+            current_hp:
+                data.current_hp !== undefined
+                    ? data.current_hp
+                    : oldData.current_hp
+
+        }
+    );
+
+
+    showOtherPlayerToken(
+        data.character_id
+    );
+
+
+    if (healModeActive) {
+
+        updateHealTargets();
+
+    }
+
+}
+
+
+// ============================================================
+// TOKEN ALTRO GIOCATORE
+// ============================================================
+
+function showOtherPlayerToken(
+    characterId
+) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+        return;
+    }
+
+
+    const player =
+        otherPlayers.get(
+            characterId
+        );
+
+
+    if (!player) {
+        return;
+    }
+
+
+    let token =
+        otherPlayerTokens.get(
+            characterId
+        );
+
+
+    if (!token) {
+
+        token =
+            document.createElement(
+                "div"
+            );
+
+
+        token.className =
+            "dungeon-player-token other-player-token";
+
+
+        token.dataset.characterId =
+            characterId;
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+
+        token.appendChild(
+            image
+        );
+
+
+        const label =
+            document.createElement(
+                "div"
+            );
+
+
+        label.className =
+            "other-player-name";
+
+
+        token.appendChild(
+            label
+        );
+
+
+        // Cura tramite click sul token.
+
+        token.addEventListener(
+            "click",
+            async event => {
+
+                if (!healModeActive) {
+                    return;
+                }
+
+
+                event.stopPropagation();
+
+
+                await castHealOnCharacter(
+                    characterId
+                );
+
+            }
+        );
+
+
+        map.appendChild(
+            token
+        );
+
+
+        otherPlayerTokens.set(
+            characterId,
+            token
+        );
+
+    }
+
+
+    const image =
+        token.querySelector(
+            "img"
+        );
+
+
+    const label =
+        token.querySelector(
+            ".other-player-name"
+        );
+
+
+    if (image) {
+
+        image.src =
+            "immagini/token/" +
+            (
+                player.token ||
+                "token_1.png"
+            );
+
+
+        image.alt =
+            player.name;
+
+    }
+
+
+    if (label) {
+
+        label.textContent =
+            player.name;
+
+    }
+
+
+    positionTokenElement(
+        token,
+        player.x,
+        player.y
+    );
+
+}
+
+
+// ============================================================
+// AZIONI DUNGEON
+// ============================================================
+
+function setupDungeonActions() {
+
+    const healButton =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+
+    const healthPotionButton =
+        document.getElementById(
+            "dungeon-health-potion-button"
+        );
+
+
+    const manaPotionButton =
+        document.getElementById(
+            "dungeon-mana-potion-button"
+        );
+
+
+    // ========================================================
+    // CURA
+    // ========================================================
+
+    if (healButton) {
+
+        healButton.addEventListener(
+            "click",
+            () => {
+
+                if (healModeActive) {
+
+                    deactivateHealMode();
+
+                } else {
+
+                    activateHealMode();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // ========================================================
+    // POZIONE VITA
+    // ========================================================
+
+    if (healthPotionButton) {
+
+        healthPotionButton.addEventListener(
+            "click",
+            async () => {
+
+                if (
+                    healthPotionButton.disabled
+                ) {
+                    return;
+                }
+
+
+                deactivateHealMode();
+
+
+                await useDungeonPotion(
+                    "health"
+                );
+
+            }
+        );
+
+    }
+
+
+    // ========================================================
+    // POZIONE MANA
+    // ========================================================
+
+    if (manaPotionButton) {
+
+        manaPotionButton.addEventListener(
+            "click",
+            async () => {
+
+                if (
+                    manaPotionButton.disabled
+                ) {
+                    return;
+                }
+
+
+                deactivateHealMode();
+
+
+                await useDungeonPotion(
+                    "mana"
+                );
+
+            }
+        );
+
+    }
+
+
+    // ========================================================
+    // CURA SU SE STESSI
+    // ========================================================
+
+    if (tokenElement) {
+
+        tokenElement.addEventListener(
+            "click",
+            async event => {
+
+                if (!healModeActive) {
+                    return;
+                }
+
+
+                event.stopPropagation();
+
+
+                await castHealOnSelf();
+
+            }
+        );
+
+    }
+
+
+    updateDungeonActionAvailability();
+
+}
+
+
+// ============================================================
+// DISPONIBILITÀ AZIONI
+// ============================================================
+
+function updateDungeonActionAvailability() {
+
+    if (!character) {
+        return;
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const currentPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+
+            ? stats.maxHealth
+
+            : Number(
+                character.current_hp
+            );
+
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+
+    const healButton =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+
+    if (healButton) {
+
+        // Cura costa 2 PM.
+
+        healButton.disabled =
+            currentPM < 2;
+
+    }
+
+
+    const healthPotion =
+        findDungeonPotion(
+            "health"
+        );
+
+
+    const manaPotion =
+        findDungeonPotion(
+            "mana"
+        );
+
+
+    const healthButton =
+        document.getElementById(
+            "dungeon-health-potion-button"
+        );
+
+
+    const manaButton =
+        document.getElementById(
+            "dungeon-mana-potion-button"
+        );
+
+
+    if (healthButton) {
+
+        healthButton.disabled =
+            !healthPotion ||
+            currentPF >= stats.maxHealth;
+
+    }
+
+
+    if (manaButton) {
+
+        manaButton.disabled =
+            !manaPotion ||
+            currentPM >= stats.maxMana;
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA NUMERO CONSUMABILI
+// ============================================================
+
+function updateDungeonConsumables() {
+
+    const healthPotion =
+        findDungeonPotion(
+            "health"
+        );
+
+
+    const manaPotion =
+        findDungeonPotion(
+            "mana"
+        );
+
+
+    setText(
+        "dungeon-health-potion-count",
+        `x${
+            healthPotion
+                ? Number(
+                    healthPotion.quantity
+                ) || 0
+                : 0
+        }`
+    );
+
+
+    setText(
+        "dungeon-mana-potion-count",
+        `x${
+            manaPotion
+                ? Number(
+                    manaPotion.quantity
+                ) || 0
+                : 0
+        }`
+    );
+
+
+    updateDungeonActionAvailability();
+
+}
+
+
+// ============================================================
+// TROVA POZIONE
+// ============================================================
+//
+// Non ci affidiamo al nome esatto della pozione.
+// Usiamo heal_pf / heal_pm.
+//
+// ============================================================
+
+function findDungeonPotion(
+    type
+) {
+
+    return characterInventory.find(
+        entry => {
+
+            if (
+                !entry.item ||
+                Number(
+                    entry.quantity
+                ) <= 0
+            ) {
+                return false;
+            }
+
+
+            if (
+                type ===
+                "health"
+            ) {
+
+                return (
+                    Number(
+                        entry.item.heal_pf
+                    ) || 0
+                ) > 0;
+
+            }
+
+
+            if (
+                type ===
+                "mana"
+            ) {
+
+                return (
+                    Number(
+                        entry.item.heal_pm
+                    ) || 0
+                ) > 0;
+
+            }
+
+
+            return false;
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// USA POZIONE NEL DUNGEON
+// ============================================================
+
+async function useDungeonPotion(
+    type
+) {
+
+    const potion =
+        findDungeonPotion(
+            type
+        );
+
+
+    if (!potion) {
+
+        setMessage(
+            type === "health"
+                ? "Non hai Pozioni di Vita."
+                : "Non hai Pozioni di Mana."
+        );
+
+
+        return;
+
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const oldPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+
+            ? stats.maxHealth
+
+            : Number(
+                character.current_hp
+            );
+
+
+    const oldPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+
+    let newPF =
+        oldPF;
+
+
+    let newPM =
+        oldPM;
+
+
+    if (
+        type ===
+        "health"
+    ) {
+
+        if (
+            oldPF >=
+            stats.maxHealth
+        ) {
+
+            setMessage(
+                "Hai già tutti i PF."
+            );
+
+            return;
+
+        }
+
+
+        newPF =
+            Math.min(
+                stats.maxHealth,
+                oldPF +
+                (
+                    Number(
+                        potion.item.heal_pf
+                    ) || 0
+                )
+            );
+
+    }
+
+
+    if (
+        type ===
+        "mana"
+    ) {
+
+        if (
+            oldPM >=
+            stats.maxMana
+        ) {
+
+            setMessage(
+                "Hai già tutti i PM."
+            );
+
+            return;
+
+        }
+
+
+        newPM =
+            Math.min(
+                stats.maxMana,
+                oldPM +
+                (
+                    Number(
+                        potion.item.heal_pm
+                    ) || 0
+                )
+            );
+
+    }
+
+
+    try {
+
+        // ----------------------------------------------------
+        // Usiamo l'RPC già esistente del progetto.
+        // L'RPC gestisce la diminuzione della quantità.
+        // ----------------------------------------------------
+
+        const {
+            error: rpcError
+        } =
+            await db.rpc(
+                "use_inventory_item",
+                {
+                    p_inventory_id:
+                        potion.id
+                }
+            );
+
+
+        if (rpcError) {
+
+            throw rpcError;
+
+        }
+
+
+        // ----------------------------------------------------
+        // Aggiorniamo PF / PM.
+        // ----------------------------------------------------
+
+        const updateData = {};
+
+
+        if (
+            type ===
+            "health"
+        ) {
+
+            updateData.current_hp =
+                newPF;
+
+        } else {
+
+            updateData.current_pm =
+                newPM;
+
+        }
+
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update(
+                    updateData
+                )
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (
+            type ===
+            "health"
+        ) {
+
+            character.current_hp =
+                newPF;
+
+        } else {
+
+            character.current_pm =
+                newPM;
+
+        }
+
+
+        await loadCharacterEquipment();
+
+
+        updateCharacterPanel();
+
+        updateMyPresence();
+
+
+        if (
+            type ===
+            "health"
+        ) {
+
+            setMessage(
+                `Bevi una Pozione di Vita e recuperi ${newPF - oldPF} PF.`
+            );
+
+        } else {
+
+            setMessage(
+                `Bevi una Pozione di Mana e recuperi ${newPM - oldPM} PM.`
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore utilizzo pozione:",
+            error
+        );
+
+
+        setMessage(
+            "Non è stato possibile utilizzare la pozione."
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// ATTIVA MODALITÀ CURA
+// ============================================================
+
+function activateHealMode() {
+
+    if (!character) {
+        return;
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+
+    if (
+        currentPM < 2
+    ) {
+
+        setMessage(
+            "Non hai abbastanza PM per usare Cura."
+        );
+
+        return;
+
+    }
+
+
+    healModeActive =
+        true;
+
+
+    movementQueue.length =
+        0;
+
+
+    const button =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+
+    if (button) {
+
+        button.classList.add(
+            "active"
+        );
+
+    }
+
+
+    renderHealRange();
+
+    updateHealTargets();
+
+
+    setMessage(
+        "CURA: scegli te stesso o un alleato in una delle 8 caselle adiacenti."
+    );
+
+}
+
+
+// ============================================================
+// DISATTIVA MODALITÀ CURA
+// ============================================================
+
+function deactivateHealMode() {
+
+    healModeActive =
+        false;
+
+
+    const button =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+
+    if (button) {
+
+        button.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    clearHealRange();
+
+    clearHealTargets();
+
+
+    setMessage(
+        "Usa WASD, le frecce o clicca una casella adiacente."
+    );
+
+}
+
+
+// ============================================================
+// DISEGNA AREA CURA 3x3
+// ============================================================
+//
+// La casella del PG è inclusa.
+//
+// x-1,y-1   x,y-1   x+1,y-1
+// x-1,y     PG      x+1,y
+// x-1,y+1   x,y+1   x+1,y+1
+//
+// ============================================================
+
+function renderHealRange() {
+
+    clearHealRange();
+
+
+    if (
+        !healModeActive ||
+        playerX === null ||
+        playerY === null
+    ) {
+        return;
+    }
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+        return;
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+
+    const cellWidth =
+        rect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        MAP_ROWS;
+
+
+    for (
+        let dy = -1;
+        dy <= 1;
+        dy++
+    ) {
+
+        for (
+            let dx = -1;
+            dx <= 1;
+            dx++
+        ) {
+
+            const x =
+                playerX +
+                dx;
+
+
+            const y =
+                playerY +
+                dy;
+
+
+            if (
+                x < 0 ||
+                y < 0 ||
+                x >= MAP_COLUMNS ||
+                y >= MAP_ROWS
+            ) {
+                continue;
+            }
+
+
+            const element =
+                document.createElement(
+                    "div"
+                );
+
+
+            element.className =
+                "dungeon-heal-range-cell";
+
+
+            element.style.left =
+                `${x * cellWidth}px`;
+
+
+            element.style.top =
+                `${y * cellHeight}px`;
+
+
+            element.style.width =
+                `${cellWidth}px`;
+
+
+            element.style.height =
+                `${cellHeight}px`;
+
+
+            map.appendChild(
+                element
+            );
+
+
+            healRangeElements.push(
+                element
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CANCELLA AREA CURA
+// ============================================================
+
+function clearHealRange() {
+
+    healRangeElements.forEach(
+        element => {
+
+            element.remove();
+
+        }
+    );
+
+
+    healRangeElements =
+        [];
+
+}
+
+
+// ============================================================
+// È NEL RAGGIO DI CURA?
+// ============================================================
+
+function isInHealRange(
+    x,
+    y
+) {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+        return false;
+    }
+
+
+    const dx =
+        Math.abs(
+            Number(x) -
+            playerX
+        );
+
+
+    const dy =
+        Math.abs(
+            Number(y) -
+            playerY
+        );
+
+
+    // Distanza Chebyshev 1:
+    // comprende ortogonali e diagonali.
+
+    return (
+        dx <= 1 &&
+        dy <= 1
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA BERSAGLI CURA
+// ============================================================
+
+function updateHealTargets() {
+
+    clearHealTargets();
+
+
+    if (!healModeActive) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // SE STESSI
+    // --------------------------------------------------------
+
+    if (tokenElement) {
+
+        tokenElement.classList.add(
+            "heal-target"
+        );
+
+
+        tokenElement.style.pointerEvents =
+            "auto";
+
+    }
+
+
+    // --------------------------------------------------------
+    // ALTRI PG
+    // --------------------------------------------------------
+
+    otherPlayers.forEach(
+        player => {
+
+            if (
+                !isInHealRange(
+                    player.x,
+                    player.y
+                )
+            ) {
+                return;
+            }
+
+
+            const token =
+                otherPlayerTokens.get(
+                    player.character_id
+                );
+
+
+            if (!token) {
+                return;
+            }
+
+
+            token.classList.add(
+                "heal-target"
+            );
+
+
+            token.style.pointerEvents =
+                "auto";
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// PULISCE BERSAGLI CURA
+// ============================================================
+
+function clearHealTargets() {
+
+    if (tokenElement) {
+
+        tokenElement.classList.remove(
+            "heal-target"
+        );
+
+
+        tokenElement.style.pointerEvents =
+            "";
+
+    }
+
+
+    otherPlayerTokens.forEach(
+        token => {
+
+            token.classList.remove(
+                "heal-target"
+            );
+
+
+            token.style.pointerEvents =
+                "";
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// CURA SE STESSI
+// ============================================================
+
+async function castHealOnSelf() {
+
+    if (!healModeActive) {
+        return;
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const currentPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+
+            ? stats.maxHealth
+
+            : Number(
+                character.current_hp
+            );
+
+
+    if (
+        currentPF >=
+        stats.maxHealth
+    ) {
+
+        setMessage(
+            "Hai già tutti i PF."
+        );
+
+        return;
+
+    }
+
+
+    await executeHeal(
+        character.id,
+        character.nome ||
+        "Avventuriero",
+        currentPF,
+        stats.maxHealth,
+        true
+    );
+
+}
+
+
+// ============================================================
+// CURA ALTRO PERSONAGGIO
+// ============================================================
+
+async function castHealOnCharacter(
+    targetCharacterId
+) {
+
+    if (!healModeActive) {
+        return;
+    }
+
+
+    const target =
+        otherPlayers.get(
+            targetCharacterId
+        );
+
+
+    if (!target) {
+
+        setMessage(
+            "Il bersaglio non è più disponibile."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !isInHealRange(
+            target.x,
+            target.y
+        )
+    ) {
+
+        setMessage(
+            "Il bersaglio è fuori dal raggio di Cura."
+        );
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // LEGGIAMO IL PG DAL DATABASE
+    //
+    // Non ci fidiamo dei PF presenti nella Presence:
+    // per una cura multiplayer vogliamo il dato attuale.
+    // --------------------------------------------------------
+
+    try {
+
+        const {
+            data: targetCharacter,
+            error
+        } =
+            await db
+                .from("characters")
+                .select(`
+                    id,
+                    nome,
+                    current_hp,
+                    costituzione
+                `)
+                .eq(
+                    "id",
+                    targetCharacterId
+                )
+                .maybeSingle();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (!targetCharacter) {
+
+            setMessage(
+                "Il bersaglio non è più disponibile."
+            );
+
+            return;
+
+        }
+
+
+        // Per il bersaglio remoto il massimo PF preciso
+        // può dipendere dall'equipaggiamento.
+        // Recuperiamo quindi anche il suo equipaggiamento.
+
+        const {
+            data: targetInventory,
+            error: inventoryError
+        } =
+            await db
+                .from("character_inventory")
+                .select(`
+                    equipped_slot,
+
+                    item:items (
+                        costituzione_bonus
+                    )
+                `)
+                .eq(
+                    "character_id",
+                    targetCharacterId
+                )
+                .not(
+                    "equipped_slot",
+                    "is",
+                    null
+                );
+
+
+        if (inventoryError) {
+
+            throw inventoryError;
+
+        }
+
+
+        let constitutionBonus =
+            0;
+
+
+        (
+            targetInventory ||
+            []
+        ).forEach(
+            entry => {
+
+                constitutionBonus +=
+                    Number(
+                        entry.item?.costituzione_bonus
+                    ) || 0;
+
+            }
+        );
+
+
+        const effectiveConstitution =
+            Math.max(
+                1,
+                Math.min(
+                    30,
+                    (
+                        Number(
+                            targetCharacter.costituzione
+                        ) || 1
+                    )
+                    +
+                    constitutionBonus
+                )
+            );
+
+
+        const targetMaxHealth =
+            Math.ceil(
+                5 *
+                effectiveConstitution /
+                2
+            );
+
+
+        const targetCurrentHealth =
+            targetCharacter.current_hp === null ||
+            targetCharacter.current_hp === undefined
+
+                ? targetMaxHealth
+
+                : Number(
+                    targetCharacter.current_hp
+                );
+
+
+        if (
+            targetCurrentHealth >=
+            targetMaxHealth
+        ) {
+
+            setMessage(
+                `${targetCharacter.nome || "Il bersaglio"} ha già tutti i PF.`
+            );
+
+            return;
+
+        }
+
+
+        await executeHeal(
+            targetCharacterId,
+            targetCharacter.nome ||
+            target.name ||
+            "Alleato",
+            targetCurrentHealth,
+            targetMaxHealth,
+            false
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore lettura bersaglio Cura:",
+            error
+        );
+
+
+        setMessage(
+            "Non è stato possibile curare il bersaglio."
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// ESEGUE CURA
+// ============================================================
+
+async function executeHeal(
+    targetCharacterId,
+    targetName,
+    targetCurrentHealth,
+    targetMaxHealth,
+    selfTarget
+) {
+
+    if (!character) {
+        return;
+    }
+
+
+    const stats =
+        getDungeonCalculatedStats();
+
+
+    const currentMana =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+
+    if (
+        currentMana < 2
+    ) {
+
+        setMessage(
+            "Non hai abbastanza PM per usare Cura."
+        );
+
+
+        deactivateHealMode();
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // FORMULA UFFICIALE
+    //
+    // Cura = INT effettiva + Livello
+    // ========================================================
+
+    const level =
+        Number(
+            character.livello
+        ) || 1;
+
+
+    const healAmount =
+        stats.intelligenza +
+        level;
+
+
+    const newHealth =
+        Math.min(
+            targetMaxHealth,
+            targetCurrentHealth +
+            healAmount
+        );
+
+
+    const actualHeal =
+        newHealth -
+        targetCurrentHealth;
+
+
+    if (
+        actualHeal <= 0
+    ) {
+
+        setMessage(
+            `${targetName} ha già tutti i PF.`
+        );
+
+        return;
+
+    }
+
+
+    // Blocchiamo soltanto l'evento Cura,
+    // non per il normale movimento.
+
+    eventLocked =
+        true;
+
+
+    movementQueue.length =
+        0;
+
+
+    try {
+
+        // ----------------------------------------------------
+        // 1. AGGIORNA BERSAGLIO
+        // ----------------------------------------------------
+
+        const {
+            error: healError
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    current_hp:
+                        newHealth
+
+                })
+                .eq(
+                    "id",
+                    targetCharacterId
+                );
+
+
+        if (healError) {
+
+            throw healError;
+
+        }
+
+
+        // ----------------------------------------------------
+        // 2. SPENDE 2 PM
+        // ----------------------------------------------------
+
+        const newMana =
+            Math.max(
+                0,
+                currentMana - 2
+            );
+
+
+        const {
+            error: manaError
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    current_pm:
+                        newMana
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (manaError) {
+
+            throw manaError;
+
+        }
+
+
+        character.current_pm =
+            newMana;
+
+
+        // ----------------------------------------------------
+        // SE ABBIAMO CURATO NOI STESSI
+        // ----------------------------------------------------
+
+        if (selfTarget) {
+
+            character.current_hp =
+                newHealth;
+
+        }
+
+
+        updateCharacterPanel();
+
+
+        // ----------------------------------------------------
+        // BROADCAST CURA
+        // ----------------------------------------------------
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            dungeonChannel.send({
+
+                type:
+                    "broadcast",
+
+                event:
+                    "player-healed",
+
+                payload: {
+
+                    caster_character_id:
+                        character.id,
+
+                    caster_name:
+                        character.nome ||
+                        "Avventuriero",
+
+                    target_character_id:
+                        targetCharacterId,
+
+                    target_name:
+                        targetName,
+
+                    healed_amount:
+                        actualHeal,
+
+                    new_hp:
+                        newHealth
+
+                }
+
+            });
+
+        }
+
+
+        updateMyPresence();
+
+
+        if (selfTarget) {
+
+            setMessage(
+                `Usi Cura su te stesso e recuperi ${actualHeal} PF.`
+            );
+
+        } else {
+
+            setMessage(
+                `Curi ${targetName} di ${actualHeal} PF.`
+            );
+
+        }
+
+
+        deactivateHealMode();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore Cura:",
+            error
+        );
+
+
+        setMessage(
+            "Non è stato possibile completare Cura."
+        );
+
+
+    } finally {
+
+        eventLocked =
+            false;
+
+    }
+
+}
+// ============================================================
+// OTTIENI CASELLA CORRENTE
 // ============================================================
 
 function getCurrentDungeonCell() {
 
     if (
         !dungeonData ||
-        !dungeonData.cells
+        !dungeonData.cells ||
+        playerX === null ||
+        playerY === null
     ) {
-
         return null;
-
     }
 
 
@@ -2647,25 +4296,17 @@ function getCurrentDungeonCell() {
 
     if (
         jsonY < 0 ||
-        jsonY >=
-            dungeonData.cells.length
+        jsonY >= dungeonData.cells.length
     ) {
-
         return null;
-
     }
 
 
     if (
         jsonX < 0 ||
-        jsonX >=
-            dungeonData.cells[
-                jsonY
-            ].length
+        jsonX >= dungeonData.cells[jsonY].length
     ) {
-
         return null;
-
     }
 
 
@@ -2679,7 +4320,12 @@ function getCurrentDungeonCell() {
 
 
 // ============================================================
-// CONTROLLO EVENTI DELLA CASELLA
+// CONTROLLO EVENTO CASELLA
+// ============================================================
+//
+// Restituisce TRUE se è stato gestito un evento.
+// Restituisce FALSE se la casella non contiene eventi.
+//
 // ============================================================
 
 async function checkDungeonCellEvent() {
@@ -2690,18 +4336,11 @@ async function checkDungeonCellEvent() {
 
     if (
         !cell ||
-        typeof cell !==
-            "object"
+        typeof cell !== "object"
     ) {
-
-        return;
-
+        return false;
     }
 
-
-    // --------------------------------------------------------
-    // SUPPORTO GENERICO EVENTO
-    // --------------------------------------------------------
 
     const eventType =
         cell.event ||
@@ -2711,9 +4350,7 @@ async function checkDungeonCellEvent() {
 
 
     if (!eventType) {
-
-        return;
-
+        return false;
     }
 
 
@@ -2723,15 +4360,13 @@ async function checkDungeonCellEvent() {
         ).toLowerCase();
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // TRAPPOLA
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
-        normalizedEvent ===
-            "trap" ||
-        normalizedEvent ===
-            "trappola"
+        normalizedEvent === "trap" ||
+        normalizedEvent === "trappola"
     ) {
 
         await triggerTrapEvent(
@@ -2739,15 +4374,18 @@ async function checkDungeonCellEvent() {
         );
 
 
-        return;
+        return true;
 
     }
+
+
+    return false;
 
 }
 
 
 // ============================================================
-// EVENTO TRAPPOLA
+// TRAPPOLA
 // ============================================================
 
 async function triggerTrapEvent(
@@ -2755,39 +4393,43 @@ async function triggerTrapEvent(
 ) {
 
     if (!character) {
-
         return;
-
     }
 
 
-    // --------------------------------------------------------
-    // FORTUNA EFFETTIVA
-    // --------------------------------------------------------
-
-    const fortuna =
-        getDungeonEffectiveAttribute(
-            "fortuna"
-        );
+    eventLocked =
+        true;
 
 
-    // --------------------------------------------------------
-    // STATISTICA DIFENSIVA
-    //
-    // Se il JSON non specifica niente,
-    // usiamo RES come fallback.
-    // --------------------------------------------------------
+    // Interrompiamo eventuali passi già accodati.
+    // In questo modo il PG non continua a correre
+    // mentre sta risolvendo una trappola.
 
-    const defenseStatName =
-        String(
-            dungeonEvent.defenseStat ||
-            dungeonEvent.defense_stat ||
-            "resistenza"
-        ).toLowerCase();
+    movementQueue.length =
+        0;
 
 
-    const supportedStats =
-        [
+    try {
+
+        // ====================================================
+        // ATTRIBUTI EFFETTIVI
+        // ====================================================
+
+        const fortuna =
+            getDungeonEffectiveAttribute(
+                "fortuna"
+            );
+
+
+        const requestedDefenseStat =
+            String(
+                dungeonEvent.defenseStat ||
+                dungeonEvent.defense_stat ||
+                "resistenza"
+            ).toLowerCase();
+
+
+        const supportedStats = [
             "forza",
             "resistenza",
             "costituzione",
@@ -2797,231 +4439,225 @@ async function triggerTrapEvent(
         ];
 
 
-    const safeDefenseStat =
-        supportedStats.includes(
-            defenseStatName
-        )
-
-            ? defenseStatName
-
-            : "resistenza";
+        const defenseStat =
+            supportedStats.includes(
+                requestedDefenseStat
+            )
+                ? requestedDefenseStat
+                : "resistenza";
 
 
-    const defenseValue =
-        getDungeonEffectiveAttribute(
-            safeDefenseStat
+        const defenseValue =
+            getDungeonEffectiveAttribute(
+                defenseStat
+            );
+
+
+        // ====================================================
+        // DIFFICOLTÀ
+        // ====================================================
+
+        const difficulty =
+            Number(
+                dungeonEvent.difficulty ||
+                dungeonEvent.dc
+            ) || 10;
+
+
+        // ====================================================
+        // TIRO
+        // ====================================================
+
+        const roll =
+            Math.floor(
+                Math.random() * 20
+            ) + 1;
+
+
+        const fortuneBonus =
+            Math.floor(
+                fortuna / 5
+            );
+
+
+        const total =
+            roll +
+            defenseValue +
+            fortuneBonus;
+
+
+        console.log(
+            "TRAPPOLA",
+            {
+                roll,
+                defenseStat,
+                defenseValue,
+                fortuna,
+                fortuneBonus,
+                total,
+                difficulty
+            }
         );
 
 
-    // --------------------------------------------------------
-    // DIFFICOLTÀ
-    // --------------------------------------------------------
+        // ====================================================
+        // TRAPPOLA EVITATA
+        // ====================================================
 
-    const difficulty =
-        Number(
-            dungeonEvent.difficulty ||
-            dungeonEvent.dc
-        ) || 10;
-
-
-    // --------------------------------------------------------
-    // TIRO
-    // --------------------------------------------------------
-
-    const roll =
-        Math.floor(
-            Math.random() *
-            20
-        ) + 1;
-
-
-    // Piccolo contributo della fortuna.
-
-    const fortuneBonus =
-        Math.floor(
-            fortuna / 5
-        );
-
-
-    const total =
-        roll +
-        defenseValue +
-        fortuneBonus;
-
-
-    console.log(
-        "TRAPPOLA:",
-        {
-            roll,
-            defenseStat:
-                safeDefenseStat,
-            defenseValue,
-            fortuna,
-            fortuneBonus,
-            total,
+        if (
+            total >=
             difficulty
+        ) {
+
+            setMessage(
+                dungeonEvent.success_message ||
+                dungeonEvent.successMessage ||
+                "Riesci a evitare la trappola."
+            );
+
+
+            return;
+
         }
-    );
 
 
-    // --------------------------------------------------------
-    // SUPERATA
-    // --------------------------------------------------------
+        // ====================================================
+        // DANNO
+        // ====================================================
 
-    if (
-        total >=
-        difficulty
-    ) {
+        const baseDamage =
+            Number(
+                dungeonEvent.damage
+            ) || 1;
+
+
+        const costituzione =
+            getDungeonEffectiveAttribute(
+                "costituzione"
+            );
+
+
+        const constitutionReduction =
+            Math.floor(
+                costituzione / 10
+            );
+
+
+        const damage =
+            Math.max(
+                1,
+                baseDamage -
+                constitutionReduction
+            );
+
+
+        const stats =
+            getDungeonCalculatedStats();
+
+
+        const oldHealth =
+            character.current_hp === null ||
+            character.current_hp === undefined
+
+                ? stats.maxHealth
+
+                : Math.max(
+                    0,
+                    Math.min(
+                        Number(
+                            character.current_hp
+                        ),
+                        stats.maxHealth
+                    )
+                );
+
+
+        const newHealth =
+            Math.max(
+                0,
+                oldHealth -
+                damage
+            );
+
+
+        // ====================================================
+        // SALVA PF
+        // ====================================================
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+                    current_hp:
+                        newHealth
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        character.current_hp =
+            newHealth;
+
+
+        updateCharacterPanel();
+
+        updateMyPresence();
+
 
         setMessage(
-            dungeonEvent.success_message ||
-            dungeonEvent.successMessage ||
-            "Riesci a evitare la trappola."
+            dungeonEvent.fail_message ||
+            dungeonEvent.failMessage ||
+            `La trappola ti colpisce: perdi ${damage} PF.`
         );
 
 
-        return;
+        // ====================================================
+        // MORTE
+        // ====================================================
 
-    }
+        if (
+            newHealth <= 0
+        ) {
 
+            await handleCharacterDeath();
 
-    // --------------------------------------------------------
-    // DANNO
-    // --------------------------------------------------------
-
-    const baseDamage =
-        Number(
-            dungeonEvent.damage
-        ) || 1;
+        }
 
 
-    const costituzione =
-        getDungeonEffectiveAttribute(
-            "costituzione"
-        );
-
-
-    // Per ora manteniamo la logica
-    // del sistema dungeon:
-    // il danno minimo è sempre 1.
-
-    const constitutionReduction =
-        Math.floor(
-            costituzione / 10
-        );
-
-
-    const damage =
-        Math.max(
-            1,
-            baseDamage -
-            constitutionReduction
-        );
-
-
-    const maxHealth =
-        Math.ceil(
-            5 *
-            (
-                costituzione / 2
-            )
-        );
-
-
-    const oldHealth =
-        character.current_hp ===
-            null
-        ||
-        character.current_hp ===
-            undefined
-
-            ? maxHealth
-
-            : Math.max(
-                0,
-                Math.min(
-                    Number(
-                        character.current_hp
-                    ),
-                    maxHealth
-                )
-            );
-
-
-    const newHealth =
-        Math.max(
-            0,
-            oldHealth -
-            damage
-        );
-
-
-    // --------------------------------------------------------
-    // SALVA PF
-    // --------------------------------------------------------
-
-    const {
-        error
-    } =
-        await db
-            .from("characters")
-            .update({
-
-                current_hp:
-                    newHealth
-
-            })
-            .eq(
-                "id",
-                character.id
-            );
-
-
-    if (error) {
+    } catch (error) {
 
         console.error(
-            "Errore aggiornamento PF:",
+            "Errore trappola:",
             error
         );
 
 
-        return;
-
-    }
-
-
-    character.current_hp =
-        newHealth;
+        setMessage(
+            "Errore durante la risoluzione della trappola."
+        );
 
 
-    // Aggiorna tutta la scheda,
-    // così resta PF attuali / PF massimi.
+    } finally {
 
-    updateCharacterPanel();
-
-
-    setMessage(
-        dungeonEvent.fail_message ||
-        dungeonEvent.failMessage ||
-        `La trappola ti colpisce: perdi ${damage} PF.`
-    );
-
-
-    // --------------------------------------------------------
-    // MORTE
-    // --------------------------------------------------------
-
-    if (
-        newHealth <= 0
-    ) {
-
-        await handleCharacterDeath();
+        eventLocked =
+            false;
 
     }
 
 }
+
+
 // ============================================================
-// MORTE DEL PERSONAGGIO
+// MORTE
 // ============================================================
 
 async function handleCharacterDeath() {
@@ -3030,19 +4666,16 @@ async function handleCharacterDeath() {
         !character ||
         !character.id
     ) {
-
         return;
-
     }
 
 
-    console.log(
-        "Il personaggio è morto."
-    );
-
-
-    movementLocked =
+    eventLocked =
         true;
+
+
+    movementQueue.length =
+        0;
 
 
     setMessage(
@@ -3066,7 +4699,7 @@ async function handleCharacterDeath() {
         } catch (error) {
 
             console.error(
-                "Errore rimozione presence:",
+                "Errore untrack:",
                 error
             );
 
@@ -3094,18 +4727,13 @@ async function handleCharacterDeath() {
 
 
         if (error) {
-
             throw error;
-
         }
 
 
-        character = null;
+        character =
+            null;
 
-
-        // ====================================================
-        // PAGINA MORTE
-        // ====================================================
 
         window.location.href =
             "morte.html";
@@ -3120,7 +4748,7 @@ async function handleCharacterDeath() {
 
 
         showError(
-            "Errore durante la gestione della morte del personaggio."
+            "Errore durante la gestione della morte."
         );
 
     }
@@ -3129,37 +4757,20 @@ async function handleCharacterDeath() {
 
 
 // ============================================================
-// NOTE PERSONAGGIO
+// NOTE
 // ============================================================
 
 function setupNotes() {
 
-    const notesElement =
+    const notes =
         document.getElementById(
             "character-notes"
         );
 
 
-    const saveButton =
+    const button =
         document.getElementById(
             "save-notes-button"
-        );
-
-
-    // Supporto anche agli eventuali ID
-    // utilizzati nelle versioni precedenti dell'HTML.
-
-    const notes =
-        notesElement ||
-        document.getElementById(
-            "notes"
-        );
-
-
-    const button =
-        saveButton ||
-        document.getElementById(
-            "save-notes"
         );
 
 
@@ -3168,9 +4779,7 @@ function setupNotes() {
         !button ||
         !character
     ) {
-
         return;
-
     }
 
 
@@ -3207,10 +4816,8 @@ function setupNotes() {
                     await db
                         .from("characters")
                         .update({
-
                             notes:
                                 newNotes
-
                         })
                         .eq(
                             "id",
@@ -3219,9 +4826,7 @@ function setupNotes() {
 
 
                 if (error) {
-
                     throw error;
-
                 }
 
 
@@ -3270,7 +4875,7 @@ function setupNotes() {
 
 
 // ============================================================
-// CHAT DEL PIANO
+// CHAT
 // ============================================================
 
 function setupFloorChat() {
@@ -3278,20 +4883,12 @@ function setupFloorChat() {
     const input =
         document.getElementById(
             "floor-chat-input"
-        )
-        ||
-        document.getElementById(
-            "chat-input"
         );
 
 
     const button =
         document.getElementById(
             "floor-chat-send"
-        )
-        ||
-        document.getElementById(
-            "chat-send"
         );
 
 
@@ -3299,15 +4896,9 @@ function setupFloorChat() {
         !input ||
         !button
     ) {
-
         return;
-
     }
 
-
-    // ========================================================
-    // INVIO CON PULSANTE
-    // ========================================================
 
     button.addEventListener(
         "click",
@@ -3321,30 +4912,21 @@ function setupFloorChat() {
     );
 
 
-    // ========================================================
-    // INVIO CON ENTER
-    // ========================================================
-
     input.addEventListener(
         "keydown",
         async event => {
 
             if (
-                event.key !==
-                "Enter"
+                event.key !== "Enter"
             ) {
-
                 return;
-
             }
 
 
             if (
                 event.shiftKey
             ) {
-
                 return;
-
             }
 
 
@@ -3362,7 +4944,7 @@ function setupFloorChat() {
 
 
 // ============================================================
-// INVIA MESSAGGIO CHAT
+// INVIA CHAT
 // ============================================================
 
 async function sendFloorChatMessage(
@@ -3373,20 +4955,16 @@ async function sendFloorChatMessage(
         !input ||
         !character
     ) {
-
         return;
-
     }
 
 
-    const text =
+    const messageText =
         input.value.trim();
 
 
-    if (!text) {
-
+    if (!messageText) {
         return;
-
     }
 
 
@@ -3400,7 +4978,7 @@ async function sendFloorChatMessage(
             "Avventuriero",
 
         text:
-            text,
+            messageText,
 
         timestamp:
             new Date()
@@ -3409,9 +4987,7 @@ async function sendFloorChatMessage(
     };
 
 
-    // ========================================================
-    // MOSTRA SUBITO IL MESSAGGIO LOCALE
-    // ========================================================
+    // Mostra immediatamente a chi scrive.
 
     addFloorChatMessage(
         message
@@ -3423,7 +4999,7 @@ async function sendFloorChatMessage(
 
 
     // ========================================================
-    // INVIA AGLI ALTRI
+    // BROADCAST
     // ========================================================
 
     if (
@@ -3462,7 +5038,7 @@ async function sendFloorChatMessage(
 
 
 // ============================================================
-// MOSTRA MESSAGGIO CHAT
+// MOSTRA CHAT
 // ============================================================
 
 function addFloorChatMessage(
@@ -3470,31 +5046,23 @@ function addFloorChatMessage(
 ) {
 
     if (!message) {
-
         return;
-
     }
 
 
     const container =
         document.getElementById(
             "floor-chat-messages"
-        )
-        ||
-        document.getElementById(
-            "chat-messages"
         );
 
 
     if (!container) {
-
         return;
-
     }
 
 
     // ========================================================
-    // RIMUOVE PLACEHOLDER
+    // PLACEHOLDER
     // ========================================================
 
     const placeholder =
@@ -3511,7 +5079,7 @@ function addFloorChatMessage(
 
 
     // ========================================================
-    // RIGA
+    // MESSAGGIO
     // ========================================================
 
     const row =
@@ -3527,7 +5095,7 @@ function addFloorChatMessage(
     if (
         character &&
         message.character_id ===
-            character.id
+        character.id
     ) {
 
         row.classList.add(
@@ -3536,10 +5104,6 @@ function addFloorChatMessage(
 
     }
 
-
-    // ========================================================
-    // NOME
-    // ========================================================
 
     const name =
         document.createElement(
@@ -3555,10 +5119,6 @@ function addFloorChatMessage(
         message.name ||
         "Avventuriero";
 
-
-    // ========================================================
-    // TESTO
-    // ========================================================
 
     const text =
         document.createElement(
@@ -3596,7 +5156,199 @@ function addFloorChatMessage(
 
 
 // ============================================================
-// MESSAGGIO DI STATO
+// REFRESH PERSONAGGIO
+// ============================================================
+//
+// IMPORTANTE:
+//
+// Il refresh NON deve mai modificare playerX/playerY.
+//
+// La posizione locale della pedina resta quella gestita
+// dal nuovo sistema di movimento.
+//
+// ============================================================
+
+async function refreshDungeonCharacter() {
+
+    if (
+        !character ||
+        !currentUser ||
+        eventLocked
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const currentCharacterId =
+            character.id;
+
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from("characters")
+                .select("*")
+                .eq(
+                    "id",
+                    currentCharacterId
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                )
+                .maybeSingle();
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        if (!data) {
+            return;
+        }
+
+
+        // ====================================================
+        // CONSERVIAMO POSIZIONE LOCALE
+        // ====================================================
+
+        const localX =
+            playerX;
+
+
+        const localY =
+            playerY;
+
+
+        character =
+            data;
+
+
+        // NON prendiamo dungeon_x / dungeon_y dal refresh.
+        // Potrebbero essere leggermente indietro rispetto
+        // alla posizione visiva attuale.
+
+        character.dungeon_x =
+            localX;
+
+
+        character.dungeon_y =
+            localY;
+
+
+        await loadCharacterEquipment();
+
+
+        updateCharacterPanel();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore refresh personaggio:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// REFRESH PERIODICO
+// ============================================================
+
+function startDungeonCharacterRefresh() {
+
+    stopDungeonCharacterRefresh();
+
+
+    dungeonCharacterRefreshInterval =
+        setInterval(
+            async () => {
+
+                await refreshDungeonCharacter();
+
+            },
+            5000
+        );
+
+}
+
+
+// ============================================================
+// STOP REFRESH
+// ============================================================
+
+function stopDungeonCharacterRefresh() {
+
+    if (
+        !dungeonCharacterRefreshInterval
+    ) {
+        return;
+    }
+
+
+    clearInterval(
+        dungeonCharacterRefreshInterval
+    );
+
+
+    dungeonCharacterRefreshInterval =
+        null;
+
+}
+
+
+// ============================================================
+// VISIBILITÀ PAGINA
+// ============================================================
+
+document.addEventListener(
+    "visibilitychange",
+    async () => {
+
+        if (
+            document.visibilityState !==
+            "visible"
+        ) {
+            return;
+        }
+
+
+        await refreshDungeonCharacter();
+
+
+        repositionAllTokens();
+
+    }
+);
+
+
+// ============================================================
+// FOCUS
+// ============================================================
+
+window.addEventListener(
+    "focus",
+    async () => {
+
+        await refreshDungeonCharacter();
+
+
+        repositionAllTokens();
+
+    }
+);
+
+
+// ============================================================
+// MESSAGGIO
 // ============================================================
 
 function setMessage(
@@ -3606,18 +5358,17 @@ function setMessage(
     const element =
         document.getElementById(
             "dungeon-message"
-        )
-        ||
-        document.getElementById(
-            "message"
         );
 
 
     if (!element) {
-
         return;
-
     }
+
+
+    element.classList.remove(
+        "error"
+    );
 
 
     element.textContent =
@@ -3627,7 +5378,7 @@ function setMessage(
 
 
 // ============================================================
-// MOSTRA ERRORE
+// ERRORE
 // ============================================================
 
 function showError(
@@ -3642,10 +5393,6 @@ function showError(
     const element =
         document.getElementById(
             "dungeon-message"
-        )
-        ||
-        document.getElementById(
-            "message"
         );
 
 
@@ -3673,112 +5420,43 @@ function showError(
 
 
 // ============================================================
-// RIPRISTINA STILE MESSAGGIO
+// SALVATAGGIO PRIMA DI USCIRE
 // ============================================================
 
-function clearMessageError() {
-
-    const element =
-        document.getElementById(
-            "dungeon-message"
-        )
-        ||
-        document.getElementById(
-            "message"
-        );
-
-
-    if (!element) {
-
-        return;
-
-    }
-
-
-    element.classList.remove(
-        "error"
-    );
-
-}
-
-
-// ============================================================
-// AGGIORNA DATI PERSONAGGIO DAL DATABASE
-// ============================================================
-//
-// Utile quando PF / PM vengono modificati da altre pagine,
-// ad esempio:
-//
-// - scheda.html
-// - combat.html
-// - pozioni
-// - abilità
-//
-// ============================================================
-
-async function refreshDungeonCharacter() {
+async function savePositionBeforeExit() {
 
     if (
         !character ||
-        !currentUser
+        playerX === null ||
+        playerY === null
     ) {
-
         return;
-
     }
 
 
     try {
 
-        const {
-            data,
-            error
-        } =
-            await db
-                .from("characters")
-                .select("*")
-                .eq(
-                    "id",
-                    character.id
-                )
-                .eq(
-                    "user_id",
-                    currentUser.id
-                )
-                .maybeSingle();
+        await db
+            .from("characters")
+            .update({
 
+                dungeon_x:
+                    playerX,
 
-        if (error) {
+                dungeon_y:
+                    playerY
 
-            throw error;
-
-        }
-
-
-        if (!data) {
-
-            return;
-
-        }
-
-
-        character =
-            data;
-
-
-        // Ricarichiamo anche l'equipaggiamento:
-        // potrebbe essere cambiato dalla scheda.
-
-        await loadCharacterEquipment();
-
-
-        updateCharacterPanel();
+            })
+            .eq(
+                "id",
+                character.id
+            );
 
 
     } catch (error) {
 
         console.error(
-            "Errore aggiornamento personaggio dungeon:",
+            "Errore salvataggio finale posizione:",
             error
         );
 
@@ -3788,126 +5466,54 @@ async function refreshDungeonCharacter() {
 
 
 // ============================================================
-// AGGIORNAMENTO PERIODICO DELLA SCHEDA
+// PULSANTE ESCI
 // ============================================================
 //
-// Serve soprattutto se il personaggio viene modificato
-// da un'altra scheda/browser mentre dungeon.html resta aperto.
-//
-// ============================================================
-
-let dungeonCharacterRefreshInterval =
-    null;
-
-
-function startDungeonCharacterRefresh() {
-
-    if (
-        dungeonCharacterRefreshInterval
-    ) {
-
-        clearInterval(
-            dungeonCharacterRefreshInterval
-        );
-
-    }
-
-
-    dungeonCharacterRefreshInterval =
-        setInterval(
-            async () => {
-
-                await refreshDungeonCharacter();
-
-            },
-            5000
-        );
-
-}
-
-
-// ============================================================
-// FERMA AGGIORNAMENTO PERIODICO
-// ============================================================
-
-function stopDungeonCharacterRefresh() {
-
-    if (
-        !dungeonCharacterRefreshInterval
-    ) {
-
-        return;
-
-    }
-
-
-    clearInterval(
-        dungeonCharacterRefreshInterval
-    );
-
-
-    dungeonCharacterRefreshInterval =
-        null;
-
-}
-
-
-// ============================================================
-// AVVIA REFRESH AUTOMATICO DOPO IL CARICAMENTO
-// ============================================================
-
-window.addEventListener(
-    "load",
-    () => {
-
-        startDungeonCharacterRefresh();
-
-    }
-);
-
-
-// ============================================================
-// VISIBILITÀ PAGINA
-// ============================================================
-//
-// Quando torniamo sulla scheda dungeon dopo essere stati
-// in un'altra tab, aggiorniamo immediatamente PG ed
-// equipaggiamento.
+// Intercettiamo il pulsante ESCI per tentare di salvare
+// l'ultima posizione prima di cambiare pagina.
 //
 // ============================================================
 
 document.addEventListener(
-    "visibilitychange",
-    async () => {
+    "click",
+    async event => {
 
-        if (
-            document.visibilityState ===
-            "visible"
-        ) {
-
-            await refreshDungeonCharacter();
+        const exitButton =
+            event.target.closest(
+                ".dungeon-exit-button"
+            );
 
 
-            repositionAllTokens();
-
+        if (!exitButton) {
+            return;
         }
 
-    }
-);
+
+        const href =
+            exitButton.getAttribute(
+                "href"
+            );
 
 
-// ============================================================
-// FOCUS FINESTRA
-// ============================================================
-
-window.addEventListener(
-    "focus",
-    async () => {
-
-        await refreshDungeonCharacter();
+        if (!href) {
+            return;
+        }
 
 
-        repositionAllTokens();
+        event.preventDefault();
+
+
+        movementQueue.length =
+            0;
+
+
+        await flushPositionSave();
+
+        await savePositionBeforeExit();
+
+
+        window.location.href =
+            href;
 
     }
 );
@@ -3921,11 +5527,22 @@ window.addEventListener(
     "beforeunload",
     () => {
 
-        // ====================================================
-        // REFRESH PG
-        // ====================================================
-
         stopDungeonCharacterRefresh();
+
+
+        // Se esiste ancora un timer di salvataggio
+        // lo annulliamo.
+
+        if (positionSaveTimer) {
+
+            clearTimeout(
+                positionSaveTimer
+            );
+
+            positionSaveTimer =
+                null;
+
+        }
 
 
         // ====================================================
@@ -3954,12 +5571,10 @@ window.addEventListener(
 
 
         // ====================================================
-        // RIMUOVE CANALE
+        // CANALE
         // ====================================================
 
-        if (
-            dungeonChannel
-        ) {
+        if (dungeonChannel) {
 
             try {
 
