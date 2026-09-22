@@ -63,6 +63,8 @@ let combatRefreshInProgress =
 let combatMoveInProgress =
     false;
 
+let combatMapResizeObserver =
+    null;
 
 let lastCombatEntitiesSnapshot =
     "";
@@ -184,15 +186,17 @@ document.addEventListener(
 
             setupCombatActions();
 
-            renderCombat();
+renderCombat();
 
-            updateCombatMode();
+setupCombatMapResizeObserver();
 
-            setupCombatNotes();
+updateCombatMode();
 
-            updateCombatTurnUI();
+setupCombatNotes();
 
-            startCombatStateLoop();
+updateCombatTurnUI();
+
+startCombatStateLoop();
 
 
         } catch (error) {
@@ -3760,6 +3764,57 @@ document.addEventListener(
     }
 );
 
+// ============================================================
+// OSSERVA RIDIMENSIONAMENTO MAPPA
+// ============================================================
+
+function setupCombatMapResizeObserver() {
+
+    const map =
+        document.getElementById(
+            "combat-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
+
+    if (
+        combatMapResizeObserver
+    ) {
+
+        combatMapResizeObserver.disconnect();
+
+    }
+
+
+    combatMapResizeObserver =
+        new ResizeObserver(
+            () => {
+
+                requestAnimationFrame(
+                    () => {
+
+                        renderCombatTokens();
+
+                        updateTargetSelectionVisuals();
+
+                    }
+                );
+
+            }
+        );
+
+
+    combatMapResizeObserver.observe(
+        map
+    );
+
+}
 
 // ============================================================
 // RESIZE
@@ -3781,11 +3836,23 @@ window.addEventListener(
 // USCITA
 // ============================================================
 
-window.addEventListener(
+wwindow.addEventListener(
     "beforeunload",
     () => {
 
         stopCombatStateLoop();
+
+
+        if (
+            combatMapResizeObserver
+        ) {
+
+            combatMapResizeObserver.disconnect();
+
+            combatMapResizeObserver =
+                null;
+
+        }
 
     }
 );
