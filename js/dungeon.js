@@ -1,9 +1,37 @@
 // ============================================================
-// PALAZZO ETERNO - DUNGEON.JS
-// Multiplayer, chat del piano, note e nebbia di guerra personale
+// PALAZZO ETERNO
+// DUNGEON.JS
+// ============================================================
+//
+// Gestisce:
+//
+// - autenticazione Supabase
+// - caricamento personaggio
+// - caricamento dungeon.json
+// - posizione iniziale
+// - movimento WASD / frecce
+// - movimento tramite click su casella adiacente
+// - controllo muri
+// - salvataggio posizione
+// - token personale
+// - token degli altri giocatori online
+// - Supabase Realtime Presence
+// - Supabase Realtime Broadcast
+// - statistiche del personaggio
+// - BONUS EQUIPAGGIAMENTO
+// - PF / PM con attributi effettivi
+// - caricamento e salvataggio note
+// - chat realtime del piano
+//
 // ============================================================
 
-console.log("DUNGEON.JS MULTIPLAYER + FOG CARICATO");
+
+console.log("DUNGEON.JS MULTIPLAYER + EQUIPAGGIAMENTO CARICATO");
+
+
+// ============================================================
+// SUPABASE
+// ============================================================
 
 const db = supabaseClient;
 
@@ -15,23 +43,37 @@ const db = supabaseClient;
 const MAP_COLUMNS = 23;
 const MAP_ROWS = 23;
 
+
+// Offset corretto JSON -> mappa visibile
+
 const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
 
+
+// ============================================================
+// POSIZIONE INIZIALE
+// ============================================================
+
 const INITIAL_PLAYER_X = 9;
 const INITIAL_PLAYER_Y = 0;
+
+
+// ============================================================
+// MULTIPLAYER
+// ============================================================
 
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
 
 
 // ============================================================
-// STATO GENERALE
+// VARIABILI
 // ============================================================
 
 let dungeonData = null;
 
 let character = null;
+
 let currentUser = null;
 
 let playerX = null;
@@ -41,24 +83,23 @@ let tokenElement = null;
 
 let movementLocked = false;
 
+
+// ============================================================
+// EQUIPAGGIAMENTO / BONUS
+// ============================================================
+
 let characterInventory = [];
 
 let equipmentBonuses = {
 
     attack_bonus: 0,
-
     defense_bonus: 0,
 
     forza_bonus: 0,
-
     resistenza_bonus: 0,
-
     costituzione_bonus: 0,
-
     intelligenza_bonus: 0,
-
     destrezza_bonus: 0,
-
     fortuna_bonus: 0
 
 };
@@ -69,201 +110,24 @@ let equipmentBonuses = {
 // ============================================================
 
 let dungeonChannel = null;
+
 let realtimeReady = false;
+
+
+// ============================================================
+// TOKEN DEGLI ALTRI GIOCATORI
+// ============================================================
 
 const otherPlayerTokens =
     new Map();
 
+
+// ============================================================
+// DATI DEGLI ALTRI GIOCATORI
+// ============================================================
+
 const otherPlayers =
     new Map();
-
-
-// ============================================================
-// NEBBIA DI GUERRA
-// ============================================================
-
-let fogCanvas = null;
-
-let exploredCells =
-    new Set();
-
-let visibleCells =
-    new Set();
-
-let fogSavePromise =
-    Promise.resolve();
-
-
-// ============================================================
-// EVENTI DUNGEON
-// ============================================================
-//
-// Le coordinate sono quelle VISIBILI della mappa 23x23.
-//
-// Tipi previsti:
-// - communication
-// - trap
-// - combat
-//
-// ============================================================
-
-const DUNGEON_EVENTS = {
-
-    // ========================================================
-    // COMUNICAZIONI
-    // ========================================================
-
-    "11,17": {
-
-        id:
-            "stairs_down",
-
-        type:
-            "communication",
-
-        title:
-            "",
-
-        message:
-            "Queste scale scendono ad un piano inferiore.",
-
-        actions: [
-
-            {
-                id:
-                    "descend",
-
-                label:
-                    "SCENDI LE SCALE",
-
-                primary:
-                    true
-            },
-
-            {
-                id:
-                    "stay",
-
-                label:
-                    "RIMANI QUI",
-
-                primary:
-                    false
-            }
-
-        ]
-
-    },
-
-
-    "15,22": {
-
-        id:
-            "dead_end",
-
-        type:
-            "communication",
-
-        title:
-            "",
-
-        message:
-            "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì",
-
-        actions: [
-
-            {
-                id:
-                    "close",
-
-                label:
-                    "CHIUDI",
-
-                primary:
-                    true
-            }
-
-        ]
-
-    },
-
-
-    // ========================================================
-    // TRAPPOLE
-    // ========================================================
-
-    "11,11": {
-
-        id:
-            "blade_corridor",
-
-        type:
-            "trap",
-
-        message:
-            "Una lama affilata attraversa il corridoio da muro a muro.",
-
-        defenseStat:
-            "destrezza"
-
-    },
-
-
-    "9,15": {
-
-        id:
-            "acid_vapor",
-
-        type:
-            "trap",
-
-        message:
-            "Dal pavimento una nube di vapore acido ti investe.",
-
-        defenseStat:
-            "resistenza"
-
-    }
-
-};
-
-
-// ============================================================
-// COOLDOWN TRAPPOLE
-// ============================================================
-//
-// Durante i test resta DISATTIVATO.
-//
-// Quando avremo finito i test basterà cambiare:
-// false → true
-//
-// Il tempo previsto è già 1 ora.
-// ============================================================
-
-const TRAP_COOLDOWN_ENABLED =
-    true;
-
-const TRAP_COOLDOWN_MS =
-    60 *
-    60 *
-    1000;
-
-
-// ============================================================
-// STATO EVENTI DUNGEON
-// ============================================================
-
-let activeDungeonEvent =
-    null;
-
-let activeDungeonEventKey =
-    null;
-
-let lastTriggeredDungeonEventKey =
-    null;
-
-let dungeonEventModalOpen =
-    false;
 
 
 // ============================================================
@@ -278,23 +142,57 @@ document.addEventListener(
             "Pagina dungeon pronta."
         );
 
+
         try {
+
+            // ------------------------------------------------
+            // PERSONAGGIO
+            // ------------------------------------------------
 
             await loadCharacter();
 
+
+            // ------------------------------------------------
+            // NOTE
+            // ------------------------------------------------
+
             setupNotes();
+
+
+            // ------------------------------------------------
+            // CHAT DEL PIANO
+            // ------------------------------------------------
 
             setupFloorChat();
 
+
+            // ------------------------------------------------
+            // MAPPA
+            // ------------------------------------------------
+
             await loadDungeon();
+
+
+            // ------------------------------------------------
+            // POSIZIONE
+            // ------------------------------------------------
 
             await initializePlayer();
 
-            setupFogOfWar();
+
+            // ------------------------------------------------
+            // MOVIMENTO
+            // ------------------------------------------------
 
             setupMovement();
 
+
+            // ------------------------------------------------
+            // MULTIPLAYER
+            // ------------------------------------------------
+
             await setupRealtimeMultiplayer();
+
 
         } catch (error) {
 
@@ -302,6 +200,7 @@ document.addEventListener(
                 "Errore durante l'avvio del dungeon:",
                 error
             );
+
 
             showError(
                 error.message ||
@@ -315,7 +214,7 @@ document.addEventListener(
 
 
 // ============================================================
-// DUNGEON.JSON
+// CARICAMENTO DUNGEON.JSON
 // ============================================================
 
 async function loadDungeon() {
@@ -324,10 +223,12 @@ async function loadDungeon() {
         "Caricamento dungeon.json..."
     );
 
+
     const response =
         await fetch(
             "dungeon.json"
         );
+
 
     if (!response.ok) {
 
@@ -337,8 +238,16 @@ async function loadDungeon() {
 
     }
 
+
     dungeonData =
         await response.json();
+
+
+    console.log(
+        "Dungeon JSON caricato:",
+        dungeonData
+    );
+
 
     if (!dungeonData.cells) {
 
@@ -348,9 +257,20 @@ async function loadDungeon() {
 
     }
 
+
     console.log(
-        "Dungeon JSON caricato:",
-        dungeonData
+        "Griglia visibile:",
+        MAP_COLUMNS,
+        "x",
+        MAP_ROWS
+    );
+
+
+    console.log(
+        "Matrice interna:",
+        dungeonData.cells[0].length,
+        "x",
+        dungeonData.cells.length
     );
 
 }
@@ -366,6 +286,10 @@ async function loadCharacter() {
         "Caricamento personaggio..."
     );
 
+
+    // --------------------------------------------------------
+    // UTENTE
+    // --------------------------------------------------------
 
     const {
         data: {
@@ -397,14 +321,22 @@ async function loadCharacter() {
         user;
 
 
+    console.log(
+        "Utente autenticato:",
+        currentUser.id
+    );
+
+
+    // --------------------------------------------------------
+    // PERSONAGGIO
+    // --------------------------------------------------------
+
     const {
         data,
         error
     } =
         await db
-            .from(
-                "characters"
-            )
+            .from("characters")
             .select("*")
             .eq(
                 "user_id",
@@ -436,23 +368,44 @@ async function loadCharacter() {
     }
 
 
-   character =
-    data;
+    character =
+        data;
 
 
-console.log(
-    "Personaggio caricato:",
-    character
-);
+    console.log(
+        "Personaggio caricato:",
+        character
+    );
 
 
-await loadCharacterEquipment();
+    // --------------------------------------------------------
+    // EQUIPAGGIAMENTO
+    // --------------------------------------------------------
+
+    await loadCharacterEquipment();
+
+
+    // --------------------------------------------------------
+    // PANNELLO PERSONAGGIO
+    // --------------------------------------------------------
+
+    updateCharacterPanel();
+
+}
+
 
 // ============================================================
 // CARICAMENTO EQUIPAGGIAMENTO
 // ============================================================
 
 async function loadCharacterEquipment() {
+
+    if (!character) {
+
+        return;
+
+    }
+
 
     const {
         data,
@@ -464,6 +417,7 @@ async function loadCharacterEquipment() {
                 id,
                 quantity,
                 equipped_slot,
+
                 item:items (
                     id,
                     attack_bonus,
@@ -500,6 +454,18 @@ async function loadCharacterEquipment() {
 
     calculateDungeonEquipmentBonuses();
 
+
+    console.log(
+        "Equipaggiamento dungeon:",
+        characterInventory
+    );
+
+
+    console.log(
+        "Bonus equipaggiamento dungeon:",
+        equipmentBonuses
+    );
+
 }
 
 
@@ -512,19 +478,13 @@ function calculateDungeonEquipmentBonuses() {
     equipmentBonuses = {
 
         attack_bonus: 0,
-
         defense_bonus: 0,
 
         forza_bonus: 0,
-
         resistenza_bonus: 0,
-
         costituzione_bonus: 0,
-
         intelligenza_bonus: 0,
-
         destrezza_bonus: 0,
-
         fortuna_bonus: 0
 
     };
@@ -540,51 +500,55 @@ function calculateDungeonEquipmentBonuses() {
             }
 
 
+            const item =
+                entry.item;
+
+
             equipmentBonuses.attack_bonus +=
                 Number(
-                    entry.item.attack_bonus
+                    item.attack_bonus
                 ) || 0;
 
 
             equipmentBonuses.defense_bonus +=
                 Number(
-                    entry.item.defense_bonus
+                    item.defense_bonus
                 ) || 0;
 
 
             equipmentBonuses.forza_bonus +=
                 Number(
-                    entry.item.forza_bonus
+                    item.forza_bonus
                 ) || 0;
 
 
             equipmentBonuses.resistenza_bonus +=
                 Number(
-                    entry.item.resistenza_bonus
+                    item.resistenza_bonus
                 ) || 0;
 
 
             equipmentBonuses.costituzione_bonus +=
                 Number(
-                    entry.item.costituzione_bonus
+                    item.costituzione_bonus
                 ) || 0;
 
 
             equipmentBonuses.intelligenza_bonus +=
                 Number(
-                    entry.item.intelligenza_bonus
+                    item.intelligenza_bonus
                 ) || 0;
 
 
             equipmentBonuses.destrezza_bonus +=
                 Number(
-                    entry.item.destrezza_bonus
+                    item.destrezza_bonus
                 ) || 0;
 
 
             equipmentBonuses.fortuna_bonus +=
                 Number(
-                    entry.item.fortuna_bonus
+                    item.fortuna_bonus
                 ) || 0;
 
         }
@@ -595,6 +559,9 @@ function calculateDungeonEquipmentBonuses() {
 
 // ============================================================
 // ATTRIBUTO EFFETTIVO
+//
+// Attributo base + bonus equipaggiamento.
+// Gli attributi finali sono sempre compresi tra 1 e 30.
 // ============================================================
 
 function getDungeonEffectiveAttribute(
@@ -624,62 +591,10 @@ function getDungeonEffectiveAttribute(
     );
 
 }
-    
-updateCharacterPanel();
-    const forza =
-    getDungeonEffectiveAttribute(
-        "forza"
-    );
 
-const resistenza =
-    getDungeonEffectiveAttribute(
-        "resistenza"
-    );
-
-const costituzione =
-    getDungeonEffectiveAttribute(
-        "costituzione"
-    );
-
-const intelligenza =
-    getDungeonEffectiveAttribute(
-        "intelligenza"
-    );
-
-const destrezza =
-    getDungeonEffectiveAttribute(
-        "destrezza"
-    );
-
-const fortuna =
-    getDungeonEffectiveAttribute(
-        "fortuna"
-    );
-
-    
-
-    // ========================================================
-    // CONTROLLO MORTE AL CARICAMENTO
-    // ========================================================
-
-    if (
-        character.current_hp !== null &&
-        character.current_hp !== undefined &&
-        Number(
-            character.current_hp
-        ) <= 0
-    ) {
-
-        await handleCharacterDeath();
-
-        return;
-
-    }
-
-}
 
 // ============================================================
-// AGGIORNA SCHEDA PERSONAGGIO
+// AGGIORNA PANNELLO PERSONAGGIO
 // ============================================================
 
 function updateCharacterPanel() {
@@ -690,33 +605,70 @@ function updateCharacterPanel() {
 
     }
 
+
     const name =
         character.nome ||
         "Avventuriero";
+
+
+    // --------------------------------------------------------
+    // NOME
+    // --------------------------------------------------------
+
+    const nameHeader =
+        document.getElementById(
+            "character-name"
+        );
+
+
+    const namePanel =
+        document.getElementById(
+            "character-name-panel"
+        );
+
+
+    if (nameHeader) {
+
+        nameHeader.textContent =
+            name;
+
+    }
+
+
+    if (namePanel) {
+
+        namePanel.textContent =
+            name;
+
+    }
+
+
+    // --------------------------------------------------------
+    // LIVELLO
+    // --------------------------------------------------------
 
     const level =
         Number(
             character.livello
         ) || 1;
 
-    setText(
-        "character-name",
-        name
-    );
 
-    setText(
-        "character-name-panel",
-        name
-    );
+    const levelElement =
+        document.getElementById(
+            "character-level"
+        );
 
-    setText(
-        "character-level",
-        level
-    );
+
+    if (levelElement) {
+
+        levelElement.textContent =
+            level;
+
+    }
 
 
     // --------------------------------------------------------
-    // TOKEN
+    // TOKEN NELLA SCHEDA
     // --------------------------------------------------------
 
     const tokenImage =
@@ -724,15 +676,18 @@ function updateCharacterPanel() {
             "character-token"
         );
 
+
     if (tokenImage) {
 
         const tokenFile =
             character.token ||
             "token_1.png";
 
+
         tokenImage.src =
             "immagini/token/" +
             tokenFile;
+
 
         tokenImage.alt =
             "Token di " +
@@ -742,64 +697,78 @@ function updateCharacterPanel() {
 
 
     // --------------------------------------------------------
-    // ATTRIBUTI
+    // ATTRIBUTI EFFETTIVI
     // --------------------------------------------------------
 
     const forza =
-        Number(
-            character.forza
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "forza"
+        );
+
 
     const resistenza =
-        Number(
-            character.resistenza
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "resistenza"
+        );
+
 
     const costituzione =
-        Number(
-            character.costituzione
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "costituzione"
+        );
+
 
     const intelligenza =
-        Number(
-            character.intelligenza
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "intelligenza"
+        );
+
 
     const destrezza =
-        Number(
-            character.destrezza
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "destrezza"
+        );
+
 
     const fortuna =
-        Number(
-            character.fortuna
-        ) || 1;
+        getDungeonEffectiveAttribute(
+            "fortuna"
+        );
 
+
+    // --------------------------------------------------------
+    // MOSTRA ATTRIBUTI EFFETTIVI
+    // --------------------------------------------------------
 
     setText(
         "forza-display",
         forza
     );
 
+
     setText(
         "resistenza-display",
         resistenza
     );
+
 
     setText(
         "costituzione-display",
         costituzione
     );
 
+
     setText(
         "intelligenza-display",
         intelligenza
     );
 
+
     setText(
         "destrezza-display",
         destrezza
     );
+
 
     setText(
         "fortuna-display",
@@ -807,144 +776,171 @@ function updateCharacterPanel() {
     );
 
 
-// --------------------------------------------------------
-// STATISTICHE
-// --------------------------------------------------------
+    // --------------------------------------------------------
+    // STATISTICHE SECONDARIE
+    // --------------------------------------------------------
 
-const attack =
-    Math.ceil(
-        forza / 2
-    )
-    +
-    equipmentBonuses.attack_bonus;
-
-
-const defense =
-    Math.ceil(
-        7 +
-        (
-            resistenza / 2
+    const attack =
+        Math.ceil(
+            forza / 2
         )
-    )
-    +
-    equipmentBonuses.defense_bonus;
-
-
-const health =
-    Math.ceil(
-        5 *
+        +
         (
-            costituzione / 2
+            Number(
+                equipmentBonuses.attack_bonus
+            ) || 0
+        );
+
+
+    const defense =
+        Math.ceil(
+            7 +
+            (
+                resistenza / 2
+            )
         )
-    );
-
-
-const mana =
-    Math.ceil(
-        5 *
+        +
         (
-            intelligenza / 2
-        )
-    );
+            Number(
+                equipmentBonuses.defense_bonus
+            ) || 0
+        );
 
 
-const movement =
-    Math.ceil(
-        4 +
-        (
-            destrezza / 2
-        )
-    );
+    const health =
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
 
 
-const critical =
-    Math.round(
+    const mana =
+        Math.ceil(
+            5 *
+            (
+                intelligenza / 2
+            )
+        );
+
+
+    const movement =
+        Math.ceil(
+            4 +
+            (
+                destrezza / 2
+            )
+        );
+
+
+    const critical =
         (
             fortuna *
-            (50 / 30)
-        ) *
-        100
-    ) / 100;
-
-
-// --------------------------------------------------------
-// PF ATTUALI / MASSIMI
-// --------------------------------------------------------
-
-const currentPF =
-    character.current_hp === null ||
-    character.current_hp === undefined
-        ? health
-        : Math.max(
-            0,
-            Math.min(
-                Number(
-                    character.current_hp
-                ),
-                health
+            (
+                50 / 30
             )
+        ).toFixed(
+            2
         );
 
 
-// --------------------------------------------------------
-// PM ATTUALI / MASSIMI
-// --------------------------------------------------------
+    // --------------------------------------------------------
+    // PF ATTUALI
+    //
+    // L'equipaggiamento modifica il MASSIMO.
+    // Non cura automaticamente il personaggio.
+    //
+    // Esempio:
+    //
+    // prima 3/3
+    // +2 COS
+    // dopo  3/8
+    //
+    // --------------------------------------------------------
 
-const currentPM =
-    character.current_pm === null ||
-    character.current_pm === undefined
-        ? mana
-        : Math.max(
-            0,
-            Math.min(
-                Number(
-                    character.current_pm
-                ),
-                mana
-            )
-        );
+    const currentPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
 
+            ? health
 
-// --------------------------------------------------------
-// VISUALIZZAZIONE
-// --------------------------------------------------------
-
-setText(
-    "attack-display",
-    attack
-);
-
-
-setText(
-    "defense-display",
-    defense
-);
+            : Math.max(
+                0,
+                Math.min(
+                    Number(
+                        character.current_hp
+                    ),
+                    health
+                )
+            );
 
 
-setText(
-    "health-display",
-    `${currentPF}/${health}`
-);
+    // --------------------------------------------------------
+    // PM ATTUALI
+    //
+    // Stessa logica dei PF.
+    //
+    // --------------------------------------------------------
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? mana
+
+            : Math.max(
+                0,
+                Math.min(
+                    Number(
+                        character.current_pm
+                    ),
+                    mana
+                )
+            );
 
 
-setText(
-    "mana-display",
-    `${currentPM}/${mana}`
-);
+    // --------------------------------------------------------
+    // MOSTRA STATISTICHE
+    // --------------------------------------------------------
+
+    setText(
+        "attack-display",
+        attack
+    );
 
 
-setText(
-    "movement-display",
-    movement
-);
+    setText(
+        "defense-display",
+        defense
+    );
 
 
-setText(
-    "critical-display",
-    critical + "%"
-);
+    setText(
+        "health-display",
+        `${currentPF}/${health}`
+    );
+
+
+    setText(
+        "mana-display",
+        `${currentPM}/${mana}`
+    );
+
+
+    setText(
+        "movement-display",
+        movement
+    );
+
+
+    setText(
+        "critical-display",
+        `${critical}%`
+    );
 
 }
+
 
 // ============================================================
 // SET TEXT
@@ -960,6 +956,7 @@ function setText(
             id
         );
 
+
     if (element) {
 
         element.textContent =
@@ -971,7 +968,7 @@ function setText(
 
 
 // ============================================================
-// POSIZIONE INIZIALE
+// INIZIALIZZAZIONE GIOCATORE
 // ============================================================
 
 async function initializePlayer() {
@@ -979,6 +976,11 @@ async function initializePlayer() {
     console.log(
         "Controllo posizione del personaggio..."
     );
+
+
+    // --------------------------------------------------------
+    // POSIZIONE GIÀ SALVATA
+    // --------------------------------------------------------
 
     if (
         character.dungeon_x !== null &&
@@ -992,21 +994,23 @@ async function initializePlayer() {
                 character.dungeon_x
             );
 
+
         playerY =
             Number(
                 character.dungeon_y
             );
+
 
         showToken(
             playerX,
             playerY
         );
 
+
         setMessage(
             "Usa WASD o le frecce per muoverti."
         );
 
-        checkDungeonEventAtCurrentPosition();
 
         return;
 
@@ -1020,8 +1024,10 @@ async function initializePlayer() {
     playerX =
         INITIAL_PLAYER_X;
 
+
     playerY =
         INITIAL_PLAYER_Y;
+
 
     const {
         error
@@ -1042,30 +1048,35 @@ async function initializePlayer() {
                 character.id
             );
 
+
     if (error) {
 
         throw error;
 
     }
 
+
     character.dungeon_x =
         playerX;
 
+
     character.dungeon_y =
         playerY;
+
 
     showToken(
         playerX,
         playerY
     );
 
+
     setMessage(
         "Usa WASD o le frecce per muoverti."
     );
 
-    checkDungeonEventAtCurrentPosition();
-
 }
+
+
 // ============================================================
 // REALTIME MULTIPLAYER
 // ============================================================
@@ -1076,6 +1087,7 @@ async function setupRealtimeMultiplayer() {
         "Avvio multiplayer..."
     );
 
+
     if (
         !character ||
         !currentUser
@@ -1085,6 +1097,10 @@ async function setupRealtimeMultiplayer() {
 
     }
 
+
+    // --------------------------------------------------------
+    // CREAZIONE CANALE
+    // --------------------------------------------------------
 
     dungeonChannel =
         db.channel(
@@ -1107,7 +1123,7 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // PRESENCE
+    // PRESENCE SYNC
     // ========================================================
 
     dungeonChannel.on(
@@ -1121,13 +1137,23 @@ async function setupRealtimeMultiplayer() {
                 "Presence sincronizzata."
             );
 
+
             syncOnlinePlayers();
+
+
+            // Quando entra un nuovo giocatore,
+            // tutti gli utenti già presenti
+            // reinviano la loro posizione corrente.
 
             broadcastMyState();
 
         }
     );
 
+
+    // ========================================================
+    // PRESENCE JOIN
+    // ========================================================
 
     dungeonChannel.on(
         "presence",
@@ -1146,6 +1172,10 @@ async function setupRealtimeMultiplayer() {
         }
     );
 
+
+    // ========================================================
+    // PRESENCE LEAVE
+    // ========================================================
 
     dungeonChannel.on(
         "presence",
@@ -1166,7 +1196,7 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // MOVIMENTO
+    // MOVIMENTO DEGLI ALTRI GIOCATORI
     // ========================================================
 
     dungeonChannel.on(
@@ -1179,8 +1209,17 @@ async function setupRealtimeMultiplayer() {
             const data =
                 message.payload;
 
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            // Ignora il nostro stesso movimento.
+
             if (
-                !data ||
                 data.character_id ===
                 character.id
             ) {
@@ -1189,37 +1228,6 @@ async function setupRealtimeMultiplayer() {
 
             }
 
-            updateRemotePlayer(
-                data
-            );
-
-        }
-    );
-
-
-    // ========================================================
-    // STATO
-    // ========================================================
-
-    dungeonChannel.on(
-        "broadcast",
-        {
-            event: "player-state"
-        },
-        message => {
-
-            const data =
-                message.payload;
-
-            if (
-                !data ||
-                data.character_id ===
-                character.id
-            ) {
-
-                return;
-
-            }
 
             updateRemotePlayer(
                 data
@@ -1227,10 +1235,8 @@ async function setupRealtimeMultiplayer() {
 
         }
     );
-
-
-    // ========================================================
-    // CHAT
+        // ========================================================
+    // CHAT DEL PIANO
     // ========================================================
 
     dungeonChannel.on(
@@ -1243,17 +1249,15 @@ async function setupRealtimeMultiplayer() {
             const data =
                 message.payload;
 
-            if (
-                !data ||
-                data.character_id ===
-                character.id
-            ) {
+
+            if (!data) {
 
                 return;
 
             }
 
-            appendFloorChatMessage(
+
+            addFloorChatMessage(
                 data
             );
 
@@ -1262,93 +1266,108 @@ async function setupRealtimeMultiplayer() {
 
 
     // ========================================================
-    // SUBSCRIBE
+    // SOTTOSCRIZIONE
     // ========================================================
 
-    dungeonChannel.subscribe(
-        async status => {
+    await new Promise(
+        (
+            resolve,
+            reject
+        ) => {
 
-            console.log(
-                "Stato Realtime:",
-                status
-            );
+            dungeonChannel.subscribe(
+                async status => {
 
-            if (
-                status !==
-                "SUBSCRIBED"
-            ) {
-
-                if (
-                    status === "CHANNEL_ERROR" ||
-                    status === "TIMED_OUT" ||
-                    status === "CLOSED"
-                ) {
-
-                    setFloorChatConnected(
-                        false
+                    console.log(
+                        "Stato canale:",
+                        status
                     );
 
+
+                    if (
+                        status ===
+                        "SUBSCRIBED"
+                    ) {
+
+                        realtimeReady =
+                            true;
+
+
+                        try {
+
+                            await dungeonChannel.track({
+
+                                character_id:
+                                    character.id,
+
+                                user_id:
+                                    currentUser.id,
+
+                                name:
+                                    character.nome,
+
+                                token:
+                                    character.token,
+
+                                x:
+                                    playerX,
+
+                                y:
+                                    playerY,
+
+                                online_at:
+                                    new Date()
+                                        .toISOString()
+
+                            });
+
+
+                            console.log(
+                                "Presence registrata."
+                            );
+
+
+                            resolve();
+
+
+                        } catch (error) {
+
+                            reject(
+                                error
+                            );
+
+                        }
+
+                    }
+
+
+                    if (
+                        status ===
+                        "CHANNEL_ERROR"
+                    ) {
+
+                        reject(
+                            new Error(
+                                "Errore nel canale realtime."
+                            )
+                        );
+
+                    }
+
                 }
-
-                return;
-
-            }
-
-            realtimeReady =
-                true;
-
-            setFloorChatConnected(
-                true
             );
-
-            const presenceData = {
-
-                user_id:
-                    currentUser.id,
-
-                character_id:
-                    character.id,
-
-                nome:
-                    character.nome ||
-                    "Avventuriero",
-
-                token:
-                    character.token ||
-                    "token_1.png",
-
-                x:
-                    playerX,
-
-                y:
-                    playerY,
-
-                online_at:
-                    new Date()
-                        .toISOString()
-
-            };
-
-            const trackResult =
-                await dungeonChannel.track(
-                    presenceData
-                );
-
-            console.log(
-                "Presence registrata:",
-                trackResult
-            );
-
-            broadcastMyState();
 
         }
     );
+
+
+    syncOnlinePlayers();
 
 }
 
 
 // ============================================================
-// GIOCATORI ONLINE
+// SINCRONIZZA GIOCATORI ONLINE
 // ============================================================
 
 function syncOnlinePlayers() {
@@ -1359,24 +1378,36 @@ function syncOnlinePlayers() {
 
     }
 
-    const presenceState =
-        dungeonChannel
-            .presenceState();
 
-    const onlineCharacterIds =
+    const state =
+        dungeonChannel.presenceState();
+
+
+    const onlineIds =
         new Set();
 
+
     Object.values(
-        presenceState
+        state
     ).forEach(
         presences => {
 
             presences.forEach(
                 presence => {
 
+                    const id =
+                        presence.character_id;
+
+
+                    if (!id) {
+
+                        return;
+
+                    }
+
+
                     if (
-                        !presence.character_id ||
-                        presence.character_id ===
+                        id ===
                         character.id
                     ) {
 
@@ -1384,9 +1415,11 @@ function syncOnlinePlayers() {
 
                     }
 
-                    onlineCharacterIds.add(
-                        presence.character_id
+
+                    onlineIds.add(
+                        id
                     );
+
 
                     updateRemotePlayer(
                         presence
@@ -1399,43 +1432,45 @@ function syncOnlinePlayers() {
     );
 
 
+    // --------------------------------------------------------
+    // RIMUOVE GIOCATORI NON PIÙ ONLINE
+    // --------------------------------------------------------
+
     for (
         const [
-            characterId,
+            id,
             token
         ]
         of otherPlayerTokens
     ) {
 
         if (
-            !onlineCharacterIds.has(
-                characterId
+            !onlineIds.has(
+                id
             )
         ) {
 
             token.remove();
 
+
             otherPlayerTokens.delete(
-                characterId
+                id
             );
 
+
             otherPlayers.delete(
-                characterId
+                id
             );
 
         }
 
     }
 
-    updateFloorChatOnlineStatus();
-
-    updateRemoteTokensVisibility();
-
 }
 
 
 // ============================================================
-// GIOCATORE REMOTO
+// AGGIORNA GIOCATORE REMOTO
 // ============================================================
 
 function updateRemotePlayer(
@@ -1444,7 +1479,15 @@ function updateRemotePlayer(
 
     if (
         !data ||
-        !data.character_id ||
+        !data.character_id
+    ) {
+
+        return;
+
+    }
+
+
+    if (
         data.character_id ===
         character.id
     ) {
@@ -1453,15 +1496,18 @@ function updateRemotePlayer(
 
     }
 
+
     const x =
         Number(
             data.x
         );
 
+
     const y =
         Number(
             data.y
         );
+
 
     if (
         !Number.isFinite(x) ||
@@ -1472,6 +1518,7 @@ function updateRemotePlayer(
 
     }
 
+
     otherPlayers.set(
         data.character_id,
         {
@@ -1479,24 +1526,25 @@ function updateRemotePlayer(
             character_id:
                 data.character_id,
 
-            user_id:
-                data.user_id,
-
-            nome:
-                data.nome ||
-                "Giocatore",
+            name:
+                data.name ||
+                "Avventuriero",
 
             token:
                 data.token ||
                 "token_1.png",
 
-            x,
-            y
+            x:
+                x,
+
+            y:
+                y
 
         }
     );
 
-    showRemoteToken(
+
+    showOtherPlayerToken(
         data.character_id
     );
 
@@ -1504,17 +1552,31 @@ function updateRemotePlayer(
 
 
 // ============================================================
-// TOKEN REMOTO
+// MOSTRA TOKEN ALTRO GIOCATORE
 // ============================================================
 
-function showRemoteToken(
+function showOtherPlayerToken(
     characterId
 ) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
 
     const player =
         otherPlayers.get(
             characterId
         );
+
 
     if (!player) {
 
@@ -1522,151 +1584,170 @@ function showRemoteToken(
 
     }
 
+
+    let token =
+        otherPlayerTokens.get(
+            characterId
+        );
+
+
+    if (!token) {
+
+        token =
+            document.createElement(
+                "div"
+            );
+
+
+        token.className =
+            "dungeon-player-token other-player-token";
+
+
+        token.dataset.characterId =
+            characterId;
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+
+        image.alt =
+            player.name;
+
+
+        token.appendChild(
+            image
+        );
+
+
+        const label =
+            document.createElement(
+                "div"
+            );
+
+
+        label.className =
+            "other-player-name";
+
+
+        token.appendChild(
+            label
+        );
+
+
+        map.appendChild(
+            token
+        );
+
+
+        otherPlayerTokens.set(
+            characterId,
+            token
+        );
+
+    }
+
+
+    const image =
+        token.querySelector(
+            "img"
+        );
+
+
+    const label =
+        token.querySelector(
+            ".other-player-name"
+        );
+
+
+    if (image) {
+
+        image.src =
+            "immagini/token/" +
+            (
+                player.token ||
+                "token_1.png"
+            );
+
+
+        image.alt =
+            player.name;
+
+    }
+
+
+    if (label) {
+
+        label.textContent =
+            player.name;
+
+    }
+
+
+    positionTokenElement(
+        token,
+        player.x,
+        player.y
+    );
+
+}
+
+
+// ============================================================
+// INVIA IL PROPRIO STATO
+// ============================================================
+
+async function broadcastMyState() {
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
     try {
 
-        const {
-            image,
-            container
-        } =
-            getMapContainer();
+        await dungeonChannel.send({
 
-        const mapRect =
-            image.getBoundingClientRect();
+            type:
+                "broadcast",
 
-        const containerRect =
-            container.getBoundingClientRect();
+            event:
+                "player-move",
 
-        const cellWidth =
-            mapRect.width /
-            MAP_COLUMNS;
+            payload: {
 
-        const cellHeight =
-            mapRect.height /
-            MAP_ROWS;
+                character_id:
+                    character.id,
 
+                name:
+                    character.nome,
 
-        let token =
-            otherPlayerTokens.get(
-                characterId
-            );
+                token:
+                    character.token,
 
-        if (!token) {
+                x:
+                    playerX,
 
-            token =
-                document.createElement(
-                    "img"
-                );
+                y:
+                    playerY
 
-            token.className =
-                "dungeon-player-token dungeon-other-player-token";
+            }
 
-            token.style.position =
-                "absolute";
-
-            token.style.objectFit =
-                "contain";
-
-            token.style.boxSizing =
-                "border-box";
-
-            token.style.zIndex =
-                "90";
-
-            token.style.pointerEvents =
-                "none";
-
-            container.appendChild(
-                token
-            );
-
-            otherPlayerTokens.set(
-                characterId,
-                token
-            );
-
-        }
-
-
-        token.src =
-            "immagini/token/" +
-            player.token;
-
-        token.alt =
-            "Token di " +
-            player.nome;
-
-        token.title =
-            player.nome;
-
-
-        const tokenSize =
-            Math.min(
-                cellWidth,
-                cellHeight
-            ) * 0.92;
-
-        token.style.width =
-            `${tokenSize}px`;
-
-        token.style.height =
-            `${tokenSize}px`;
-
-
-        const centerX =
-            (
-                player.x +
-                0.5
-            ) *
-            cellWidth;
-
-        const centerY =
-            (
-                player.y +
-                0.5
-            ) *
-            cellHeight;
-
-        const offsetX =
-            mapRect.left -
-            containerRect.left;
-
-        const offsetY =
-            mapRect.top -
-            containerRect.top;
-
-
-        token.style.left =
-            `${
-                offsetX +
-                centerX -
-                tokenSize / 2
-            }px`;
-
-        token.style.top =
-            `${
-                offsetY +
-                centerY -
-                tokenSize / 2
-            }px`;
-
-
-        // ----------------------------------------------------
-        // NEBBIA
-        // ----------------------------------------------------
-
-        token.style.display =
-            isCellCurrentlyVisible(
-                player.x,
-                player.y
-            )
-                ? "block"
-                : "none";
+        });
 
 
     } catch (error) {
 
         console.error(
-            "Errore token remoto:",
+            "Errore broadcast posizione:",
             error
         );
 
@@ -1676,10 +1757,10 @@ function showRemoteToken(
 
 
 // ============================================================
-// BROADCAST STATO
+// AGGIORNA PRESENCE PERSONALE
 // ============================================================
 
-function broadcastMyState() {
+async function updateMyPresence() {
 
     if (
         !dungeonChannel ||
@@ -1691,424 +1772,469 @@ function broadcastMyState() {
 
     }
 
-    dungeonChannel.send({
 
-        type:
-            "broadcast",
+    try {
 
-        event:
-            "player-state",
-
-        payload: {
-
-            user_id:
-                currentUser.id,
+        await dungeonChannel.track({
 
             character_id:
                 character.id,
 
-            nome:
-                character.nome ||
-                "Avventuriero",
+            user_id:
+                currentUser.id,
+
+            name:
+                character.nome,
 
             token:
-                character.token ||
-                "token_1.png",
+                character.token,
 
             x:
                 playerX,
 
             y:
-                playerY
+                playerY,
 
-        }
+            online_at:
+                new Date()
+                    .toISOString()
 
-    });
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento presence:",
+            error
+        );
+
+    }
 
 }
 
 
 // ============================================================
-// BROADCAST MOVIMENTO
+// MOSTRA TOKEN PERSONALE
 // ============================================================
 
-function broadcastMovement() {
+function showToken(
+    x,
+    y
+) {
 
-    if (
-        !dungeonChannel ||
-        !realtimeReady ||
-        !character
-    ) {
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
 
         return;
 
     }
 
-    dungeonChannel.send({
 
-        type:
-            "broadcast",
+    if (!tokenElement) {
 
-        event:
-            "player-move",
+        tokenElement =
+            document.createElement(
+                "div"
+            );
 
-        payload: {
 
-            user_id:
-                currentUser.id,
+        tokenElement.className =
+            "dungeon-player-token";
 
-            character_id:
-                character.id,
 
-            nome:
-                character.nome ||
-                "Avventuriero",
+        const image =
+            document.createElement(
+                "img"
+            );
 
-            token:
+
+        image.src =
+            "immagini/token/" +
+            (
                 character.token ||
-                "token_1.png",
-
-            x:
-                playerX,
-
-            y:
-                playerY
-
-        }
-
-    });
-
-}
+                "token_1.png"
+            );
 
 
-// ============================================================
-// VALORE CELLA DUNGEON
-// ============================================================
+        image.alt =
+            character.nome ||
+            "Personaggio";
 
-function getDungeonCellValue(
-    x,
-    y
-) {
 
-    if (
-        !dungeonData ||
-        x < 0 ||
-        y < 0 ||
-        x >= MAP_COLUMNS ||
-        y >= MAP_ROWS
-    ) {
-
-        return null;
-
-    }
-
-    const jsonX =
-        x +
-        GRID_OFFSET_X;
-
-    const jsonY =
-        y +
-        GRID_OFFSET_Y;
-
-    if (
-        !dungeonData.cells[jsonY] ||
-        dungeonData.cells[jsonY][jsonX] ===
-        undefined
-    ) {
-
-        return null;
-
-    }
-
-    const value =
-        Number(
-            dungeonData
-                .cells[jsonY][jsonX]
+        tokenElement.appendChild(
+            image
         );
 
-    return Number.isFinite(
-        value
-    )
-        ? value
-        : null;
 
-}
-
-
-// ============================================================
-// CONTROLLO CELLA PERCORRIBILE
-// ============================================================
-
-function isWalkable(
-    x,
-    y
-) {
-
-    const value =
-        getDungeonCellValue(
-            x,
-            y
+        map.appendChild(
+            tokenElement
         );
-
-    if (
-        value === null
-    ) {
-
-        return false;
 
     }
 
-    const bits =
-        dungeonData.cell_bit ||
-        {};
 
-    const ROOM =
-        bits.room ||
-        2;
-
-    const CORRIDOR =
-        bits.corridor ||
-        4;
-
-    const APERTURE =
-        bits.aperture ||
-        32;
-
-    const ARCH =
-        bits.arch ||
-        65536;
-
-    const DOOR =
-        bits.door ||
-        131072;
-
-    const PORTCULLIS =
-        bits.portcullis ||
-        2097152;
-
-    const STAIR_DOWN =
-        bits.stair_down ||
-        4194304;
-
-    const STAIR_UP =
-        bits.stair_up ||
-        8388608;
-
-    return (
-
-        (value & ROOM) !== 0 ||
-
-        (value & CORRIDOR) !== 0 ||
-
-        (value & APERTURE) !== 0 ||
-
-        (value & ARCH) !== 0 ||
-
-        (value & DOOR) !== 0 ||
-
-        (value & PORTCULLIS) !== 0 ||
-
-        (value & STAIR_DOWN) !== 0 ||
-
-        (value & STAIR_UP) !== 0
-
+    positionTokenElement(
+        tokenElement,
+        x,
+        y
     );
 
 }
+
+
+// ============================================================
+// POSIZIONA TOKEN
+// ============================================================
+
+function positionTokenElement(
+    element,
+    x,
+    y
+) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !map ||
+        !element
+    ) {
+
+        return;
+
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    const cellWidth =
+        rect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        MAP_ROWS;
+
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) *
+        0.72;
+
+
+    element.style.width =
+        `${tokenSize}px`;
+
+
+    element.style.height =
+        `${tokenSize}px`;
+
+
+    element.style.left =
+        `${
+            (
+                Number(x) +
+                0.5
+            )
+            *
+            cellWidth
+            -
+            tokenSize / 2
+        }px`;
+
+
+    element.style.top =
+        `${
+            (
+                Number(y) +
+                0.5
+            )
+            *
+            cellHeight
+            -
+            tokenSize / 2
+        }px`;
+
+}
+
+
+// ============================================================
+// RIPOSIZIONA TUTTI I TOKEN
+// ============================================================
+
+function repositionAllTokens() {
+
+    if (
+        tokenElement &&
+        playerX !== null &&
+        playerY !== null
+    ) {
+
+        positionTokenElement(
+            tokenElement,
+            playerX,
+            playerY
+        );
+
+    }
+
+
+    otherPlayers.forEach(
+        player => {
+
+            const token =
+                otherPlayerTokens.get(
+                    player.character_id
+                );
+
+
+            if (!token) {
+
+                return;
+
+            }
+
+
+            positionTokenElement(
+                token,
+                player.x,
+                player.y
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// RESIZE
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        repositionAllTokens();
+
+    }
+);
+
+
 // ============================================================
 // MOVIMENTO
 // ============================================================
 
 function setupMovement() {
 
-    console.log(
-        "Movimento attivato."
-    );
+    // --------------------------------------------------------
+    // TASTIERA
+    // --------------------------------------------------------
 
     document.addEventListener(
         "keydown",
-        handleMovementKey
+        async event => {
+
+            const target =
+                event.target;
+
+
+            // Non intercettare i tasti mentre
+            // si scrive nelle note/chat/input.
+
+            if (
+                target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement ||
+                target instanceof HTMLSelectElement ||
+                target?.isContentEditable
+            ) {
+
+                return;
+
+            }
+
+
+            if (event.repeat) {
+
+                return;
+
+            }
+
+
+            let dx = 0;
+            let dy = 0;
+
+
+            switch (
+                event.key.toLowerCase()
+            ) {
+
+                case "w":
+                case "arrowup":
+
+                    dy = -1;
+
+                    break;
+
+
+                case "s":
+                case "arrowdown":
+
+                    dy = 1;
+
+                    break;
+
+
+                case "a":
+                case "arrowleft":
+
+                    dx = -1;
+
+                    break;
+
+
+                case "d":
+                case "arrowright":
+
+                    dx = 1;
+
+                    break;
+
+
+                default:
+
+                    return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            await movePlayer(
+                dx,
+                dy
+            );
+
+        }
     );
 
-    const image =
+
+    // --------------------------------------------------------
+    // CLICK SULLA MAPPA
+    // --------------------------------------------------------
+
+    const map =
         document.getElementById(
-            "dungeon-image"
+            "dungeon-map"
         );
 
-    if (image) {
 
-        image.style.cursor =
-            "pointer";
-
-        image.addEventListener(
-            "click",
-            handleMapClick
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// MOVIMENTO TASTIERA
-// ============================================================
-
-function handleMovementKey(
-    event
-) {
-
-    const activeElement =
-        document.activeElement;
-
-    if (
-        activeElement &&
-        (
-            activeElement.tagName ===
-            "TEXTAREA" ||
-
-            activeElement.tagName ===
-            "INPUT"
-        )
-    ) {
+    if (!map) {
 
         return;
 
     }
 
-    let dx = 0;
-    let dy = 0;
 
-    switch (
-        event.key.toLowerCase()
-    ) {
+    map.addEventListener(
+        "click",
+        async event => {
 
-        case "w":
-        case "arrowup":
+            if (
+                movementLocked ||
+                playerX === null ||
+                playerY === null
+            ) {
 
-            dy = -1;
+                return;
 
-            break;
-
-
-        case "s":
-        case "arrowdown":
-
-            dy = 1;
-
-            break;
+            }
 
 
-        case "a":
-        case "arrowleft":
-
-            dx = -1;
-
-            break;
+            const rect =
+                map.getBoundingClientRect();
 
 
-        case "d":
-        case "arrowright":
-
-            dx = 1;
-
-            break;
+            const cellWidth =
+                rect.width /
+                MAP_COLUMNS;
 
 
-        default:
-
-            return;
-
-    }
-
-    event.preventDefault();
-
-    movePlayer(
-        dx,
-        dy
-    );
-
-}
+            const cellHeight =
+                rect.height /
+                MAP_ROWS;
 
 
-// ============================================================
-// MOVIMENTO CLICK
-// ============================================================
+            const clickedX =
+                Math.floor(
+                    (
+                        event.clientX -
+                        rect.left
+                    )
+                    /
+                    cellWidth
+                );
 
-function handleMapClick(
-    event
-) {
 
-    if (
-        playerX === null ||
-        playerY === null
-    ) {
+            const clickedY =
+                Math.floor(
+                    (
+                        event.clientY -
+                        rect.top
+                    )
+                    /
+                    cellHeight
+                );
 
-        return;
 
-    }
+            const dx =
+                clickedX -
+                playerX;
 
-    const image =
-        document.getElementById(
-            "dungeon-image"
-        );
 
-    if (!image) {
+            const dy =
+                clickedY -
+                playerY;
 
-        return;
 
-    }
+            // Solo movimento ortogonale
+            // di una singola casella.
 
-    const rect =
-        image.getBoundingClientRect();
+            const isAdjacent =
+                (
+                    Math.abs(dx) +
+                    Math.abs(dy)
+                ) === 1;
 
-    const cellWidth =
-        rect.width /
-        MAP_COLUMNS;
 
-    const cellHeight =
-        rect.height /
-        MAP_ROWS;
+            if (!isAdjacent) {
 
-    const targetX =
-        Math.floor(
-            (
-                event.clientX -
-                rect.left
-            ) /
-            cellWidth
-        );
+                return;
 
-    const targetY =
-        Math.floor(
-            (
-                event.clientY -
-                rect.top
-            ) /
-            cellHeight
-        );
+            }
 
-    const dx =
-        targetX -
-        playerX;
 
-    const dy =
-        targetY -
-        playerY;
+            await movePlayer(
+                dx,
+                dy
+            );
 
-    if (
-        Math.abs(dx) +
-        Math.abs(dy) !==
-        1
-    ) {
-
-        return;
-
-    }
-
-    movePlayer(
-        dx,
-        dy
+        }
     );
 
 }
@@ -2125,34 +2251,61 @@ async function movePlayer(
 
     if (
         movementLocked ||
-        dungeonEventModalOpen ||
-        playerX === null ||
-        playerY === null
+        !character ||
+        !dungeonData
     ) {
 
         return;
 
     }
 
-    const targetX =
+
+    const newX =
         playerX +
         dx;
 
-    const targetY =
+
+    const newY =
         playerY +
         dy;
 
 
+    // --------------------------------------------------------
+    // LIMITI MAPPA
+    // --------------------------------------------------------
+
     if (
-        !isWalkable(
-            targetX,
-            targetY
+        newX < 0 ||
+        newY < 0 ||
+        newX >= MAP_COLUMNS ||
+        newY >= MAP_ROWS
+    ) {
+
+        setMessage(
+            "Non puoi andare oltre i confini del piano."
+        );
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // CONTROLLO MURO
+    // --------------------------------------------------------
+
+    if (
+        !canMoveTo(
+            newX,
+            newY
         )
     ) {
 
         setMessage(
-            "Non puoi andare in quella direzione."
+            "Il passaggio è bloccato."
         );
+
 
         return;
 
@@ -2162,93 +2315,38 @@ async function movePlayer(
     movementLocked =
         true;
 
-    const previousX =
-        playerX;
 
-    const previousY =
-        playerY;
+    try {
 
-
-    playerX =
-        targetX;
-
-    playerY =
-        targetY;
+        const oldX =
+            playerX;
 
 
-    showToken(
-        playerX,
-        playerY
-    );
+        const oldY =
+            playerY;
 
-
-    updateFogOfWar();
-
-
-    broadcastMovement();
-
-
-    const success =
-        await savePlayerPosition();
-
-
-    if (!success) {
 
         playerX =
-            previousX;
+            newX;
+
 
         playerY =
-            previousY;
+            newY;
+
+
+        // ----------------------------------------------------
+        // AGGIORNA SUBITO TOKEN
+        // ----------------------------------------------------
 
         showToken(
             playerX,
             playerY
         );
 
-        updateFogOfWar();
 
-        broadcastMovement();
-
-        setMessage(
-            "Errore durante il salvataggio della posizione."
-        );
-
-        movementLocked =
-            false;
-
-        return;
-
-    }
-
-
-    character.dungeon_x =
-        playerX;
-
-    character.dungeon_y =
-        playerY;
-
-
-    setMessage(
-        `Posizione: X ${playerX} • Y ${playerY}`
-    );
-
-
-    checkDungeonEventAtCurrentPosition();
-
-
-    movementLocked =
-        false;
-
-}
-
-
-// ============================================================
-// SALVA POSIZIONE
-// ============================================================
-
-async function savePlayerPosition() {
-
-    try {
+        // ----------------------------------------------------
+        // SALVA POSIZIONE
+        // ----------------------------------------------------
 
         const {
             error
@@ -2261,11 +2359,7 @@ async function savePlayerPosition() {
                         playerX,
 
                     dungeon_y:
-                        playerY,
-
-                    updated_at:
-                        new Date()
-                            .toISOString()
+                        playerY
 
                 })
                 .eq(
@@ -2273,248 +2367,754 @@ async function savePlayerPosition() {
                     character.id
                 );
 
+
         if (error) {
 
-            console.error(
-                "Errore salvataggio posizione:",
-                error
+            // Ripristina posizione precedente
+            // in caso di errore database.
+
+            playerX =
+                oldX;
+
+
+            playerY =
+                oldY;
+
+
+            showToken(
+                playerX,
+                playerY
             );
 
-            return false;
+
+            throw error;
 
         }
 
-        return true;
+
+        character.dungeon_x =
+            playerX;
+
+
+        character.dungeon_y =
+            playerY;
+
+
+        // ----------------------------------------------------
+        // PRESENCE
+        // ----------------------------------------------------
+
+        await updateMyPresence();
+
+
+        // ----------------------------------------------------
+        // BROADCAST
+        // ----------------------------------------------------
+
+        await broadcastMyState();
+
+
+        // ----------------------------------------------------
+        // EVENTUALE EVENTO DELLA CASELLA
+        // ----------------------------------------------------
+
+        await checkDungeonCellEvent();
+
+
+        setMessage(
+            "Ti muovi nel dungeon."
+        );
 
 
     } catch (error) {
 
         console.error(
-            "Errore salvataggio posizione:",
+            "Errore movimento:",
             error
         );
+
+
+        setMessage(
+            "Errore durante il movimento."
+        );
+
+
+    } finally {
+
+        movementLocked =
+            false;
+
+    }
+
+}
+
+
+// ============================================================
+// CONTROLLO CASELLA ACCESSIBILE
+// ============================================================
+
+function canMoveTo(
+    visibleX,
+    visibleY
+) {
+
+    if (
+        !dungeonData ||
+        !dungeonData.cells
+    ) {
 
         return false;
 
     }
 
-}
+
+    const jsonX =
+        visibleX +
+        GRID_OFFSET_X;
 
 
-// ============================================================
-// MAPPA
-// ============================================================
+    const jsonY =
+        visibleY +
+        GRID_OFFSET_Y;
 
-function getMapContainer() {
-
-    const image =
-        document.getElementById(
-            "dungeon-image"
-        );
-
-    if (!image) {
-
-        throw new Error(
-            "Immagine della mappa non trovata."
-        );
-
-    }
-
-    const container =
-        document.getElementById(
-            "dungeon-map"
-        );
-
-    if (!container) {
-
-        throw new Error(
-            "Contenitore della mappa non trovato."
-        );
-
-    }
-
-    const style =
-        window.getComputedStyle(
-            container
-        );
 
     if (
-        style.position ===
-        "static"
+        jsonY < 0 ||
+        jsonY >=
+            dungeonData.cells.length
     ) {
 
-        container.style.position =
-            "relative";
+        return false;
 
     }
 
-    return {
 
-        image,
-        container
+    if (
+        jsonX < 0 ||
+        jsonX >=
+            dungeonData.cells[
+                jsonY
+            ].length
+    ) {
 
-    };
+        return false;
 
-}
-
-
-// ============================================================
-// TOKEN PERSONALE
-// ============================================================
-
-function showToken(
-    x,
-    y
-) {
-
-    try {
-
-        const {
-            image,
-            container
-        } =
-            getMapContainer();
+    }
 
 
-        if (tokenElement) {
+    const cell =
+        dungeonData.cells[
+            jsonY
+        ][
+            jsonX
+        ];
 
-            tokenElement.remove();
 
-            tokenElement =
-                null;
+    // --------------------------------------------------------
+    // SUPPORTO A PIÙ FORMATI DEL JSON
+    // --------------------------------------------------------
+
+    if (
+        cell === null ||
+        cell === undefined
+    ) {
+
+        return false;
+
+    }
+
+
+    if (
+        typeof cell ===
+        "number"
+    ) {
+
+        return cell !== 0;
+
+    }
+
+
+    if (
+        typeof cell ===
+        "string"
+    ) {
+
+        const value =
+            cell.toLowerCase();
+
+
+        return ![
+            "wall",
+            "muro",
+            "void",
+            "blocked",
+            "0"
+        ].includes(
+            value
+        );
+
+    }
+
+
+    if (
+        typeof cell ===
+        "object"
+    ) {
+
+        if (
+            cell.walkable !==
+            undefined
+        ) {
+
+            return !!cell.walkable;
 
         }
 
 
-        const mapRect =
-            image.getBoundingClientRect();
+        if (
+            cell.blocked !==
+            undefined
+        ) {
 
-        const containerRect =
-            container.getBoundingClientRect();
+            return !cell.blocked;
 
-        const cellWidth =
-            mapRect.width /
-            MAP_COLUMNS;
-
-        const cellHeight =
-            mapRect.height /
-            MAP_ROWS;
+        }
 
 
-        const token =
-            document.createElement(
-                "img"
+        if (
+            cell.type
+        ) {
+
+            const type =
+                String(
+                    cell.type
+                ).toLowerCase();
+
+
+            return ![
+                "wall",
+                "muro",
+                "void",
+                "blocked"
+            ].includes(
+                type
             );
 
-        token.className =
-            "dungeon-player-token";
+        }
 
 
-        const tokenFile =
-            character.token ||
-            "token_1.png";
+        return true;
 
-        token.src =
-            "immagini/token/" +
-            tokenFile;
-
-        token.alt =
-            "Token di " +
-            (
-                character.nome ||
-                "personaggio"
-            );
-
-        token.title =
-            character.nome ||
-            "Personaggio";
+    }
 
 
-        const tokenSize =
-            Math.min(
-                cellWidth,
-                cellHeight
-            ) * 0.92;
+    return false;
+
+}
 
 
-        token.style.position =
-            "absolute";
+// ============================================================
+// OTTIENI CASELLA JSON CORRENTE
+// ============================================================
 
-        token.style.width =
-            `${tokenSize}px`;
+function getCurrentDungeonCell() {
 
-        token.style.height =
-            `${tokenSize}px`;
+    if (
+        !dungeonData ||
+        !dungeonData.cells
+    ) {
 
-        token.style.objectFit =
-            "contain";
+        return null;
 
-        token.style.boxSizing =
-            "border-box";
-
-        token.style.zIndex =
-            "100";
-
-        token.style.pointerEvents =
-            "none";
+    }
 
 
-        const centerX =
-            (
-                x +
-                0.5
-            ) *
-            cellWidth;
-
-        const centerY =
-            (
-                y +
-                0.5
-            ) *
-            cellHeight;
-
-        const offsetX =
-            mapRect.left -
-            containerRect.left;
-
-        const offsetY =
-            mapRect.top -
-            containerRect.top;
+    const jsonX =
+        playerX +
+        GRID_OFFSET_X;
 
 
-        token.style.left =
-            `${
-                offsetX +
-                centerX -
-                tokenSize / 2
-            }px`;
-
-        token.style.top =
-            `${
-                offsetY +
-                centerY -
-                tokenSize / 2
-            }px`;
+    const jsonY =
+        playerY +
+        GRID_OFFSET_Y;
 
 
-        container.appendChild(
-            token
+    if (
+        jsonY < 0 ||
+        jsonY >=
+            dungeonData.cells.length
+    ) {
+
+        return null;
+
+    }
+
+
+    if (
+        jsonX < 0 ||
+        jsonX >=
+            dungeonData.cells[
+                jsonY
+            ].length
+    ) {
+
+        return null;
+
+    }
+
+
+    return dungeonData.cells[
+        jsonY
+    ][
+        jsonX
+    ];
+
+}
+
+
+// ============================================================
+// CONTROLLO EVENTI DELLA CASELLA
+// ============================================================
+
+async function checkDungeonCellEvent() {
+
+    const cell =
+        getCurrentDungeonCell();
+
+
+    if (
+        !cell ||
+        typeof cell !==
+            "object"
+    ) {
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // SUPPORTO GENERICO EVENTO
+    // --------------------------------------------------------
+
+    const eventType =
+        cell.event ||
+        cell.event_type ||
+        cell.type_event ||
+        null;
+
+
+    if (!eventType) {
+
+        return;
+
+    }
+
+
+    const normalizedEvent =
+        String(
+            eventType
+        ).toLowerCase();
+
+
+    // --------------------------------------------------------
+    // TRAPPOLA
+    // --------------------------------------------------------
+
+    if (
+        normalizedEvent ===
+            "trap" ||
+        normalizedEvent ===
+            "trappola"
+    ) {
+
+        await triggerTrapEvent(
+            cell
         );
 
 
-        tokenElement =
-            token;
+        return;
+
+    }
+
+}
+
+
+// ============================================================
+// EVENTO TRAPPOLA
+// ============================================================
+
+async function triggerTrapEvent(
+    dungeonEvent
+) {
+
+    if (!character) {
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // FORTUNA EFFETTIVA
+    // --------------------------------------------------------
+
+    const fortuna =
+        getDungeonEffectiveAttribute(
+            "fortuna"
+        );
+
+
+    // --------------------------------------------------------
+    // STATISTICA DIFENSIVA
+    //
+    // Se il JSON non specifica niente,
+    // usiamo RES come fallback.
+    // --------------------------------------------------------
+
+    const defenseStatName =
+        String(
+            dungeonEvent.defenseStat ||
+            dungeonEvent.defense_stat ||
+            "resistenza"
+        ).toLowerCase();
+
+
+    const supportedStats =
+        [
+            "forza",
+            "resistenza",
+            "costituzione",
+            "intelligenza",
+            "destrezza",
+            "fortuna"
+        ];
+
+
+    const safeDefenseStat =
+        supportedStats.includes(
+            defenseStatName
+        )
+
+            ? defenseStatName
+
+            : "resistenza";
+
+
+    const defenseValue =
+        getDungeonEffectiveAttribute(
+            safeDefenseStat
+        );
+
+
+    // --------------------------------------------------------
+    // DIFFICOLTÀ
+    // --------------------------------------------------------
+
+    const difficulty =
+        Number(
+            dungeonEvent.difficulty ||
+            dungeonEvent.dc
+        ) || 10;
+
+
+    // --------------------------------------------------------
+    // TIRO
+    // --------------------------------------------------------
+
+    const roll =
+        Math.floor(
+            Math.random() *
+            20
+        ) + 1;
+
+
+    // Piccolo contributo della fortuna.
+
+    const fortuneBonus =
+        Math.floor(
+            fortuna / 5
+        );
+
+
+    const total =
+        roll +
+        defenseValue +
+        fortuneBonus;
+
+
+    console.log(
+        "TRAPPOLA:",
+        {
+            roll,
+            defenseStat:
+                safeDefenseStat,
+            defenseValue,
+            fortuna,
+            fortuneBonus,
+            total,
+            difficulty
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // SUPERATA
+    // --------------------------------------------------------
+
+    if (
+        total >=
+        difficulty
+    ) {
+
+        setMessage(
+            dungeonEvent.success_message ||
+            dungeonEvent.successMessage ||
+            "Riesci a evitare la trappola."
+        );
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // DANNO
+    // --------------------------------------------------------
+
+    const baseDamage =
+        Number(
+            dungeonEvent.damage
+        ) || 1;
+
+
+    const costituzione =
+        getDungeonEffectiveAttribute(
+            "costituzione"
+        );
+
+
+    // Per ora manteniamo la logica
+    // del sistema dungeon:
+    // il danno minimo è sempre 1.
+
+    const constitutionReduction =
+        Math.floor(
+            costituzione / 10
+        );
+
+
+    const damage =
+        Math.max(
+            1,
+            baseDamage -
+            constitutionReduction
+        );
+
+
+    const maxHealth =
+        Math.ceil(
+            5 *
+            (
+                costituzione / 2
+            )
+        );
+
+
+    const oldHealth =
+        character.current_hp ===
+            null
+        ||
+        character.current_hp ===
+            undefined
+
+            ? maxHealth
+
+            : Math.max(
+                0,
+                Math.min(
+                    Number(
+                        character.current_hp
+                    ),
+                    maxHealth
+                )
+            );
+
+
+    const newHealth =
+        Math.max(
+            0,
+            oldHealth -
+            damage
+        );
+
+
+    // --------------------------------------------------------
+    // SALVA PF
+    // --------------------------------------------------------
+
+    const {
+        error
+    } =
+        await db
+            .from("characters")
+            .update({
+
+                current_hp:
+                    newHealth
+
+            })
+            .eq(
+                "id",
+                character.id
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Errore aggiornamento PF:",
+            error
+        );
+
+
+        return;
+
+    }
+
+
+    character.current_hp =
+        newHealth;
+
+
+    // Aggiorna tutta la scheda,
+    // così resta PF attuali / PF massimi.
+
+    updateCharacterPanel();
+
+
+    setMessage(
+        dungeonEvent.fail_message ||
+        dungeonEvent.failMessage ||
+        `La trappola ti colpisce: perdi ${damage} PF.`
+    );
+
+
+    // --------------------------------------------------------
+    // MORTE
+    // --------------------------------------------------------
+
+    if (
+        newHealth <= 0
+    ) {
+
+        await handleCharacterDeath();
+
+    }
+
+}
+// ============================================================
+// MORTE DEL PERSONAGGIO
+// ============================================================
+
+async function handleCharacterDeath() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    console.log(
+        "Il personaggio è morto."
+    );
+
+
+    movementLocked =
+        true;
+
+
+    setMessage(
+        "Il tuo personaggio è morto..."
+    );
+
+
+    // ========================================================
+    // RIMUOVE PRESENCE
+    // ========================================================
+
+    if (
+        dungeonChannel &&
+        realtimeReady
+    ) {
+
+        try {
+
+            await dungeonChannel.untrack();
+
+        } catch (error) {
+
+            console.error(
+                "Errore rimozione presence:",
+                error
+            );
+
+        }
+
+    }
+
+
+    // ========================================================
+    // ELIMINA PERSONAGGIO
+    // ========================================================
+
+    try {
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .delete()
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character = null;
+
+
+        // ====================================================
+        // PAGINA MORTE
+        // ====================================================
+
+        window.location.href =
+            "morte.html";
 
 
     } catch (error) {
 
         console.error(
-            "Errore nella visualizzazione del token:",
+            "Errore eliminazione personaggio:",
             error
         );
 
+
         showError(
-            "Errore nella visualizzazione del personaggio."
+            "Errore durante la gestione della morte del personaggio."
         );
 
     }
@@ -2523,80 +3123,44 @@ function showToken(
 
 
 // ============================================================
-// NEBBIA DI GUERRA - INIZIALIZZAZIONE
+// NOTE PERSONAGGIO
 // ============================================================
 
-function setupFogOfWar() {
+function setupNotes() {
 
-    loadExploredCellsFromCharacter();
-
-
-    const {
-        image,
-        container
-    } =
-        getMapContainer();
-
-
-    if (!fogCanvas) {
-
-        fogCanvas =
-            document.createElement(
-                "canvas"
-            );
-
-        fogCanvas.className =
-            "dungeon-fog-canvas";
-
-        fogCanvas.setAttribute(
-            "aria-hidden",
-            "true"
+    const notesElement =
+        document.getElementById(
+            "character-notes"
         );
 
-        container.appendChild(
-            fogCanvas
+
+    const saveButton =
+        document.getElementById(
+            "save-notes-button"
         );
 
-    }
+
+    // Supporto anche agli eventuali ID
+    // utilizzati nelle versioni precedenti dell'HTML.
+
+    const notes =
+        notesElement ||
+        document.getElementById(
+            "notes"
+        );
+
+
+    const button =
+        saveButton ||
+        document.getElementById(
+            "save-notes"
+        );
 
 
     if (
-        !image.complete
-    ) {
-
-        image.addEventListener(
-            "load",
-            updateFogOfWar,
-            {
-                once: true
-            }
-        );
-
-    }
-
-
-    updateFogOfWar();
-
-}
-
-
-// ============================================================
-// CARICA CELLE GIÀ ESPLORATE
-// ============================================================
-
-function loadExploredCellsFromCharacter() {
-
-    exploredCells.clear();
-
-
-    const stored =
-        character?.fog_explored;
-
-
-    if (
-        !Array.isArray(
-            stored
-        )
+        !notes ||
+        !button ||
+        !character
     ) {
 
         return;
@@ -2604,923 +3168,97 @@ function loadExploredCellsFromCharacter() {
     }
 
 
-    stored.forEach(
-        cell => {
-
-            if (
-                !Array.isArray(cell) ||
-                cell.length < 2
-            ) {
-
-                return;
-
-            }
+    notes.value =
+        character.notes ||
+        "";
 
 
-            const x =
-                Number(
-                    cell[0]
-                );
+    button.addEventListener(
+        "click",
+        async () => {
 
-            const y =
-                Number(
-                    cell[1]
-                );
-
-
-            if (
-                Number.isInteger(x) &&
-                Number.isInteger(y) &&
-                x >= 0 &&
-                y >= 0 &&
-                x < MAP_COLUMNS &&
-                y < MAP_ROWS
-            ) {
-
-                exploredCells.add(
-                    fogCellKey(
-                        x,
-                        y
-                    )
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// AGGIORNA NEBBIA
-// ============================================================
-
-function updateFogOfWar() {
-
-    if (
-        !dungeonData ||
-        playerX === null ||
-        playerY === null
-    ) {
-
-        return;
-
-    }
-
-
-    visibleCells =
-        calculateVisibleCells();
-
-
-    let discoveredSomething =
-        false;
-
-
-    for (
-        const key
-        of visibleCells
-    ) {
-
-        if (
-            !exploredCells.has(
-                key
-            )
-        ) {
-
-            exploredCells.add(
-                key
-            );
-
-            discoveredSomething =
+            button.disabled =
                 true;
 
-        }
 
-    }
+            const originalText =
+                button.textContent;
 
 
-    renderFogOfWar();
+            button.textContent =
+                "SALVATAGGIO...";
 
-    updateRemoteTokensVisibility();
 
+            try {
 
-    if (
-        discoveredSomething
-    ) {
+                const newNotes =
+                    notes.value;
 
-        queueFogExplorationSave();
 
-    }
+                const {
+                    error
+                } =
+                    await db
+                        .from("characters")
+                        .update({
 
-}
+                            notes:
+                                newNotes
 
-
-// ============================================================
-// CALCOLA VISIBILITÀ
-// ============================================================
-
-function calculateVisibleCells() {
-
-    const visible =
-        new Set();
-
-
-    const radius =
-        getVisionRadius();
-
-
-    for (
-        let y = 0;
-        y < MAP_ROWS;
-        y++
-    ) {
-
-        for (
-            let x = 0;
-            x < MAP_COLUMNS;
-            x++
-        ) {
-
-            const dx =
-                x -
-                playerX;
-
-            const dy =
-                y -
-                playerY;
-
-
-            if (
-                Math.hypot(
-                    dx,
-                    dy
-                ) >
-                radius
-            ) {
-
-                continue;
-
-            }
-
-
-            if (
-                hasLineOfSight(
-                    playerX,
-                    playerY,
-                    x,
-                    y
-                )
-            ) {
-
-                visible.add(
-                    fogCellKey(
-                        x,
-                        y
-                    )
-                );
-
-            }
-
-        }
-
-    }
-
-
-    visible.add(
-        fogCellKey(
-            playerX,
-            playerY
-        )
-    );
-
-
-    return visible;
-
-}
-
-
-// ============================================================
-// RAGGIO DI VISIONE = MOVIMENTO
-// ============================================================
-
-function getVisionRadius() {
-
-    const destrezza =
-        Number(
-            character?.destrezza
-        ) || 1;
-
-
-    return 4 +
-        Math.ceil(
-            destrezza / 2
-        );
-
-}
-
-
-// ============================================================
-// LINEA DI VISTA
-// ============================================================
-
-function hasLineOfSight(
-    startX,
-    startY,
-    targetX,
-    targetY
-) {
-
-    if (
-        startX === targetX &&
-        startY === targetY
-    ) {
-
-        return true;
-
-    }
-
-
-    const line =
-        getGridLine(
-            startX,
-            startY,
-            targetX,
-            targetY
-        );
-
-
-    for (
-        let i = 1;
-        i < line.length - 1;
-        i++
-    ) {
-
-        const cell =
-            line[i];
-
-
-        if (
-            isVisionBlockingCell(
-                cell.x,
-                cell.y
-            )
-        ) {
-
-            return false;
-
-        }
-
-    }
-
-
-    return true;
-
-}
-// ============================================================
-// LINEA TRA DUE CASELLE - SUPERCOVER
-// ============================================================
-
-function getGridLine(
-    x0,
-    y0,
-    x1,
-    y1
-) {
-
-    const cells = [];
-
-
-    function addCell(
-        x,
-        y
-    ) {
-
-        const last =
-            cells[
-                cells.length - 1
-            ];
-
-
-        if (
-            !last ||
-            last.x !== x ||
-            last.y !== y
-        ) {
-
-            cells.push({
-                x,
-                y
-            });
-
-        }
-
-    }
-
-
-    let x = x0;
-    let y = y0;
-
-
-    addCell(
-        x,
-        y
-    );
-
-
-    const dx =
-        x1 - x0;
-
-    const dy =
-        y1 - y0;
-
-
-    const stepX =
-        Math.sign(dx);
-
-    const stepY =
-        Math.sign(dy);
-
-
-    const absDx =
-        Math.abs(dx);
-
-    const absDy =
-        Math.abs(dy);
-
-
-    const tDeltaX =
-        absDx === 0
-            ? Infinity
-            : 1 / absDx;
-
-
-    const tDeltaY =
-        absDy === 0
-            ? Infinity
-            : 1 / absDy;
-
-
-    let tMaxX =
-        absDx === 0
-            ? Infinity
-            : 0.5 / absDx;
-
-
-    let tMaxY =
-        absDy === 0
-            ? Infinity
-            : 0.5 / absDy;
-
-
-    const EPSILON =
-        0.0000001;
-
-
-    while (
-        x !== x1 ||
-        y !== y1
-    ) {
-
-        if (
-            Math.abs(
-                tMaxX -
-                tMaxY
-            ) <
-            EPSILON
-        ) {
-
-            const sideX =
-                x + stepX;
-
-            const sideY =
-                y + stepY;
-
-
-            addCell(
-                sideX,
-                y
-            );
-
-
-            addCell(
-                x,
-                sideY
-            );
-
-
-            x =
-                sideX;
-
-            y =
-                sideY;
-
-
-            addCell(
-                x,
-                y
-            );
-
-
-            tMaxX +=
-                tDeltaX;
-
-            tMaxY +=
-                tDeltaY;
-
-
-            continue;
-
-        }
-
-
-        if (
-            tMaxX <
-            tMaxY
-        ) {
-
-            x +=
-                stepX;
-
-            tMaxX +=
-                tDeltaX;
-
-
-            addCell(
-                x,
-                y
-            );
-
-
-            continue;
-
-        }
-
-
-        y +=
-            stepY;
-
-        tMaxY +=
-            tDeltaY;
-
-
-        addCell(
-            x,
-            y
-        );
-
-    }
-
-
-    return cells;
-
-}
-
-
-// ============================================================
-// CELLE CHE BLOCCANO LA VISTA
-// ============================================================
-
-function isVisionBlockingCell(
-    x,
-    y
-) {
-
-    const value =
-        getDungeonCellValue(
-            x,
-            y
-        );
-
-
-    if (
-        value === null
-    ) {
-
-        return true;
-
-    }
-
-
-    const bits =
-        dungeonData.cell_bit ||
-        {};
-
-
-    if (
-        value === 0
-    ) {
-
-        return true;
-
-    }
-
-
-    const BLOCK =
-        bits.block ||
-        1;
-
-    const PERIMETER =
-        bits.perimeter ||
-        16;
-
-    const DOOR =
-        bits.door ||
-        131072;
-
-    const LOCKED =
-        bits.locked ||
-        262144;
-
-    const SECRET =
-        bits.secret ||
-        1048576;
-
-    const PORTCULLIS =
-        bits.portcullis ||
-        2097152;
-
-
-    return (
-
-        (value & BLOCK) !== 0 ||
-
-        (value & PERIMETER) !== 0 ||
-
-        (value & DOOR) !== 0 ||
-
-        (value & LOCKED) !== 0 ||
-
-        (value & SECRET) !== 0 ||
-
-        (value & PORTCULLIS) !== 0
-
-    );
-
-}
-
-
-// ============================================================
-// DISEGNA NEBBIA
-// ============================================================
-
-function renderFogOfWar() {
-
-    if (!fogCanvas) {
-
-        return;
-
-    }
-
-
-    let image;
-    let container;
-
-
-    try {
-
-        ({
-            image,
-            container
-        } =
-            getMapContainer());
-
-    } catch {
-
-        return;
-
-    }
-
-
-    const mapRect =
-        image.getBoundingClientRect();
-
-    const containerRect =
-        container.getBoundingClientRect();
-
-
-    if (
-        mapRect.width <= 0 ||
-        mapRect.height <= 0
-    ) {
-
-        return;
-
-    }
-
-
-    const pixelRatio =
-        window.devicePixelRatio ||
-        1;
-
-
-    fogCanvas.style.left =
-        `${
-            mapRect.left -
-            containerRect.left
-        }px`;
-
-
-    fogCanvas.style.top =
-        `${
-            mapRect.top -
-            containerRect.top
-        }px`;
-
-
-    fogCanvas.style.width =
-        `${mapRect.width}px`;
-
-    fogCanvas.style.height =
-        `${mapRect.height}px`;
-
-
-    fogCanvas.width =
-        Math.max(
-            1,
-            Math.round(
-                mapRect.width *
-                pixelRatio
-            )
-        );
-
-
-    fogCanvas.height =
-        Math.max(
-            1,
-            Math.round(
-                mapRect.height *
-                pixelRatio
-            )
-        );
-
-
-    const context =
-        fogCanvas.getContext(
-            "2d"
-        );
-
-
-    if (!context) {
-
-        return;
-
-    }
-
-
-    context.setTransform(
-        pixelRatio,
-        0,
-        0,
-        pixelRatio,
-        0,
-        0
-    );
-
-
-    context.clearRect(
-        0,
-        0,
-        mapRect.width,
-        mapRect.height
-    );
-
-
-    const cellWidth =
-        mapRect.width /
-        MAP_COLUMNS;
-
-    const cellHeight =
-        mapRect.height /
-        MAP_ROWS;
-
-
-    for (
-        let y = 0;
-        y < MAP_ROWS;
-        y++
-    ) {
-
-        for (
-            let x = 0;
-            x < MAP_COLUMNS;
-            x++
-        ) {
-
-            const key =
-                fogCellKey(
-                    x,
-                    y
-                );
-
-
-            if (
-                visibleCells.has(
-                    key
-                )
-            ) {
-
-                continue;
-
-            }
-
-
-            if (
-                exploredCells.has(
-                    key
-                )
-            ) {
-
-                context.fillStyle =
-                    "rgba(0, 0, 0, 0.62)";
-
-            } else {
-
-                context.fillStyle =
-                    "rgba(0, 0, 0, 1)";
-
-            }
-
-
-            context.fillRect(
-
-                x *
-                cellWidth -
-                0.5,
-
-                y *
-                cellHeight -
-                0.5,
-
-                cellWidth +
-                1,
-
-                cellHeight +
-                1
-
-            );
-
-        }
-
-    }
-
-}
-
-
-// ============================================================
-// CONTROLLO VISIBILITÀ CELLA
-// ============================================================
-
-function isCellCurrentlyVisible(
-    x,
-    y
-) {
-
-    return visibleCells.has(
-        fogCellKey(
-            Number(x),
-            Number(y)
-        )
-    );
-
-}
-
-
-// ============================================================
-// VISIBILITÀ TOKEN REMOTI
-// ============================================================
-
-function updateRemoteTokensVisibility() {
-
-    for (
-        const [
-            characterId,
-            token
-        ]
-        of otherPlayerTokens
-    ) {
-
-        const player =
-            otherPlayers.get(
-                characterId
-            );
-
-
-        if (!player) {
-
-            token.style.display =
-                "none";
-
-            continue;
-
-        }
-
-
-        token.style.display =
-            isCellCurrentlyVisible(
-                player.x,
-                player.y
-            )
-                ? "block"
-                : "none";
-
-    }
-
-}
-
-
-// ============================================================
-// SALVATAGGIO ESPLORAZIONE
-// ============================================================
-
-function queueFogExplorationSave() {
-
-    const snapshot =
-        Array.from(
-            exploredCells
-        )
-            .map(
-                key =>
-                    key
-                        .split(",")
-                        .map(Number)
-            )
-            .sort(
-                (a, b) =>
-                    a[1] -
-                    b[1] ||
-                    a[0] -
-                    b[0]
-            );
-
-
-    character.fog_explored =
-        snapshot;
-
-
-    fogSavePromise =
-        fogSavePromise
-            .then(
-                async () => {
-
-                    const {
-                        error
-                    } =
-                        await db
-                            .from(
-                                "characters"
-                            )
-                            .update({
-
-                                fog_explored:
-                                    snapshot,
-
-                                updated_at:
-                                    new Date()
-                                        .toISOString()
-
-                            })
-                            .eq(
-                                "id",
-                                character.id
-                            );
-
-
-                    if (error) {
-
-                        console.error(
-                            "Errore salvataggio nebbia di guerra:",
-                            error
+                        })
+                        .eq(
+                            "id",
+                            character.id
                         );
 
-                    }
+
+                if (error) {
+
+                    throw error;
 
                 }
-            )
-            .catch(
-                error => {
-
-                    console.error(
-                        "Errore coda salvataggio nebbia:",
-                        error
-                    );
-
-                }
-            );
-
-}
 
 
-// ============================================================
-// CHIAVE CELLA
-// ============================================================
+                character.notes =
+                    newNotes;
 
-function fogCellKey(
-    x,
-    y
-) {
 
-    return `${x},${y}`;
+                button.textContent =
+                    "SALVATO ✓";
+
+
+            } catch (error) {
+
+                console.error(
+                    "Errore salvataggio note:",
+                    error
+                );
+
+
+                button.textContent =
+                    "ERRORE";
+
+
+            } finally {
+
+                setTimeout(
+                    () => {
+
+                        button.textContent =
+                            originalText;
+
+
+                        button.disabled =
+                            false;
+
+                    },
+                    1200
+                );
+
+            }
+
+        }
+    );
 
 }
 
@@ -3531,20 +3269,29 @@ function fogCellKey(
 
 function setupFloorChat() {
 
-    const form =
-        document.getElementById(
-            "floor-chat-form"
-        );
-
     const input =
         document.getElementById(
             "floor-chat-input"
+        )
+        ||
+        document.getElementById(
+            "chat-input"
+        );
+
+
+    const button =
+        document.getElementById(
+            "floor-chat-send"
+        )
+        ||
+        document.getElementById(
+            "chat-send"
         );
 
 
     if (
-        !form ||
-        !input
+        !input ||
+        !button
     ) {
 
         return;
@@ -3552,34 +3299,56 @@ function setupFloorChat() {
     }
 
 
-    form.addEventListener(
-        "submit",
-        async event => {
+    // ========================================================
+    // INVIO CON PULSANTE
+    // ========================================================
 
-            event.preventDefault();
+    button.addEventListener(
+        "click",
+        async () => {
 
-            await sendFloorChatMessage();
+            await sendFloorChatMessage(
+                input
+            );
 
         }
     );
 
+
+    // ========================================================
+    // INVIO CON ENTER
+    // ========================================================
 
     input.addEventListener(
         "keydown",
-        event => {
+        async event => {
 
             if (
-                event.key ===
-                "Enter" &&
-                !event.shiftKey
+                event.key !==
+                "Enter"
             ) {
 
-                event.preventDefault();
-
-                form.requestSubmit();
+                return;
 
             }
 
+
+            if (
+                event.shiftKey
+            ) {
+
+                return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            await sendFloorChatMessage(
+                input
+            );
+
         }
     );
 
@@ -3587,156 +3356,12 @@ function setupFloorChat() {
 
 
 // ============================================================
-// STATO CHAT
+// INVIA MESSAGGIO CHAT
 // ============================================================
 
-function setFloorChatConnected(
-    connected
+async function sendFloorChatMessage(
+    input
 ) {
-
-    const sendButton =
-        document.getElementById(
-            "floor-chat-send"
-        );
-
-    const input =
-        document.getElementById(
-            "floor-chat-input"
-        );
-
-    const status =
-        document.getElementById(
-            "floor-chat-status"
-        );
-
-
-    if (sendButton) {
-
-        sendButton.disabled =
-            !connected;
-
-    }
-
-
-    if (input) {
-
-        input.disabled =
-            !connected;
-
-    }
-
-
-    if (status) {
-
-        status.textContent =
-            connected
-                ? "Online"
-                : "Disconnessa";
-
-
-        status.classList.toggle(
-            "is-online",
-            connected
-        );
-
-    }
-
-
-    if (connected) {
-
-        updateFloorChatOnlineStatus();
-
-    }
-
-}
-
-
-// ============================================================
-// NUMERO GIOCATORI ONLINE
-// ============================================================
-
-function updateFloorChatOnlineStatus() {
-
-    if (
-        !dungeonChannel ||
-        !realtimeReady
-    ) {
-
-        return;
-
-    }
-
-
-    const status =
-        document.getElementById(
-            "floor-chat-status"
-        );
-
-
-    if (!status) {
-
-        return;
-
-    }
-
-
-    const presenceState =
-        dungeonChannel
-            .presenceState();
-
-
-    let onlineCount =
-        0;
-
-
-    Object.values(
-        presenceState
-    ).forEach(
-        presences => {
-
-            onlineCount +=
-                presences.length;
-
-        }
-    );
-
-
-    if (
-        onlineCount <= 0
-    ) {
-
-        status.textContent =
-            "Online";
-
-        return;
-
-    }
-
-
-    status.textContent =
-        onlineCount === 1
-            ? "1 giocatore online"
-            : `${onlineCount} giocatori online`;
-
-}
-
-
-// ============================================================
-// INVIA CHAT
-// ============================================================
-
-async function sendFloorChatMessage() {
-
-    const input =
-        document.getElementById(
-            "floor-chat-input"
-        );
-
-    const feedback =
-        document.getElementById(
-            "floor-chat-feedback"
-        );
-
 
     if (
         !input ||
@@ -3749,8 +3374,7 @@ async function sendFloorChatMessage() {
 
 
     const text =
-        input.value
-            .trim();
+        input.value.trim();
 
 
     if (!text) {
@@ -3760,53 +3384,31 @@ async function sendFloorChatMessage() {
     }
 
 
-    if (
-        !dungeonChannel ||
-        !realtimeReady
-    ) {
-
-        if (feedback) {
-
-            feedback.textContent =
-                "Chat non connessa.";
-
-        }
-
-        return;
-
-    }
-
-
-    const payload = {
-
-        message_id:
-            `${
-                character.id
-            }-${Date.now()}`,
+    const message = {
 
         character_id:
             character.id,
 
-        user_id:
-            currentUser?.id ||
-            null,
-
-        nome:
+        name:
             character.nome ||
             "Avventuriero",
 
-        text,
+        text:
+            text,
 
-        sent_at:
+        timestamp:
             new Date()
                 .toISOString()
 
     };
 
 
-    appendFloorChatMessage(
-        payload,
-        true
+    // ========================================================
+    // MOSTRA SUBITO IL MESSAGGIO LOCALE
+    // ========================================================
+
+    addFloorChatMessage(
+        message
     );
 
 
@@ -3814,37 +3416,39 @@ async function sendFloorChatMessage() {
         "";
 
 
-    if (feedback) {
-
-        feedback.textContent =
-            "";
-
-    }
-
-
-    const result =
-        await dungeonChannel.send({
-
-            type:
-                "broadcast",
-
-            event:
-                "floor-chat",
-
-            payload
-
-        });
-
+    // ========================================================
+    // INVIA AGLI ALTRI
+    // ========================================================
 
     if (
-        result !== "ok" &&
-        result !== undefined
+        dungeonChannel &&
+        realtimeReady
     ) {
 
-        console.warn(
-            "Invio chat:",
-            result
-        );
+        try {
+
+            await dungeonChannel.send({
+
+                type:
+                    "broadcast",
+
+                event:
+                    "floor-chat",
+
+                payload:
+                    message
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Errore invio chat:",
+                error
+            );
+
+        }
 
     }
 
@@ -3855,141 +3459,128 @@ async function sendFloorChatMessage() {
 // MOSTRA MESSAGGIO CHAT
 // ============================================================
 
-function appendFloorChatMessage(
-    data,
-    isMine = false
+function addFloorChatMessage(
+    message
 ) {
 
-    const container =
-        document.getElementById(
-            "floor-chat-messages"
-        );
-
-
-    if (
-        !container ||
-        !data
-    ) {
+    if (!message) {
 
         return;
 
     }
 
 
-    const empty =
-        container.querySelector(
-            ".floor-chat-empty"
+    const container =
+        document.getElementById(
+            "floor-chat-messages"
+        )
+        ||
+        document.getElementById(
+            "chat-messages"
         );
 
 
-    if (empty) {
+    if (!container) {
 
-        empty.remove();
+        return;
 
     }
 
 
-    const message =
+    // ========================================================
+    // RIMUOVE PLACEHOLDER
+    // ========================================================
+
+    const placeholder =
+        container.querySelector(
+            ".chat-placeholder"
+        );
+
+
+    if (placeholder) {
+
+        placeholder.remove();
+
+    }
+
+
+    // ========================================================
+    // RIGA
+    // ========================================================
+
+    const row =
         document.createElement(
             "div"
         );
 
 
-    message.className =
-        "floor-chat-message" +
-        (
-            isMine
-                ? " is-mine"
-                : ""
+    row.className =
+        "floor-chat-message";
+
+
+    if (
+        character &&
+        message.character_id ===
+            character.id
+    ) {
+
+        row.classList.add(
+            "mine"
         );
 
-
-    const meta =
-        document.createElement(
-            "div"
-        );
+    }
 
 
-    meta.className =
-        "floor-chat-message-meta";
+    // ========================================================
+    // NOME
+    // ========================================================
 
-
-    const author =
+    const name =
         document.createElement(
             "strong"
         );
 
 
-    author.textContent =
-        data.nome ||
-        "Giocatore";
+    name.className =
+        "floor-chat-name";
 
 
-    const time =
+    name.textContent =
+        message.name ||
+        "Avventuriero";
+
+
+    // ========================================================
+    // TESTO
+    // ========================================================
+
+    const text =
         document.createElement(
             "span"
         );
 
 
-    time.textContent =
-        formatFloorChatTime(
-            data.sent_at
-        );
+    text.className =
+        "floor-chat-text";
 
 
-    meta.appendChild(
-        author
+    text.textContent =
+        message.text ||
+        "";
+
+
+    row.append(
+        name,
+        document.createTextNode(
+            ": "
+        ),
+        text
     );
 
-    meta.appendChild(
-        time
-    );
-
-
-    const body =
-        document.createElement(
-            "div"
-        );
-
-
-    body.className =
-        "floor-chat-message-body";
-
-
-    body.textContent =
-        String(
-            data.text ||
-            ""
-        );
-
-
-    message.appendChild(
-        meta
-    );
-
-    message.appendChild(
-        body
-    );
 
     container.appendChild(
-        message
+        row
     );
-
-
-    const messages =
-        container.querySelectorAll(
-            ".floor-chat-message"
-        );
-
-
-    if (
-        messages.length >
-        100
-    ) {
-
-        messages[0].remove();
-
-    }
 
 
     container.scrollTop =
@@ -3999,1286 +3590,7 @@ function appendFloorChatMessage(
 
 
 // ============================================================
-// ORARIO CHAT
-// ============================================================
-
-function formatFloorChatTime(
-    value
-) {
-
-    const date =
-        value
-            ? new Date(value)
-            : new Date();
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "";
-
-    }
-
-
-    return date.toLocaleTimeString(
-        "it-IT",
-        {
-
-            hour:
-                "2-digit",
-
-            minute:
-                "2-digit"
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// NOTE
-// ============================================================
-
-function setupNotes() {
-
-    const textarea =
-        document.getElementById(
-            "character-notes"
-        );
-
-    const saveButton =
-        document.getElementById(
-            "save-notes-button"
-        );
-
-
-    if (
-        !textarea ||
-        !saveButton
-    ) {
-
-        return;
-
-    }
-
-
-    textarea.value =
-        character.notes ||
-        "";
-
-
-    saveButton.addEventListener(
-        "click",
-        saveNotes
-    );
-
-}
-
-
-// ============================================================
-// SALVA NOTE
-// ============================================================
-
-async function saveNotes() {
-
-    const textarea =
-        document.getElementById(
-            "character-notes"
-        );
-
-    const message =
-        document.getElementById(
-            "notes-message"
-        );
-
-
-    if (
-        !textarea ||
-        !character
-    ) {
-
-        return;
-
-    }
-
-
-    const notes =
-        textarea.value;
-
-
-    if (message) {
-
-        message.textContent =
-            "Salvataggio...";
-
-    }
-
-
-    const {
-        data,
-        error
-    } =
-        await db
-            .from(
-                "characters"
-            )
-            .update({
-
-                notes,
-
-                updated_at:
-                    new Date()
-                        .toISOString()
-
-            })
-            .eq(
-                "id",
-                character.id
-            )
-            .select(
-                "id, notes"
-            )
-            .single();
-
-
-    if (error) {
-
-        console.error(
-            "Errore salvataggio note:",
-            error
-        );
-
-
-        if (message) {
-
-            message.textContent =
-                "Errore durante il salvataggio delle note.";
-
-        }
-
-        return;
-
-    }
-
-
-    character.notes =
-        data.notes ||
-        "";
-
-
-    textarea.value =
-        character.notes;
-
-
-    if (message) {
-
-        message.textContent =
-            "Note salvate.";
-
-
-        setTimeout(
-            () => {
-
-                if (
-                    message.textContent ===
-                    "Note salvate."
-                ) {
-
-                    message.textContent =
-                        "";
-
-                }
-
-            },
-            2500
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// EVENTI DUNGEON
-// ============================================================
-
-function getDungeonEventKey(
-    x,
-    y
-) {
-
-    return `${x},${y}`;
-
-}
-
-
-// ============================================================
-// CONTROLLA EVENTO NELLA POSIZIONE ATTUALE
-// ============================================================
-
-function checkDungeonEventAtCurrentPosition() {
-
-    if (
-        playerX === null ||
-        playerY === null
-    ) {
-
-        return;
-
-    }
-
-
-    const eventKey =
-        getDungeonEventKey(
-            playerX,
-            playerY
-        );
-
-
-    const dungeonEvent =
-        DUNGEON_EVENTS[
-            eventKey
-        ];
-
-
-    if (!dungeonEvent) {
-
-        lastTriggeredDungeonEventKey =
-            null;
-
-        return;
-
-    }
-
-
-    if (
-        lastTriggeredDungeonEventKey ===
-        eventKey
-    ) {
-
-        return;
-
-    }
-
-
-    lastTriggeredDungeonEventKey =
-        eventKey;
-
-
-    triggerDungeonEvent(
-        dungeonEvent,
-        eventKey
-    );
-
-}
-
-
-// ============================================================
-// ATTIVA EVENTO
-// ============================================================
-
-function triggerDungeonEvent(
-    dungeonEvent,
-    eventKey
-) {
-
-    if (!dungeonEvent) {
-
-        return;
-
-    }
-
-
-    switch (
-        dungeonEvent.type
-    ) {
-
-        case "communication":
-
-            openCommunicationEvent(
-                dungeonEvent,
-                eventKey
-            );
-
-            break;
-
-
-        case "trap":
-
-            triggerTrapEvent(
-                dungeonEvent,
-                eventKey
-            );
-
-            break;
-
-
-        case "combat":
-
-            console.log(
-                "Evento combattimento non ancora implementato:",
-                dungeonEvent
-            );
-
-            break;
-
-
-        default:
-
-            console.warn(
-                "Tipo evento sconosciuto:",
-                dungeonEvent.type
-            );
-
-    }
-
-}
-
-
-// ============================================================
-// TRAPPOLA
-// ============================================================
-
-async function triggerTrapEvent(
-    dungeonEvent,
-    eventKey
-) {
-
-    if (
-        !dungeonEvent ||
-        !character
-    ) {
-
-        return;
-
-    }
-
-
-    dungeonEventModalOpen =
-        true;
-
-
-    // ========================================================
-    // COOLDOWN GLOBALE
-    // ========================================================
-
-    if (
-        TRAP_COOLDOWN_ENABLED
-    ) {
-
-        const {
-            data: canTrigger,
-            error: cooldownError
-        } =
-            await db.rpc(
-                "try_trigger_trap",
-                {
-
-                    p_trap_id:
-                        dungeonEvent.id,
-
-                    p_character_id:
-                        character.id
-
-                }
-            );
-
-
-        if (
-            cooldownError
-        ) {
-
-            console.error(
-                "Errore controllo cooldown trappola:",
-                cooldownError
-            );
-
-
-            dungeonEventModalOpen =
-                false;
-
-
-            showError(
-                "Errore durante il controllo della trappola."
-            );
-
-
-            return;
-
-        }
-
-
-        // ----------------------------------------------------
-        // TRAPPOLA ANCORA IN COOLDOWN
-        // ----------------------------------------------------
-
-        if (
-            canTrigger !== true
-        ) {
-
-            console.log(
-                "Trappola in cooldown:",
-                dungeonEvent.id
-            );
-
-
-            dungeonEventModalOpen =
-                false;
-
-
-            setMessage(
-                "La trappola è già stata attivata e per ora è inattiva."
-            );
-
-
-            return;
-
-        }
-
-    }
-
-
-    // ========================================================
-    // STATISTICHE
-    // ========================================================
-
-    const fortuna =
-        Number(
-            character.fortuna
-        ) || 1;
-
-
-    const defenseStatName =
-        dungeonEvent.defenseStat;
-
-
-    const defenseValue =
-        Number(
-            character[
-                defenseStatName
-            ]
-        ) || 1;
-
-
-    // ========================================================
-    // TIRO 1D10 - LCK
-    // ========================================================
-
-    const diceRoll =
-        Math.floor(
-            Math.random() * 10
-        ) + 1;
-
-
-    const trapResult =
-        diceRoll -
-        fortuna;
-
-
-    const damage =
-        Math.max(
-            0,
-            trapResult -
-            defenseValue
-        );
-
-
-    // ========================================================
-    // VITA MASSIMA
-    // ========================================================
-
-    const costituzione =
-        Number(
-            character.costituzione
-        ) || 1;
-
-
-    const maxHealth =
-        Math.ceil(
-            5 *
-            (
-                costituzione / 2
-            )
-        );
-
-
-    // ========================================================
-    // VITA ATTUALE
-    // ========================================================
-
-    const oldHealth =
-        character.current_hp !== null &&
-        character.current_hp !== undefined
-            ? Number(
-                character.current_hp
-            )
-            : maxHealth;
-
-
-    const newHealth =
-        Math.max(
-            0,
-            oldHealth -
-            damage
-        );
-
-
-    console.log(
-        "TRAPPOLA:",
-        {
-            trap:
-                dungeonEvent.id,
-
-            oldHealth,
-
-            damage,
-
-            newHealth
-        }
-    );
-
-
-    // ========================================================
-    // SALVA LA NUOVA VITA
-    // ========================================================
-
-    const {
-        error
-    } =
-        await db
-            .from(
-                "characters"
-            )
-            .update({
-
-                current_hp:
-                    newHealth,
-
-                updated_at:
-                    new Date()
-                        .toISOString()
-
-            })
-            .eq(
-                "id",
-                character.id
-            );
-
-
-    if (
-        error
-    ) {
-
-        console.error(
-            "Errore aggiornamento vita:",
-            error
-        );
-
-
-        dungeonEventModalOpen =
-            false;
-
-
-        showError(
-            "Errore durante l'aggiornamento della vita."
-        );
-
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // AGGIORNA PERSONAGGIO LOCALE
-    // ========================================================
-
-    character.current_hp =
-        newHealth;
-
-
-    setText(
-        "health-display",
-        newHealth
-    );
-
-
-    // ========================================================
-    // MORTE
-    // ========================================================
-
-    if (
-        newHealth <= 0
-    ) {
-
-        console.log(
-            "IL PERSONAGGIO È MORTO"
-        );
-
-
-        await handleCharacterDeath();
-
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // SOPRAVVISSUTO → MOSTRA POPUP
-    // ========================================================
-
-    openTrapEvent(
-        dungeonEvent,
-        {
-
-            diceRoll,
-
-            fortuna,
-
-            trapResult,
-
-            defenseStatName,
-
-            defenseValue,
-
-            damage,
-
-            oldHealth,
-
-            newHealth
-
-        },
-        eventKey
-    );
-
-}
-
-// ============================================================
-// MORTE DEL PERSONAGGIO
-// ============================================================
-
-async function handleCharacterDeath() {
-
-    if (!character) {
-
-        return;
-
-    }
-
-
-    // Blocca qualsiasi ulteriore movimento.
-
-    movementLocked =
-        true;
-
-    dungeonEventModalOpen =
-        true;
-
-
-    try {
-
-        // ----------------------------------------------------
-        // Rimuove la presenza dal multiplayer
-        // ----------------------------------------------------
-
-        if (
-            dungeonChannel &&
-            realtimeReady
-        ) {
-
-            try {
-
-                await dungeonChannel
-                    .untrack();
-
-            } catch (error) {
-
-                console.error(
-                    "Errore rimozione presenza alla morte:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        // ----------------------------------------------------
-        // Cancella il personaggio da Supabase
-        // ----------------------------------------------------
-
-        const {
-            error
-        } =
-            await db
-                .from(
-                    "characters"
-                )
-                .delete()
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (error) {
-
-            console.error(
-                "Errore cancellazione personaggio morto:",
-                error
-            );
-
-
-            movementLocked =
-                false;
-
-            dungeonEventModalOpen =
-                false;
-
-
-            showError(
-                "Errore durante la gestione della morte del personaggio."
-            );
-
-
-            return;
-
-        }
-
-
-        console.log(
-            "Personaggio morto e cancellato:",
-            character.id
-        );
-
-
-        // ----------------------------------------------------
-        // Vai alla pagina MORTE
-        // ----------------------------------------------------
-
-        window.location.href =
-            "morte.html";
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore durante la morte del personaggio:",
-            error
-        );
-
-
-        movementLocked =
-            false;
-
-        dungeonEventModalOpen =
-            false;
-
-
-        showError(
-            "Errore durante la gestione della morte del personaggio."
-        );
-
-    }
-
-}
-
-// ============================================================
-// POPUP TRAPPOLA
-// ============================================================
-
-function openTrapEvent(
-    dungeonEvent,
-    result,
-    eventKey
-) {
-
-    const modal =
-        document.getElementById(
-            "dungeon-event-modal"
-        );
-
-
-    const titleElement =
-        document.getElementById(
-            "dungeon-event-title"
-        );
-
-
-    const textElement =
-        document.getElementById(
-            "dungeon-event-text"
-        );
-
-
-    const actionsElement =
-        document.getElementById(
-            "dungeon-event-actions"
-        );
-
-
-    if (
-        !modal ||
-        !titleElement ||
-        !textElement ||
-        !actionsElement
-    ) {
-
-        console.error(
-            "Elementi popup evento non trovati."
-        );
-
-        dungeonEventModalOpen =
-            false;
-
-        return;
-
-    }
-
-
-    activeDungeonEvent =
-        dungeonEvent;
-
-    activeDungeonEventKey =
-        eventKey;
-
-
-    // ========================================================
-    // TITOLO
-    // ========================================================
-
-    titleElement.textContent =
-        "TRAPPOLA";
-
-    titleElement.style.display =
-        "block";
-
-
-    // ========================================================
-    // STATISTICA DIFENSIVA
-    // ========================================================
-
-    let defenseLabel =
-        result.defenseStatName
-            .toUpperCase();
-
-
-    if (
-        result.defenseStatName ===
-        "destrezza"
-    ) {
-
-        defenseLabel =
-            "DES";
-
-    }
-
-
-    if (
-        result.defenseStatName ===
-        "resistenza"
-    ) {
-
-        defenseLabel =
-            "RES";
-
-    }
-
-
-    // ========================================================
-    // TESTO RISULTATO
-    // ========================================================
-
-    let resultText =
-        dungeonEvent.message;
-
-
-    resultText +=
-        "\n\n";
-
-
-    resultText +=
-        `Tiro: ${result.diceRoll} - LCK ${result.fortuna} = ${result.trapResult}`;
-
-
-    resultText +=
-        "\n";
-
-
-    resultText +=
-        `${defenseLabel}: ${result.defenseValue}`;
-
-
-    resultText +=
-        "\n\n";
-
-
-    if (
-        result.damage > 0
-    ) {
-
-        resultText +=
-            `SUBISCI ${result.damage} ${
-                result.damage === 1
-                    ? "DANNO"
-                    : "DANNI"
-            }`;
-
-
-        resultText +=
-            "\n";
-
-
-        resultText +=
-            `Vita: ${result.oldHealth} → ${result.newHealth}`;
-
-    } else {
-
-        resultText +=
-            "RIESCI A EVITARE LA TRAPPOLA";
-
-
-        resultText +=
-            "\n";
-
-
-        resultText +=
-            `Vita: ${result.oldHealth}`;
-
-    }
-
-
-    textElement.textContent =
-        resultText;
-
-
-    textElement.style.whiteSpace =
-        "pre-line";
-
-
-    // ========================================================
-    // PULSANTE CONTINUA
-    // ========================================================
-
-    actionsElement.innerHTML =
-        "";
-
-
-    const continueButton =
-        document.createElement(
-            "button"
-        );
-
-
-    continueButton.type =
-        "button";
-
-
-    continueButton.className =
-        "button";
-
-
-    continueButton.textContent =
-        "CONTINUA";
-
-
-    continueButton.addEventListener(
-        "click",
-        () => {
-
-            closeDungeonEventModal();
-
-        }
-    );
-
-
-    actionsElement.appendChild(
-        continueButton
-    );
-
-
-    modal.hidden =
-        false;
-
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-// ============================================================
-// APRI COMUNICAZIONE
-// ============================================================
-
-function openCommunicationEvent(
-    dungeonEvent,
-    eventKey
-) {
-
-    const modal =
-        document.getElementById(
-            "dungeon-event-modal"
-        );
-
-
-    const titleElement =
-        document.getElementById(
-            "dungeon-event-title"
-        );
-
-
-    const textElement =
-        document.getElementById(
-            "dungeon-event-text"
-        );
-
-
-    const actionsElement =
-        document.getElementById(
-            "dungeon-event-actions"
-        );
-
-
-    if (
-        !modal ||
-        !titleElement ||
-        !textElement ||
-        !actionsElement
-    ) {
-
-        console.error(
-            "Elementi popup evento non trovati."
-        );
-
-        return;
-
-    }
-
-
-    activeDungeonEvent =
-        dungeonEvent;
-
-    activeDungeonEventKey =
-        eventKey;
-
-    dungeonEventModalOpen =
-        true;
-
-
-    // ========================================================
-    // TITOLO
-    // ========================================================
-
-    const popupTitle =
-        dungeonEvent.title ||
-        "";
-
-
-    titleElement.textContent =
-        popupTitle;
-
-
-    titleElement.style.display =
-        popupTitle
-            ? "block"
-            : "none";
-
-
-    // ========================================================
-    // TESTO
-    // ========================================================
-
-    textElement.textContent =
-        dungeonEvent.message ||
-        "";
-
-
-    textElement.style.whiteSpace =
-        "pre-line";
-
-
-    // ========================================================
-    // AZIONI
-    // ========================================================
-
-    actionsElement.innerHTML =
-        "";
-
-
-    const actions =
-        Array.isArray(
-            dungeonEvent.actions
-        )
-            ? dungeonEvent.actions
-            : [];
-
-
-    actions.forEach(
-        action => {
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.type =
-                "button";
-
-
-            button.className =
-                action.primary
-                    ? "button"
-                    : "button secondary";
-
-
-            button.textContent =
-                action.label ||
-                "CONTINUA";
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    handleDungeonEventAction(
-                        action.id
-                    );
-
-                }
-            );
-
-
-            actionsElement.appendChild(
-                button
-            );
-
-        }
-    );
-
-
-    modal.hidden =
-        false;
-
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-
-// ============================================================
-// AZIONI EVENTO
-// ============================================================
-
-function handleDungeonEventAction(
-    actionId
-) {
-
-    switch (
-        actionId
-    ) {
-
-        // ----------------------------------------------------
-        // SCENDI LE SCALE
-        // ----------------------------------------------------
-
-        case "descend":
-
-            closeDungeonEventModal();
-
-
-            setMessage(
-                "La discesa al piano inferiore non è ancora disponibile."
-            );
-
-            break;
-
-
-        // ----------------------------------------------------
-        // RIMANI QUI
-        // ----------------------------------------------------
-
-        case "stay":
-
-            closeDungeonEventModal();
-
-
-            setMessage(
-                "Decidi di rimanere su questo piano."
-            );
-
-            break;
-
-
-        // ----------------------------------------------------
-        // CHIUDI
-        // ----------------------------------------------------
-
-        case "close":
-
-            closeDungeonEventModal();
-
-            break;
-
-
-        // ----------------------------------------------------
-        // AZIONE NON RICONOSCIUTA
-        // ----------------------------------------------------
-
-        default:
-
-            closeDungeonEventModal();
-
-    }
-
-}
-
-
-// ============================================================
-// CHIUDI POPUP EVENTO
-// ============================================================
-
-function closeDungeonEventModal() {
-
-    const modal =
-        document.getElementById(
-            "dungeon-event-modal"
-        );
-
-
-    if (modal) {
-
-        modal.hidden =
-            true;
-
-    }
-
-
-    document.body.style.overflow =
-        "";
-
-
-    dungeonEventModalOpen =
-        false;
-
-
-    activeDungeonEvent =
-        null;
-
-
-    activeDungeonEventKey =
-        null;
-
-}
-
-
-// ============================================================
-// MESSAGGI
+// MESSAGGIO DI STATO
 // ============================================================
 
 function setMessage(
@@ -5288,25 +3600,28 @@ function setMessage(
     const element =
         document.getElementById(
             "dungeon-message"
+        )
+        ||
+        document.getElementById(
+            "message"
         );
 
 
-    if (element) {
+    if (!element) {
 
-        element.textContent =
-            text;
-
-
-        element.style.color =
-            "";
+        return;
 
     }
+
+
+    element.textContent =
+        text;
 
 }
 
 
 // ============================================================
-// ERRORI
+// MOSTRA ERRORE
 // ============================================================
 
 function showError(
@@ -5321,6 +3636,10 @@ function showError(
     const element =
         document.getElementById(
             "dungeon-message"
+        )
+        ||
+        document.getElementById(
+            "message"
         );
 
 
@@ -5330,8 +3649,132 @@ function showError(
             text;
 
 
-        element.style.color =
-            "#d66";
+        element.classList.add(
+            "error"
+        );
+
+
+        return;
+
+    }
+
+
+    alert(
+        text
+    );
+
+}
+
+
+// ============================================================
+// RIPRISTINA STILE MESSAGGIO
+// ============================================================
+
+function clearMessageError() {
+
+    const element =
+        document.getElementById(
+            "dungeon-message"
+        )
+        ||
+        document.getElementById(
+            "message"
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.classList.remove(
+        "error"
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA DATI PERSONAGGIO DAL DATABASE
+// ============================================================
+//
+// Utile quando PF / PM vengono modificati da altre pagine,
+// ad esempio:
+//
+// - scheda.html
+// - combat.html
+// - pozioni
+// - abilità
+//
+// ============================================================
+
+async function refreshDungeonCharacter() {
+
+    if (
+        !character ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from("characters")
+                .select("*")
+                .eq(
+                    "id",
+                    character.id
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                )
+                .maybeSingle();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (!data) {
+
+            return;
+
+        }
+
+
+        character =
+            data;
+
+
+        // Ricarichiamo anche l'equipaggiamento:
+        // potrebbe essere cambiato dalla scheda.
+
+        await loadCharacterEquipment();
+
+
+        updateCharacterPanel();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento personaggio dungeon:",
+            error
+        );
 
     }
 
@@ -5339,88 +3782,126 @@ function showError(
 
 
 // ============================================================
-// LOGOUT
+// AGGIORNAMENTO PERIODICO DELLA SCHEDA
+// ============================================================
+//
+// Serve soprattutto se il personaggio viene modificato
+// da un'altra scheda/browser mentre dungeon.html resta aperto.
+//
 // ============================================================
 
-const logoutButton =
-    document.getElementById(
-        "logout-button"
-    );
+let dungeonCharacterRefreshInterval =
+    null;
 
 
-if (logoutButton) {
+function startDungeonCharacterRefresh() {
 
-    logoutButton.addEventListener(
-        "click",
-        async () => {
+    if (
+        dungeonCharacterRefreshInterval
+    ) {
 
-            if (dungeonChannel) {
+        clearInterval(
+            dungeonCharacterRefreshInterval
+        );
 
-                try {
-
-                    await dungeonChannel
-                        .untrack();
-
-                } catch (error) {
-
-                    console.error(
-                        "Errore untrack:",
-                        error
-                    );
-
-                }
-
-            }
+    }
 
 
-            await db
-                .auth
-                .signOut();
+    dungeonCharacterRefreshInterval =
+        setInterval(
+            async () => {
 
+                await refreshDungeonCharacter();
 
-            window.location.href =
-                "index.html";
-
-        }
-    );
+            },
+            5000
+        );
 
 }
 
 
 // ============================================================
-// RIDIMENSIONAMENTO
+// FERMA AGGIORNAMENTO PERIODICO
+// ============================================================
+
+function stopDungeonCharacterRefresh() {
+
+    if (
+        !dungeonCharacterRefreshInterval
+    ) {
+
+        return;
+
+    }
+
+
+    clearInterval(
+        dungeonCharacterRefreshInterval
+    );
+
+
+    dungeonCharacterRefreshInterval =
+        null;
+
+}
+
+
+// ============================================================
+// AVVIA REFRESH AUTOMATICO DOPO IL CARICAMENTO
 // ============================================================
 
 window.addEventListener(
-    "resize",
+    "load",
     () => {
 
+        startDungeonCharacterRefresh();
+
+    }
+);
+
+
+// ============================================================
+// VISIBILITÀ PAGINA
+// ============================================================
+//
+// Quando torniamo sulla scheda dungeon dopo essere stati
+// in un'altra tab, aggiorniamo immediatamente PG ed
+// equipaggiamento.
+//
+// ============================================================
+
+document.addEventListener(
+    "visibilitychange",
+    async () => {
+
         if (
-            playerX !== null &&
-            playerY !== null
+            document.visibilityState ===
+            "visible"
         ) {
 
-            showToken(
-                playerX,
-                playerY
-            );
+            await refreshDungeonCharacter();
+
+
+            repositionAllTokens();
 
         }
 
+    }
+);
 
-        renderFogOfWar();
+
+// ============================================================
+// FOCUS FINESTRA
+// ============================================================
+
+window.addEventListener(
+    "focus",
+    async () => {
+
+        await refreshDungeonCharacter();
 
 
-        for (
-            const characterId
-            of otherPlayers.keys()
-        ) {
-
-            showRemoteToken(
-                characterId
-            );
-
-        }
+        repositionAllTokens();
 
     }
 );
@@ -5434,11 +3915,67 @@ window.addEventListener(
     "beforeunload",
     () => {
 
-        if (dungeonChannel) {
+        // ====================================================
+        // REFRESH PG
+        // ====================================================
 
-            dungeonChannel.untrack();
+        stopDungeonCharacterRefresh();
+
+
+        // ====================================================
+        // PRESENCE
+        // ====================================================
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            try {
+
+                dungeonChannel.untrack();
+
+            } catch (error) {
+
+                console.error(
+                    "Errore untrack:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
+        // RIMUOVE CANALE
+        // ====================================================
+
+        if (
+            dungeonChannel
+        ) {
+
+            try {
+
+                db.removeChannel(
+                    dungeonChannel
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Errore rimozione canale:",
+                    error
+                );
+
+            }
 
         }
 
     }
 );
+
+
+// ============================================================
+// FINE DUNGEON.JS
+// ============================================================
