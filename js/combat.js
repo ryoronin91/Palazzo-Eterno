@@ -2100,7 +2100,7 @@ function cancelCombatTargeting() {
 
 
 // ============================================================
-// LISTA ENTITÀ
+// LISTA ENTITÀ / TURN ORDER
 // ============================================================
 
 function renderCombatEntityList() {
@@ -2121,7 +2121,19 @@ function renderCombatEntityList() {
     container.replaceChildren();
 
 
-    combatEntities.forEach(
+    // Mostra soltanto le entità ancora vive
+    const aliveEntities =
+        Array.from(
+            combatEntities.values()
+        )
+        .filter(
+            entity =>
+                entity.status === "alive" &&
+                Number(entity.current_hp) > 0
+        );
+
+
+    aliveEntities.forEach(
         entity => {
 
             const item =
@@ -2168,8 +2180,7 @@ function renderCombatEntityList() {
 
             meta.textContent =
                 `${
-                    entity.entity_type ===
-                    "enemy"
+                    entity.entity_type === "enemy"
                         ? "Nemico"
                         : "Giocatore"
                 } · PF ${
@@ -2199,8 +2210,6 @@ function renderCombatEntityList() {
     );
 
 }
-
-
 // ============================================================
 // ATTRIBUTI
 // ============================================================
