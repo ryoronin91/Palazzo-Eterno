@@ -1929,19 +1929,25 @@ function positionTokenElement(
 
 
     const tokenSize =
-        Math.min(
-            cellWidth,
-            cellHeight
-        ) *
-        0.72;
+    Math.min(
+        cellWidth,
+        cellHeight
+    );
 
+element.style.width =
+    `${tokenSize}px`;
 
-    element.style.width =
-        `${tokenSize}px`;
+element.style.height =
+    `${tokenSize}px`;
 
+const tokenImage =
+    element.querySelector("img");
 
-    element.style.height =
-        `${tokenSize}px`;
+if (tokenImage) {
+    tokenImage.style.width = "100%";
+    tokenImage.style.height = "100%";
+    tokenImage.style.objectFit = "contain";
+}
 
 
     element.style.left =
