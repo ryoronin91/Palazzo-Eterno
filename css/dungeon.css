@@ -1742,3 +1742,538 @@ body {
     }
 
 }
+/* ============================================================
+   PALAZZO ETERNO
+   PALETTE UFFICIALE DUNGEON
+   ============================================================ */
+
+
+/* ============================================================
+   SFONDO GENERALE
+   ============================================================ */
+
+html,
+body {
+    background:
+        radial-gradient(
+            circle at center,
+            #29231d 0%,
+            #100e0c 70%
+        );
+
+    color: #eeeeee;
+}
+
+
+/* ============================================================
+   TITOLI
+   ============================================================ */
+
+.dungeon-title-block h1,
+.dungeon-floor-title,
+.dungeon-character-name,
+.quick-section-title,
+.dungeon-actions-title {
+    color: #eeeeee;
+}
+
+
+.dungeon-message {
+    color: #bdb5a8;
+}
+
+
+.dungeon-message.error {
+    color: #d98272;
+}
+
+
+/* ============================================================
+   PANNELLI
+   ============================================================ */
+
+.dungeon-panel,
+.quick-stat,
+.dungeon-action-card {
+    background:
+        linear-gradient(
+            180deg,
+            #18130f 0%,
+            #12100c 100%
+        );
+
+    border-color: #66563c;
+
+    color: #eeeeee;
+}
+
+
+.dungeon-panel-title {
+    color: #d6c8b0;
+
+    border-color: #66563c;
+
+    background: #171411;
+}
+
+
+/* ============================================================
+   CHAT
+   ============================================================ */
+
+.floor-chat-messages {
+    background: #12100d;
+}
+
+
+.chat-placeholder {
+    color: #777066;
+}
+
+
+.floor-chat-message {
+    color: #eeeeee;
+
+    border-color: rgba(
+        177,
+        138,
+        77,
+        0.18
+    );
+}
+
+
+.floor-chat-message.mine {
+    background: rgba(
+        177,
+        138,
+        77,
+        0.10
+    );
+}
+
+
+.floor-chat-name {
+    color: #d4af67;
+}
+
+
+.floor-chat-text {
+    color: #e8e1d6;
+}
+
+
+.floor-chat-controls {
+    border-color: #66563c;
+
+    background: #171411;
+}
+
+
+.floor-chat-input {
+    border-color: #66563c;
+
+    background: #0f0d0b;
+
+    color: #eeeeee;
+}
+
+
+.floor-chat-input::placeholder {
+    color: #777066;
+}
+
+
+.floor-chat-input:focus {
+    border-color: #b18a4d;
+
+    background: #171411;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            177,
+            138,
+            77,
+            0.15
+        );
+}
+
+
+.floor-chat-send {
+    border-color: #73572f;
+
+    background:
+        linear-gradient(
+            180deg,
+            #352819,
+            #241b12
+        );
+
+    color: #eeddb8;
+}
+
+
+.floor-chat-send:hover {
+    border-color: #aa8248;
+
+    background:
+        linear-gradient(
+            180deg,
+            #45341f,
+            #2d2115
+        );
+}
+
+
+/* ============================================================
+   MAPPA
+   ============================================================ */
+
+.dungeon-map-frame {
+    border-color: #66563c;
+
+    background: #0d0b09;
+
+    box-shadow:
+        0 8px 24px
+        rgba(
+            0,
+            0,
+            0,
+            0.45
+        );
+}
+
+
+.dungeon-map {
+    background: #0d0b09;
+}
+
+
+/* ============================================================
+   TASTI MOVIMENTO
+   ============================================================ */
+
+.movement-key {
+    border-color: #66563c;
+
+    background: #171411;
+
+    color: #d4af67;
+}
+
+
+.movement-description {
+    color: #a9a196;
+}
+
+
+/* ============================================================
+   PULSANTE ESCI
+   ============================================================ */
+
+.dungeon-exit-button {
+    border-color: #73572f;
+
+    background:
+        linear-gradient(
+            180deg,
+            #352819,
+            #241b12
+        );
+
+    color: #eeddb8;
+}
+
+
+.dungeon-exit-button:hover {
+    border-color: #aa8248;
+
+    background:
+        linear-gradient(
+            180deg,
+            #45341f,
+            #2d2115
+        );
+}
+
+
+/* ============================================================
+   RITRATTO
+   ============================================================ */
+
+.character-portrait-wrapper {
+    border-color: #b18a4d;
+
+    background: #171411;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            0,
+            0,
+            0,
+            0.7
+        ),
+        0 4px 15px
+        rgba(
+            0,
+            0,
+            0,
+            0.5
+        );
+}
+
+
+/* ============================================================
+   APRI SCHEDA
+   ============================================================ */
+
+.open-sheet-button {
+    border-color: #73572f;
+
+    background:
+        linear-gradient(
+            180deg,
+            #352819,
+            #241b12
+        );
+
+    color: #eeddb8;
+}
+
+
+.open-sheet-button:hover {
+    border-color: #aa8248;
+
+    background:
+        linear-gradient(
+            180deg,
+            #45341f,
+            #2d2115
+        );
+}
+
+
+/* ============================================================
+   STATISTICHE / ATTRIBUTI
+   ============================================================ */
+
+.quick-stat {
+    border-color: #66563c;
+
+    background: #171411;
+}
+
+
+.quick-stat-label {
+    color: #a9a196;
+}
+
+
+.quick-stat-value {
+    color: #eeeeee;
+}
+
+
+/* ============================================================
+   SEPARATORE
+   ============================================================ */
+
+.dungeon-side-divider {
+    background: #66563c;
+}
+
+
+/* ============================================================
+   AZIONI
+   ============================================================ */
+
+.dungeon-action-card {
+    border-color: #5c4529;
+
+    background:
+        linear-gradient(
+            180deg,
+            #18130f,
+            #12100c
+        );
+
+    color: #eeeeee;
+}
+
+
+.dungeon-action-card:hover:not(:disabled) {
+    border-color: #aa8248;
+
+    background:
+        linear-gradient(
+            180deg,
+            #2b2117,
+            #1c1610
+        );
+}
+
+
+.dungeon-action-card.active {
+    border-color: #b18a4d;
+
+    background:
+        rgba(
+            177,
+            138,
+            77,
+            0.18
+        );
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            177,
+            138,
+            77,
+            0.15
+        );
+}
+
+
+.action-card-icon {
+    color: #d4af67;
+}
+
+
+.action-card-content strong {
+    color: #eeeeee;
+}
+
+
+.action-card-content small {
+    color: #a9a196;
+}
+
+
+/* ============================================================
+   PAGINAZIONE
+   ============================================================ */
+
+.action-page-button {
+    color: #d4af67;
+}
+
+
+.action-page-number {
+    color: #eeeeee;
+}
+
+
+/* ============================================================
+   NOTE
+   ============================================================ */
+
+.dungeon-notes {
+    border-color: #66563c;
+
+    background: #0f0d0b;
+
+    color: #eeeeee;
+}
+
+
+.dungeon-notes::placeholder {
+    color: #777066;
+}
+
+
+.dungeon-notes:focus {
+    border-color: #b18a4d;
+
+    background: #171411;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            177,
+            138,
+            77,
+            0.15
+        );
+}
+
+
+.save-notes-button {
+    border-color: #73572f;
+
+    background:
+        linear-gradient(
+            180deg,
+            #352819,
+            #241b12
+        );
+
+    color: #eeddb8;
+}
+
+
+.save-notes-button:hover:not(:disabled) {
+    border-color: #aa8248;
+
+    background:
+        linear-gradient(
+            180deg,
+            #45341f,
+            #2d2115
+        );
+}
+
+
+/* ============================================================
+   CURA
+   ============================================================ */
+
+.dungeon-heal-range-cell {
+    border-color:
+        rgba(
+            212,
+            175,
+            103,
+            0.9
+        );
+
+    background:
+        rgba(
+            212,
+            175,
+            103,
+            0.18
+        );
+}
+
+
+.dungeon-player-token.heal-target {
+    filter:
+        drop-shadow(
+            0 0 4px
+            #fff3c4
+        )
+        drop-shadow(
+            0 0 8px
+            #d4af67
+        );
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+.floor-chat-messages::-webkit-scrollbar-thumb,
+.dungeon-notes::-webkit-scrollbar-thumb {
+    background: #66563c;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-track,
+.dungeon-notes::-webkit-scrollbar-track {
+    background: #12100d;
+}
