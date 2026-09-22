@@ -5,19 +5,33 @@
 
 
 /* ============================================================
-   PAGINA DUNGEON
+   PAGINA
    ============================================================ */
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    min-height: 100%;
+
+    background: #f3efe4;
+}
+
+
+body {
+    min-height: 100vh;
+
+    overflow-x: auto;
+}
+
 
 .dungeon-page {
     width: 100%;
-    min-height: 100vh;
 
     box-sizing: border-box;
 
-    padding: 20px;
-
-    display: flex;
-    flex-direction: column;
+    padding: 14px 18px 18px;
 }
 
 
@@ -26,341 +40,730 @@
    ============================================================ */
 
 .dungeon-header {
-    width: 100%;
-    max-width: 1500px;
-
-    margin: 0 auto 16px auto;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    box-sizing: border-box;
-}
-
-
-/* ============================================================
-   CONTENITORE PRINCIPALE
-   ============================================================ */
-
-.dungeon-container {
-    width: 100%;
-    max-width: 1780px;
-
-    margin: 0 auto;
-
     display: grid;
 
-    /*
-       CHAT A SINISTRA
-       MAPPA AL CENTRO
-       SCHEDA A DESTRA
-    */
+    grid-template-columns: 140px auto 1fr;
 
-    grid-template-columns:
-        250px
-        minmax(0, 1fr)
-        330px;
+    align-items: center;
 
-    grid-template-areas:
-        "chat map character";
+    gap: 14px;
 
-    gap: 18px;
+    width: 100%;
 
-    align-items: start;
+    max-width: 1500px;
+
+    margin: 0 auto 10px;
 
     box-sizing: border-box;
 }
 
 
 /* ============================================================
-   CHAT DEL PIANO
+   ESCI
    ============================================================ */
 
-.dungeon-chat-panel {
-    grid-area: chat;
+.dungeon-exit-button {
+    display: flex;
 
-    width: 100%;
-    height: calc(100vh - 140px);
-    min-height: 500px;
-    max-height: 760px;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 34px;
+
+    padding: 4px 16px;
 
     box-sizing: border-box;
 
-    display: flex;
-    flex-direction: column;
+    border: 3px solid #17130f;
 
-    position: sticky;
-    top: 20px;
+    background: #eee4ca;
+
+    color: #17130f;
+
+    font-weight: 800;
+    font-size: 14px;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+
+.dungeon-exit-button:hover {
+    background: #e0d2ad;
+
+    transform: translateY(-1px);
+}
+
+
+/* ============================================================
+   TITOLO
+   ============================================================ */
+
+.dungeon-title-block {
+    display: flex;
+
+    align-items: baseline;
+
+    gap: 9px;
+
+    white-space: nowrap;
+}
+
+
+.dungeon-title-block h1 {
+    margin: 0;
+
+    font-size: 23px;
+    line-height: 1;
+
+    color: #17130f;
+}
+
+
+.dungeon-floor-title {
+    font-size: 18px;
+    font-weight: 800;
+
+    color: #17130f;
+}
+
+
+/* ============================================================
+   MESSAGGIO DUNGEON
+   ============================================================ */
+
+.dungeon-message {
+    min-width: 0;
+
+    padding-left: 12px;
 
     overflow: hidden;
 
-    border: 1px solid rgba(184, 138, 59, 0.38);
-    border-radius: 12px;
+    color: #665d4d;
 
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.035),
-            rgba(0, 0, 0, 0.18)
-        );
+    font-size: 13px;
+    font-style: italic;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 
-.dungeon-chat-header {
-    padding: 14px;
+.dungeon-message.error {
+    color: #8e2424;
 
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   LAYOUT PRINCIPALE
+
+   CHAT | MAPPA | PERSONAGGIO/AZIONI
+   ============================================================ */
+
+.dungeon-layout {
+    display: grid;
+
+    grid-template-columns:
+        170px
+        minmax(500px, 720px)
+        minmax(430px, 1fr);
+
+    align-items: stretch;
+
+    gap: 12px;
+
+    width: 100%;
+
+    max-width: 1500px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   PANNELLI BASE
+   ============================================================ */
+
+.dungeon-panel {
+    box-sizing: border-box;
+
+    border: 3px solid #17130f;
+
+    background: #f7f2e6;
+}
+
+
+.dungeon-panel-title {
+    padding: 9px 8px;
+
+    border-bottom: 2px solid #17130f;
+
+    text-align: center;
+
+    font-size: 18px;
+    font-weight: 900;
+
+    color: #17130f;
+}
+
+
+/* ============================================================
+   CHAT
+   ============================================================ */
+
+.dungeon-chat-column {
+    min-width: 0;
+}
+
+
+.dungeon-chat-panel {
     display: flex;
+
     flex-direction: column;
-    gap: 6px;
 
-    border-bottom: 1px solid rgba(184, 138, 59, 0.25);
-}
-
-
-.dungeon-chat-header h2 {
-    margin: 2px 0 0 0;
-
-    font-size: 1rem;
-    line-height: 1.2;
-}
-
-
-.floor-chat-status {
-    font-size: 0.72rem;
-    opacity: 0.65;
-}
-
-
-.floor-chat-status.is-online {
-    opacity: 0.9;
+    height: 100%;
+    min-height: 600px;
 }
 
 
 .floor-chat-messages {
-    min-height: 0;
     flex: 1;
 
-    padding: 12px;
+    min-height: 0;
+
+    padding: 10px;
+
+    box-sizing: border-box;
 
     overflow-y: auto;
     overflow-x: hidden;
-
-    scrollbar-width: thin;
 }
 
 
-.floor-chat-empty {
-    margin-top: 8px;
+.chat-placeholder {
+    padding-top: 10px;
 
-    font-size: 0.78rem;
-    line-height: 1.45;
+    color: #8d8473;
 
-    opacity: 0.55;
+    text-align: center;
+
+    font-size: 12px;
+    font-style: italic;
 }
 
+
+/* ============================================================
+   MESSAGGI CHAT
+   ============================================================ */
 
 .floor-chat-message {
-    margin-bottom: 10px;
-    padding: 8px 9px;
+    margin-bottom: 8px;
 
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 9px;
+    padding: 6px 7px;
 
-    background: rgba(255, 255, 255, 0.035);
-}
+    border-bottom: 1px solid #d1c5aa;
 
+    color: #211c16;
 
-.floor-chat-message.is-mine {
-    border-color: rgba(184, 138, 59, 0.42);
-    background: rgba(184, 138, 59, 0.075);
-}
+    font-size: 12px;
 
+    line-height: 1.35;
 
-.floor-chat-message-meta {
-    margin-bottom: 4px;
-
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-
-    align-items: baseline;
-}
-
-
-.floor-chat-message-meta strong {
-    min-width: 0;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    font-size: 0.74rem;
-    color: #b88a3b;
-}
-
-
-.floor-chat-message-meta span {
-    flex: 0 0 auto;
-
-    font-size: 0.64rem;
-    opacity: 0.45;
-}
-
-
-.floor-chat-message-body {
-    font-size: 0.82rem;
-    line-height: 1.4;
-
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
 
-.floor-chat-form {
-    padding: 12px;
-
-    border-top: 1px solid rgba(184, 138, 59, 0.25);
+.floor-chat-message.mine {
+    background: rgba(157, 126, 62, 0.10);
 }
 
 
-.floor-chat-label {
-    display: block;
+.floor-chat-name {
+    color: #5c4521;
 
-    margin-bottom: 6px;
+    font-weight: 900;
+}
 
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
 
-    opacity: 0.65;
+.floor-chat-text {
+    color: #211c16;
+}
+
+
+/* ============================================================
+   CONTROLLI CHAT
+   ============================================================ */
+
+.floor-chat-controls {
+    display: grid;
+
+    grid-template-columns: 1fr 36px;
+
+    gap: 5px;
+
+    padding: 7px;
+
+    border-top: 2px solid #17130f;
+
+    box-sizing: border-box;
 }
 
 
 .floor-chat-input {
     width: 100%;
-    min-height: 72px;
-    max-height: 130px;
+    min-width: 0;
+
+    height: 34px;
+
+    padding: 5px 7px;
 
     box-sizing: border-box;
 
-    padding: 9px 10px;
+    border: 2px solid #17130f;
 
-    resize: vertical;
+    background: #fffdf7;
 
-    border: 1px solid rgba(184, 138, 59, 0.35);
-    border-radius: 8px;
+    color: #17130f;
 
-    background: rgba(0, 0, 0, 0.22);
-
-    color: inherit;
-    font: inherit;
-    font-size: 0.82rem;
+    outline: none;
 }
 
 
 .floor-chat-input:focus {
-    outline: 1px solid rgba(184, 138, 59, 0.72);
-    outline-offset: 1px;
-}
-
-
-.floor-chat-input:disabled {
-    opacity: 0.45;
-}
-
-
-.floor-chat-actions {
-    margin-top: 8px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-
-.floor-chat-feedback {
-    min-width: 0;
-    flex: 1;
-
-    font-size: 0.68rem;
-    opacity: 0.65;
+    background: #ffffff;
 }
 
 
 .floor-chat-send {
-    flex: 0 0 auto;
+    width: 36px;
+    height: 34px;
+
+    padding: 0;
+
+    border: 2px solid #17130f;
+
+    background: #d6c291;
+
+    color: #17130f;
+
+    font-weight: 900;
+
+    cursor: pointer;
 }
 
 
-.floor-chat-send:disabled {
-    opacity: 0.45;
-    cursor: default;
+.floor-chat-send:hover {
+    background: #c7ad6f;
 }
 
 
 /* ============================================================
-   AREA MAPPA
+   COLONNA MAPPA
+   ============================================================ */
+
+.dungeon-map-column {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+/* ============================================================
+   CORNICE MAPPA
+   ============================================================ */
+
+.dungeon-map-frame {
+    width: 100%;
+
+    border: 3px solid #17130f;
+
+    background: #17130f;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   MAPPA
+
+   IMPORTANTE:
+   position: relative serve perché i token assoluti
+   siano posizionati rispetto ALLA MAPPA e non alla pagina.
    ============================================================ */
 
 .dungeon-map {
-    grid-area: map;
-
     position: relative;
 
     width: 100%;
 
-    /*
-       Evita che la mappa diventi gigantesca.
-    */
-
-    max-width: 1150px;
-
-    margin: 0 auto;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    box-sizing: border-box;
+    aspect-ratio: 1 / 1;
 
     overflow: hidden;
+
+    background: #17130f;
+
+    user-select: none;
+
+    touch-action: manipulation;
 }
 
 
 /* ============================================================
-   IMMAGINE DELLA MAPPA
+   IMMAGINE MAPPA
    ============================================================ */
 
-#dungeon-image {
+.dungeon-map-image {
+    position: absolute;
+
+    inset: 0;
+
     display: block;
 
     width: 100%;
-    height: auto;
+    height: 100%;
 
-    max-width: 100%;
+    max-width: none;
+    max-height: none;
 
-    object-fit: contain;
+    object-fit: fill;
 
-    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+
+    z-index: 1;
 }
 
 
 /* ============================================================
-   TOKEN DEL GIOCATORE
+   TOKEN SULLA MAPPA
+
+   ATTENZIONE:
+   queste regole riguardano SOLO i token mobili sulla mappa.
+   Non riguardano il ritratto nella scheda laterale.
    ============================================================ */
 
 .dungeon-player-token {
     position: absolute;
 
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 0;
+
+    box-sizing: border-box;
+
     pointer-events: none;
 
-    z-index: 100;
+    transform: translateZ(0);
+
+    z-index: 30;
+}
+
+
+.dungeon-player-token img {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    min-width: 0 !important;
+    min-height: 0 !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    object-fit: contain;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+}
+
+
+/* ============================================================
+   TOKEN PERSONALE
+   ============================================================ */
+
+.dungeon-player-token:not(.other-player-token) {
+    z-index: 40;
+}
+
+
+/* ============================================================
+   ALTRI GIOCATORI
+   ============================================================ */
+
+.other-player-token {
+    z-index: 35;
+}
+
+
+.other-player-name {
+    position: absolute;
+
+    left: 50%;
+    bottom: 100%;
+
+    transform: translateX(-50%);
+
+    max-width: 110px;
+
+    margin-bottom: 2px;
+
+    padding: 2px 4px;
+
+    background: rgba(20, 16, 11, 0.82);
+
+    color: #fff;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    line-height: 1;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   AREA SELEZIONABILE PER CURA
+
+   Verrà utilizzata dal nuovo dungeon.js.
+   ============================================================ */
+
+.dungeon-heal-range-cell {
+    position: absolute;
+
+    box-sizing: border-box;
+
+    border: 2px solid rgba(222, 195, 103, 0.9);
+
+    background: rgba(222, 195, 103, 0.22);
+
+    pointer-events: none;
+
+    z-index: 15;
+}
+
+
+/* ============================================================
+   BERSAGLIO CURA
+   ============================================================ */
+
+.dungeon-player-token.heal-target {
+    pointer-events: auto;
+
+    cursor: pointer;
+
+    filter:
+        drop-shadow(0 0 4px #fff)
+        drop-shadow(0 0 7px #d7b74e);
+
+    z-index: 50;
+}
+
+
+.dungeon-player-token.heal-target img {
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   MAPPA - FOOTER
+   ============================================================ */
+
+.dungeon-map-footer {
+    min-height: 34px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding-top: 7px;
 
     box-sizing: border-box;
 }
-.dungeon-player-token img {
+
+
+.movement-help {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 4px;
+}
+
+
+.movement-key {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 23px;
+    height: 23px;
+
+    border: 2px solid #17130f;
+
+    background: #eee4ca;
+
+    color: #17130f;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    box-sizing: border-box;
+}
+
+
+.movement-description {
+    margin-left: 5px;
+
+    color: #665d4d;
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   COLONNA DESTRA COMPLETA
+   ============================================================ */
+
+.dungeon-character-column {
+    display: grid;
+
+    grid-template-columns:
+        minmax(190px, 0.95fr)
+        2px
+        minmax(210px, 1.05fr);
+
+    gap: 12px;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   RIASSUNTO PERSONAGGIO
+   ============================================================ */
+
+.dungeon-character-summary {
+    min-width: 0;
+
+    padding: 2px 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   NOME PERSONAGGIO
+   ============================================================ */
+
+.dungeon-character-name {
+    min-height: 28px;
+
+    margin-bottom: 7px;
+
+    overflow: hidden;
+
+    color: #17130f;
+
+    font-size: 16px;
+    font-weight: 900;
+
+    text-align: center;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* ============================================================
+   RITRATTO + APRI SCHEDA
+   ============================================================ */
+
+.character-summary-top {
+    display: grid;
+
+    grid-template-columns: 90px 1fr;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+
+/* ============================================================
+   RITRATTO
+
+   TOTALMENTE SEPARATO DAL TOKEN DELLA MAPPA.
+   ============================================================ */
+
+.character-portrait-wrapper {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 90px;
+    height: 90px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    border: 4px solid #17130f;
+
+    border-radius: 50%;
+
+    background: #e5dcc5;
+}
+
+
+.character-portrait {
     display: block;
 
     width: 100% !important;
@@ -369,175 +772,588 @@
     max-width: none !important;
     max-height: none !important;
 
+    margin: 0 !important;
+    padding: 0 !important;
+
     object-fit: contain;
 
-    margin: 0;
+    border: 0 !important;
+}
+
+
+/* ============================================================
+   APRI SCHEDA
+   ============================================================ */
+
+.open-sheet-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+
+    padding: 6px 8px;
+
+    border: 3px solid #17130f;
+
+    background: #eee4ca;
+
+    box-sizing: border-box;
+
+    color: #17130f;
+
+    font-size: 12px;
+    font-weight: 900;
+
+    text-align: center;
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+
+.open-sheet-button:hover {
+    background: #dfcea3;
+}
+
+
+/* ============================================================
+   SEZIONI RAPIDE
+   ============================================================ */
+
+.quick-section {
+    margin-bottom: 17px;
+}
+
+
+.quick-section-title {
+    margin-bottom: 6px;
+
+    color: #17130f;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   GRIGLIA STATISTICHE / ATTRIBUTI
+   ============================================================ */
+
+.quick-stat-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 5px;
+}
+
+
+/* ============================================================
+   SINGOLO RIQUADRO
+   ============================================================ */
+
+.quick-stat {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    min-height: 52px;
+
+    padding: 4px 2px;
+
+    box-sizing: border-box;
+
+    border: 3px solid #17130f;
+
+    background: #f7f2e6;
+}
+
+
+.quick-stat-label {
+    margin-bottom: 2px;
+
+    color: #675e4e;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    line-height: 1;
+}
+
+
+.quick-stat-value {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    color: #17130f;
+
+    font-size: 14px;
+    font-weight: 900;
+
+    line-height: 1.1;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* PF e PM possono contenere 28/33 ecc. */
+
+#health-display,
+#mana-display {
+    font-size: 12px;
+}
+
+
+/* Critico può contenere 10.00% */
+
+#critical-display {
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   SEPARATORE VERTICALE
+   ============================================================ */
+
+.dungeon-side-divider {
+    width: 2px;
+    height: 100%;
+
+    min-height: 420px;
+
+    background: #17130f;
+
+    border-radius: 2px;
+}
+
+
+/* ============================================================
+   COLONNA AZIONI
+   ============================================================ */
+
+.dungeon-action-column {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    gap: 20px;
+}
+
+
+/* ============================================================
+   AZIONI
+   ============================================================ */
+
+.dungeon-actions-panel {
+    min-width: 0;
+}
+
+
+.dungeon-actions-title {
+    margin-bottom: 7px;
+
+    color: #17130f;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   CARD AZIONE
+   ============================================================ */
+
+.dungeon-action-card {
+    display: grid;
+
+    grid-template-columns: 34px 1fr;
+
+    align-items: center;
+
+    gap: 7px;
+
+    width: 100%;
+    min-height: 54px;
+
+    margin: 0 0 7px;
+
+    padding: 5px 8px;
+
+    box-sizing: border-box;
+
+    border: 3px solid #17130f;
+
+    background: #f7f2e6;
+
+    color: #17130f;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+
+.dungeon-action-card:hover:not(:disabled) {
+    background: #eee4ca;
+
+    transform: translateY(-1px);
+}
+
+
+.dungeon-action-card:disabled {
+    opacity: 0.45;
+
+    cursor: not-allowed;
+}
+
+
+/* ============================================================
+   AZIONE SELEZIONATA
+   ============================================================ */
+
+.dungeon-action-card.active {
+    background: #ddca8f;
+
+    box-shadow:
+        inset 0 0 0 2px #9d7c35;
+}
+
+
+/* ============================================================
+   ICONA AZIONE
+   ============================================================ */
+
+.action-card-icon {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    font-size: 20px;
+
+    line-height: 1;
+}
+
+
+/* ============================================================
+   TESTO AZIONE
+   ============================================================ */
+
+.action-card-content {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+.action-card-content strong {
+    overflow: hidden;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.action-card-content small {
+    margin-top: 2px;
+
+    color: #746a58;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   PAGINAZIONE AZIONI
+   ============================================================ */
+
+.dungeon-action-pagination {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    min-height: 25px;
+
+    margin-top: 2px;
+}
+
+
+.action-page-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 25px;
+    height: 25px;
+
     padding: 0;
 
     border: 0;
-}
 
-/* ============================================================
-   PANNELLO PERSONAGGIO
-   ============================================================ */
+    background: transparent;
 
-.dungeon-character-panel {
-    grid-area: character;
+    color: #17130f;
 
-    width: 100%;
-    box-sizing: border-box;
-}
+    font-size: 22px;
+    font-weight: 900;
 
-
-
-.character-panel {
-    width: 100%;
-
-    box-sizing: border-box;
-
-    position: sticky;
-    top: 20px;
-
-    max-height: calc(100vh - 40px);
-
-    overflow-y: auto;
+    cursor: pointer;
 }
 
 
-/*
-   Nel caso il pannello venga identificato con uno
-   di questi ID/classi, manteniamo lo stesso comportamento.
-*/
+.action-page-button:disabled {
+    opacity: 0.25;
 
-#character-panel,
-#character-sheet,
-.dungeon-character-sheet {
-    width: 100%;
-
-    box-sizing: border-box;
-
-    position: sticky;
-    top: 20px;
-
-    max-height: calc(100vh - 40px);
-
-    overflow-y: auto;
+    cursor: default;
 }
 
 
-/* ============================================================
-   MESSAGGI
-   ============================================================ */
+.action-page-number {
+    min-width: 20px;
 
-.dungeon-message {
-    width: 100%;
-    max-width: 1500px;
+    color: #17130f;
 
-    margin: 12px auto 0 auto;
+    font-size: 12px;
+    font-weight: 900;
 
     text-align: center;
+}
+
+
+/* ============================================================
+   NOTE
+   ============================================================ */
+
+.dungeon-notes-panel {
+    margin-top: auto;
+}
+
+
+.dungeon-notes {
+    display: block;
+
+    width: 100%;
+    height: 125px;
+
+    min-height: 90px;
+    max-height: 220px;
+
+    padding: 8px;
 
     box-sizing: border-box;
+
+    resize: vertical;
+
+    border: 3px solid #17130f;
+
+    background: #fffdf7;
+
+    color: #17130f;
+
+    font-family: inherit;
+    font-size: 12px;
+
+    line-height: 1.35;
+
+    outline: none;
+}
+
+
+.dungeon-notes:focus {
+    background: #ffffff;
 }
 
 
 /* ============================================================
-   DESKTOP GRANDE
+   SALVA NOTE
    ============================================================ */
 
-@media (min-width: 1400px) {
+.save-notes-button {
+    width: 100%;
 
-    .dungeon-container {
+    min-height: 32px;
+
+    margin-top: 5px;
+
+    padding: 5px 8px;
+
+    border: 2px solid #17130f;
+
+    background: #eee4ca;
+
+    color: #17130f;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.save-notes-button:hover:not(:disabled) {
+    background: #dfcea3;
+}
+
+
+.save-notes-button:disabled {
+    opacity: 0.55;
+
+    cursor: default;
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+.floor-chat-messages::-webkit-scrollbar,
+.dungeon-notes::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-thumb,
+.dungeon-notes::-webkit-scrollbar-thumb {
+    background: #a18f68;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-track,
+.dungeon-notes::-webkit-scrollbar-track {
+    background: #e8dfca;
+}
+
+
+/* ============================================================
+   SCHERMI MEDI
+   ============================================================ */
+
+@media (max-width: 1250px) {
+
+    .dungeon-layout {
         grid-template-columns:
-            270px
-            minmax(0, 1fr)
-            350px;
+            150px
+            minmax(460px, 620px)
+            minmax(390px, 1fr);
 
-        gap: 20px;
-    }
-
-}
-
-
-/* ============================================================
-   LAPTOP / SCHERMI MEDI
-   ============================================================ */
-
-@media (max-width: 1100px) {
-
-    .dungeon-page {
-        padding: 15px;
+        gap: 9px;
     }
 
 
-    .dungeon-container {
+    .dungeon-character-column {
         grid-template-columns:
-            220px
-            minmax(0, 1fr)
-            290px;
+            minmax(175px, 0.95fr)
+            2px
+            minmax(190px, 1.05fr);
 
-        gap: 15px;
+        gap: 8px;
     }
 
 
-    .dungeon-chat-panel {
-        min-height: 440px;
+    .character-summary-top {
+        grid-template-columns: 78px 1fr;
+    }
+
+
+    .character-portrait-wrapper {
+        width: 78px;
+        height: 78px;
+    }
+
+
+    .quick-stat {
+        min-height: 47px;
     }
 
 }
 
 
 /* ============================================================
-   TABLET
+   TABLET / FINESTRE PIÙ STRETTE
+
+   La chat passa sotto.
+   La mappa resta prioritaria.
    ============================================================ */
 
-@media (max-width: 850px) {
+@media (max-width: 1050px) {
 
-    .dungeon-page {
-        padding: 10px;
+    .dungeon-header {
+        grid-template-columns: 110px 1fr;
+
+        gap: 8px;
     }
 
 
-    .dungeon-container {
-        grid-template-columns: 1fr;
+    .dungeon-message {
+        grid-column: 1 / -1;
+
+        padding: 0;
+
+        min-height: 18px;
+    }
+
+
+    .dungeon-layout {
+        grid-template-columns:
+            minmax(460px, 1fr)
+            minmax(360px, 0.75fr);
 
         grid-template-areas:
-            "map"
-            "chat"
-            "character";
-
-        gap: 15px;
+            "map character"
+            "chat character";
     }
 
 
-    .dungeon-map {
-        max-width: 100%;
+    .dungeon-map-column {
+        grid-area: map;
+    }
+
+
+    .dungeon-chat-column {
+        grid-area: chat;
+    }
+
+
+    .dungeon-character-column {
+        grid-area: character;
     }
 
 
     .dungeon-chat-panel {
-        position: relative;
-        top: auto;
-
-        height: 420px;
-        min-height: 420px;
-        max-height: 420px;
-    }
-
-
-    .character-panel,
-    #character-panel,
-    #character-sheet,
-    .dungeon-character-sheet,
-    .dungeon-character-panel {
-
-        position: relative;
-
-        top: auto;
-
-        max-height: none;
-
-        overflow: visible;
+        height: 250px;
+        min-height: 250px;
     }
 
 }
@@ -547,286 +1363,382 @@
    TELEFONO
    ============================================================ */
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
+
+    body {
+        overflow-x: hidden;
+    }
+
 
     .dungeon-page {
         padding: 8px;
     }
 
 
+    /* --------------------------------------------------------
+       HEADER
+       -------------------------------------------------------- */
+
     .dungeon-header {
+        display: grid;
+
+        grid-template-columns: 78px 1fr;
+
+        margin-bottom: 8px;
+    }
+
+
+    .dungeon-exit-button {
+        min-height: 31px;
+
+        padding: 3px 7px;
+
+        font-size: 11px;
+    }
+
+
+    .dungeon-title-block {
+        display: block;
+
+        text-align: center;
+
+        white-space: normal;
+    }
+
+
+    .dungeon-title-block h1 {
+        font-size: 17px;
+    }
+
+
+    .dungeon-floor-title {
+        margin-top: 2px;
+
+        font-size: 11px;
+    }
+
+
+    .dungeon-message {
+        grid-column: 1 / -1;
+
+        padding: 2px 0;
+
+        text-align: center;
+
+        font-size: 10px;
+
+        white-space: normal;
+    }
+
+
+    /* --------------------------------------------------------
+       LAYOUT
+       -------------------------------------------------------- */
+
+    .dungeon-layout {
+        display: flex;
+
+        flex-direction: column;
+
+        width: 100%;
+    }
+
+
+    /* Mappa prima di tutto */
+
+    .dungeon-map-column {
+        order: 1;
+    }
+
+
+    .dungeon-character-column {
+        order: 2;
+    }
+
+
+    .dungeon-chat-column {
+        order: 3;
+    }
+
+
+    /* --------------------------------------------------------
+       MAPPA
+       -------------------------------------------------------- */
+
+    .dungeon-map-frame {
+        width: 100%;
+    }
+
+
+    .dungeon-map-footer {
+        padding: 5px 0 2px;
+    }
+
+
+    .movement-key {
+        width: 20px;
+        height: 20px;
+
+        font-size: 8px;
+    }
+
+
+    .movement-description {
+        flex-basis: 100%;
+
+        margin: 3px 0 0;
+
+        font-size: 9px;
+    }
+
+
+    /* --------------------------------------------------------
+       PERSONAGGIO + AZIONI
+       -------------------------------------------------------- */
+
+    .dungeon-character-column {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+
+        margin-top: 7px;
+    }
+
+
+    .dungeon-side-divider {
+        display: none;
+    }
+
+
+    .dungeon-character-summary {
+        padding-right: 0;
+    }
+
+
+    .character-summary-top {
+        grid-template-columns: 64px 1fr;
+
+        gap: 6px;
+
         margin-bottom: 10px;
     }
 
 
-    .dungeon-container {
+    .character-portrait-wrapper {
+        width: 64px;
+        height: 64px;
+
+        border-width: 3px;
+    }
+
+
+    .open-sheet-button {
+        min-height: 35px;
+
+        border-width: 2px;
+
+        font-size: 9px;
+    }
+
+
+    .dungeon-character-name {
+        min-height: 22px;
+
+        margin-bottom: 4px;
+
+        font-size: 12px;
+    }
+
+
+    .quick-section {
+        margin-bottom: 10px;
+    }
+
+
+    .quick-section-title,
+    .dungeon-actions-title {
+        margin-bottom: 4px;
+
+        font-size: 10px;
+    }
+
+
+    .quick-stat-grid {
+        gap: 3px;
+    }
+
+
+    .quick-stat {
+        min-height: 42px;
+
+        border-width: 2px;
+    }
+
+
+    .quick-stat-label {
+        font-size: 7px;
+    }
+
+
+    .quick-stat-value {
+        font-size: 11px;
+    }
+
+
+    #health-display,
+    #mana-display {
+        font-size: 9px;
+    }
+
+
+    #critical-display {
+        font-size: 8px;
+    }
+
+
+    /* --------------------------------------------------------
+       AZIONI
+       -------------------------------------------------------- */
+
+    .dungeon-action-column {
         gap: 10px;
     }
 
 
-    #dungeon-image {
-        width: 100%;
-    }
+    .dungeon-action-card {
+        grid-template-columns: 25px 1fr;
 
-}
+        min-height: 43px;
 
+        margin-bottom: 4px;
 
-/* ============================================================
-   STATISTICHE SECONDARIE
-   ============================================================ */
+        padding: 3px 5px;
 
-.secondary-stats-grid {
-    display: grid;
-
-    grid-template-columns: repeat(2, 1fr);
-
-    gap: 10px;
-
-    margin-top: 12px;
-}
-
-
-/* ============================================================
-   RIQUADRO STATISTICA
-   ============================================================ */
-
-.secondary-stat {
-    min-height: 82px;
-
-    padding: 10px 8px;
-
-    box-sizing: border-box;
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: center;
-
-    align-items: center;
-
-    text-align: center;
-
-    border-radius: 12px;
-
-    border: 1px solid rgba(184, 138, 59, 0.45);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.055),
-            rgba(0, 0, 0, 0.18)
-        );
-
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.05),
-        0 2px 6px rgba(0, 0, 0, 0.18);
-
-    transition:
-        transform 0.15s ease,
-        border-color 0.15s ease;
-}
-
-
-/* ============================================================
-   NOME STATISTICA
-   ============================================================ */
-
-.secondary-stat-name {
-    display: block;
-
-    margin-bottom: 5px;
-
-    font-size: 0.72rem;
-
-    font-weight: 700;
-
-    letter-spacing: 0.08em;
-
-    text-transform: uppercase;
-
-    opacity: 0.75;
-}
-
-
-/* ============================================================
-   VALORE
-   ============================================================ */
-
-.secondary-stat strong {
-    display: block;
-
-    font-size: 1.65rem;
-
-    line-height: 1;
-
-    font-weight: 800;
-
-    color: #b88a3b;
-
-    text-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-
-/* ============================================================
-   STATISTICHE PRIMARIE
-   ============================================================ */
-
-.primary-stats-grid {
-    display: grid;
-
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 8px;
-
-    margin-top: 12px;
-}
-
-
-.primary-stat {
-    min-height: 68px;
-
-    padding: 8px 5px;
-
-    box-sizing: border-box;
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: center;
-
-    align-items: center;
-
-    text-align: center;
-
-    border-radius: 10px;
-
-    border: 1px solid rgba(184, 138, 59, 0.35);
-
-    background:
-        rgba(255, 255, 255, 0.035);
-}
-
-
-.primary-stat span {
-    font-size: 0.68rem;
-
-    font-weight: 700;
-
-    letter-spacing: 0.08em;
-
-    opacity: 0.7;
-
-    margin-bottom: 4px;
-}
-
-
-.primary-stat strong {
-    font-size: 1.35rem;
-
-    line-height: 1;
-
-    color: #b88a3b;
-}
-
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-
-@media (max-width: 1100px) {
-
-    .secondary-stat {
-        min-height: 76px;
-    }
-
-    .secondary-stat strong {
-        font-size: 1.45rem;
-    }
-
-}
-
-
-@media (max-width: 850px) {
-
-    .secondary-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-}
-
-
-@media (max-width: 500px) {
-
-    .secondary-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-
-        gap: 8px;
+        border-width: 2px;
     }
 
 
-    .secondary-stat {
-        min-height: 72px;
+    .action-card-icon {
+        width: 23px;
+        height: 23px;
+
+        font-size: 15px;
     }
 
 
-    .secondary-stat-name {
-        font-size: 0.65rem;
+    .action-card-content strong {
+        font-size: 8px;
     }
 
 
-    .secondary-stat strong {
-        font-size: 1.35rem;
+    .action-card-content small {
+        font-size: 8px;
     }
 
 
-    .primary-stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-
-        gap: 6px;
+    .dungeon-action-pagination {
+        min-height: 18px;
     }
 
-}
+
+    .action-page-button {
+        width: 20px;
+        height: 20px;
+
+        font-size: 17px;
+    }
 
 
-@media (max-width: 600px) {
+    .action-page-number {
+        font-size: 9px;
+    }
+
+
+    /* --------------------------------------------------------
+       NOTE
+       -------------------------------------------------------- */
+
+    .dungeon-notes {
+        height: 85px;
+
+        min-height: 70px;
+
+        border-width: 2px;
+
+        font-size: 10px;
+    }
+
+
+    .save-notes-button {
+        min-height: 27px;
+
+        font-size: 8px;
+    }
+
+
+    /* --------------------------------------------------------
+       CHAT
+       -------------------------------------------------------- */
 
     .dungeon-chat-panel {
-        height: 380px;
-        min-height: 380px;
-        max-height: 380px;
+        height: 230px;
+        min-height: 230px;
+
+        margin-top: 3px;
+
+        border-width: 2px;
     }
 
 
-    .dungeon-chat-header {
-        padding: 12px;
+    .dungeon-panel-title {
+        padding: 5px;
+
+        font-size: 13px;
     }
 
 
-    .floor-chat-messages {
-        padding: 10px;
-    }
-
-
-    .floor-chat-form {
-        padding: 10px;
+    .floor-chat-message {
+        font-size: 10px;
     }
 
 }
+
+
 /* ============================================================
-   NEBBIA DI GUERRA
+   TELEFONI MOLTO PICCOLI
    ============================================================ */
 
-.dungeon-fog-canvas {
-    position: absolute;
+@media (max-width: 480px) {
 
-    z-index: 70;
+    .dungeon-character-column {
+        grid-template-columns: 1fr;
+    }
 
-    pointer-events: none;
 
-    display: block;
+    .dungeon-character-summary {
+        display: grid;
 
-    box-sizing: border-box;
+        grid-template-columns: 1fr 1fr;
+
+        column-gap: 10px;
+    }
+
+
+    .dungeon-character-name,
+    .character-summary-top {
+        grid-column: 1 / -1;
+    }
+
+
+    .quick-section {
+        margin-bottom: 5px;
+    }
+
+
+    .dungeon-action-column {
+        margin-top: 4px;
+    }
+
 }
