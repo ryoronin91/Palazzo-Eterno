@@ -3,44 +3,97 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v6 CARICATO");
+console.log(
+    "COMBAT.JS v7 CARICATO"
+);
 
 
-const db = supabaseClient;
+const db =
+    supabaseClient;
 
-const COMBAT_COLUMNS = 12;
-const COMBAT_ROWS = 12;
+
+const COMBAT_COLUMNS =
+    12;
+
+
+const COMBAT_ROWS =
+    12;
 
 
 // ============================================================
 // STATO
 // ============================================================
 
-let currentUser = null;
-let currentCharacter = null;
-let currentRole = "player";
-
-let masterObserverMode = false;
-
-let combatId = null;
-let combatSession = null;
-
-let combatTimerInterval = null;
-let combatStateInterval = null;
-
-let combatRefreshInProgress = false;
-let combatMoveInProgress = false;
-
-let lastCombatEntitiesSnapshot = "";
-
-let characterAbilities = [];
-let characterInventory = [];
-
-let activeDrawer = null;
+let currentUser =
+    null;
 
 
-const combatEntities = new Map();
-const combatTokens = new Map();
+let currentCharacter =
+    null;
+
+
+let currentRole =
+    "player";
+
+
+let masterObserverMode =
+    false;
+
+
+let combatId =
+    null;
+
+
+let combatSession =
+    null;
+
+
+let combatTimerInterval =
+    null;
+
+
+let combatStateInterval =
+    null;
+
+
+let combatRefreshInProgress =
+    false;
+
+
+let combatMoveInProgress =
+    false;
+
+
+let lastCombatEntitiesSnapshot =
+    "";
+
+
+let characterAbilities =
+    [];
+
+
+let characterInventory =
+    [];
+
+
+let activeDrawer =
+    null;
+
+
+// ============================================================
+// MODALITÀ DI SELEZIONE BERSAGLIO
+// ============================================================
+
+let combatTargetMode =
+    null;
+
+
+const combatEntities =
+    new Map();
+
+
+const combatTokens =
+    new Map();
 
 
 // ============================================================
@@ -81,28 +134,28 @@ document.addEventListener(
 
 
             // =================================================
-            // ENTRA NEL COMBAT
+            // PG
             // =================================================
 
             await joinCombatAsPlayer();
 
 
             // =================================================
-            // CREA NEMICI SE NECESSARIO
+            // NEMICI
             // =================================================
 
             await generateCombatEnemies();
 
 
             // =================================================
-            // CARICA ENTITÀ
+            // ENTITÀ
             // =================================================
 
             await loadCombatEntities();
 
 
             // =================================================
-            // DATI DEL PG
+            // ABILITÀ + INVENTARIO
             // =================================================
 
             if (
@@ -120,10 +173,6 @@ document.addEventListener(
 
             }
 
-
-            // =================================================
-            // SNAPSHOT
-            // =================================================
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
@@ -197,7 +246,8 @@ async function loadCurrentUser() {
     }
 
 
-    currentUser = user;
+    currentUser =
+        user;
 
 }
 
@@ -494,7 +544,8 @@ async function loadCombatEntities() {
 
 
     (
-        data || []
+        data ||
+        []
     ).forEach(
         entity => {
 
@@ -520,11 +571,14 @@ async function loadCharacterAbilities() {
         error
     } =
         await db
-            .from("character_abilities")
+            .from(
+                "character_abilities"
+            )
             .select(`
                 id,
                 ability_id,
                 level,
+
                 ability:abilities (
                     id,
                     name,
@@ -570,12 +624,15 @@ async function loadCharacterInventory() {
         error
     } =
         await db
-            .from("character_inventory")
+            .from(
+                "character_inventory"
+            )
             .select(`
                 id,
                 item_id,
                 quantity,
                 equipped_slot,
+
                 item:items (
                     id,
                     name,
@@ -704,6 +761,8 @@ function renderCombat() {
 
     updateActionButtons();
 
+    updateTargetSelectionVisuals();
+
 }
 
 
@@ -831,6 +890,21 @@ function renderCombatTokens() {
                     entity.display_name;
 
 
+                token.addEventListener(
+                    "click",
+                    event => {
+
+                        event.stopPropagation();
+
+
+                        handleCombatTokenClick(
+                            entity.id
+                        );
+
+                    }
+                );
+
+
                 map.appendChild(
                     token
                 );
@@ -930,11 +1004,14 @@ async function renderPlayerTokenContent(
     image.style.width =
         "100%";
 
+
     image.style.height =
         "100%";
 
+
     image.style.objectFit =
         "contain";
+
 
     image.alt =
         entity.display_name;
@@ -998,11 +1075,14 @@ function renderEnemyTokenContent(
     image.style.width =
         "100%";
 
+
     image.style.height =
         "100%";
 
+
     image.style.objectFit =
         "contain";
+
 
     image.style.display =
         "block";
@@ -1021,6 +1101,319 @@ function renderEnemyTokenContent(
 
     token.appendChild(
         image
+    );
+
+}
+
+
+// ============================================================
+// CLICK SU TOKEN
+// ============================================================
+
+async function handleCombatTokenClick(
+    entityId
+) {
+
+    if (!combatTargetMode) {
+
+        return;
+
+    }
+
+
+    const entity =
+        combatEntities.get(
+            entityId
+        );
+
+
+    if (!entity) {
+
+        return;
+
+    }
+
+
+    if (
+        combatTargetMode ===
+        "basic_attack"
+    ) {
+
+        if (
+            entity.entity_type !==
+            "enemy"
+        ) {
+
+            addCombatLog(
+                "Devi selezionare un nemico."
+            );
+
+
+            return;
+
+        }
+
+
+        await performBasicAttack(
+            entity.id
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// ATTACCO BASE
+// ============================================================
+
+async function performBasicAttack(
+    targetEntityId
+) {
+
+    if (
+        !currentCharacter ||
+        !isMyTurn()
+    ) {
+
+        combatTargetMode =
+            null;
+
+
+        updateTargetSelectionVisuals();
+
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "combat_basic_attack",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id,
+
+                    p_target_entity_id:
+                        targetEntityId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        combatTargetMode =
+            null;
+
+
+        await loadCombatEntities();
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+
+        // ====================================================
+        // LOG
+        // ====================================================
+
+        if (!data.hit) {
+
+            addCombatLog(
+                `${data.attacker_name} attacca ${data.target_name}: `
+                +
+                `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
+                +
+                `contro DIF ${data.defense}. MANCATO.`
+            );
+
+
+            return;
+
+        }
+
+
+        let text =
+            `${data.attacker_name} attacca ${data.target_name}: `
+            +
+            `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
+            +
+            `contro DIF ${data.defense}. `
+            +
+            `${data.damage} danni`;
+
+
+        if (
+            data.critical
+        ) {
+
+            text +=
+                " · CRITICO!";
+
+        }
+
+
+        text +=
+            ` · PF ${data.target_hp}/${data.target_max_hp}`;
+
+
+        if (
+            data.target_dead
+        ) {
+
+            text +=
+                ` · ${data.target_name} è sconfitto!`;
+
+        }
+
+
+        addCombatLog(
+            text
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore attacco base:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// EVIDENZIA BERSAGLI ATTACCO BASE
+//
+// DIAGONALI COMPRESE.
+// ============================================================
+
+function updateTargetSelectionVisuals() {
+
+    combatTokens.forEach(
+        (
+            token,
+            entityId
+        ) => {
+
+            token.style.outline =
+                "";
+
+
+            token.style.outlineOffset =
+                "";
+
+
+            token.style.cursor =
+                "default";
+
+
+            if (
+                combatTargetMode !==
+                "basic_attack"
+            ) {
+
+                return;
+
+            }
+
+
+            const entity =
+                combatEntities.get(
+                    entityId
+                );
+
+
+            if (
+                !entity ||
+                entity.entity_type !==
+                    "enemy" ||
+                entity.status !==
+                    "alive"
+            ) {
+
+                return;
+
+            }
+
+
+            const player =
+                getMyPlayerEntity();
+
+
+            if (!player) {
+
+                return;
+
+            }
+
+
+            // =================================================
+            // DISTANZA CON DIAGONALI
+            // =================================================
+
+            const distance =
+                Math.max(
+
+                    Math.abs(
+                        Number(player.x) -
+                        Number(entity.x)
+                    ),
+
+                    Math.abs(
+                        Number(player.y) -
+                        Number(entity.y)
+                    )
+
+                );
+
+
+            if (
+                distance === 1
+            ) {
+
+                token.style.outline =
+                    "3px solid #d7b05d";
+
+
+                token.style.outlineOffset =
+                    "2px";
+
+
+                token.style.cursor =
+                    "pointer";
+
+            }
+
+        }
     );
 
 }
@@ -1148,7 +1541,7 @@ function clampAttribute(
 
 
 // ============================================================
-// ENTITÀ PG
+// ENTITÀ DEL MIO PG
 // ============================================================
 
 function getMyPlayerEntity() {
@@ -1420,7 +1813,8 @@ function updateBar(
                     (
                         current /
                         max
-                    ) * 100
+                    ) *
+                    100
                 )
             )
             : 0;
@@ -1631,6 +2025,10 @@ function setupCombatActions() {
         );
 
 
+    // ========================================================
+    // ATTACCO BASE
+    // ========================================================
+
     attack?.addEventListener(
         "click",
         () => {
@@ -1647,17 +2045,35 @@ function setupCombatActions() {
             closeCombatDrawer();
 
 
+            combatTargetMode =
+                "basic_attack";
+
+
             addCombatLog(
-                "Attacco Base selezionato. La selezione del bersaglio verrà collegata nel prossimo passaggio."
+                "ATTACCO BASE: seleziona un nemico in una delle 8 caselle adiacenti."
             );
+
+
+            updateTargetSelectionVisuals();
 
         }
     );
 
 
+    // ========================================================
+    // ABILITÀ
+    // ========================================================
+
     abilities?.addEventListener(
         "click",
         () => {
+
+            combatTargetMode =
+                null;
+
+
+            updateTargetSelectionVisuals();
+
 
             openAbilityPanel();
 
@@ -1665,15 +2081,30 @@ function setupCombatActions() {
     );
 
 
+    // ========================================================
+    // ZAINO
+    // ========================================================
+
     backpack?.addEventListener(
         "click",
         () => {
+
+            combatTargetMode =
+                null;
+
+
+            updateTargetSelectionVisuals();
+
 
             openBackpackPanel();
 
         }
     );
 
+
+    // ========================================================
+    // SALTA TURNO
+    // ========================================================
 
     pass?.addEventListener(
         "click",
@@ -1722,6 +2153,10 @@ function openAbilityPanel() {
 
 }
 
+
+// ============================================================
+// RENDER ABILITÀ
+// ============================================================
 
 function renderAbilityPanel() {
 
@@ -1800,7 +2235,8 @@ function renderAbilityPanel() {
             const unavailable =
                 !isMyTurn()
                 ||
-                player?.action_used === true
+                player?.action_used ===
+                    true
                 ||
                 currentPM < pmCost;
 
@@ -1933,7 +2369,7 @@ function renderAbilityPanel() {
                 () => {
 
                     addCombatLog(
-                        `${ability.name} selezionata. Bersaglio ed effetto verranno collegati nel prossimo passaggio.`
+                        `${ability.name} selezionata. Implementeremo il suo effetto nel prossimo passaggio.`
                     );
 
                 }
@@ -1988,6 +2424,10 @@ function openBackpackPanel() {
 
 }
 
+
+// ============================================================
+// RENDER ZAINO
+// ============================================================
 
 function renderBackpackPanel() {
 
@@ -2056,7 +2496,8 @@ function renderBackpackPanel() {
             const unavailable =
                 !isMyTurn()
                 ||
-                player?.item_used === true;
+                player?.item_used ===
+                    true;
 
 
             const card =
@@ -2154,10 +2595,10 @@ function renderBackpackPanel() {
 
             button.addEventListener(
                 "click",
-                () => {
+                async () => {
 
-                    addCombatLog(
-                        `${item.name} selezionato. L'uso effettivo verrà collegato nel prossimo passaggio.`
+                    await useCombatInventoryItem(
+                        entry.id
                     );
 
                 }
@@ -2183,6 +2624,99 @@ function renderBackpackPanel() {
 
         }
     );
+
+}
+
+
+// ============================================================
+// USA OGGETTO
+// ============================================================
+
+async function useCombatInventoryItem(
+    inventoryId
+) {
+
+    if (!isMyTurn()) {
+
+        addCombatLog(
+            "Non è il tuo turno."
+        );
+
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "use_combat_inventory_item",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_inventory_id:
+                        inventoryId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await Promise.all([
+
+            loadCombatEntities(),
+
+            loadCharacterInventory()
+
+        ]);
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+        renderBackpackPanel();
+
+
+        if (data) {
+
+            addCombatLog(
+                `${data.item_name} utilizzata. PF ${data.current_hp}/${data.max_hp} · PM ${data.current_pm}/${data.max_pm}.`
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore utilizzo oggetto:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
 
 }
 
@@ -2231,12 +2765,18 @@ function closeCombatDrawer() {
 
             renderCombatTokens();
 
+            updateTargetSelectionVisuals();
+
         },
         200
     );
 
 }
 
+
+// ============================================================
+// MESSAGGIO DRAWER
+// ============================================================
 
 function renderDrawerMessage(
     container,
@@ -2265,7 +2805,7 @@ function renderDrawerMessage(
 
 
 // ============================================================
-// AZIONE DISPONIBILE
+// AZIONE PRINCIPALE DISPONIBILE
 // ============================================================
 
 function canUseMainAction() {
@@ -2284,7 +2824,7 @@ function canUseMainAction() {
 
 
 // ============================================================
-// AGGIORNA BOTTONI
+// BOTTONI
 // ============================================================
 
 function updateActionButtons() {
@@ -2302,14 +2842,6 @@ function updateActionButtons() {
             player &&
             myTurn &&
             player.action_used !== true
-        );
-
-
-    const itemAvailable =
-        !!(
-            player &&
-            myTurn &&
-            player.item_used !== true
         );
 
 
@@ -2407,6 +2939,13 @@ async function passTurn() {
     }
 
 
+    combatTargetMode =
+        null;
+
+
+    updateTargetSelectionVisuals();
+
+
     const button =
         document.getElementById(
             "combat-action-pass"
@@ -2490,6 +3029,7 @@ function updateCombatTurnUI() {
 
         updateActionButtons();
 
+
         return;
 
     }
@@ -2507,6 +3047,7 @@ function updateCombatTurnUI() {
 
 
         updateActionButtons();
+
 
         return;
 
@@ -2529,7 +3070,14 @@ function updateCombatTurnUI() {
         );
 
 
+        combatTargetMode =
+            null;
+
+
+        updateTargetSelectionVisuals();
+
         updateActionButtons();
+
 
         return;
 
@@ -2554,7 +3102,8 @@ function updateCombatTurnUI() {
         (
             Date.now() -
             startedAt
-        ) /
+        )
+        /
         1000;
 
 
@@ -2579,6 +3128,13 @@ function updateCombatTurnUI() {
         setCombatStatus(
             `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
         );
+
+
+        combatTargetMode =
+            null;
+
+
+        updateTargetSelectionVisuals();
 
     }
 
@@ -2627,7 +3183,12 @@ function setupCombatNotes() {
 
 
     notesElement.value =
-        currentCharacter.notes || "";
+        currentCharacter.notes ||
+        "";
+
+
+    saveButton.disabled =
+        false;
 
 
     saveButton.addEventListener(
@@ -2745,7 +3306,7 @@ function updateCombatMode() {
 
 
 // ============================================================
-// LOG COMBATTIMENTO
+// LOG
 // ============================================================
 
 function addCombatLog(
@@ -2795,6 +3356,31 @@ function addCombatLog(
 
     container.scrollTop =
         container.scrollHeight;
+
+}
+
+
+// ============================================================
+// ERRORI
+// ============================================================
+
+function cleanCombatError(
+    text
+) {
+
+    if (!text) {
+
+        return "Si è verificato un errore.";
+
+    }
+
+
+    return text
+        .replace(
+            /^.*?: /,
+            ""
+        )
+        .trim();
 
 }
 
@@ -3008,6 +3594,7 @@ window.moveCombatPlayer =
                 await db.rpc(
                     "move_combat_player",
                     {
+
                         p_combat_id:
                             combatId,
 
@@ -3019,6 +3606,7 @@ window.moveCombatPlayer =
 
                         p_dy:
                             dy
+
                     }
                 );
 
@@ -3078,9 +3666,12 @@ document.addEventListener(
 
 
         if (
-            target instanceof HTMLInputElement ||
-            target instanceof HTMLTextAreaElement ||
-            target instanceof HTMLSelectElement ||
+            target instanceof
+                HTMLInputElement ||
+            target instanceof
+                HTMLTextAreaElement ||
+            target instanceof
+                HTMLSelectElement ||
             target?.isContentEditable
         ) {
 
@@ -3136,6 +3727,21 @@ document.addEventListener(
                 break;
 
 
+            case "escape":
+
+                combatTargetMode =
+                    null;
+
+
+                closeCombatDrawer();
+
+
+                updateTargetSelectionVisuals();
+
+
+                return;
+
+
             default:
 
                 return;
@@ -3164,6 +3770,8 @@ window.addEventListener(
     () => {
 
         renderCombatTokens();
+
+        updateTargetSelectionVisuals();
 
     }
 );
