@@ -48,6 +48,11 @@ let currentUserRole = "player";
 let characterInventory = [];
 
 let characterAbilities = [];
+const ABILITIES_PER_PAGE = 5;
+const BACKPACK_ITEMS_PER_PAGE = 6;
+
+let abilitiesPage = 1;
+let backpackPage = 1;
 
 let equipmentBonuses = {
 
@@ -367,9 +372,153 @@ async function loadAbilities() {
 
 }
 
+// ============================================================
+// PAGINAZIONE
+// ============================================================
+
+function renderSheetPagination(
+    container,
+    currentPage,
+    totalPages,
+    onPageChange
+) {
+
+    if (
+        !container ||
+        totalPages <= 1
+    ) {
+
+        return;
+
+    }
+
+
+    const pagination =
+        document.createElement(
+            "div"
+        );
+
+
+    pagination.className =
+        "sheet-pagination";
+
+
+    const previous =
+        document.createElement(
+            "button"
+        );
+
+
+    previous.type =
+        "button";
+
+
+    previous.className =
+        "sheet-pagination-button";
+
+
+    previous.textContent =
+        "‹";
+
+
+    previous.disabled =
+        currentPage <= 1;
+
+
+    previous.addEventListener(
+        "click",
+        () => {
+
+            if (
+                currentPage <= 1
+            ) {
+
+                return;
+
+            }
+
+
+            onPageChange(
+                currentPage - 1
+            );
+
+        }
+    );
+
+
+    const label =
+        document.createElement(
+            "div"
+        );
+
+
+    label.className =
+        "sheet-pagination-label";
+
+
+    label.textContent =
+        `${currentPage} / ${totalPages}`;
+
+
+    const next =
+        document.createElement(
+            "button"
+        );
+
+
+    next.type =
+        "button";
+
+
+    next.className =
+        "sheet-pagination-button";
+
+
+    next.textContent =
+        "›";
+
+
+    next.disabled =
+        currentPage >= totalPages;
+
+
+    next.addEventListener(
+        "click",
+        () => {
+
+            if (
+                currentPage >= totalPages
+            ) {
+
+                return;
+
+            }
+
+
+            onPageChange(
+                currentPage + 1
+            );
+
+        }
+    );
+
+
+    pagination.append(
+        previous,
+        label,
+        next
+    );
+
+
+    container.appendChild(
+        pagination
+    );
+
+}
 
 // ============================================================
 // MOSTRA ABILITÀ
+// 5 PER PAGINA
 // ============================================================
 
 function displayAbilities() {
@@ -418,7 +567,46 @@ function displayAbilities() {
     }
 
 
-    characterAbilities.forEach(
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                characterAbilities.length /
+                ABILITIES_PER_PAGE
+            )
+        );
+
+
+    abilitiesPage =
+        Math.max(
+            1,
+            Math.min(
+                abilitiesPage,
+                totalPages
+            )
+        );
+
+
+    const startIndex =
+        (
+            abilitiesPage - 1
+        ) *
+        ABILITIES_PER_PAGE;
+
+
+    const endIndex =
+        startIndex +
+        ABILITIES_PER_PAGE;
+
+
+    const visibleAbilities =
+        characterAbilities.slice(
+            startIndex,
+            endIndex
+        );
+
+
+    visibleAbilities.forEach(
         entry => {
 
             if (!entry.ability) {
@@ -437,8 +625,23 @@ function displayAbilities() {
         }
     );
 
-}
 
+    renderSheetPagination(
+        container,
+        abilitiesPage,
+        totalPages,
+        newPage => {
+
+            abilitiesPage =
+                newPage;
+
+
+            displayAbilities();
+
+        }
+    );
+
+}
 
 // ============================================================
 // CREA CARTA ABILITÀ
@@ -1708,6 +1911,7 @@ function renderEquipmentSlot(
 
 // ============================================================
 // ZAINO
+// 6 TIPI DI OGGETTO PER PAGINA
 // ============================================================
 
 function displayBackpack() {
@@ -1783,7 +1987,55 @@ function displayBackpack() {
     list.replaceChildren();
 
 
-    items.forEach(
+    if (
+        items.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                items.length /
+                BACKPACK_ITEMS_PER_PAGE
+            )
+        );
+
+
+    backpackPage =
+        Math.max(
+            1,
+            Math.min(
+                backpackPage,
+                totalPages
+            )
+        );
+
+
+    const startIndex =
+        (
+            backpackPage - 1
+        ) *
+        BACKPACK_ITEMS_PER_PAGE;
+
+
+    const endIndex =
+        startIndex +
+        BACKPACK_ITEMS_PER_PAGE;
+
+
+    const visibleItems =
+        items.slice(
+            startIndex,
+            endIndex
+        );
+
+
+    visibleItems.forEach(
         entry => {
 
             renderBackpackItem(
@@ -1794,8 +2046,23 @@ function displayBackpack() {
         }
     );
 
-}
 
+    renderSheetPagination(
+        list,
+        backpackPage,
+        totalPages,
+        newPage => {
+
+            backpackPage =
+                newPage;
+
+
+            displayBackpack();
+
+        }
+    );
+
+}
 
 // ============================================================
 // RENDER OGGETTO ZAINO
