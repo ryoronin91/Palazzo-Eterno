@@ -627,40 +627,34 @@ function getDungeonEffectiveAttribute(
     
 updateCharacterPanel();
     const forza =
-    Number(
-        character.forza
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "forza"
+    );
 
 const resistenza =
-    Number(
-        character.resistenza
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "resistenza"
+    );
 
 const costituzione =
-    Number(
-        character.costituzione
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "costituzione"
+    );
 
 const intelligenza =
-    Number(
-        character.intelligenza
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "intelligenza"
+    );
 
 const destrezza =
-    Number(
-        character.destrezza
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "destrezza"
+    );
 
 const fortuna =
-    Number(
-        character.fortuna
-    ) || 1;
-
+    getDungeonEffectiveAttribute(
+        "fortuna"
+    );
 
     
 
