@@ -160,7 +160,9 @@ document.addEventListener(
                     loadCharacterEquipment()
 
                 ]);
+await syncCombatPlayerStats();
 
+await loadCombatEntities();
             }
 
 
@@ -716,6 +718,53 @@ async function loadCharacterEquipment() {
 
 }
 
+// ============================================================
+// SINCRONIZZA STATISTICHE PG NEL COMBATTIMENTO
+// ============================================================
+
+async function syncCombatPlayerStats() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter
+    ) {
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "sync_combat_player_stats",
+            {
+
+                p_combat_id:
+                    combatId,
+
+                p_character_id:
+                    currentCharacter.id
+
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    console.log(
+        "Statistiche combat sincronizzate:",
+        data
+    );
+
+}
 
 // ============================================================
 // BONUS EQUIPAGGIAMENTO
