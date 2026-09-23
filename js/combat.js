@@ -83,6 +83,15 @@ const combatTokens = new Map();
 
 let combatRangeCells = [];
 
+// ============================================================
+// PRESENCE DUNGEON MENTRE SI È IN COMBAT
+// ============================================================
+
+const COMBAT_DUNGEON_CHANNEL_NAME =
+    "palazzo-eterno-dungeon-1";
+
+let combatDungeonChannel =
+    null;
 
 // ============================================================
 // AVVIO
@@ -117,6 +126,8 @@ document.addEventListener(
 
 
             await loadCurrentCharacter();
+
+            await setupDungeonPresenceWhileInCombat();
 
             await loadCombatSession();
 
@@ -347,6 +358,9 @@ async function loadCurrentCharacter() {
                 current_pm,
                 livello,
                 notes
+                dungeon_x,
+                dungeon_y,
+                active_combat_id,
             `)
             .eq(
                 "user_id",
@@ -365,6 +379,135 @@ async function loadCurrentCharacter() {
     currentCharacter = data;
 
 }
+
+// ============================================================
+// MANTIENE IL PG VISIBILE NEL DUNGEON DURANTE IL COMBAT
+// ============================================================
+
+async function setupDungeonPresenceWhileInCombat() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter ||
+        !currentUser
+    ) {
+        return;
+    }
+
+
+    combatDungeonChannel =
+        db.channel(
+            COMBAT_DUNGEON_CHANNEL_NAME,
+            {
+                config: {
+                    presence: {
+                        key:
+                            currentCharacter.id
+                    }
+                }
+            }
+        );
+
+
+    await new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            combatDungeonChannel.subscribe(
+                async status => {
+
+                    console.log(
+                        "Presence dungeon dal combat:",
+                        status
+                    );
+
+
+                    if (
+                        status ===
+                        "SUBSCRIBED"
+                    ) {
+
+                        try {
+
+                            await combatDungeonChannel.track({
+
+                                character_id:
+                                    currentCharacter.id,
+
+                                user_id:
+                                    currentUser.id,
+
+                                name:
+                                    currentCharacter.nome ||
+                                    "Avventuriero",
+
+                                token:
+                                    currentCharacter.token ||
+                                    "token_1.png",
+
+                                x:
+                                    Number(
+                                        currentCharacter.dungeon_x
+                                    ),
+
+                                y:
+                                    Number(
+                                        currentCharacter.dungeon_y
+                                    ),
+
+                                current_hp:
+                                    currentCharacter.current_hp,
+
+                                active_combat_id:
+                                    currentCharacter.active_combat_id ||
+                                    combatId,
+
+                                in_combat:
+                                    true,
+
+                                online_at:
+                                    new Date()
+                                        .toISOString()
+
+                            });
+
+
+                            resolve();
+
+                        } catch (error) {
+
+                            reject(
+                                error
+                            );
+
+                        }
+
+                    }
+
+
+                    if (
+                        status ===
+                        "CHANNEL_ERROR"
+                    ) {
+
+                        reject(
+                            new Error(
+                                "Errore Presence dungeon dal combat."
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+}
+
 
 
 // ============================================================

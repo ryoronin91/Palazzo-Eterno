@@ -2616,3 +2616,66 @@ body {
             #2d2115
         );
 }
+/* ============================================================
+   GIOCATORE IMPEGNATO IN COMBATTIMENTO
+============================================================ */
+
+.other-player-token.is-in-combat {
+    filter:
+        grayscale(1)
+        brightness(0.55);
+
+    opacity:
+        0.75;
+}
+
+
+.other-player-token.is-in-combat::after {
+    content:
+        "⚔";
+
+    position:
+        absolute;
+
+    right:
+        -5px;
+
+    top:
+        -7px;
+
+    width:
+        20px;
+
+    height:
+        20px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        50%;
+
+    background:
+        #171411;
+
+    border:
+        1px solid #b18a4d;
+
+    color:
+        #d4af67;
+
+    font-size:
+        12px;
+
+    line-height:
+        1;
+
+    pointer-events:
+        none;
+}

@@ -2752,6 +2752,16 @@ in_combat:
         ? !!data.in_combat
         : !!oldData.in_combat
 
+active_combat_id:
+    data.active_combat_id !== undefined
+        ? data.active_combat_id
+        : oldData.active_combat_id,
+
+in_combat:
+    data.in_combat !== undefined
+        ? !!data.in_combat
+        : !!oldData.in_combat
+
         }
     );
 
@@ -2944,6 +2954,17 @@ function showOtherPlayerToken(
 
 }
 
+token.classList.toggle(
+    "is-in-combat",
+    !!player.in_combat
+);
+
+
+token.title =
+    player.in_combat
+        ? `${player.name} - IN COMBATTIMENTO`
+        : player.name;
+        
     positionTokenElement(
         token,
         player.x,
