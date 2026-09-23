@@ -48,7 +48,7 @@ const DUNGEON_COMBAT_EVENTS = [
 
     {
         id: "C5",
-        x: 4,
+        x: 11,
         y: 20,
         encounter_id: "combat_5",
         token: "immagini/eventi/combat_goblin.png"
