@@ -45,6 +45,8 @@ let currentUser = null;
 
 let characterInventory = [];
 
+let characterAbilities = [];
+
 let equipmentBonuses = {
 
     attack_bonus: 0,
@@ -381,12 +383,113 @@ async function loadCharacter() {
         data;
 
 
-    await loadCharacterEquipment();
+   await Promise.all([
+    loadCharacterEquipment(),
+    loadDungeonAbilities()
+]);
 
-    updateCharacterPanel();
+updateCharacterPanel();
 
 }
 
+// ============================================================
+// ABILITÀ PERSONAGGIO
+// ============================================================
+
+async function loadDungeonAbilities() {
+
+    if (!character) {
+
+        characterAbilities = [];
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "character_abilities"
+            )
+            .select(`
+                id,
+                ability_id,
+                level,
+
+                ability:abilities (
+                    id,
+                    name,
+                    description,
+                    ability_type,
+                    pm_cost,
+                    max_level
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterAbilities =
+        data || [];
+
+
+    updateDungeonAbilityVisibility();
+
+}
+
+
+// ============================================================
+// POSSIEDE UNA ABILITÀ?
+// ============================================================
+
+function hasDungeonAbility(
+    abilityId
+) {
+
+    return characterAbilities.some(
+        entry =>
+            entry.ability_id === abilityId ||
+            entry.ability?.id === abilityId
+    );
+
+}
+
+
+// ============================================================
+// VISIBILITÀ ABILITÀ DUNGEON
+// ============================================================
+
+function updateDungeonAbilityVisibility() {
+
+    const healButton =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+
+    if (healButton) {
+
+        healButton.style.display =
+            hasDungeonAbility("cura")
+                ? ""
+                : "none";
+
+    }
+
+}
 
 // ============================================================
 // EQUIPAGGIAMENTO
@@ -3399,6 +3502,19 @@ function activateHealMode() {
         return;
     }
 
+    if (
+    !hasDungeonAbility(
+        "cura"
+    )
+) {
+
+    setMessage(
+        "Il personaggio non conosce Cura."
+    );
+
+    return;
+
+}
 
     const stats =
         getDungeonCalculatedStats();
