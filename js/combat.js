@@ -143,14 +143,50 @@ document.addEventListener(
             // GENERA NEMICI
             // =================================================
 
-            await generateCombatEnemies();
+           await generateCombatEnemies();
 
 
-            // =================================================
-            // CARICA ENTITÀ
-            // =================================================
+// =================================================
+// AVVIA IL COMBATTIMENTO SE È ANCORA IN ATTESA
+// =================================================
 
-            await loadCombatEntities();
+if (
+    combatSession.status ===
+    "waiting"
+) {
+
+    const {
+        error
+    } =
+        await db.rpc(
+            "initialize_combat_turns",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    // Ricarichiamo la sessione perché ora
+    // contiene status=active, primo turno e timer.
+
+    await loadCombatSession();
+
+}
+
+
+// =================================================
+// CARICA ENTITÀ
+// =================================================
+
+await loadCombatEntities();
 
 
             // =================================================
