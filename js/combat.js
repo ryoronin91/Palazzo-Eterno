@@ -360,7 +360,7 @@ async function loadCurrentCharacter() {
                 notes
                 dungeon_x,
                 dungeon_y,
-                active_combat_id,
+                active_combat_id
             `)
             .eq(
                 "user_id",
