@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v14 CARICATO");
+console.log("COMBAT.JS v21 CARICATO");
 
 
 const db = supabaseClient;
@@ -1301,6 +1301,8 @@ function renderCombat() {
     renderCombatEntityList();
 
     renderPlayerCombatSheet();
+
+    renderActiveCombatBuffs();
 
     updateActionButtons();
 
@@ -3388,6 +3390,231 @@ const criticalBuff =
 
 }
 
+// ============================================================
+// BUFF ATTIVI
+// ============================================================
+
+function renderActiveCombatBuffs() {
+
+    const container =
+        document.getElementById(
+            "combat-active-buffs"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.replaceChildren();
+
+
+    const player =
+        getMyPlayerEntity();
+
+
+    if (!player) {
+
+        return;
+
+    }
+
+
+    const playerBuffs =
+        combatEffects.filter(
+            effect =>
+                effect.target_entity_id ===
+                    player.id
+                &&
+                Number(
+                    effect.remaining_rounds
+                ) > 0
+        );
+
+
+    if (
+        playerBuffs.length ===
+        0
+    ) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+
+        empty.className =
+            "combat-buff-empty";
+
+
+        empty.textContent =
+            "Nessun buff attivo.";
+
+
+        container.appendChild(
+            empty
+        );
+
+
+        return;
+
+    }
+
+
+    const buffNames = {
+
+        attack_bonus:
+            "Arma Potenziata",
+
+        defense_bonus:
+            "Armatura Potenziata",
+
+        critical_bonus:
+            "Affilatura",
+
+        movement_bonus:
+            "Rapidità"
+
+    };
+
+
+    const buffValues = {
+
+        attack_bonus:
+            value =>
+                `+${value} ATT`,
+
+        defense_bonus:
+            value =>
+                `+${value} DIF`,
+
+        critical_bonus:
+            value =>
+                `+${value}% CRIT`,
+
+        movement_bonus:
+            value =>
+                `+${value} MOV`
+
+    };
+
+
+    playerBuffs.forEach(
+        effect => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "combat-buff-item";
+
+
+            const left =
+                document.createElement(
+                    "div"
+                );
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "combat-buff-name";
+
+
+            name.textContent =
+                buffNames[
+                    effect.effect_type
+                ]
+                ||
+                effect.effect_type;
+
+
+            const value =
+                document.createElement(
+                    "div"
+                );
+
+
+            value.style.marginTop =
+                "2px";
+
+
+            value.style.color =
+                "#a99a82";
+
+
+            value.style.fontSize =
+                "9px";
+
+
+            const valueFormatter =
+                buffValues[
+                    effect.effect_type
+                ];
+
+
+            value.textContent =
+                valueFormatter
+                    ? valueFormatter(
+                        Number(
+                            effect.value
+                        ) || 0
+                    )
+                    : "";
+
+
+            left.append(
+                name,
+                value
+            );
+
+
+            const duration =
+                document.createElement(
+                    "div"
+                );
+
+
+            duration.className =
+                "combat-buff-duration";
+
+
+            const rounds =
+                Number(
+                    effect.remaining_rounds
+                ) || 0;
+
+
+            duration.textContent =
+                rounds === 1
+                    ? "1 round"
+                    : `${rounds} round`;
+
+
+            row.append(
+                left,
+                duration
+            );
+
+
+            container.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
 
 // ============================================================
 // BARRE
