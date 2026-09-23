@@ -1838,7 +1838,6 @@ function wait(
 
 }
 
-
 // ============================================================
 // CONTROLLO CASELLA ACCESSIBILE
 // ============================================================
@@ -1850,13 +1849,19 @@ function canMoveTo(
 
     if (
         !dungeonData ||
-        !dungeonData.cells
+        !Array.isArray(
+            dungeonData.cells
+        )
     ) {
 
         return false;
 
     }
 
+
+    // --------------------------------------------------------
+    // CONVERSIONE COORDINATE VISIBILI -> JSON
+    // --------------------------------------------------------
 
     const jsonX =
         visibleX +
@@ -1868,9 +1873,14 @@ function canMoveTo(
         GRID_OFFSET_Y;
 
 
+    // --------------------------------------------------------
+    // FUORI DALLA MAPPA
+    // --------------------------------------------------------
+
     if (
         jsonY < 0 ||
-        jsonY >= dungeonData.cells.length
+        jsonY >=
+            dungeonData.cells.length
     ) {
 
         return false;
@@ -1880,7 +1890,10 @@ function canMoveTo(
 
     if (
         jsonX < 0 ||
-        jsonX >= dungeonData.cells[jsonY].length
+        jsonX >=
+            dungeonData.cells[
+                jsonY
+            ].length
     ) {
 
         return false;
@@ -1888,7 +1901,7 @@ function canMoveTo(
     }
 
 
-    const cell =
+    const rawCell =
         dungeonData.cells[
             jsonY
         ][
@@ -1896,9 +1909,16 @@ function canMoveTo(
         ];
 
 
+    const cell =
+        Number(
+            rawCell
+        );
+
+
     if (
-        cell === null ||
-        cell === undefined
+        !Number.isFinite(
+            cell
+        )
     ) {
 
         return false;
@@ -1906,86 +1926,127 @@ function canMoveTo(
     }
 
 
+    // --------------------------------------------------------
+    // VUOTO
+    // --------------------------------------------------------
+
     if (
-        typeof cell === "number"
+        cell === 0
     ) {
 
-        return cell !== 0;
+        return false;
 
     }
 
 
-    if (
-        typeof cell === "string"
-    ) {
+    // --------------------------------------------------------
+    // BIT DEL DUNGEON
+    // --------------------------------------------------------
 
-        const value =
-            cell.toLowerCase();
-
-
-        return ![
-            "wall",
-            "muro",
-            "void",
-            "blocked",
-            "0"
-        ].includes(
-            value
-        );
-
-    }
+    const bits =
+        dungeonData.cell_bit ||
+        {};
 
 
-    if (
-        typeof cell === "object"
-    ) {
-
-        if (
-            cell.walkable !== undefined
-        ) {
-
-            return !!cell.walkable;
-
-        }
+    const ROOM =
+        Number(
+            bits.room
+        ) || 2;
 
 
-        if (
-            cell.blocked !== undefined
-        ) {
-
-            return !cell.blocked;
-
-        }
+    const CORRIDOR =
+        Number(
+            bits.corridor
+        ) || 4;
 
 
-        if (cell.type) {
-
-            const type =
-                String(
-                    cell.type
-                ).toLowerCase();
+    const APERTURE =
+        Number(
+            bits.aperture
+        ) || 32;
 
 
-            return ![
-                "wall",
-                "muro",
-                "void",
-                "blocked"
-            ].includes(
-                type
-            );
-
-        }
+    const ARCH =
+        Number(
+            bits.arch
+        ) || 65536;
 
 
-        return true;
+    const DOOR =
+        Number(
+            bits.door
+        ) || 131072;
 
-    }
+
+    const PORTCULLIS =
+        Number(
+            bits.portcullis
+        ) || 2097152;
 
 
-    return false;
+    const STAIR_DOWN =
+        Number(
+            bits.stair_down
+        ) || 4194304;
+
+
+    const STAIR_UP =
+        Number(
+            bits.stair_up
+        ) || 8388608;
+
+
+    // --------------------------------------------------------
+    // UNA CASELLA È PERCORRIBILE SOLO SE CONTIENE
+    // ALMENO UNO DEI BIT DI PAVIMENTO / PASSAGGIO.
+    //
+    // Quindi:
+    //
+    // 16 = perimeter -> MURO -> NO
+    // 0  = nothing   -> VUOTO -> NO
+    // 2  = room      -> SI
+    // 4  = corridor  -> SI
+    // ecc.
+    // --------------------------------------------------------
+
+    const isWalkable =
+        (
+            cell & ROOM
+        ) !== 0 ||
+
+        (
+            cell & CORRIDOR
+        ) !== 0 ||
+
+        (
+            cell & APERTURE
+        ) !== 0 ||
+
+        (
+            cell & ARCH
+        ) !== 0 ||
+
+        (
+            cell & DOOR
+        ) !== 0 ||
+
+        (
+            cell & PORTCULLIS
+        ) !== 0 ||
+
+        (
+            cell & STAIR_DOWN
+        ) !== 0 ||
+
+        (
+            cell & STAIR_UP
+        ) !== 0;
+
+
+    return isWalkable;
 
 }
+
 // ============================================================
 // REALTIME MULTIPLAYER
 // ============================================================
