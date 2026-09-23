@@ -76,6 +76,123 @@ document.addEventListener(
     }
 );
 
+// ============================================================
+// CONTROLLO VICINANZA EVENTI COMBAT
+// ============================================================
+
+let nearbyCombatEventId =
+    null;
+
+
+// ============================================================
+// TROVA EVENTO COMBAT VICINO
+// ============================================================
+
+function getNearbyCombatEvent() {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return null;
+
+    }
+
+
+    for (
+        const combatEvent
+        of DUNGEON_COMBAT_EVENTS
+    ) {
+
+        const dx =
+            Math.abs(
+                Number(playerX) -
+                Number(combatEvent.x)
+            );
+
+
+        const dy =
+            Math.abs(
+                Number(playerY) -
+                Number(combatEvent.y)
+            );
+
+
+        // Distanza di 1 quadretto:
+        // ortogonale o diagonale.
+        //
+        // NON conta la casella stessa del token.
+
+        const isAdjacent =
+            Math.max(
+                dx,
+                dy
+            ) === 1;
+
+
+        if (isAdjacent) {
+
+            return combatEvent;
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+// ============================================================
+// AGGIORNA EVENTO VICINO
+// ============================================================
+
+function checkNearbyCombatEvents() {
+
+    const combatEvent =
+        getNearbyCombatEvent();
+
+
+    if (!combatEvent) {
+
+        nearbyCombatEventId =
+            null;
+
+        return;
+
+    }
+
+
+    // Evita di rilevare continuamente
+    // lo stesso evento mentre il PG resta fermo.
+
+    if (
+        nearbyCombatEventId ===
+        combatEvent.id
+    ) {
+
+        return;
+
+    }
+
+
+    nearbyCombatEventId =
+        combatEvent.id;
+
+
+    console.log(
+        `Evento combat vicino: ${combatEvent.id}`,
+        combatEvent
+    );
+
+
+    setMessage(
+        `Percepisci una presenza ostile nelle vicinanze. Evento ${combatEvent.id}.`
+    );
+
+}
 
 // ============================================================
 // RIDIMENSIONAMENTO MAPPA
