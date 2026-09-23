@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v23 CARICATO");
+console.log("COMBAT.JS v24 CARICATO");
 
 
 const db = supabaseClient;
@@ -1308,8 +1308,55 @@ function renderCombat() {
 
     updateTargetSelectionVisuals();
 
+    renderCombatVictory();
+
 }
 
+// ============================================================
+// SCHERMATA VITTORIA
+// ============================================================
+
+function renderCombatVictory() {
+
+    const overlay =
+        document.getElementById(
+            "combat-victory-overlay"
+        );
+
+
+    if (!overlay) {
+
+        return;
+
+    }
+
+
+    const victory =
+        combatSession?.status ===
+        "victory";
+
+
+    overlay.classList.toggle(
+        "visible",
+        victory
+    );
+
+
+    overlay.setAttribute(
+        "aria-hidden",
+        victory
+            ? "false"
+            : "true"
+    );
+
+
+    if (victory) {
+
+        cancelCombatTargeting();
+
+    }
+
+}
 
 // ============================================================
 // TOKEN

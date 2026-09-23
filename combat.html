@@ -2347,6 +2347,232 @@
 
         }
 
+        /* ============================================================
+   VITTORIA
+============================================================ */
+
+.combat-victory-overlay {
+
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    z-index:
+        10000;
+
+    display:
+        none;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        24px;
+
+    background:
+        rgba(
+            8,
+            6,
+            4,
+            0.88
+        );
+
+    backdrop-filter:
+        blur(5px);
+
+}
+
+
+.combat-victory-overlay.visible {
+
+    display:
+        flex;
+
+}
+
+
+.combat-victory-panel {
+
+    width:
+        min(
+            680px,
+            92vw
+        );
+
+    max-height:
+        88vh;
+
+    overflow-y:
+        auto;
+
+    padding:
+        34px;
+
+    border:
+        1px solid
+        rgba(
+            215,
+            176,
+            93,
+            0.6
+        );
+
+    border-radius:
+        14px;
+
+    background:
+
+        linear-gradient(
+            180deg,
+            rgba(
+                48,
+                36,
+                24,
+                0.98
+            ),
+            rgba(
+                20,
+                15,
+                11,
+                0.98
+            )
+        );
+
+    box-shadow:
+
+        0 0 40px
+        rgba(
+            0,
+            0,
+            0,
+            0.8
+        ),
+
+        0 0 24px
+        rgba(
+            215,
+            176,
+            93,
+            0.12
+        );
+
+    text-align:
+        center;
+
+}
+
+
+.combat-victory-kicker {
+
+    margin-bottom:
+        8px;
+
+    color:
+        #9e8c70;
+
+    font-size:
+        11px;
+
+    letter-spacing:
+        0.22em;
+
+}
+
+
+.combat-victory-panel h1 {
+
+    margin:
+        0;
+
+    color:
+        #e3c477;
+
+    font-size:
+        clamp(
+            38px,
+            7vw,
+            72px
+        );
+
+    letter-spacing:
+        0.08em;
+
+    text-shadow:
+
+        0 0 16px
+        rgba(
+            227,
+            196,
+            119,
+            0.25
+        );
+
+}
+
+
+.combat-victory-divider {
+
+    width:
+        90px;
+
+    height:
+        1px;
+
+    margin:
+        20px auto;
+
+    background:
+        #d7b05d;
+
+}
+
+
+.combat-victory-text {
+
+    margin:
+        0 0 24px;
+
+    color:
+        #d6c7ad;
+
+}
+
+
+.combat-victory-loot {
+
+    padding:
+        20px;
+
+    border:
+        1px solid
+        rgba(
+            215,
+            176,
+            93,
+            0.22
+        );
+
+    border-radius:
+        10px;
+
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.22
+        );
+
+    color:
+        #b9aa90;
+
+}
+
     </style>
 
 </head>
@@ -3052,8 +3278,38 @@
         la vecchia versione dalla cache.
     -->
 
-    <script src="js/combat.js?v=23"></script>
+    <script src="js/combat.js?v=24"></script>
 
+<div
+    id="combat-victory-overlay"
+    class="combat-victory-overlay"
+    aria-hidden="true"
+>
+    <div class="combat-victory-panel">
+
+        <div class="combat-victory-kicker">
+            COMBATTIMENTO CONCLUSO
+        </div>
+
+        <h1>
+            VITTORIA
+        </h1>
+
+        <div class="combat-victory-divider"></div>
+
+        <p class="combat-victory-text">
+            Tutti i nemici sono stati sconfitti.
+        </p>
+
+        <div
+            id="combat-victory-loot"
+            class="combat-victory-loot"
+        >
+            Il bottino verrà mostrato qui.
+        </div>
+
+    </div>
+</div>
 
 </body>
 
