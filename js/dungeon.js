@@ -1744,12 +1744,17 @@ async function performMovement(
     
     updateFogOfWar();
 
-    if (
+    let hasNearbyCombatEvent =
+    false;
+
+
+if (
     typeof checkNearbyCombatEvents ===
     "function"
 ) {
 
-    checkNearbyCombatEvents();
+    hasNearbyCombatEvent =
+        checkNearbyCombatEvents() === true;
 
 }
 
@@ -1777,13 +1782,16 @@ async function performMovement(
         await checkDungeonCellEvent();
 
 
-    if (!hasEvent) {
+    if (
+    !hasEvent &&
+    !hasNearbyCombatEvent
+) {
 
-        setMessage(
-            "Ti muovi nel dungeon."
-        );
+    setMessage(
+        "Ti muovi nel dungeon."
+    );
 
-    }
+}
 
 
     return true;

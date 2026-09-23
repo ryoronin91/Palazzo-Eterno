@@ -160,7 +160,7 @@ function checkNearbyCombatEvents() {
         nearbyCombatEventId =
             null;
 
-        return;
+        return false;
 
     }
 
@@ -173,7 +173,7 @@ function checkNearbyCombatEvents() {
         combatEvent.id
     ) {
 
-        return;
+        return true;
 
     }
 
@@ -191,7 +191,7 @@ function checkNearbyCombatEvents() {
     setMessage(
         `Percepisci una presenza ostile nelle vicinanze. Evento ${combatEvent.id}.`
     );
-
+       return true;
 }
 
 // ============================================================
