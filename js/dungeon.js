@@ -2410,9 +2410,16 @@ function getMyPresenceData() {
             playerY,
 
         current_hp:
-            character.current_hp,
+    character.current_hp,
 
-        online_at:
+active_combat_id:
+    character.active_combat_id ||
+    null,
+
+in_combat:
+    !!character.active_combat_id,
+
+online_at:
             new Date()
                 .toISOString()
 
@@ -2500,7 +2507,14 @@ async function broadcastMyState() {
                     playerY,
 
                 current_hp:
-                    character.current_hp
+    character.current_hp,
+
+active_combat_id:
+    character.active_combat_id ||
+    null,
+
+in_combat:
+    !!character.active_combat_id
 
             }
 
@@ -2707,9 +2721,19 @@ function updateRemotePlayer(
                 y,
 
             current_hp:
-                data.current_hp !== undefined
-                    ? data.current_hp
-                    : oldData.current_hp
+    data.current_hp !== undefined
+        ? data.current_hp
+        : oldData.current_hp,
+
+active_combat_id:
+    data.active_combat_id !== undefined
+        ? data.active_combat_id
+        : oldData.active_combat_id,
+
+in_combat:
+    data.in_combat !== undefined
+        ? !!data.in_combat
+        : !!oldData.in_combat
 
         }
     );
@@ -2878,6 +2902,30 @@ function showOtherPlayerToken(
 
     }
 
+    if (
+    player.in_combat ||
+    player.active_combat_id
+) {
+
+    token.classList.add(
+        "is-in-combat"
+    );
+
+
+    token.title =
+        `${player.name} — IN COMBATTIMENTO`;
+
+} else {
+
+    token.classList.remove(
+        "is-in-combat"
+    );
+
+
+    token.title =
+        player.name;
+
+}
 
     positionTokenElement(
         token,
