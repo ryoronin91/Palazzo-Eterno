@@ -3010,6 +3010,49 @@ function renderCombatEntityList() {
             item.className =
                 "combat-entity-item";
 
+                item.addEventListener(
+    "mouseenter",
+    () => {
+
+        const token =
+            combatTokens.get(
+                entity.id
+            );
+
+
+        if (token) {
+
+            token.classList.add(
+                "turn-order-hover"
+            );
+
+        }
+
+    }
+);
+
+
+item.addEventListener(
+    "mouseleave",
+    () => {
+
+        const token =
+            combatTokens.get(
+                entity.id
+            );
+
+
+        if (token) {
+
+            token.classList.remove(
+                "turn-order-hover"
+            );
+
+        }
+
+    }
+);
+
 
             if (
                 entity.id ===
