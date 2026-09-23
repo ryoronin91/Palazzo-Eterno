@@ -6801,22 +6801,7 @@ window.addEventListener(
             }
 
         }
-/* ============================================================
-   NEBBIA DI GUERRA
-   ============================================================ */
 
-.dungeon-fog-canvas {
-    position: absolute;
-
-    pointer-events: none;
-
-    z-index: 10;
-
-    margin: 0;
-    padding: 0;
-}
-
-    }
 );
 
 
