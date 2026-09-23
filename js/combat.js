@@ -357,7 +357,7 @@ async function loadCurrentCharacter() {
                 current_hp,
                 current_pm,
                 livello,
-                notes
+                notes,
                 dungeon_x,
                 dungeon_y,
                 active_combat_id
