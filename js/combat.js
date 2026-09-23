@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v9 CARICATO");
+console.log("COMBAT.JS v13 CARICATO");
 
 
 const db = supabaseClient;
