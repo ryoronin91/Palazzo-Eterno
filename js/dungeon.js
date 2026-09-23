@@ -1744,6 +1744,15 @@ async function performMovement(
     
     updateFogOfWar();
 
+    if (
+    typeof checkNearbyCombatEvents ===
+    "function"
+) {
+
+    checkNearbyCombatEvents();
+
+}
+
     // --------------------------------------------------------
     // REALTIME SENZA BLOCCARE IL MOVIMENTO
     // --------------------------------------------------------
