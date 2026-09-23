@@ -70,5 +70,259 @@ document.addEventListener(
             DUNGEON_COMBAT_EVENTS
         );
 
+
+        renderCombatEvents();
+
     }
 );
+
+
+// ============================================================
+// RIDIMENSIONAMENTO MAPPA
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        repositionCombatEvents();
+
+    }
+);
+
+// ============================================================
+// TOKEN EVENTI COMBAT
+// ============================================================
+
+const combatEventTokens =
+    new Map();
+
+
+// ============================================================
+// MOSTRA EVENTI COMBAT SULLA MAPPA
+// ============================================================
+
+function renderCombatEvents() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+
+        console.error(
+            "Mappa dungeon non trovata."
+        );
+
+        return;
+
+    }
+
+
+    DUNGEON_COMBAT_EVENTS.forEach(
+        combatEvent => {
+
+            let token =
+                combatEventTokens.get(
+                    combatEvent.id
+                );
+
+
+            // ------------------------------------------------
+            // CREA TOKEN
+            // ------------------------------------------------
+
+            if (!token) {
+
+                token =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                token.className =
+                    "dungeon-combat-event";
+
+
+                token.dataset.eventId =
+                    combatEvent.id;
+
+
+                token.title =
+                    `Evento Combat ${combatEvent.id}`;
+
+
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+
+                image.src =
+                    combatEvent.token;
+
+
+                image.alt =
+                    `Evento Combat ${combatEvent.id}`;
+
+
+                image.draggable =
+                    false;
+
+
+                token.appendChild(
+                    image
+                );
+
+
+                map.appendChild(
+                    token
+                );
+
+
+                combatEventTokens.set(
+                    combatEvent.id,
+                    token
+                );
+
+            }
+
+
+            positionCombatEventToken(
+                token,
+                combatEvent.x,
+                combatEvent.y
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// POSIZIONA TOKEN COMBAT
+// ============================================================
+
+function positionCombatEventToken(
+    element,
+    x,
+    y
+) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !map ||
+        !element
+    ) {
+
+        return;
+
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        rect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        MAP_ROWS;
+
+
+    // Il token combat è leggermente più grande
+    // della pedina di un personaggio.
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) * 1.10;
+
+
+    element.style.width =
+        `${tokenSize}px`;
+
+
+    element.style.height =
+        `${tokenSize}px`;
+
+
+    element.style.left =
+        `${
+            (
+                Number(x) +
+                0.5
+            ) *
+            cellWidth -
+            tokenSize / 2
+        }px`;
+
+
+    element.style.top =
+        `${
+            (
+                Number(y) +
+                0.5
+            ) *
+            cellHeight -
+            tokenSize / 2
+        }px`;
+
+}
+
+
+// ============================================================
+// RIPOSIZIONA EVENTI
+// ============================================================
+
+function repositionCombatEvents() {
+
+    DUNGEON_COMBAT_EVENTS.forEach(
+        combatEvent => {
+
+            const token =
+                combatEventTokens.get(
+                    combatEvent.id
+                );
+
+
+            if (!token) {
+
+                return;
+
+            }
+
+
+            positionCombatEventToken(
+                token,
+                combatEvent.x,
+                combatEvent.y
+            );
+
+        }
+    );
+
+}
