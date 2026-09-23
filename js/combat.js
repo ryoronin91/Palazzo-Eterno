@@ -34,10 +34,12 @@ let combatMoveInProgress = false;
 let combatMapResizeObserver = null;
 
 let lastCombatEntitiesSnapshot = "";
+let lastCombatEffectsSnapshot = "";
 
 let characterAbilities = [];
 let characterInventory = [];
 let characterEquipment = [];
+let combatEffects = [];
 
 let equipmentBonuses = {
 
@@ -186,7 +188,10 @@ if (
 // CARICA ENTITÀ
 // =================================================
 
-await loadCombatEntities();
+await Promise.all([
+    loadCombatEntities(),
+    loadCombatEffects()
+]);
 
 
             // =================================================
@@ -215,6 +220,9 @@ await loadCombatEntities();
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
+
+                lastCombatEffectsSnapshot =
+    createCombatEffectsSnapshot();
 
 
             // =================================================
@@ -733,6 +741,88 @@ async function loadCombatEntities() {
 
 }
 
+// ============================================================
+// EFFETTI TEMPORANEI DEL COMBATTIMENTO
+// ============================================================
+
+async function loadCombatEffects() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "combat_effects"
+            )
+            .select(`
+                id,
+                combat_id,
+                source_entity_id,
+                target_entity_id,
+                effect_type,
+                value,
+                remaining_rounds
+            `)
+            .eq(
+                "combat_id",
+                combatId
+            )
+            .gt(
+                "remaining_rounds",
+                0
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    combatEffects =
+        data || [];
+
+}
+
+// ============================================================
+// BONUS EFFETTO TEMPORANEO SU ENTITÀ
+// ============================================================
+
+function getCombatEffectBonus(
+    entityId,
+    effectType
+) {
+
+    return combatEffects
+        .filter(
+            effect =>
+                effect.target_entity_id ===
+                    entityId
+                &&
+                effect.effect_type ===
+                    effectType
+                &&
+                Number(
+                    effect.remaining_rounds
+                ) > 0
+        )
+        .reduce(
+            (
+                total,
+                effect
+            ) =>
+                total +
+                (
+                    Number(
+                        effect.value
+                    ) || 0
+                ),
+            0
+        );
+
+}
 
 // ============================================================
 // ABILITÀ
@@ -1143,6 +1233,45 @@ function createCombatSnapshot() {
 
 }
 
+// ============================================================
+// SNAPSHOT EFFETTI
+// ============================================================
+
+function createCombatEffectsSnapshot() {
+
+    return JSON.stringify(
+
+        combatEffects
+            .map(
+                effect => ({
+
+                    id:
+                        effect.id,
+
+                    target_entity_id:
+                        effect.target_entity_id,
+
+                    effect_type:
+                        effect.effect_type,
+
+                    value:
+                        effect.value,
+
+                    remaining_rounds:
+                        effect.remaining_rounds
+
+                })
+            )
+            .sort(
+                (a, b) =>
+                    a.id.localeCompare(
+                        b.id
+                    )
+            )
+
+    );
+
+}
 
 // ============================================================
 // RENDER COMPLETO
@@ -1959,6 +2088,61 @@ async function handleCombatTokenClick(
 
     }
 
+// ========================================================
+// BUFF
+// ========================================================
+
+if (
+    combatTargetMode &&
+    combatTargetMode.startsWith(
+        "buff:"
+    )
+) {
+
+    if (
+        entity.entity_type !==
+        "player"
+    ) {
+
+        addCombatLog(
+            "Questa abilità può essere usata soltanto su te stesso o su un alleato."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        entity.status !==
+        "alive"
+    ) {
+
+        addCombatLog(
+            "Questo personaggio non può ricevere il buff."
+        );
+
+        return;
+
+    }
+
+
+    const abilityId =
+        combatTargetMode.replace(
+            "buff:",
+            ""
+        );
+
+
+    await performCombatBuff(
+        entity.id,
+        abilityId
+    );
+
+
+    return;
+
+}
 
     // ========================================================
     // ATTACCHI
@@ -2466,6 +2650,110 @@ async function performHeal(
 
 }
 
+// ============================================================
+// USA BUFF
+// ============================================================
+
+async function performCombatBuff(
+    targetEntityId,
+    abilityId
+) {
+
+    if (
+        !currentCharacter ||
+        !isMyTurn()
+    ) {
+
+        cancelCombatTargeting();
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } =
+            await db.rpc(
+                "cast_combat_buff",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id,
+
+                    p_target_entity_id:
+                        targetEntityId,
+
+                    p_ability_id:
+                        abilityId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const abilityEntry =
+            characterAbilities.find(
+                entry =>
+                    entry.ability_id ===
+                    abilityId
+            );
+
+
+        const abilityName =
+            abilityEntry?.ability?.name ||
+            abilityId;
+
+
+        cancelCombatTargeting();
+
+
+        await Promise.all([
+            loadCombatEntities(),
+            loadCombatEffects()
+        ]);
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+
+        addCombatLog(
+            `${abilityName} applicata con successo.`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore buff:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
+
+}
 
 // ============================================================
 // VISUALI TARGET
@@ -2561,6 +2849,42 @@ function updateTargetSelectionVisuals() {
 
             }
 
+            // =================================================
+// BUFF
+// =================================================
+
+if (
+    combatTargetMode &&
+    combatTargetMode.startsWith(
+        "buff:"
+    )
+) {
+
+    if (
+        entity.entity_type !==
+        "player"
+    ) {
+
+        return;
+
+    }
+
+
+    token.style.outline =
+        "3px solid #7aa7ff";
+
+
+    token.style.outlineOffset =
+        "2px";
+
+
+    token.style.cursor =
+        "pointer";
+
+
+    return;
+
+}
 
             // =================================================
             // ATTACCHI
@@ -2826,28 +3150,38 @@ function renderPlayerCombatSheet() {
 
 
     const attack =
-        Math.ceil(
-            forza / 2
-        )
-        +
-        (
-            Number(
-                equipmentBonuses.attack_bonus
-            ) || 0
-        );
+    Math.ceil(
+        forza / 2
+    )
+    +
+    (
+        Number(
+            equipmentBonuses.attack_bonus
+        ) || 0
+    )
+    +
+    getCombatEffectBonus(
+        playerEntity.id,
+        "attack_bonus"
+    );
 
 
     const defense =
-        Math.ceil(
-            7 +
-            resistenza / 2
-        )
-        +
-        (
-            Number(
-                equipmentBonuses.defense_bonus
-            ) || 0
-        );
+    Math.ceil(
+        7 +
+        resistenza / 2
+    )
+    +
+    (
+        Number(
+            equipmentBonuses.defense_bonus
+        ) || 0
+    )
+    +
+    getCombatEffectBonus(
+        playerEntity.id,
+        "defense_bonus"
+    );
 
 
     const fallbackMaxPF =
@@ -2869,21 +3203,31 @@ function renderPlayerCombatSheet() {
 
 
     const fallbackMovement =
-        Math.ceil(
-            4 +
-            destrezza / 2
-        );
+    Math.ceil(
+        4 +
+        destrezza / 2
+    )
+    +
+    getCombatEffectBonus(
+        playerEntity.id,
+        "movement_bonus"
+    );
 
 
     const critical =
+    (
+        fortuna *
         (
-            fortuna *
-            (
-                50 / 30
-            )
-        ).toFixed(
-            2
-        );
+            50 / 30
+        )
+        +
+        getCombatEffectBonus(
+            playerEntity.id,
+            "critical_bonus"
+        )
+    ).toFixed(
+        2
+    );
 
 
     const currentPF =
@@ -3660,6 +4004,31 @@ function handleAbilityButton(
 
     }
 
+// ========================================================
+// BUFF
+// ========================================================
+
+if (
+    ability.id ===
+        "affilatura"
+    ||
+    ability.id ===
+        "arma_potenziata"
+    ||
+    ability.id ===
+        "armatura_potenziata"
+    ||
+    ability.id ===
+        "rapidita"
+) {
+
+    startCombatBuffTargeting(
+        entry
+    );
+
+    return;
+
+}
 
     addCombatLog(
         `${ability.name}: questa abilità non è ancora implementata nel combattimento.`
@@ -3849,6 +4218,94 @@ function startHealTargeting(
 
 }
 
+// ============================================================
+// BUFF - TARGET
+// ============================================================
+
+function startCombatBuffTargeting(
+    entry
+) {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    if (
+        !player ||
+        !isMyTurn()
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        player.action_used ===
+        true
+    ) {
+
+        addCombatLog(
+            "Hai già utilizzato la tua azione in questo turno."
+        );
+
+        return;
+
+    }
+
+
+    const ability =
+        entry?.ability;
+
+
+    if (!ability) {
+
+        return;
+
+    }
+
+
+    const pmCost =
+        Number(
+            ability.pm_cost
+        ) || 2;
+
+
+    const currentPM =
+        Number(
+            player.current_pm
+        ) || 0;
+
+
+    if (
+        currentPM <
+        pmCost
+    ) {
+
+        addCombatLog(
+            `Non hai abbastanza PM per usare ${ability.name}.`
+        );
+
+        return;
+
+    }
+
+
+    combatTargetMode =
+        `buff:${ability.id}`;
+
+
+    closeCombatDrawer();
+
+
+    addCombatLog(
+        `${ability.name.toUpperCase()}: seleziona te stesso o un alleato.`
+    );
+
+
+    updateTargetSelectionVisuals();
+
+}
 
 // ============================================================
 // ZAINO
@@ -5017,26 +5474,37 @@ async function refreshCombatState() {
 
         await loadCombatSession();
 
-        await loadCombatEntities();
+await Promise.all([
+    loadCombatEntities(),
+    loadCombatEffects()
+]);
 
 
         const snapshot =
-            createCombatSnapshot();
+    createCombatSnapshot();
+
+const effectsSnapshot =
+    createCombatEffectsSnapshot();
 
 
-        if (
-            snapshot !==
-            lastCombatEntitiesSnapshot
-        ) {
+if (
+    snapshot !==
+        lastCombatEntitiesSnapshot
+    ||
+    effectsSnapshot !==
+        lastCombatEffectsSnapshot
+) {
 
-            lastCombatEntitiesSnapshot =
-                snapshot;
+    lastCombatEntitiesSnapshot =
+        snapshot;
+
+    lastCombatEffectsSnapshot =
+        effectsSnapshot;
 
 
-            renderCombat();
+    renderCombat();
 
-        }
-
+}
 
         updateCombatTurnUI();
 
