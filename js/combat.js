@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v13 CARICATO");
+console.log("COMBAT.JS v14 CARICATO");
 
 
 const db = supabaseClient;
@@ -193,6 +193,23 @@ await Promise.all([
     loadCombatEffects()
 ]);
 
+console.log(
+    "DEBUG COMBAT EFFECTS:",
+    combatEffects
+);
+
+console.log(
+    "DEBUG PLAYER ENTITY:",
+    getMyPlayerEntity()
+);
+
+console.log(
+    "DEBUG ATTACK BUFF:",
+    getCombatEffectBonus(
+        getMyPlayerEntity()?.id,
+        "attack_bonus"
+    )
+);
 
             // =================================================
             // DATI PG
