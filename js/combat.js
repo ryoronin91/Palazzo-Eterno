@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v22 CARICATO");
+console.log("COMBAT.JS v23 CARICATO");
 
 
 const db = supabaseClient;
@@ -1728,6 +1728,18 @@ function getCurrentTargetRange() {
 
     }
 
+    if (
+    combatTargetMode &&
+    combatTargetMode.startsWith(
+        "push_pull:"
+    )
+) {
+
+    return getCombatEffectiveAttribute(
+        "intelligenza"
+    );
+
+}
 
     return 0;
 
@@ -2154,6 +2166,81 @@ if (
 
 
     await performCombatBuff(
+        entity.id,
+        abilityId
+    );
+
+
+    return;
+
+}
+
+// ========================================================
+// ATTRAZIONE / REPULSIONE
+// ========================================================
+
+if (
+    combatTargetMode &&
+    combatTargetMode.startsWith(
+        "push_pull:"
+    )
+) {
+
+    if (
+        entity.entity_type !==
+        "enemy"
+    ) {
+
+        addCombatLog(
+            "Questa abilità può essere usata soltanto su un nemico."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        entity.status !==
+        "alive"
+        ||
+        Number(
+            entity.current_hp
+        ) <= 0
+    ) {
+
+        addCombatLog(
+            "Questo nemico non è un bersaglio valido."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !isEntityInCurrentTargetRange(
+            entity
+        )
+    ) {
+
+        addCombatLog(
+            "Il bersaglio è fuori portata."
+        );
+
+        return;
+
+    }
+
+
+    const abilityId =
+        combatTargetMode.replace(
+            "push_pull:",
+            ""
+        );
+
+
+    await performPushPull(
         entity.id,
         abilityId
     );
@@ -2760,6 +2847,122 @@ async function performCombatBuff(
 
         console.error(
             "Errore buff:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+// ============================================================
+// USA ATTRAZIONE / REPULSIONE
+// ============================================================
+
+async function performPushPull(
+    targetEntityId,
+    abilityId
+) {
+
+    if (
+        !currentCharacter ||
+        !isMyTurn()
+    ) {
+
+        cancelCombatTargeting();
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "cast_combat_push_pull",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id,
+
+                    p_target_entity_id:
+                        targetEntityId,
+
+                    p_ability_id:
+                        abilityId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        cancelCombatTargeting();
+
+
+        await loadCombatEntities();
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+
+        if (
+            currentCharacter &&
+            data?.current_pm !==
+            undefined
+        ) {
+
+            currentCharacter.current_pm =
+                Number(
+                    data.current_pm
+                );
+
+        }
+
+
+        if (
+            data?.moved
+        ) {
+
+            addCombatLog(
+                `${data.ability_name} sposta ${data.target_name} da (${data.old_x}, ${data.old_y}) a (${data.new_x}, ${data.new_y}).`
+            );
+
+        } else {
+
+            addCombatLog(
+                `${data.ability_name} colpisce ${data.target_name}, ma non può spostarlo: la casella di destinazione è bloccata.`
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore Attrazione/Repulsione:",
             error
         );
 
@@ -4352,6 +4555,24 @@ if (
 
 }
 
+// ========================================================
+// ATTRAZIONE / REPULSIONE
+// ========================================================
+
+if (
+    ability.id === "attrazione"
+    ||
+    ability.id === "repulsione"
+) {
+
+    startPushPullTargeting(
+        entry
+    );
+
+    return;
+
+}
+
     addCombatLog(
         `${ability.name}: questa abilità non è ancora implementata nel combattimento.`
     );
@@ -4622,6 +4843,101 @@ function startCombatBuffTargeting(
 
     addCombatLog(
         `${ability.name.toUpperCase()}: seleziona te stesso o un alleato.`
+    );
+
+
+    updateTargetSelectionVisuals();
+
+}
+
+// ============================================================
+// ATTRAZIONE / REPULSIONE - TARGET
+// ============================================================
+
+function startPushPullTargeting(
+    entry
+) {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    if (
+        !player ||
+        !isMyTurn()
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        player.action_used ===
+        true
+    ) {
+
+        addCombatLog(
+            "Hai già utilizzato la tua azione in questo turno."
+        );
+
+        return;
+
+    }
+
+
+    const ability =
+        entry?.ability;
+
+
+    if (!ability) {
+
+        return;
+
+    }
+
+
+    const pmCost =
+        Number(
+            ability.pm_cost
+        ) || 0;
+
+
+    const currentPM =
+        Number(
+            player.current_pm
+        ) || 0;
+
+
+    if (
+        currentPM <
+        pmCost
+    ) {
+
+        addCombatLog(
+            `Non hai abbastanza PM per usare ${ability.name}.`
+        );
+
+        return;
+
+    }
+
+
+    combatTargetMode =
+        `push_pull:${ability.id}`;
+
+
+    closeCombatDrawer();
+
+
+    const range =
+        getCombatEffectiveAttribute(
+            "intelligenza"
+        );
+
+
+    addCombatLog(
+        `${ability.name.toUpperCase()}: seleziona un nemico entro ${range} quadretti.`
     );
 
 
