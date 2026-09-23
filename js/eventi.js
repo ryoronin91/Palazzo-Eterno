@@ -56,6 +56,215 @@ const DUNGEON_COMBAT_EVENTS = [
 
 ];
 
+// ============================================================
+// POPUP COMBATTIMENTO
+// ============================================================
+
+function openCombatPrompt(
+    combatEvent
+) {
+
+    if (
+        combatPromptOpen ||
+        !combatEvent
+    ) {
+
+        return;
+
+    }
+
+
+    combatPromptOpen =
+        true;
+
+    pendingCombatEvent =
+        combatEvent;
+
+
+    // Blocca momentaneamente il movimento.
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    // --------------------------------------------------------
+    // OVERLAY
+    // --------------------------------------------------------
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "combat-event-overlay";
+
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    // --------------------------------------------------------
+    // FINESTRA
+    // --------------------------------------------------------
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ⚔
+        </div>
+
+        <h2>
+            COMBATTIMENTO
+        </h2>
+
+        <p>
+            Una presenza ostile blocca il tuo cammino.
+        </p>
+
+        <div class="combat-event-warning">
+            Una volta entrato nel combattimento
+            non potrai abbandonarlo fino alla
+            <strong>vittoria</strong>
+            o alla
+            <strong>morte</strong>.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="combat-event-enter"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                ENTRA IN COMBATTIMENTO
+            </button>
+
+            <button
+                id="combat-event-cancel"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                NON ORA
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    // --------------------------------------------------------
+    // NON ORA
+    // --------------------------------------------------------
+
+    document
+        .getElementById(
+            "combat-event-cancel"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                closeCombatPrompt();
+
+                setMessage(
+                    "Decidi di non entrare in combattimento."
+                );
+
+            }
+        );
+
+
+    // --------------------------------------------------------
+    // ENTRA
+    // --------------------------------------------------------
+
+    document
+        .getElementById(
+            "combat-event-enter"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                console.log(
+                    "Combat accettato:",
+                    pendingCombatEvent
+                );
+
+
+                const selectedEvent =
+                    pendingCombatEvent;
+
+
+                closeCombatPrompt();
+
+
+                // PER ORA NON ENTRIAMO ANCORA NEL COMBAT.
+                // Lo collegheremo al database nel prossimo passo.
+
+                setMessage(
+                    `Hai accettato il combattimento ${selectedEvent.id}.`
+                );
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// CHIUDE POPUP COMBATTIMENTO
+// ============================================================
+
+function closeCombatPrompt() {
+
+    const overlay =
+        document.getElementById(
+            "combat-event-overlay"
+        );
+
+
+    if (overlay) {
+
+        overlay.remove();
+
+    }
+
+
+    combatPromptOpen =
+        false;
+
+    pendingCombatEvent =
+        null;
+
+
+    eventLocked =
+        false;
+
+}
 
 // ============================================================
 // AVVIO EVENTI
@@ -83,6 +292,11 @@ document.addEventListener(
 let nearbyCombatEventId =
     null;
 
+let combatPromptOpen =
+    false;
+
+let pendingCombatEvent =
+    null;
 
 // ============================================================
 // TROVA EVENTO COMBAT VICINO
@@ -189,9 +403,16 @@ function checkNearbyCombatEvents() {
 
 
     setMessage(
-        `Percepisci una presenza ostile nelle vicinanze. Evento ${combatEvent.id}.`
-    );
-       return true;
+    "Percepisci una presenza ostile nelle vicinanze."
+);
+
+
+openCombatPrompt(
+    combatEvent
+);
+
+
+return true;
 }
 
 // ============================================================

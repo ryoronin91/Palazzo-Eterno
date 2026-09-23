@@ -2396,3 +2396,223 @@ body {
             rgba(0, 0, 0, 0.85)
         );
 }
+/* ============================================================
+   POPUP EVENTO COMBAT
+   ============================================================ */
+
+.combat-event-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.78
+        );
+}
+
+
+.combat-event-modal {
+    width:
+        min(
+            430px,
+            100%
+        );
+
+    padding:
+        28px;
+
+    box-sizing:
+        border-box;
+
+    border:
+        1px solid
+        #725831;
+
+    border-radius:
+        12px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #201812,
+            #100d0a
+        );
+
+    box-shadow:
+        0 20px 60px
+        rgba(
+            0,
+            0,
+            0,
+            0.8
+        );
+
+    color:
+        #eee1c7;
+
+    text-align:
+        center;
+}
+
+
+.combat-event-icon {
+    margin-bottom:
+        10px;
+
+    color:
+        #c79b50;
+
+    font-size:
+        42px;
+}
+
+
+.combat-event-modal h2 {
+    margin:
+        0 0 14px;
+
+    color:
+        #e0bd7b;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.combat-event-modal p {
+    margin:
+        0 0 18px;
+
+    color:
+        #d2c5b0;
+
+    line-height:
+        1.5;
+}
+
+
+.combat-event-warning {
+    margin-bottom:
+        22px;
+
+    padding:
+        14px;
+
+    border:
+        1px solid
+        #623c2b;
+
+    border-radius:
+        8px;
+
+    background:
+        rgba(
+            95,
+            26,
+            20,
+            0.2
+        );
+
+    color:
+        #d7b0a4;
+
+    font-size:
+        13px;
+
+    line-height:
+        1.5;
+}
+
+
+.combat-event-buttons {
+    display:
+        grid;
+
+    gap:
+        10px;
+}
+
+
+.combat-event-button {
+    min-height:
+        44px;
+
+    padding:
+        10px 14px;
+
+    border-radius:
+        8px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+}
+
+
+.combat-event-enter {
+    border:
+        1px solid
+        #885136;
+
+    background:
+        linear-gradient(
+            180deg,
+            #6d3423,
+            #472116
+        );
+
+    color:
+        #ffe4cf;
+}
+
+
+.combat-event-enter:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #83422c,
+            #552619
+        );
+}
+
+
+.combat-event-cancel {
+    border:
+        1px solid
+        #66563c;
+
+    background:
+        linear-gradient(
+            180deg,
+            #352819,
+            #241b12
+        );
+
+    color:
+        #eeddb8;
+}
+
+
+.combat-event-cancel:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #45341f,
+            #2d2115
+        );
+}
