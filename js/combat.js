@@ -3105,6 +3105,30 @@ function renderPlayerCombatSheet() {
     const playerEntity =
         getMyPlayerEntity();
 
+    const attackBuff =
+    getCombatEffectBonus(
+        playerEntity.id,
+        "attack_bonus"
+    );
+
+const defenseBuff =
+    getCombatEffectBonus(
+        playerEntity.id,
+        "defense_bonus"
+    );
+
+const movementBuff =
+    getCombatEffectBonus(
+        playerEntity.id,
+        "movement_bonus"
+    );
+
+const criticalBuff =
+    getCombatEffectBonus(
+        playerEntity.id,
+        "critical_bonus"
+    );
+
 
     if (!playerEntity) {
 
@@ -3295,27 +3319,38 @@ function renderPlayerCombatSheet() {
 
 
     setText(
-        "combat-attack-value",
-        attack
-    );
+    "combat-attack-value",
+    attackBuff > 0
+        ? `${attack - attackBuff} +${attackBuff}`
+        : attack
+);
 
 
     setText(
-        "combat-defense-value",
-        defense
-    );
+    "combat-defense-value",
+    defenseBuff > 0
+        ? `${defense - defenseBuff} +${defenseBuff}`
+        : defense
+);
 
 
     setText(
-        "combat-movement-value",
-        `${currentMovement} / ${fallbackMovement}`
-    );
+    "combat-movement-value",
+    `${currentMovement} / ${fallbackMovement}`
+);
 
 
     setText(
-        "combat-critical-value",
-        `${critical}%`
-    );
+    "combat-critical-value",
+    criticalBuff > 0
+        ? `${
+            (
+                Number(critical) -
+                criticalBuff
+            ).toFixed(2)
+        }% +${criticalBuff}%`
+        : `${critical}%`
+);
 
 
     updateBar(
