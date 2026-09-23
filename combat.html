@@ -14,1025 +14,2306 @@
         Combattimento - Palazzo Eterno
     </title>
 
+
     <style>
 
-        /* =====================================================
+        /* ============================================================
            BASE
-        ===================================================== */
+        ============================================================ */
 
         * {
             box-sizing: border-box;
         }
 
+
+        :root {
+
+            --bg:
+                #0d0b09;
+
+            --panel:
+                #17130f;
+
+            --panel-dark:
+                #100d0a;
+
+            --panel-soft:
+                #1d1711;
+
+            --border:
+                #5c4529;
+
+            --border-light:
+                #8d6936;
+
+            --gold:
+                #d2ad68;
+
+            --gold-light:
+                #ead2a0;
+
+            --text:
+                #eee3ce;
+
+            --muted:
+                #a99a82;
+
+            --red:
+                #9b3d37;
+
+            --green:
+                #6ea774;
+
+            --blue:
+                #6496bd;
+
+        }
+
+
         html,
         body {
-            margin: 0;
-            min-height: 100%;
-            background: #0d0b09;
-            color: #f1e7d0;
+
+            margin:
+                0;
+
+            width:
+                100%;
+
+            min-height:
+                100%;
+
+            background:
+                #0d0b09;
+
+            color:
+                var(--text);
 
             font-family:
                 Georgia,
                 "Times New Roman",
                 serif;
+
         }
 
+
         body {
-            min-height: 100vh;
-            padding: 18px;
+
+            min-height:
+                100vh;
+
+            padding:
+                14px;
+
+            overflow-x:
+                auto;
+
         }
+
 
         button,
         input,
-        textarea,
-        select {
-            font: inherit;
+        textarea {
+
+            font:
+                inherit;
+
         }
 
 
-        /* =====================================================
+        button {
+
+            user-select:
+                none;
+
+        }
+
+
+
+        /* ============================================================
            PAGINA
-        ===================================================== */
+        ============================================================ */
 
         .combat-page {
-    width: min(1800px, 100%);
-    margin: 0 auto;
-}
+
+            width:
+                100%;
+
+            max-width:
+                1920px;
+
+            margin:
+                0 auto;
+
+        }
 
 
-        /* =====================================================
+
+        /* ============================================================
            HEADER
-        ===================================================== */
+        ============================================================ */
 
         .combat-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
 
-            gap: 20px;
+            display:
+                flex;
 
-            margin-bottom: 16px;
-        }
+            align-items:
+                flex-end;
 
-        .combat-header h1 {
-            margin: 0;
+            justify-content:
+                space-between;
 
-            font-size: 30px;
-            letter-spacing: 2px;
-        }
+            gap:
+                20px;
 
-        .combat-status {
-            margin-top: 6px;
+            min-height:
+                60px;
 
-            color: #cdbb9a;
-            font-size: 15px;
-        }
+            margin-bottom:
+                12px;
 
-        .combat-master-badge {
-            display: none;
-
-            margin-top: 8px;
-
-            color: #d8b15d;
-
-            font-weight: 700;
-            letter-spacing: .5px;
-        }
-
-        .combat-master-badge.visible {
-            display: block;
-        }
-
-
-        /* =====================================================
-           LAYOUT PRINCIPALE
-        ===================================================== */
-
-        .combat-layout {
-            display: grid;
-
-            grid-template-columns:
-                minmax(220px, 260px)
-                minmax(500px, 1fr)
-                minmax(270px, 320px);
-
-            grid-template-areas:
-                "left map right";
-
-            gap: 16px;
-
-            align-items: start;
-
-            transition:
-                grid-template-columns .18s ease;
-        }
-
-        body.combat-drawer-open
-        .combat-layout {
-            grid-template-columns:
-                minmax(210px, 240px)
-                minmax(470px, 1fr)
-                minmax(270px, 310px)
-                minmax(280px, 330px);
-
-            grid-template-areas:
-                "left map right drawer";
-        }
-
-
-        /* =====================================================
-           COLONNE
-        ===================================================== */
-
-        .combat-left-column {
-            grid-area: left;
-
-            display: grid;
-
-            grid-template-rows:
-                minmax(280px, 1fr)
-                minmax(280px, 1fr);
-
-            gap: 16px;
-        }
-
-        .combat-center-column {
-            grid-area: map;
-
-            min-width: 0;
-
-            display: flex;
-            flex-direction: column;
-
-            gap: 16px;
-        }
-
-        .combat-right-column {
-            grid-area: right;
-
-            display: grid;
-
-            grid-template-rows:
-                auto
-                minmax(250px, 1fr);
-
-            gap: 16px;
-        }
-
-
-        /* =====================================================
-           PANNELLO LATERALE ABILITÀ / ZAINO
-        ===================================================== */
-
-        .combat-drawer-column {
-            grid-area: drawer;
-
-            display: none;
-
-            min-width: 0;
-        }
-
-        body.combat-drawer-open
-        .combat-drawer-column {
-            display: block;
-        }
-
-        .combat-drawer {
-            position: sticky;
-            top: 18px;
-
-            max-height:
-                calc(100vh - 36px);
-
-            display: flex;
-            flex-direction: column;
-        }
-
-        .combat-drawer-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            gap: 10px;
-        }
-
-        .combat-drawer-close {
-            width: 30px;
-            height: 30px;
-
-            padding: 0;
-
-            border: 1px solid #665037;
-            border-radius: 6px;
-
-            background: #18120d;
-            color: #d9c49a;
-
-            cursor: pointer;
-        }
-
-        .combat-drawer-body {
-            overflow-y: auto;
-        }
-
-        .combat-drawer-placeholder {
-            padding: 18px 8px;
-
-            color: #857865;
-
-            text-align: center;
-            font-style: italic;
-
-            line-height: 1.45;
-        }
-
-
-        /* =====================================================
-           PANNELLI
-        ===================================================== */
-
-        .combat-panel {
-            background:
-                linear-gradient(
-                    180deg,
-                    #18130f 0%,
-                    #12100c 100%
-                );
-
-            border: 1px solid #5c4529;
-            border-radius: 12px;
-
-            overflow: hidden;
-
-            box-shadow:
-                0 5px 18px
-                rgba(0, 0, 0, .28);
-        }
-
-        .combat-panel-header {
-            padding: 12px 14px;
+            padding:
+                0 4px 10px;
 
             border-bottom:
-                1px solid #4a3825;
+                1px solid
+                rgba(
+                    210,
+                    173,
+                    104,
+                    .25
+                );
+
+        }
+
+
+        .combat-title-wrap {
+
+            min-width:
+                0;
+
+        }
+
+
+        .combat-header h1 {
+
+            margin:
+                0;
+
+            color:
+                var(--gold-light);
+
+            font-size:
+                clamp(
+                    22px,
+                    2vw,
+                    32px
+                );
+
+            line-height:
+                1;
+
+            letter-spacing:
+                2px;
+
+            text-shadow:
+                0 2px 7px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .8
+                );
+
+        }
+
+
+        .combat-status {
+
+            margin-top:
+                8px;
+
+            color:
+                var(--muted);
+
+            font-size:
+                13px;
+
+        }
+
+
+        .combat-master-badge {
+
+            display:
+                none;
+
+            margin-top:
+                6px;
+
+            color:
+                var(--gold);
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                .8px;
+
+        }
+
+
+        .combat-master-badge.visible {
+
+            display:
+                block;
+
+        }
+
+
+
+        /* ============================================================
+           LAYOUT GENERALE
+
+           REGISTRO | TURN+CHAT | MAPPA | PG | ABILITÀ/ZAINO
+        ============================================================ */
+
+        .combat-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(165px, .72fr)
+                minmax(190px, .86fr)
+                minmax(480px, 2.7fr)
+                minmax(235px, 1.12fr)
+                minmax(250px, 1.2fr);
+
+            grid-template-areas:
+
+                "log secondary map character drawer";
+
+            gap:
+                10px;
+
+            align-items:
+                stretch;
+
+            min-height:
+                calc(
+                    100vh - 105px
+                );
+
+        }
+
+
+
+        /* ============================================================
+           PANNELLO GENERICO
+        ============================================================ */
+
+        .combat-panel {
+
+            min-width:
+                0;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                8px;
 
             background:
-                rgba(0, 0, 0, .18);
+
+                linear-gradient(
+                    180deg,
+                    #1b1611 0%,
+                    #110e0b 100%
+                );
+
+            box-shadow:
+
+                inset
+                0 0 0 1px
+                rgba(
+                    255,
+                    220,
+                    155,
+                    .025
+                ),
+
+                0 5px 16px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .28
+                );
+
+            overflow:
+                hidden;
+
         }
+
+
+        .combat-panel-header {
+
+            min-height:
+                43px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                10px;
+
+            padding:
+                9px 11px;
+
+            border-bottom:
+                1px solid
+                #4b3824;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    rgba(
+                        53,
+                        39,
+                        24,
+                        .64
+                    ),
+                    rgba(
+                        21,
+                        16,
+                        11,
+                        .48
+                    )
+                );
+
+        }
+
 
         .combat-panel-header h2 {
-            margin: 0;
 
-            color: #e1c78f;
+            margin:
+                0;
 
-            font-size: 17px;
-            letter-spacing: 1.2px;
+            color:
+                var(--gold-light);
+
+            font-size:
+                14px;
+
+            line-height:
+                1.15;
+
+            letter-spacing:
+                .8px;
+
+            text-transform:
+                uppercase;
+
         }
+
 
         .combat-panel-body {
-            padding: 14px;
+
+            padding:
+                10px;
+
         }
 
 
-        /* =====================================================
+
+        /* ============================================================
+           REGISTRO
+        ============================================================ */
+
+        .combat-log-column {
+
+            grid-area:
+                log;
+
+            min-width:
+                0;
+
+        }
+
+
+        .combat-log-panel {
+
+            height:
+                100%;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-log {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            padding:
+                10px;
+
+            overflow-y:
+                auto;
+
+            scrollbar-width:
+                thin;
+
+            scrollbar-color:
+                #725633
+                #100d0a;
+
+        }
+
+
+        .combat-log-entry {
+
+            padding:
+                8px 4px;
+
+            border-bottom:
+                1px solid
+                rgba(
+                    109,
+                    82,
+                    48,
+                    .35
+                );
+
+            color:
+                #d7c9b1;
+
+            font-size:
+                12px;
+
+            line-height:
+                1.45;
+
+        }
+
+
+        .combat-log-entry:last-child {
+
+            border-bottom:
+                none;
+
+        }
+
+
+        .combat-log-placeholder {
+
+            padding:
+                6px;
+
+            color:
+                #796e60;
+
+            font-size:
+                12px;
+
+            font-style:
+                italic;
+
+        }
+
+
+
+        /* ============================================================
+           COLONNA TURN ORDER + CHAT
+        ============================================================ */
+
+        .combat-secondary-column {
+
+            grid-area:
+                secondary;
+
+            display:
+                grid;
+
+            grid-template-rows:
+                minmax(
+                    220px,
+                    .78fr
+                )
+                minmax(
+                    260px,
+                    1.22fr
+                );
+
+            gap:
+                10px;
+
+            min-width:
+                0;
+
+        }
+
+
+
+        /* ============================================================
            TURN ORDER
-        ===================================================== */
+        ============================================================ */
 
         .turn-order-panel {
-            min-height: 0;
 
-            display: flex;
-            flex-direction: column;
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
         }
+
 
         .turn-order-panel
         .combat-panel-body {
-            flex: 1;
 
-            min-height: 0;
+            flex:
+                1;
 
-            overflow-y: auto;
+            min-height:
+                0;
+
+            overflow-y:
+                auto;
+
         }
+
 
         .combat-entity-list {
-            display: flex;
-            flex-direction: column;
 
-            gap: 9px;
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                6px;
+
         }
+
 
         .combat-entity-item {
-            padding: 10px 11px;
+
+            padding:
+                8px;
 
             border:
-                1px solid #493723;
+                1px solid
+                #40301f;
 
-            border-radius: 8px;
+            border-radius:
+                5px;
 
-            background: #100d0a;
+            background:
+                rgba(
+                    5,
+                    4,
+                    3,
+                    .34
+                );
+
         }
+
 
         .combat-entity-item.current-turn {
-            border-color: #b68b49;
+
+            border-color:
+                var(--gold);
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    rgba(
+                        134,
+                        89,
+                        25,
+                        .25
+                    ),
+                    rgba(
+                        41,
+                        30,
+                        18,
+                        .6
+                    )
+                );
 
             box-shadow:
-                0 0 10px
-                rgba(182, 139, 73, .20);
+
+                inset
+                3px 0 0
+                var(--gold);
+
         }
+
 
         .combat-entity-item strong {
-            display: block;
 
-            color: #f0dfbb;
+            display:
+                block;
+
+            color:
+                #eadcbd;
+
+            font-size:
+                12px;
+
         }
+
 
         .combat-entity-meta {
-            margin-top: 4px;
 
-            color: #ad9f89;
+            margin-top:
+                3px;
 
-            font-size: 12px;
-            line-height: 1.4;
+            color:
+                #948773;
+
+            font-size:
+                10px;
+
+            line-height:
+                1.35;
+
         }
 
 
-        /* =====================================================
+
+        /* ============================================================
            CHAT
-        ===================================================== */
+        ============================================================ */
 
         .combat-chat-panel {
-            min-height: 0;
 
-            display: flex;
-            flex-direction: column;
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
         }
+
 
         .combat-chat-panel
         .combat-panel-body {
-            display: flex;
-            flex-direction: column;
 
-            flex: 1;
+            flex:
+                1;
 
-            min-height: 0;
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
         }
+
 
         .combat-chat-messages {
-            flex: 1;
 
-            min-height: 150px;
+            flex:
+                1;
 
-            padding: 10px;
+            min-height:
+                120px;
 
-            overflow-y: auto;
+            padding:
+                8px;
+
+            overflow-y:
+                auto;
 
             border:
-                1px solid #3f3021;
+                1px solid
+                #3b2d1e;
 
-            border-radius: 8px;
+            border-radius:
+                5px;
 
-            background: #0e0b09;
+            background:
+                #0c0a08;
 
-            color: #d7c8ae;
+            color:
+                #cdbfa7;
 
-            font-size: 13px;
-            line-height: 1.45;
+            font-size:
+                11px;
+
+            line-height:
+                1.45;
+
         }
+
 
         .combat-chat-placeholder {
-            color: #776c5c;
 
-            font-style: italic;
+            color:
+                #716658;
+
+            font-style:
+                italic;
+
         }
+
 
         .combat-chat-compose {
-            display: grid;
 
-            grid-template-columns:
-                1fr auto;
-
-            gap: 8px;
-
-            margin-top: 10px;
-        }
-
-        .combat-chat-input {
-            width: 100%;
-            min-width: 0;
-
-            padding: 9px 10px;
-
-            color: #f1e7d0;
-            background: #0e0b09;
-
-            border:
-                1px solid #58442d;
-
-            border-radius: 7px;
-
-            outline: none;
-        }
-
-
-        /* =====================================================
-           MAPPA
-        ===================================================== */
-
-        .combat-map-wrapper {
-            background: #15110d;
-
-            border:
-                1px solid #5c4529;
-
-            border-radius: 12px;
-
-            padding: 14px;
-
-            box-shadow:
-                0 5px 18px
-                rgba(0, 0, 0, .28);
-        }
-
-        .combat-map {
-            position: relative;
-
-            width: 100%;
-
-            aspect-ratio: 1 / 1;
-
-            border:
-                2px solid #7a5a31;
-
-            background-image:
-                url("immagini/combat/combat_map_1.png");
-
-            background-size: 100% 100%;
-            background-position: center;
-            background-repeat: no-repeat;
-
-            overflow: hidden;
-        }
-
-
-        /* =====================================================
-           TOKEN
-        ===================================================== */
-
-        .combat-token {
-            position: absolute;
-
-            box-sizing: border-box;
-
-            z-index: 20;
-
-            cursor: pointer;
-
-            transition:
-                left .15s ease,
-                top .15s ease,
-                filter .15s ease;
-        }
-
-        .combat-token.player {
-            filter:
-                drop-shadow(
-                    0 0 6px
-                    rgba(90, 180, 255, .8)
-                );
-        }
-
-        .combat-token.enemy {
-            filter:
-                drop-shadow(
-                    0 0 5px
-                    rgba(190, 65, 55, .60)
-                );
-        }
-
-
-        /* =====================================================
-           REGISTRO
-        ===================================================== */
-
-        .combat-log-panel {
-            background:
-                linear-gradient(
-                    180deg,
-                    #18130f 0%,
-                    #12100c 100%
-                );
-
-            border:
-                1px solid #5c4529;
-
-            border-radius: 12px;
-
-            overflow: hidden;
-
-            box-shadow:
-                0 5px 18px
-                rgba(0, 0, 0, .28);
-        }
-
-        .combat-log {
-            height: 180px;
-
-            padding: 12px 14px;
-
-            overflow-y: auto;
-
-            background: #0e0b09;
-            color: #d8cbb3;
-
-            font-size: 14px;
-            line-height: 1.55;
-        }
-
-        .combat-log-placeholder {
-            color: #7e7262;
-
-            font-style: italic;
-        }
-
-
-        /* =====================================================
-           SCHEDA PG
-        ===================================================== */
-
-        .character-panel {
-            min-height: 0;
-        }
-
-        .character-name {
-            margin-bottom: 14px;
-
-            color: #f0d8a0;
-
-            font-size: 22px;
-            font-weight: 700;
-        }
-
-        .combat-resource {
-            margin-bottom: 12px;
-        }
-
-        .combat-resource-row {
-            display: flex;
-            justify-content: space-between;
-
-            gap: 12px;
-
-            margin-bottom: 5px;
-
-            font-size: 14px;
-        }
-
-        .combat-resource-bar {
-            height: 8px;
-
-            overflow: hidden;
-
-            border:
-                1px solid #493824;
-
-            border-radius: 999px;
-
-            background: #0d0a08;
-        }
-
-        .combat-resource-fill {
-            width: 0%;
-            height: 100%;
-
-            background: #8a693d;
-        }
-
-        .combat-stats {
-            display: grid;
+            display:
+                grid;
 
             grid-template-columns:
                 1fr auto;
 
             gap:
-                8px 12px;
+                6px;
 
-            margin-top: 16px;
-            margin-bottom: 16px;
-        }
+            margin-top:
+                7px;
 
-        .combat-stat-label {
-            color: #aa9a82;
-        }
-
-        .combat-stat-value {
-            color: #f1e7d0;
-
-            text-align: right;
-            font-weight: 700;
         }
 
 
-        /* =====================================================
-           STATO RISORSE TURNO
-        ===================================================== */
+        .combat-chat-input {
 
-        .turn-resources {
-            display: grid;
+            min-width:
+                0;
+
+            width:
+                100%;
+
+            padding:
+                7px 8px;
+
+            border:
+                1px solid
+                #4a3926;
+
+            border-radius:
+                5px;
+
+            outline:
+                none;
+
+            background:
+                #0c0a08;
+
+            color:
+                var(--text);
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-chat-input:focus {
+
+            border-color:
+                #8b6637;
+
+        }
+
+
+
+        /* ============================================================
+           MAPPA
+        ============================================================ */
+
+        .combat-map-column {
+
+            grid-area:
+                map;
+
+            min-width:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-map-panel {
+
+            height:
+                100%;
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-map-panel
+        .combat-panel-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            padding:
+                10px;
+
+            background:
+                #080706;
+
+        }
+
+
+        .combat-map {
+
+            position:
+                relative;
+
+            width:
+                min(
+                    100%,
+                    calc(
+                        100vh - 175px
+                    )
+                );
+
+            max-width:
+                100%;
+
+            aspect-ratio:
+                1 / 1;
+
+            border:
+                2px solid
+                #725430;
+
+            background-image:
+                url(
+                    "immagini/combat/combat_map_1.png"
+                );
+
+            background-size:
+                100% 100%;
+
+            background-position:
+                center;
+
+            background-repeat:
+                no-repeat;
+
+            overflow:
+                hidden;
+
+            box-shadow:
+
+                0 0 0 1px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .9
+                ),
+
+                0 0 24px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .5
+                );
+
+        }
+
+
+
+        /* ============================================================
+           TOKEN
+        ============================================================ */
+
+        .combat-token {
+
+            position:
+                absolute;
+
+            z-index:
+                20;
+
+            box-sizing:
+                border-box;
+
+            cursor:
+                pointer;
+
+            transition:
+
+                left
+                .15s ease,
+
+                top
+                .15s ease,
+
+                filter
+                .15s ease;
+
+        }
+
+
+        .combat-token.player {
+
+            filter:
+
+                drop-shadow(
+                    0 0 6px
+                    rgba(
+                        80,
+                        165,
+                        230,
+                        .9
+                    )
+                );
+
+        }
+
+
+        .combat-token.enemy {
+
+            filter:
+
+                drop-shadow(
+                    0 0 5px
+                    rgba(
+                        190,
+                        65,
+                        55,
+                        .7
+                    )
+                );
+
+        }
+
+
+
+        /* ============================================================
+           COLONNA SCHEDA / BUFF / NOTE
+        ============================================================ */
+
+        .combat-character-column {
+
+            grid-area:
+                character;
+
+            min-width:
+                0;
+
+            display:
+                grid;
+
+            grid-template-rows:
+                auto
+                minmax(
+                    125px,
+                    auto
+                )
+                minmax(
+                    145px,
+                    1fr
+                );
+
+            gap:
+                10px;
+
+        }
+
+
+
+        /* ============================================================
+           SCHEDA
+        ============================================================ */
+
+        .character-name {
+
+            margin-bottom:
+                10px;
+
+            color:
+                var(--gold-light);
+
+            font-size:
+                18px;
+
+            font-weight:
+                700;
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+
+            white-space:
+                nowrap;
+
+        }
+
+
+        .combat-resource {
+
+            margin-bottom:
+                9px;
+
+        }
+
+
+        .combat-resource-row {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                10px;
+
+            margin-bottom:
+                4px;
+
+            color:
+                var(--muted);
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-resource-row strong {
+
+            color:
+                #e5d4b2;
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-resource-bar {
+
+            height:
+                7px;
+
+            overflow:
+                hidden;
+
+            border:
+                1px solid
+                #423120;
+
+            border-radius:
+                20px;
+
+            background:
+                #080706;
+
+        }
+
+
+        .combat-resource-fill {
+
+            height:
+                100%;
+
+            width:
+                0;
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    #73312f,
+                    #af534b
+                );
+
+            transition:
+                width
+                .2s ease;
+
+        }
+
+
+        #combat-pm-bar {
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    #31566e,
+                    #5994b5
+                );
+
+        }
+
+
+
+        /* ============================================================
+           STATISTICHE
+        ============================================================ */
+
+        .combat-stats {
+
+            display:
+                grid;
 
             grid-template-columns:
-                repeat(3, 1fr);
+                1fr auto;
 
-            gap: 6px;
+            gap:
+                5px 8px;
 
-            margin: 14px 0;
+            margin-top:
+                12px;
+
+            padding:
+                8px 0;
+
+            border-top:
+                1px solid
+                #3f3020;
+
+            border-bottom:
+                1px solid
+                #3f3020;
+
         }
+
+
+        .combat-stat-label {
+
+            color:
+                #958773;
+
+            font-size:
+                10px;
+
+            letter-spacing:
+                .4px;
+
+        }
+
+
+        .combat-stat-value {
+
+            color:
+                #f0dfbc;
+
+            font-size:
+                11px;
+
+            font-weight:
+                700;
+
+            text-align:
+                right;
+
+        }
+
+
+
+        /* ============================================================
+           RISORSE TURNO
+        ============================================================ */
+
+        .turn-resources {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                );
+
+            gap:
+                5px;
+
+            margin-top:
+                10px;
+
+        }
+
 
         .turn-resource {
-            padding: 7px 5px;
+
+            padding:
+                6px 3px;
 
             border:
-                1px solid #4d3a26;
+                1px solid
+                #493823;
 
-            border-radius: 7px;
+            border-radius:
+                4px;
 
-            background: #100d0a;
+            background:
+                #0d0b08;
 
-            color: #a89983;
+            color:
+                #756a5c;
 
-            text-align: center;
+            font-size:
+                8px;
 
-            font-size: 10px;
-            font-weight: 700;
+            font-weight:
+                700;
+
+            letter-spacing:
+                .2px;
+
+            text-align:
+                center;
+
         }
+
 
         .turn-resource.available {
-            border-color: #806437;
-            color: #d7bf8c;
+
+            color:
+                #b8d8ad;
+
+            border-color:
+                #4e734b;
+
+            background:
+                rgba(
+                    48,
+                    94,
+                    45,
+                    .18
+                );
+
         }
+
 
         .turn-resource.used {
-            opacity: .45;
+
+            color:
+                #8b7169;
+
+            border-color:
+                #56352f;
+
+            background:
+                rgba(
+                    99,
+                    41,
+                    34,
+                    .12
+                );
+
         }
 
 
-        /* =====================================================
-           AZIONI
-        ===================================================== */
+
+        /* ============================================================
+           AZIONI SCHEDA
+        ============================================================ */
 
         .combat-actions {
-            display: grid;
 
-            gap: 8px;
+            display:
+                grid;
 
-            margin-top: 16px;
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                6px;
+
+            margin-top:
+                10px;
+
         }
+
 
         .combat-button {
-            min-height: 40px;
 
-            padding: 9px 12px;
+            min-height:
+                33px;
+
+            padding:
+                7px 8px;
 
             border:
-                1px solid #73572f;
+                1px solid
+                #71532e;
 
-            border-radius: 8px;
+            border-radius:
+                5px;
 
             background:
+
                 linear-gradient(
                     180deg,
-                    #352819,
-                    #241b12
+                    #312315,
+                    #1b140e
                 );
 
-            color: #eeddb8;
+            color:
+                #ead7ad;
 
-            cursor: pointer;
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                .25px;
+
+            cursor:
+                pointer;
+
+            transition:
+
+                border-color
+                .15s ease,
+
+                background
+                .15s ease,
+
+                transform
+                .08s ease;
+
         }
+
 
         .combat-button:hover:not(:disabled) {
-            border-color: #aa8248;
+
+            border-color:
+                #bb8b46;
 
             background:
+
                 linear-gradient(
                     180deg,
-                    #45341f,
-                    #2d2115
+                    #44301a,
+                    #22170f
                 );
+
         }
+
+
+        .combat-button:active:not(:disabled) {
+
+            transform:
+                translateY(
+                    1px
+                );
+
+        }
+
 
         .combat-button:disabled {
-            opacity: .42;
 
-            cursor: not-allowed;
+            opacity:
+                .38;
+
+            cursor:
+                not-allowed;
+
         }
+
 
         .combat-button-pass {
-            margin-top: 6px;
 
-            border-color: #806437;
+            grid-column:
+                1 / -1;
 
-            font-weight: 700;
-            letter-spacing: .6px;
+            color:
+                #c7b798;
+
+            border-color:
+                #4e4336;
+
+            background:
+                #17130f;
+
         }
 
 
-        /* =====================================================
-           ABILITÀ
-        ===================================================== */
 
-        .combat-ability-list {
-            display: flex;
-            flex-direction: column;
+        /* ============================================================
+           BUFF ATTIVI
+        ============================================================ */
 
-            gap: 9px;
+        .buff-panel {
+
+            min-height:
+                0;
+
         }
 
-        .combat-ability-card {
-            padding: 11px;
+
+        .combat-buff-list {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                6px;
+
+        }
+
+
+        .combat-buff-empty {
+
+            padding:
+                10px 4px;
+
+            color:
+                #796e5f;
+
+            font-size:
+                11px;
+
+            font-style:
+                italic;
+
+            text-align:
+                center;
+
+        }
+
+
+        .combat-buff-item {
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+
+            padding:
+                7px;
 
             border:
-                1px solid #493723;
+                1px solid
+                #40311f;
 
-            border-radius: 8px;
+            border-radius:
+                4px;
 
-            background: #100d0a;
-        }
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .2
+                );
 
-        .combat-ability-card.disabled {
-            opacity: .45;
-        }
+            font-size:
+                10px;
 
-        .combat-ability-header {
-            display: flex;
-            justify-content: space-between;
-
-            gap: 10px;
-        }
-
-        .combat-ability-name {
-            color: #f0dfbb;
-
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .combat-ability-level {
-            color: #cda65b;
-
-            font-size: 10px;
-            font-weight: 700;
-        }
-
-        .combat-ability-description {
-            margin-top: 6px;
-
-            color: #a99c88;
-
-            font-size: 11px;
-            line-height: 1.4;
-        }
-
-        .combat-ability-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            gap: 8px;
-
-            margin-top: 9px;
-        }
-
-        .combat-ability-cost {
-            color: #d4af67;
-
-            font-size: 10px;
-            font-weight: 700;
         }
 
 
-        /* =====================================================
-           ZAINO
-        ===================================================== */
+        .combat-buff-name {
 
-        .combat-backpack-list {
-            display: flex;
-            flex-direction: column;
+            color:
+                #e6d2a8;
 
-            gap: 9px;
-        }
-
-        .combat-backpack-item {
-            padding: 11px;
-
-            border:
-                1px solid #493723;
-
-            border-radius: 8px;
-
-            background: #100d0a;
-        }
-
-        .combat-backpack-item.disabled {
-            opacity: .45;
-        }
-
-        .combat-backpack-name {
-            color: #f0dfbb;
-
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .combat-backpack-description {
-            margin-top: 5px;
-
-            color: #a99c88;
-
-            font-size: 11px;
-            line-height: 1.4;
-        }
-
-        .combat-backpack-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            gap: 8px;
-
-            margin-top: 9px;
-        }
-
-        .combat-backpack-quantity {
-            color: #cda65b;
-
-            font-size: 10px;
-            font-weight: 700;
         }
 
 
-        /* =====================================================
+        .combat-buff-duration {
+
+            color:
+                var(--gold);
+
+            white-space:
+                nowrap;
+
+        }
+
+
+
+        /* ============================================================
            NOTE
-        ===================================================== */
+        ============================================================ */
 
         .notes-panel {
-            min-height: 0;
 
-            display: flex;
-            flex-direction: column;
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
         }
+
 
         .notes-panel
         .combat-panel-body {
-            flex: 1;
 
-            display: flex;
-            flex-direction: column;
+            flex:
+                1;
 
-            min-height: 0;
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            min-height:
+                0;
+
         }
+
 
         .combat-notes {
-            width: 100%;
 
-            flex: 1;
+            flex:
+                1;
 
-            min-height: 160px;
+            width:
+                100%;
 
-            resize: vertical;
+            min-height:
+                85px;
 
-            padding: 10px;
+            resize:
+                none;
+
+            padding:
+                8px;
 
             border:
-                1px solid #4c3925;
+                1px solid
+                #493821;
 
-            border-radius: 8px;
+            border-radius:
+                5px;
 
-            background: #0e0b09;
-            color: #e9dcc1;
+            outline:
+                none;
 
-            outline: none;
+            background:
+                #0d0a08;
 
-            line-height: 1.45;
+            color:
+                #ded0b7;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.4;
+
         }
+
+
+        .combat-notes:focus {
+
+            border-color:
+                #8d6737;
+
+        }
+
 
         .notes-save {
-            margin-top: 10px;
+
+            width:
+                100%;
+
+            margin-top:
+                7px;
+
         }
 
 
-        /* =====================================================
+
+        /* ============================================================
+           ABILITÀ / ZAINO
+        ============================================================ */
+
+        .combat-drawer-column {
+
+            grid-area:
+                drawer;
+
+            min-width:
+                0;
+
+            position:
+                relative;
+
+        }
+
+
+        .combat-drawer-column::before {
+
+            content:
+                "›";
+
+            position:
+                absolute;
+
+            left:
+                -10px;
+
+            top:
+                88px;
+
+            z-index:
+                30;
+
+            width:
+                20px;
+
+            height:
+                36px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            border:
+                1px solid
+                #71542e;
+
+            border-radius:
+                4px;
+
+            background:
+                #1b140e;
+
+            color:
+                var(--gold);
+
+            font-size:
+                25px;
+
+            line-height:
+                1;
+
+            pointer-events:
+                none;
+
+        }
+
+
+        .combat-drawer {
+
+            height:
+                100%;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-drawer-header {
+
+            flex:
+                0 0 auto;
+
+        }
+
+
+        .combat-drawer-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            overflow-y:
+                auto;
+
+        }
+
+
+        .combat-drawer-placeholder {
+
+            padding:
+                22px 8px;
+
+            color:
+                #786c5c;
+
+            text-align:
+                center;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.55;
+
+            font-style:
+                italic;
+
+        }
+
+
+        .combat-drawer-close {
+
+            width:
+                27px;
+
+            height:
+                27px;
+
+            padding:
+                0;
+
+            border:
+                1px solid
+                #5a452d;
+
+            border-radius:
+                4px;
+
+            background:
+                #100d0a;
+
+            color:
+                #c6af83;
+
+            font-size:
+                19px;
+
+            line-height:
+                1;
+
+            cursor:
+                pointer;
+
+        }
+
+
+
+        /* ============================================================
+           CARTE ABILITÀ GENERATE DA combat.js
+        ============================================================ */
+
+        .combat-ability-card,
+        .combat-backpack-item {
+
+            margin-bottom:
+                8px;
+
+            padding:
+                9px;
+
+            border:
+                1px solid
+                #433320;
+
+            border-radius:
+                5px;
+
+            background:
+                #0e0b08;
+
+        }
+
+
+        .combat-ability-card.disabled {
+
+            opacity:
+                .48;
+
+        }
+
+
+        .combat-ability-header {
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            gap:
+                8px;
+
+        }
+
+
+        .combat-ability-name,
+        .combat-backpack-name {
+
+            color:
+                #ead5a7;
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+
+        }
+
+
+        .combat-ability-level {
+
+            color:
+                #a99167;
+
+            font-size:
+                9px;
+
+            white-space:
+                nowrap;
+
+        }
+
+
+        .combat-ability-description,
+        .combat-backpack-description {
+
+            margin-top:
+                5px;
+
+            color:
+                #9f927e;
+
+            font-size:
+                10px;
+
+            line-height:
+                1.4;
+
+        }
+
+
+        .combat-ability-footer {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+
+            margin-top:
+                8px;
+
+        }
+
+
+        .combat-ability-cost,
+        .combat-backpack-quantity {
+
+            color:
+                var(--gold);
+
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+        }
+
+
+
+        /* ============================================================
            MASTER
-        ===================================================== */
+        ============================================================ */
 
         .master-only {
-            display: none;
+
+            display:
+                none;
+
         }
+
 
         body.master-observer
         .player-only {
-            display: none;
+
+            display:
+                none !important;
+
         }
+
 
         body.master-observer
         .master-only {
-            display: block;
+
+            display:
+                block;
+
         }
+
+
+        body.master-observer
+        .combat-layout {
+
+            grid-template-columns:
+                minmax(
+                    170px,
+                    .7fr
+                )
+                minmax(
+                    190px,
+                    .8fr
+                )
+                minmax(
+                    520px,
+                    3fr
+                )
+                minmax(
+                    230px,
+                    1fr
+                );
+
+            grid-template-areas:
+
+                "log secondary map character";
+
+        }
+
 
         .selected-entity-placeholder {
-            padding: 18px 8px;
 
-            color: #8d806c;
+            color:
+                #8e816f;
 
-            text-align: center;
-            font-style: italic;
+            font-size:
+                11px;
 
-            line-height: 1.5;
+            line-height:
+                1.5;
+
         }
 
 
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
 
-        @media (max-width: 1450px) {
+        /* ============================================================
+           RANGE CELLS
+        ============================================================ */
 
-            body.combat-drawer-open
+        .combat-range-cell {
+
+            pointer-events:
+                none;
+
+        }
+
+
+
+        /* ============================================================
+           RESPONSIVE - SCHERMI MEDI
+        ============================================================ */
+
+        @media (
+            max-width:
+            1450px
+        ) {
+
             .combat-layout {
-                grid-template-columns:
-                    minmax(210px, 240px)
-                    minmax(430px, 1fr)
-                    minmax(270px, 310px);
 
-                grid-template-areas:
-                    "left map right"
-                    "left map drawer";
+                grid-template-columns:
+                    minmax(
+                        145px,
+                        .7fr
+                    )
+                    minmax(
+                        170px,
+                        .8fr
+                    )
+                    minmax(
+                        430px,
+                        2.4fr
+                    )
+                    minmax(
+                        210px,
+                        1fr
+                    )
+                    minmax(
+                        220px,
+                        1.05fr
+                    );
+
+                gap:
+                    8px;
+
             }
 
-        }
-
-
-        @media (max-width: 980px) {
 
             body {
-                padding: 12px;
-            }
 
-            .combat-layout,
-            body.combat-drawer-open
-            .combat-layout {
-                grid-template-columns:
-                    minmax(0, 1fr)
-                    minmax(260px, 320px);
+                padding:
+                    10px;
 
-                grid-template-areas:
-                    "map map"
-                    "left right"
-                    "drawer drawer";
-            }
-
-            .combat-left-column,
-            .combat-right-column {
-                grid-template-rows:
-                    auto auto;
-            }
-
-            .combat-drawer {
-                position: static;
-                max-height: none;
             }
 
         }
 
 
-        @media (max-width: 680px) {
 
-            .combat-header h1 {
-                font-size: 24px;
-            }
+        /* ============================================================
+           RESPONSIVE - TABLET
+        ============================================================ */
 
-            .combat-layout,
-            body.combat-drawer-open
+        @media (
+            max-width:
+            1100px
+        ) {
+
             .combat-layout {
-                grid-template-columns: 1fr;
+
+                grid-template-columns:
+                    minmax(
+                        180px,
+                        .8fr
+                    )
+                    minmax(
+                        420px,
+                        2fr
+                    )
+                    minmax(
+                        230px,
+                        1fr
+                    );
 
                 grid-template-areas:
-                    "map"
-                    "right"
-                    "drawer"
-                    "left";
+
+                    "secondary map character"
+                    "log       map drawer";
+
+                align-items:
+                    stretch;
+
             }
 
-            .combat-left-column,
-            .combat-right-column {
-                display: flex;
-                flex-direction: column;
+
+            .combat-log-column {
+
+                min-height:
+                    330px;
+
             }
 
-            .combat-chat-panel {
-                min-height: 320px;
+
+            .combat-drawer-column {
+
+                min-height:
+                    330px;
+
             }
 
-            .turn-resources {
-                grid-template-columns: 1fr;
+        }
+
+
+
+        /* ============================================================
+           RESPONSIVE - TELEFONO
+        ============================================================ */
+
+        @media (
+            max-width:
+            760px
+        ) {
+
+            body {
+
+                padding:
+                    7px;
+
+            }
+
+
+            .combat-header {
+
+                align-items:
+                    flex-start;
+
+            }
+
+
+            .combat-layout {
+
+                display:
+                    flex;
+
+                flex-direction:
+                    column;
+
+                min-height:
+                    0;
+
+            }
+
+
+            .combat-map-column {
+
+                order:
+                    1;
+
+            }
+
+
+            .combat-character-column {
+
+                order:
+                    2;
+
+            }
+
+
+            .combat-secondary-column {
+
+                order:
+                    3;
+
+                grid-template-rows:
+                    auto
+                    minmax(
+                        280px,
+                        auto
+                    );
+
+            }
+
+
+            .combat-log-column {
+
+                order:
+                    4;
+
+                min-height:
+                    350px;
+
+            }
+
+
+            .combat-drawer-column {
+
+                order:
+                    5;
+
+                min-height:
+                    400px;
+
+            }
+
+
+            .combat-map {
+
+                width:
+                    100%;
+
+            }
+
+
+            .combat-character-column {
+
+                grid-template-rows:
+                    auto
+                    auto
+                    auto;
+
+            }
+
+
+            .combat-drawer-column::before {
+
+                display:
+                    none;
+
             }
 
         }
@@ -1044,20 +2325,23 @@
 
 <body>
 
+
     <main class="combat-page">
 
 
-        <!-- ===================================================
+        <!-- ========================================================
              HEADER
-        ==================================================== -->
+        ========================================================= -->
 
         <header class="combat-header">
 
-            <div>
+
+            <div class="combat-title-wrap">
 
                 <h1>
                     COMBATTIMENTO
                 </h1>
+
 
                 <div
                     id="combat-status"
@@ -1065,6 +2349,7 @@
                 >
                     Caricamento...
                 </div>
+
 
                 <div
                     id="combat-master-badge"
@@ -1075,126 +2360,37 @@
 
             </div>
 
+
         </header>
 
 
-        <!-- ===================================================
+
+        <!-- ========================================================
              LAYOUT
-        ==================================================== -->
+        ========================================================= -->
 
         <section class="combat-layout">
 
 
-            <!-- ===============================================
-                 SINISTRA
-            ================================================ -->
 
-            <aside class="combat-left-column">
+            <!-- ====================================================
+                 REGISTRO
+            ===================================================== -->
+
+            <aside class="combat-log-column">
 
 
-                <section
-                    class="combat-panel turn-order-panel"
-                >
+                <section class="combat-panel combat-log-panel">
+
 
                     <div class="combat-panel-header">
 
                         <h2>
-                            TURN ORDER
+                            REGISTRO
                         </h2>
 
                     </div>
 
-                    <div class="combat-panel-body">
-
-                        <div
-                            id="combat-entity-list"
-                            class="combat-entity-list"
-                        ></div>
-
-                    </div>
-
-                </section>
-
-
-                <section
-                    class="combat-panel combat-chat-panel"
-                >
-
-                    <div class="combat-panel-header">
-
-                        <h2>
-                            CHAT
-                        </h2>
-
-                    </div>
-
-                    <div class="combat-panel-body">
-
-                        <div
-                            id="combat-chat-messages"
-                            class="combat-chat-messages"
-                        >
-
-                            <div class="combat-chat-placeholder">
-                                La chat verrà collegata al multiplayer
-                                in un passaggio successivo.
-                            </div>
-
-                        </div>
-
-                        <div class="combat-chat-compose">
-
-                            <input
-                                id="combat-chat-input"
-                                class="combat-chat-input"
-                                type="text"
-                                autocomplete="off"
-                                placeholder="Scrivi un messaggio..."
-                            >
-
-                            <button
-                                id="combat-chat-send"
-                                class="combat-button"
-                                type="button"
-                                disabled
-                            >
-                                INVIA
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-            </aside>
-
-
-            <!-- ===============================================
-                 CENTRO
-            ================================================ -->
-
-            <section class="combat-center-column">
-
-                <div class="combat-map-wrapper">
-
-                    <div
-                        id="combat-map"
-                        class="combat-map"
-                    ></div>
-
-                </div>
-
-
-                <section class="combat-log-panel">
-
-                    <div class="combat-panel-header">
-
-                        <h2>
-                            REGISTRO DI COMBATTIMENTO
-                        </h2>
-
-                    </div>
 
                     <div
                         id="combat-log"
@@ -1207,32 +2403,186 @@
 
                     </div>
 
+
                 </section>
 
-            </section>
+
+            </aside>
 
 
-            <!-- ===============================================
-                 DESTRA - SCHEDA PG
-            ================================================ -->
 
-            <aside class="combat-right-column">
+            <!-- ====================================================
+                 TURN ORDER + CHAT
+            ===================================================== -->
+
+            <aside class="combat-secondary-column">
 
 
-                <section
-                    class="combat-panel character-panel player-only"
-                >
+
+                <!-- TURN ORDER -->
+
+                <section class="combat-panel turn-order-panel">
+
 
                     <div class="combat-panel-header">
 
                         <h2>
-                            PERSONAGGIO
+                            TURN ORDER
                         </h2>
 
                     </div>
 
 
                     <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-entity-list"
+                            class="combat-entity-list"
+                        ></div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- CHAT -->
+
+                <section class="combat-panel combat-chat-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            CHAT
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-chat-messages"
+                            class="combat-chat-messages"
+                        >
+
+                            <div class="combat-chat-placeholder">
+
+                                La chat verrà collegata
+                                al multiplayer
+                                in un passaggio successivo.
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="combat-chat-compose">
+
+
+                            <input
+                                id="combat-chat-input"
+                                class="combat-chat-input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Scrivi..."
+                            >
+
+
+                            <button
+                                id="combat-chat-send"
+                                class="combat-button"
+                                type="button"
+                                disabled
+                            >
+                                ➤
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+
+            <!-- ====================================================
+                 MAPPA
+            ===================================================== -->
+
+            <section class="combat-map-column">
+
+
+                <section class="combat-panel combat-map-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            MAPPA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-map"
+                            class="combat-map"
+                        ></div>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </section>
+
+
+
+            <!-- ====================================================
+                 COLONNA SCHEDA / BUFF / NOTE
+            ===================================================== -->
+
+            <aside class="combat-character-column">
+
+
+
+                <!-- =================================================
+                     SCHEDA PG
+                ================================================== -->
+
+                <section
+                    class="combat-panel player-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            SCHEDA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
 
                         <div
                             id="combat-character-name"
@@ -1242,19 +2592,24 @@
                         </div>
 
 
+
                         <!-- PF -->
 
                         <div class="combat-resource">
 
+
                             <div class="combat-resource-row">
 
-                                <span>PF</span>
+                                <span>
+                                    PF
+                                </span>
 
                                 <strong id="combat-pf-value">
                                     0 / 0
                                 </strong>
 
                             </div>
+
 
                             <div class="combat-resource-bar">
 
@@ -1265,22 +2620,28 @@
 
                             </div>
 
+
                         </div>
+
 
 
                         <!-- PM -->
 
                         <div class="combat-resource">
 
+
                             <div class="combat-resource-row">
 
-                                <span>PM</span>
+                                <span>
+                                    PM
+                                </span>
 
                                 <strong id="combat-pm-value">
                                     0 / 0
                                 </strong>
 
                             </div>
+
 
                             <div class="combat-resource-bar">
 
@@ -1291,12 +2652,15 @@
 
                             </div>
 
+
                         </div>
 
 
-                        <!-- STATS -->
+
+                        <!-- STATISTICHE -->
 
                         <div class="combat-stats">
+
 
                             <div class="combat-stat-label">
                                 ATTACCO
@@ -1308,6 +2672,7 @@
                             >
                                 -
                             </div>
+
 
 
                             <div class="combat-stat-label">
@@ -1322,6 +2687,7 @@
                             </div>
 
 
+
                             <div class="combat-stat-label">
                                 MOVIMENTO
                             </div>
@@ -1332,6 +2698,7 @@
                             >
                                 -
                             </div>
+
 
 
                             <div class="combat-stat-label">
@@ -1345,19 +2712,23 @@
                                 -
                             </div>
 
+
                         </div>
 
 
-                        <!-- RISORSE TURNO -->
+
+                        <!-- RISORSE DEL TURNO -->
 
                         <div class="turn-resources">
+
 
                             <div
                                 id="turn-resource-movement"
                                 class="turn-resource"
                             >
-                                MOVIMENTO
+                                MOV
                             </div>
+
 
                             <div
                                 id="turn-resource-action"
@@ -1366,6 +2737,7 @@
                                 AZIONE
                             </div>
 
+
                             <div
                                 id="turn-resource-item"
                                 class="turn-resource"
@@ -1373,12 +2745,15 @@
                                 OGGETTO
                             </div>
 
+
                         </div>
+
 
 
                         <!-- AZIONI -->
 
                         <div class="combat-actions">
+
 
                             <button
                                 id="combat-action-attack"
@@ -1388,6 +2763,7 @@
                                 ATTACCO BASE
                             </button>
 
+
                             <button
                                 id="combat-action-abilities"
                                 class="combat-button"
@@ -1395,6 +2771,7 @@
                             >
                                 ABILITÀ
                             </button>
+
 
                             <button
                                 id="combat-action-backpack"
@@ -1404,6 +2781,7 @@
                                 ZAINO
                             </button>
 
+
                             <button
                                 id="combat-action-pass"
                                 class="combat-button combat-button-pass"
@@ -1412,18 +2790,25 @@
                                 SALTA TURNO
                             </button>
 
+
                         </div>
 
+
                     </div>
+
 
                 </section>
 
 
-                <!-- MASTER -->
+
+                <!-- =================================================
+                     MASTER
+                ================================================== -->
 
                 <section
                     class="combat-panel master-only"
                 >
+
 
                     <div class="combat-panel-header">
 
@@ -1433,7 +2818,9 @@
 
                     </div>
 
+
                     <div class="combat-panel-body">
+
 
                         <div class="selected-entity-placeholder">
 
@@ -1446,16 +2833,64 @@
 
                         </div>
 
+
                     </div>
+
 
                 </section>
 
 
-                <!-- NOTE -->
+
+                <!-- =================================================
+                     BUFF
+                ================================================== -->
+
+                <section
+                    class="combat-panel buff-panel player-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            BUFF ATTIVI + DURATA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-active-buffs"
+                            class="combat-buff-list"
+                        >
+
+                            <div class="combat-buff-empty">
+
+                                Nessun buff attivo.
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- =================================================
+                     NOTE
+                ================================================== -->
 
                 <section
                     class="combat-panel notes-panel player-only"
                 >
+
 
                     <div class="combat-panel-header">
 
@@ -1465,13 +2900,16 @@
 
                     </div>
 
+
                     <div class="combat-panel-body">
+
 
                         <textarea
                             id="combat-notes"
                             class="combat-notes"
                             placeholder="Note del personaggio..."
                         ></textarea>
+
 
                         <button
                             id="combat-notes-save"
@@ -1481,30 +2919,43 @@
                             SALVA NOTE
                         </button>
 
+
                     </div>
 
+
                 </section>
+
 
             </aside>
 
 
-            <!-- ===============================================
-                 PANNELLO LATERALE
-            ================================================ -->
 
-            <aside class="combat-drawer-column player-only">
+            <!-- ====================================================
+                 ABILITÀ / ZAINO
+            ===================================================== -->
+
+            <aside
+                class="combat-drawer-column player-only"
+            >
+
 
                 <section
                     class="combat-panel combat-drawer"
                 >
 
+
                     <div
-                        class="combat-panel-header combat-drawer-header"
+                        class="
+                            combat-panel-header
+                            combat-drawer-header
+                        "
                     >
 
+
                         <h2 id="combat-drawer-title">
-                            AZIONI
+                            ABILITÀ / ZAINO
                         </h2>
+
 
                         <button
                             id="combat-drawer-close"
@@ -1515,36 +2966,65 @@
                             ×
                         </button>
 
+
                     </div>
+
 
                     <div
                         id="combat-drawer-body"
-                        class="combat-panel-body combat-drawer-body"
+                        class="
+                            combat-panel-body
+                            combat-drawer-body
+                        "
                     >
 
+
                         <div class="combat-drawer-placeholder">
-                            Seleziona ABILITÀ oppure ZAINO.
+
+                            Seleziona
+                            <strong>ABILITÀ</strong>
+                            oppure
+                            <strong>ZAINO</strong>
+                            dalla scheda.
+
                         </div>
+
 
                     </div>
 
+
                 </section>
+
 
             </aside>
 
 
         </section>
 
+
     </main>
 
+
+
+    <!-- ============================================================
+         SUPABASE
+    ============================================================ -->
 
     <script
         src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
     ></script>
 
+
     <script src="js/config.js"></script>
 
-    <script src="js/combat.js?v=14"></script>
+
+    <!--
+        v=20 per evitare che il browser carichi
+        la vecchia versione dalla cache.
+    -->
+
+    <script src="js/combat.js?v=20"></script>
+
 
 </body>
 
