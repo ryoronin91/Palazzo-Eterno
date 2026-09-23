@@ -125,6 +125,20 @@ const otherPlayerTokens =
 const otherPlayers =
     new Map();
 
+// ============================================================
+// NEBBIA DI GUERRA
+// ============================================================
+
+let fogCanvas = null;
+
+let exploredCells =
+    new Set();
+
+let visibleCells =
+    new Set();
+
+let fogSavePromise =
+    Promise.resolve();
 
 // ============================================================
 // CURA
@@ -191,7 +205,12 @@ document.addEventListener(
 
             await initializePlayer();
 
+            // ------------------------------------------------------------
+            // NEBBIA DI GUERRA
+            // ------------------------------------------------------------
 
+            setupFogOfWar();
+            
             // ------------------------------------------------
             // MOVIMENTO
             // ------------------------------------------------
@@ -1619,7 +1638,8 @@ async function performMovement(
         playerX,
         playerY
     );
-
+    
+    updateFogOfWar();
 
     // --------------------------------------------------------
     // REALTIME SENZA BLOCCARE IL MOVIMENTO
@@ -2440,7 +2460,10 @@ function syncOnlinePlayers() {
         updateHealTargets();
 
     }
+renderFogOfWar();
 
+updateRemoteTokensVisibility();
+    
 }
 
 
@@ -2531,7 +2554,8 @@ function updateRemotePlayer(
     showOtherPlayerToken(
         data.character_id
     );
-
+    
+updateRemoteTokensVisibility();
 
     if (healModeActive) {
 
@@ -4755,6 +4779,1191 @@ async function handleCharacterDeath() {
 
 }
 
+// ============================================================
+// NEBBIA DI GUERRA
+// ============================================================
+
+
+// ============================================================
+// INIZIALIZZAZIONE
+// ============================================================
+
+function setupFogOfWar() {
+
+    loadExploredCellsFromCharacter();
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    const image =
+        document.getElementById(
+            "dungeon-map-image"
+        );
+
+
+    if (
+        !map ||
+        !image
+    ) {
+
+        console.error(
+            "Impossibile inizializzare la nebbia: mappa non trovata."
+        );
+
+        return;
+
+    }
+
+
+    if (!fogCanvas) {
+
+        fogCanvas =
+            document.createElement(
+                "canvas"
+            );
+
+
+        fogCanvas.className =
+            "dungeon-fog-canvas";
+
+
+        fogCanvas.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+
+        map.appendChild(
+            fogCanvas
+        );
+
+    }
+
+
+    if (!image.complete) {
+
+        image.addEventListener(
+            "load",
+            updateFogOfWar,
+            {
+                once: true
+            }
+        );
+
+    }
+
+
+    updateFogOfWar();
+
+}
+
+
+// ============================================================
+// CARICA CELLE ESPLORATE DAL PERSONAGGIO
+// ============================================================
+
+function loadExploredCellsFromCharacter() {
+
+    exploredCells.clear();
+
+
+    const stored =
+        character?.fog_explored;
+
+
+    if (
+        !Array.isArray(
+            stored
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    stored.forEach(
+        cell => {
+
+            if (
+                !Array.isArray(cell) ||
+                cell.length < 2
+            ) {
+
+                return;
+
+            }
+
+
+            const x =
+                Number(
+                    cell[0]
+                );
+
+
+            const y =
+                Number(
+                    cell[1]
+                );
+
+
+            if (
+                Number.isInteger(x) &&
+                Number.isInteger(y) &&
+                x >= 0 &&
+                y >= 0 &&
+                x < MAP_COLUMNS &&
+                y < MAP_ROWS
+            ) {
+
+                exploredCells.add(
+                    fogCellKey(
+                        x,
+                        y
+                    )
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA NEBBIA
+// ============================================================
+
+function updateFogOfWar() {
+
+    if (
+        !dungeonData ||
+        !character ||
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    visibleCells =
+        calculateVisibleCells();
+
+
+    let discoveredSomething =
+        false;
+
+
+    for (
+        const key
+        of visibleCells
+    ) {
+
+        if (
+            !exploredCells.has(
+                key
+            )
+        ) {
+
+            exploredCells.add(
+                key
+            );
+
+
+            discoveredSomething =
+                true;
+
+        }
+
+    }
+
+
+    renderFogOfWar();
+
+    updateRemoteTokensVisibility();
+
+
+    if (discoveredSomething) {
+
+        queueFogExplorationSave();
+
+    }
+
+}
+
+
+// ============================================================
+// CALCOLA CELLE VISIBILI
+// ============================================================
+
+function calculateVisibleCells() {
+
+    const visible =
+        new Set();
+
+
+    const radius =
+        getVisionRadius();
+
+
+    for (
+        let y = 0;
+        y < MAP_ROWS;
+        y++
+    ) {
+
+        for (
+            let x = 0;
+            x < MAP_COLUMNS;
+            x++
+        ) {
+
+            const dx =
+                x -
+                playerX;
+
+
+            const dy =
+                y -
+                playerY;
+
+
+            // Zona di visione circolare.
+
+            if (
+                Math.hypot(
+                    dx,
+                    dy
+                ) >
+                radius
+            ) {
+
+                continue;
+
+            }
+
+
+            if (
+                hasLineOfSight(
+                    playerX,
+                    playerY,
+                    x,
+                    y
+                )
+            ) {
+
+                visible.add(
+                    fogCellKey(
+                        x,
+                        y
+                    )
+                );
+
+            }
+
+        }
+
+    }
+
+
+    // La casella del PG è sempre visibile.
+
+    visible.add(
+        fogCellKey(
+            playerX,
+            playerY
+        )
+    );
+
+
+    return visible;
+
+}
+
+
+// ============================================================
+// RAGGIO DI VISIONE
+//
+// Usiamo il MOVIMENTO effettivo, quindi tiene conto anche
+// dell'equipaggiamento.
+// ============================================================
+
+function getVisionRadius() {
+
+    if (!character) {
+
+        return 5;
+
+    }
+
+
+    return getDungeonCalculatedStats()
+        .movement;
+
+}
+
+
+// ============================================================
+// VALORE DELLA CELLA NEL DUNGEON.JSON
+// ============================================================
+
+function getDungeonCellValue(
+    x,
+    y
+) {
+
+    if (
+        !dungeonData ||
+        !Array.isArray(
+            dungeonData.cells
+        ) ||
+        x < 0 ||
+        y < 0 ||
+        x >= MAP_COLUMNS ||
+        y >= MAP_ROWS
+    ) {
+
+        return null;
+
+    }
+
+
+    const jsonX =
+        x +
+        GRID_OFFSET_X;
+
+
+    const jsonY =
+        y +
+        GRID_OFFSET_Y;
+
+
+    if (
+        !dungeonData.cells[
+            jsonY
+        ] ||
+        dungeonData.cells[
+            jsonY
+        ][
+            jsonX
+        ] ===
+        undefined
+    ) {
+
+        return null;
+
+    }
+
+
+    const value =
+        Number(
+            dungeonData.cells[
+                jsonY
+            ][
+                jsonX
+            ]
+        );
+
+
+    return Number.isFinite(
+        value
+    )
+        ? value
+        : null;
+
+}
+
+
+// ============================================================
+// LINEA DI VISTA
+// ============================================================
+
+function hasLineOfSight(
+    startX,
+    startY,
+    targetX,
+    targetY
+) {
+
+    if (
+        startX === targetX &&
+        startY === targetY
+    ) {
+
+        return true;
+
+    }
+
+
+    const line =
+        getGridLine(
+            startX,
+            startY,
+            targetX,
+            targetY
+        );
+
+
+    // Non controlliamo:
+    //
+    // - la casella iniziale
+    // - la casella bersaglio
+    //
+    // In questo modo il muro è visibile,
+    // ma ciò che si trova dietro al muro no.
+
+    for (
+        let i = 1;
+        i < line.length - 1;
+        i++
+    ) {
+
+        const cell =
+            line[i];
+
+
+        if (
+            isVisionBlockingCell(
+                cell.x,
+                cell.y
+            )
+        ) {
+
+            return false;
+
+        }
+
+    }
+
+
+    return true;
+
+}
+
+
+// ============================================================
+// LINEA DI CELLE
+//
+// Versione "supercover":
+// impedisce alla visuale di infilarsi diagonalmente
+// tra due muri.
+// ============================================================
+
+function getGridLine(
+    x0,
+    y0,
+    x1,
+    y1
+) {
+
+    const cells =
+        [];
+
+
+    function addCell(
+        x,
+        y
+    ) {
+
+        const last =
+            cells[
+                cells.length - 1
+            ];
+
+
+        if (
+            !last ||
+            last.x !== x ||
+            last.y !== y
+        ) {
+
+            cells.push({
+                x,
+                y
+            });
+
+        }
+
+    }
+
+
+    let x =
+        x0;
+
+
+    let y =
+        y0;
+
+
+    addCell(
+        x,
+        y
+    );
+
+
+    const dx =
+        x1 -
+        x0;
+
+
+    const dy =
+        y1 -
+        y0;
+
+
+    const stepX =
+        Math.sign(
+            dx
+        );
+
+
+    const stepY =
+        Math.sign(
+            dy
+        );
+
+
+    const absDx =
+        Math.abs(
+            dx
+        );
+
+
+    const absDy =
+        Math.abs(
+            dy
+        );
+
+
+    const tDeltaX =
+        absDx === 0
+            ? Infinity
+            : 1 / absDx;
+
+
+    const tDeltaY =
+        absDy === 0
+            ? Infinity
+            : 1 / absDy;
+
+
+    let tMaxX =
+        absDx === 0
+            ? Infinity
+            : 0.5 / absDx;
+
+
+    let tMaxY =
+        absDy === 0
+            ? Infinity
+            : 0.5 / absDy;
+
+
+    const EPSILON =
+        0.0000001;
+
+
+    while (
+        x !== x1 ||
+        y !== y1
+    ) {
+
+        // Passaggio perfettamente diagonale.
+
+        if (
+            Math.abs(
+                tMaxX -
+                tMaxY
+            ) <
+            EPSILON
+        ) {
+
+            const sideX =
+                x +
+                stepX;
+
+
+            const sideY =
+                y +
+                stepY;
+
+
+            addCell(
+                sideX,
+                y
+            );
+
+
+            addCell(
+                x,
+                sideY
+            );
+
+
+            x =
+                sideX;
+
+
+            y =
+                sideY;
+
+
+            addCell(
+                x,
+                y
+            );
+
+
+            tMaxX +=
+                tDeltaX;
+
+
+            tMaxY +=
+                tDeltaY;
+
+
+            continue;
+
+        }
+
+
+        if (
+            tMaxX <
+            tMaxY
+        ) {
+
+            x +=
+                stepX;
+
+
+            tMaxX +=
+                tDeltaX;
+
+
+            addCell(
+                x,
+                y
+            );
+
+
+            continue;
+
+        }
+
+
+        y +=
+            stepY;
+
+
+        tMaxY +=
+            tDeltaY;
+
+
+        addCell(
+            x,
+            y
+        );
+
+    }
+
+
+    return cells;
+
+}
+
+
+// ============================================================
+// CELLA BLOCCA LA VISUALE?
+// ============================================================
+
+function isVisionBlockingCell(
+    x,
+    y
+) {
+
+    const value =
+        getDungeonCellValue(
+            x,
+            y
+        );
+
+
+    if (
+        value === null
+    ) {
+
+        return true;
+
+    }
+
+
+    // Le zone completamente vuote/nere
+    // bloccano la visuale.
+
+    if (
+        value === 0
+    ) {
+
+        return true;
+
+    }
+
+
+    const bits =
+        dungeonData.cell_bit ||
+        {};
+
+
+    const BLOCK =
+        Number(
+            bits.block
+        ) || 1;
+
+
+    const PERIMETER =
+        Number(
+            bits.perimeter
+        ) || 16;
+
+
+    const DOOR =
+        Number(
+            bits.door
+        ) || 131072;
+
+
+    const LOCKED =
+        Number(
+            bits.locked
+        ) || 262144;
+
+
+    const SECRET =
+        Number(
+            bits.secret
+        ) || 1048576;
+
+
+    const PORTCULLIS =
+        Number(
+            bits.portcullis
+        ) || 2097152;
+
+
+    return (
+
+        (value & BLOCK) !== 0 ||
+
+        (value & PERIMETER) !== 0 ||
+
+        (value & DOOR) !== 0 ||
+
+        (value & LOCKED) !== 0 ||
+
+        (value & SECRET) !== 0 ||
+
+        (value & PORTCULLIS) !== 0
+
+    );
+
+}
+
+
+// ============================================================
+// DISEGNA NEBBIA
+// ============================================================
+
+function renderFogOfWar() {
+
+    if (!fogCanvas) {
+
+        return;
+
+    }
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    const image =
+        document.getElementById(
+            "dungeon-map-image"
+        );
+
+
+    if (
+        !map ||
+        !image
+    ) {
+
+        return;
+
+    }
+
+
+    const mapRect =
+        image.getBoundingClientRect();
+
+
+    const containerRect =
+        map.getBoundingClientRect();
+
+
+    if (
+        mapRect.width <= 0 ||
+        mapRect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const pixelRatio =
+        window.devicePixelRatio ||
+        1;
+
+
+    fogCanvas.style.left =
+        `${
+            mapRect.left -
+            containerRect.left
+        }px`;
+
+
+    fogCanvas.style.top =
+        `${
+            mapRect.top -
+            containerRect.top
+        }px`;
+
+
+    fogCanvas.style.width =
+        `${mapRect.width}px`;
+
+
+    fogCanvas.style.height =
+        `${mapRect.height}px`;
+
+
+    fogCanvas.width =
+        Math.max(
+            1,
+            Math.round(
+                mapRect.width *
+                pixelRatio
+            )
+        );
+
+
+    fogCanvas.height =
+        Math.max(
+            1,
+            Math.round(
+                mapRect.height *
+                pixelRatio
+            )
+        );
+
+
+    const context =
+        fogCanvas.getContext(
+            "2d"
+        );
+
+
+    if (!context) {
+
+        return;
+
+    }
+
+
+    context.setTransform(
+        pixelRatio,
+        0,
+        0,
+        pixelRatio,
+        0,
+        0
+    );
+
+
+    context.clearRect(
+        0,
+        0,
+        mapRect.width,
+        mapRect.height
+    );
+
+
+    const cellWidth =
+        mapRect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        mapRect.height /
+        MAP_ROWS;
+
+
+    for (
+        let y = 0;
+        y < MAP_ROWS;
+        y++
+    ) {
+
+        for (
+            let x = 0;
+            x < MAP_COLUMNS;
+            x++
+        ) {
+
+            const key =
+                fogCellKey(
+                    x,
+                    y
+                );
+
+
+            // Visibile in questo momento.
+
+            if (
+                visibleCells.has(
+                    key
+                )
+            ) {
+
+                continue;
+
+            }
+
+
+            // Già visitata ma non visibile ora.
+
+            if (
+                exploredCells.has(
+                    key
+                )
+            ) {
+
+                context.fillStyle =
+                    "rgba(0, 0, 0, 0.62)";
+
+            }
+
+            // Mai esplorata.
+
+            else {
+
+                context.fillStyle =
+                    "rgba(0, 0, 0, 1)";
+
+            }
+
+
+            context.fillRect(
+
+                x *
+                cellWidth -
+                0.5,
+
+                y *
+                cellHeight -
+                0.5,
+
+                cellWidth +
+                1,
+
+                cellHeight +
+                1
+
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CELLA ATTUALMENTE VISIBILE?
+// ============================================================
+
+function isCellCurrentlyVisible(
+    x,
+    y
+) {
+
+    return visibleCells.has(
+        fogCellKey(
+            Number(x),
+            Number(y)
+        )
+    );
+
+}
+
+
+// ============================================================
+// VISIBILITÀ ALTRI GIOCATORI
+// ============================================================
+
+function updateRemoteTokensVisibility() {
+
+    for (
+        const [
+            characterId,
+            token
+        ]
+        of otherPlayerTokens
+    ) {
+
+        const player =
+            otherPlayers.get(
+                characterId
+            );
+
+
+        if (!player) {
+
+            token.style.display =
+                "none";
+
+
+            continue;
+
+        }
+
+
+        token.style.display =
+            isCellCurrentlyVisible(
+                player.x,
+                player.y
+            )
+                ? "flex"
+                : "none";
+
+    }
+
+}
+
+
+// ============================================================
+// SALVA LE CELLE ESPLORATE
+// ============================================================
+
+function queueFogExplorationSave() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const snapshot =
+        Array.from(
+            exploredCells
+        )
+            .map(
+                key =>
+                    key
+                        .split(",")
+                        .map(Number)
+            )
+            .sort(
+                (a, b) =>
+                    a[1] -
+                    b[1] ||
+                    a[0] -
+                    b[0]
+            );
+
+
+    character.fog_explored =
+        snapshot;
+
+
+    // Serializziamo i salvataggi per evitare
+    // che movimenti veloci sovrascrivano uno
+    // stato di esplorazione più recente.
+
+    fogSavePromise =
+        fogSavePromise
+            .then(
+                async () => {
+
+                    const {
+                        error
+                    } =
+                        await db
+                            .from(
+                                "characters"
+                            )
+                            .update({
+
+                                fog_explored:
+                                    snapshot
+
+                            })
+                            .eq(
+                                "id",
+                                character.id
+                            );
+
+
+                    if (error) {
+
+                        console.error(
+                            "Errore salvataggio nebbia:",
+                            error
+                        );
+
+                    }
+
+                }
+            )
+            .catch(
+                error => {
+
+                    console.error(
+                        "Errore coda nebbia:",
+                        error
+                    );
+
+                }
+            );
+
+}
+
+
+// ============================================================
+// CHIAVE CELLA
+// ============================================================
+
+function fogCellKey(
+    x,
+    y
+) {
+
+    return `${x},${y}`;
+
+}
 
 // ============================================================
 // NOTE
