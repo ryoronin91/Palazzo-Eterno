@@ -2336,3 +2336,63 @@ body {
         0 1px 4px
         rgba(0, 0, 0, 0.75);
 }
+/* ============================================================
+   EVENTI COMBAT
+   ============================================================ */
+
+.dungeon-combat-event {
+    position: absolute;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 0;
+
+    box-sizing: border-box;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    transform: translateZ(0);
+
+    /*
+       Mappa = 1
+       Evento = 5
+       Nebbia = 10
+       Pedine = 30+
+
+       Quindi gli eventi non scoperti vengono nascosti
+       correttamente dalla nebbia.
+    */
+    z-index: 5;
+}
+
+
+.dungeon-combat-event img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    object-fit: contain;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+
+    filter:
+        drop-shadow(
+            0 2px 3px
+            rgba(0, 0, 0, 0.85)
+        );
+}
