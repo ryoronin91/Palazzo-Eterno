@@ -202,35 +202,160 @@ function openCombatPrompt(
     // --------------------------------------------------------
 
     document
-        .getElementById(
-            "combat-event-enter"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
+    .getElementById(
+        "combat-event-enter"
+    )
+    ?.addEventListener(
+        "click",
+        async () => {
 
-                console.log(
-                    "Combat accettato:",
-                    pendingCombatEvent
+            const button =
+                document.getElementById(
+                    "combat-event-enter"
                 );
 
 
-                const selectedEvent =
-                    pendingCombatEvent;
+            const selectedEvent =
+                pendingCombatEvent;
 
 
-                closeCombatPrompt();
+            if (
+                !selectedEvent ||
+                !character
+            ) {
+
+                return;
+
+            }
 
 
-                // PER ORA NON ENTRIAMO ANCORA NEL COMBAT.
-                // Lo collegheremo al database nel prossimo passo.
+            if (button) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "INGRESSO...";
+
+            }
+
+
+            try {
 
                 setMessage(
-                    `Hai accettato il combattimento ${selectedEvent.id}.`
+                    "Ingresso nel combattimento..."
+                );
+
+
+                const {
+                    data,
+                    error
+                } =
+                    await db.rpc(
+                        "enter_dungeon_combat",
+                        {
+
+                            p_encounter_id:
+                                selectedEvent.encounter_id,
+
+                            p_character_id:
+                                character.id
+
+                        }
+                    );
+
+
+                if (error) {
+
+                    throw error;
+
+                }
+
+
+                const combatId =
+                    data;
+
+
+                if (!combatId) {
+
+                    throw new Error(
+                        "ID del combattimento non ricevuto."
+                    );
+
+                }
+
+
+                // Salviamo localmente lo stato.
+
+                character.active_combat_id =
+                    combatId;
+
+
+                // Aggiorniamo la Presence prima di uscire,
+                // così gli altri PG possono vedere che
+                // siamo entrati in combat.
+
+                if (
+                    typeof updateMyPresence ===
+                    "function"
+                ) {
+
+                    await updateMyPresence();
+
+                }
+
+
+                if (
+                    typeof broadcastMyState ===
+                    "function"
+                ) {
+
+                    await broadcastMyState();
+
+                }
+
+
+                // Non chiudiamo prima il popup:
+                // lasciamo il movimento bloccato fino
+                // al cambio pagina.
+
+                window.location.href =
+                    `combat.html?combat_id=${encodeURIComponent(
+                        combatId
+                    )}`;
+
+            } catch (error) {
+
+                console.error(
+                    "Errore ingresso combat:",
+                    error
+                );
+
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "ENTRA IN COMBATTIMENTO";
+
+                }
+
+
+                const message =
+                    error?.message ||
+                    "Impossibile entrare nel combattimento.";
+
+
+                setMessage(
+                    message
                 );
 
             }
-        );
+
+        }
+    );
 
 }
 
