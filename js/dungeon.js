@@ -2713,57 +2713,47 @@ function updateRemotePlayer(
 
 
     otherPlayers.set(
-        data.character_id,
-        {
+    data.character_id,
+    {
 
-            ...oldData,
+        ...oldData,
 
-            character_id:
-                data.character_id,
+        character_id:
+            data.character_id,
 
-            name:
-                data.name ||
-                oldData.name ||
-                "Avventuriero",
+        name:
+            data.name ||
+            oldData.name ||
+            "Avventuriero",
 
-            token:
-                data.token ||
-                oldData.token ||
-                "token_1.png",
+        token:
+            data.token ||
+            oldData.token ||
+            "token_1.png",
 
-            x:
-                x,
+        x:
+            x,
 
-            y:
-                y,
+        y:
+            y,
 
-            current_hp:
-    data.current_hp !== undefined
-        ? data.current_hp
-        : oldData.current_hp,
+        current_hp:
+            data.current_hp !== undefined
+                ? data.current_hp
+                : oldData.current_hp,
 
-active_combat_id:
-    data.active_combat_id !== undefined
-        ? data.active_combat_id
-        : oldData.active_combat_id,
+        active_combat_id:
+            data.active_combat_id !== undefined
+                ? data.active_combat_id
+                : oldData.active_combat_id,
 
-in_combat:
-    data.in_combat !== undefined
-        ? !!data.in_combat
-        : !!oldData.in_combat
+        in_combat:
+            data.in_combat !== undefined
+                ? !!data.in_combat
+                : !!oldData.in_combat
 
-active_combat_id:
-    data.active_combat_id !== undefined
-        ? data.active_combat_id
-        : oldData.active_combat_id,
-
-in_combat:
-    data.in_combat !== undefined
-        ? !!data.in_combat
-        : !!oldData.in_combat
-
-        }
-    );
+    }
+);
 
 
     showOtherPlayerToken(
@@ -2964,7 +2954,7 @@ token.title =
     player.in_combat
         ? `${player.name} - IN COMBATTIMENTO`
         : player.name;
-        
+
     positionTokenElement(
         token,
         player.x,
