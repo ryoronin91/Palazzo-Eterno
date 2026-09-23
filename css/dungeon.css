@@ -2289,3 +2289,50 @@ body {
     margin: 0;
     padding: 0;
 }
+/* ============================================================
+   PERSONAGGIO IN COMBATTIMENTO
+   ============================================================ */
+
+.dungeon-player-token.is-in-combat {
+    filter:
+        grayscale(1)
+        brightness(0.65);
+
+    opacity: 0.72;
+}
+
+
+.dungeon-player-token.is-in-combat::after {
+    content: "⚔";
+
+    position: absolute;
+
+    right: -3px;
+    bottom: -3px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 14px;
+    height: 14px;
+
+    border:
+        1px solid #8f7450;
+
+    border-radius: 50%;
+
+    background:
+        #17120e;
+
+    color:
+        #d3b372;
+
+    font-size: 8px;
+
+    line-height: 1;
+
+    box-shadow:
+        0 1px 4px
+        rgba(0, 0, 0, 0.75);
+}
