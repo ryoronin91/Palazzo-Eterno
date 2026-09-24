@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v27 CARICATO");
+console.log("COMBAT.JS v28 CARICATO");
 
 
 const db = supabaseClient;
@@ -1368,7 +1368,7 @@ function renderCombatVictory() {
 // CARICA LOOT VITTORIA
 // ============================================================
 
-async function loadVictoryLoot() {
+    async function loadVictoryLoot() {
 
     if (
         victoryLootLoaded ||
@@ -1378,24 +1378,30 @@ async function loadVictoryLoot() {
         return;
     }
 
+
     victoryLootLoading = true;
+
 
     const container =
         document.getElementById(
             "combat-victory-loot"
         );
 
+
     if (container) {
+
         container.textContent =
             "Generazione del bottino...";
+
     }
+
 
     try {
 
         // ====================================================
-        // GENERA IL LOOT
+        // 1. GENERA IL LOOT
         //
-        // Se esiste già, la RPC non lo rigenera.
+        // Se è già stato generato, la RPC non lo rigenera.
         // ====================================================
 
         const {
@@ -1409,13 +1415,92 @@ async function loadVictoryLoot() {
                 }
             );
 
+
         if (generateError) {
+
             throw generateError;
+
         }
 
 
         // ====================================================
-        // RECUPERA IL LOOT SALVATO
+        // 2. DISTRIBUISCE AUTOMATICAMENTE L'ORO
+        //
+        // Solo i giocatori partecipanti eseguono questa RPC.
+        // Il master osservatore non possiede un PG nel combat.
+        //
+        // La funzione SQL impedisce comunque una doppia
+        // distribuzione.
+        // ====================================================
+
+        if (
+            !masterObserverMode &&
+            currentCharacter
+        ) {
+
+            const {
+                error: distributeError
+            } =
+                await db.rpc(
+                    "distribute_combat_gold",
+                    {
+                        p_combat_id:
+                            combatId
+                    }
+                );
+
+
+            if (distributeError) {
+
+                throw distributeError;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 3. RECUPERA LA QUOTA PERSONALE DI ORO
+        // ====================================================
+
+        let myGold = null;
+
+
+        if (
+            !masterObserverMode &&
+            currentCharacter
+        ) {
+
+            const {
+                data: goldData,
+                error: goldError
+            } =
+                await db.rpc(
+                    "get_my_combat_gold",
+                    {
+                        p_combat_id:
+                            combatId
+                    }
+                );
+
+
+            if (goldError) {
+
+                throw goldError;
+
+            }
+
+
+            myGold =
+                Number(
+                    goldData
+                ) || 0;
+
+        }
+
+
+        // ====================================================
+        // 4. RECUPERA IL LOOT COMPLETO
         // ====================================================
 
         const {
@@ -1430,14 +1515,23 @@ async function loadVictoryLoot() {
                 }
             );
 
+
         if (error) {
+
             throw error;
+
         }
 
 
+        // ====================================================
+        // 5. MOSTRA RISULTATO
+        // ====================================================
+
         renderVictoryLoot(
-            data || []
+            data || [],
+            myGold
         );
+
 
         victoryLootLoaded = true;
 
@@ -1449,10 +1543,14 @@ async function loadVictoryLoot() {
             error
         );
 
+
         if (container) {
+
             container.textContent =
                 "Errore durante il caricamento del bottino.";
+
         }
+
 
     } finally {
 
@@ -1468,7 +1566,8 @@ async function loadVictoryLoot() {
 // ============================================================
 
 function renderVictoryLoot(
-    loot
+    loot,
+    myGold = null
 ) {
 
     const container =
@@ -1476,22 +1575,8 @@ function renderVictoryLoot(
             "combat-victory-loot"
         );
 
+
     if (!container) {
-        return;
-    }
-
-
-    if (
-        !Array.isArray(loot) ||
-        loot.length === 0
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="victory-loot-empty">
-                    Nessun bottino trovato.
-                </div>
-            `;
 
         return;
 
@@ -1499,68 +1584,80 @@ function renderVictoryLoot(
 
 
     // ========================================================
-    // SOMMA LE MONETE
+    // RACCOGLIE GLI OGGETTI
+    //
+    // Le monete non vengono mostrate qui:
+    // sono già state distribuite automaticamente.
     // ========================================================
-
-    let totalGold = 0;
 
     const otherItems =
         new Map();
 
 
-    loot.forEach(
-        entry => {
+    if (
+        Array.isArray(loot)
+    ) {
 
-            const quantity =
-                Number(
-                    entry.quantity
-                ) || 0;
+        loot.forEach(
+            entry => {
+
+                const quantity =
+                    Number(
+                        entry.quantity
+                    ) || 0;
 
 
-            if (
-                entry.item_id ===
-                "moneta_oro"
-            ) {
+                // =================================================
+                // ORO
+                //
+                // Viene gestito dalla distribuzione automatica.
+                // =================================================
 
-                totalGold +=
-                    quantity;
+                if (
+                    entry.item_id ===
+                    "moneta_oro"
+                ) {
 
-                return;
+                    return;
+
+                }
+
+
+                const existing =
+                    otherItems.get(
+                        entry.item_id
+                    );
+
+
+                if (existing) {
+
+                    existing.quantity +=
+                        quantity;
+
+                } else {
+
+                    otherItems.set(
+                        entry.item_id,
+                        {
+
+                            item_id:
+                                entry.item_id,
+
+                            item_name:
+                                entry.item_name,
+
+                            quantity:
+                                quantity
+
+                        }
+                    );
+
+                }
 
             }
+        );
 
-
-            const existing =
-                otherItems.get(
-                    entry.item_id
-                );
-
-
-            if (existing) {
-
-                existing.quantity +=
-                    quantity;
-
-            } else {
-
-                otherItems.set(
-                    entry.item_id,
-                    {
-                        item_id:
-                            entry.item_id,
-
-                        item_name:
-                            entry.item_name,
-
-                        quantity:
-                            quantity
-                    }
-                );
-
-            }
-
-        }
-    );
+    }
 
 
     // ========================================================
@@ -1570,24 +1667,46 @@ function renderVictoryLoot(
     let html = "";
 
 
-    if (totalGold > 0) {
+    // ========================================================
+    // QUOTA PERSONALE DI ORO
+    // ========================================================
+
+    if (
+        myGold !== null
+    ) {
 
         html += `
             <div class="victory-loot-gold">
-                🪙
-                <strong>${totalGold}</strong>
-                Monete d'oro
+
+                <div class="victory-loot-gold-label">
+                    HAI RICEVUTO
+                </div>
+
+                <div class="victory-loot-gold-value">
+                    🪙
+                    <strong>${myGold}</strong>
+                    monete d'oro
+                </div>
+
             </div>
         `;
 
     }
 
 
+    // ========================================================
+    // ALTRI OGGETTI
+    // ========================================================
+
     if (
         otherItems.size > 0
     ) {
 
         html += `
+            <div class="victory-loot-items-title">
+                OGGETTI TROVATI
+            </div>
+
             <div class="victory-loot-items">
         `;
 
@@ -1624,17 +1743,19 @@ function renderVictoryLoot(
     }
 
 
+    // ========================================================
+    // NESSUN ALTRO OGGETTO
+    // ========================================================
+
     if (
-        totalGold <= 0 &&
         otherItems.size === 0
     ) {
 
-        html =
-            `
-                <div class="victory-loot-empty">
-                    Nessun bottino trovato.
-                </div>
-            `;
+        html += `
+            <div class="victory-loot-empty">
+                Nessun altro oggetto trovato.
+            </div>
+        `;
 
     }
 
