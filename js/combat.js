@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v28 CARICATO");
+console.log("COMBAT.JS v29 CARICATO");
 
 
 const db = supabaseClient;
@@ -1683,9 +1683,9 @@ function renderVictoryLoot(
                 </div>
 
                 <div class="victory-loot-gold-value">
-                    🪙
-                    <strong>${myGold}</strong>
-                    monete d'oro
+                    <span class="victory-gold-coin">●</span>
+<strong>${myGold}</strong>
+monete d'oro
                 </div>
 
             </div>

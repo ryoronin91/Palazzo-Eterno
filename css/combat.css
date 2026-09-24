@@ -2645,3 +2645,33 @@
     font-style: italic;
 
 }
+.victory-gold-coin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 18px;
+    height: 18px;
+
+    margin-right: 4px;
+
+    border: 1px solid #d7b05d;
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            #f6dc8d,
+            #d6a83f 55%,
+            #8f651f
+        );
+
+    box-shadow:
+        inset 0 0 3px rgba(255,255,255,.35),
+        0 0 4px rgba(215,176,93,.25);
+
+    color: #7a541a;
+
+    font-size: 0;
+    vertical-align: middle;
+}
