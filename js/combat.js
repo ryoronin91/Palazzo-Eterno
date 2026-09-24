@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v34 CARICATO");
+console.log("COMBAT.JS v35 CARICATO");
 
 
 const db = supabaseClient;
@@ -4147,7 +4147,10 @@ async function performGiornoPaga() {
 
 
         // Ricarica PM e stato azione del PG.
-        await loadCombatEntities();
+        await Promise.all([
+    loadCombatEntities(),
+    loadCharacterPendingEffects()
+]);
 
 
         lastCombatEntitiesSnapshot =
@@ -4887,11 +4890,17 @@ function renderActiveCombatBuffs() {
                 ) > 0
         );
 
+const pendingBuffs =
+    characterPendingEffects.filter(
+        effect =>
+            effect.effect_type ===
+            "giorno_paga"
+    );
 
     if (
-        playerBuffs.length ===
-        0
-    ) {
+    playerBuffs.length === 0 &&
+    pendingBuffs.length === 0
+) {
 
         const empty =
             document.createElement(
@@ -5066,6 +5075,85 @@ function renderActiveCombatBuffs() {
 
         }
     );
+
+    pendingBuffs.forEach(
+    effect => {
+
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "combat-buff-item";
+
+
+        const left =
+            document.createElement(
+                "div"
+            );
+
+
+        const name =
+            document.createElement(
+                "div"
+            );
+
+        name.className =
+            "combat-buff-name";
+
+        name.textContent =
+            "Giorno Paga";
+
+
+        const value =
+            document.createElement(
+                "div"
+            );
+
+        value.style.marginTop =
+            "2px";
+
+        value.style.color =
+            "#a99a82";
+
+        value.style.fontSize =
+            "9px";
+
+        value.textContent =
+            `Oro ×${Number(effect.value) || 2}`;
+
+
+        left.append(
+            name,
+            value
+        );
+
+
+        const duration =
+            document.createElement(
+                "div"
+            );
+
+        duration.className =
+            "combat-buff-duration";
+
+        duration.textContent =
+            "incontro corrente";
+
+
+        row.append(
+            left,
+            duration
+        );
+
+
+        container.appendChild(
+            row
+        );
+
+    }
+);
 
 }
 
