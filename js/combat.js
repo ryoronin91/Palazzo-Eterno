@@ -55,6 +55,8 @@ let equipmentBonuses = {
 
 };
 
+let characterPendingEffects = [];
+
 let activeDrawer = null;
 
 let victoryLootLoaded = false;
@@ -66,6 +68,8 @@ let victoryLootDraftState = null;
 let victoryLootDraftInterval = null;
 
 let victoryLootPickInProgress = false;
+
+
 
 // ============================================================
 // MODALITÀ BERSAGLIO
@@ -765,6 +769,55 @@ async function loadCombatEntities() {
 
         }
     );
+
+}
+
+// ============================================================
+// EFFETTI PERSISTENTI DEL PERSONAGGIO
+// ============================================================
+
+async function loadCharacterPendingEffects() {
+
+    if (!currentCharacter) {
+
+        characterPendingEffects = [];
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "character_pending_effects"
+            )
+            .select(`
+                id,
+                character_id,
+                effect_type,
+                value,
+                created_at,
+                updated_at
+            `)
+            .eq(
+                "character_id",
+                currentCharacter.id
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    characterPendingEffects =
+        data || [];
 
 }
 
@@ -3895,9 +3948,10 @@ async function performCombatBuff(
 
 
         await Promise.all([
-            loadCombatEntities(),
-            loadCombatEffects()
-        ]);
+    loadCombatEntities(),
+    loadCombatEffects(),
+    loadCharacterPendingEffects()
+]);
 
 
         lastCombatEntitiesSnapshot =
