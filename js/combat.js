@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v32 CARICATO");
+console.log("COMBAT.JS v33 CARICATO");
 
 
 const db = supabaseClient;
@@ -4047,6 +4047,90 @@ async function performPushPull(
 }
 
 // ============================================================
+// GIORNO PAGA
+// ============================================================
+
+async function performGiornoPaga() {
+
+    if (
+        !currentCharacter ||
+        !isMyTurn()
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "cast_giorno_paga",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        closeCombatDrawer();
+
+
+        // Ricarica PM e stato azione del PG.
+        await loadCombatEntities();
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+
+        addCombatLog(
+            `${data.character_name} usa GIORNO PAGA! `
+            +
+            `L'oro dell'incontro sarà raddoppiato. `
+            +
+            `PM ${data.current_pm}/${data.max_pm}.`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore Giorno Paga:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+// ============================================================
 // VISUALI TARGET
 // ============================================================
 
@@ -5637,6 +5721,21 @@ if (
     startPushPullTargeting(
         entry
     );
+
+    return;
+
+}
+
+// ========================================================
+// GIORNO PAGA
+// ========================================================
+
+if (
+    ability.id ===
+    "giorno_paga"
+) {
+
+    performGiornoPaga();
 
     return;
 
