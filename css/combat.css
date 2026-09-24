@@ -1,0 +1,2649 @@
+
+        /* ============================================================
+           BASE
+        ============================================================ */
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        :root {
+
+            --bg:
+                #0d0b09;
+
+            --panel:
+                #17130f;
+
+            --panel-dark:
+                #100d0a;
+
+            --panel-soft:
+                #1d1711;
+
+            --border:
+                #5c4529;
+
+            --border-light:
+                #8d6936;
+
+            --gold:
+                #d2ad68;
+
+            --gold-light:
+                #ead2a0;
+
+            --text:
+                #eee3ce;
+
+            --muted:
+                #a99a82;
+
+            --red:
+                #9b3d37;
+
+            --green:
+                #6ea774;
+
+            --blue:
+                #6496bd;
+
+        }
+
+
+        html,
+        body {
+
+            margin:
+                0;
+
+            width:
+                100%;
+
+            min-height:
+                100%;
+
+            background:
+                #0d0b09;
+
+            color:
+                var(--text);
+
+            font-family:
+                Georgia,
+                "Times New Roman",
+                serif;
+
+        }
+
+
+        body {
+
+            min-height:
+                100vh;
+
+            padding:
+                14px;
+
+            overflow-x:
+                auto;
+
+        }
+
+
+        button,
+        input,
+        textarea {
+
+            font:
+                inherit;
+
+        }
+
+
+        button {
+
+            user-select:
+                none;
+
+        }
+
+
+
+        /* ============================================================
+           PAGINA
+        ============================================================ */
+
+        .combat-page {
+
+            width:
+                100%;
+
+            max-width:
+                1920px;
+
+            margin:
+                0 auto;
+
+        }
+
+
+
+        /* ============================================================
+           HEADER
+        ============================================================ */
+
+        .combat-header {
+
+            display:
+                flex;
+
+            align-items:
+                flex-end;
+
+            justify-content:
+                space-between;
+
+            gap:
+                20px;
+
+            min-height:
+                60px;
+
+            margin-bottom:
+                12px;
+
+            padding:
+                0 4px 10px;
+
+            border-bottom:
+                1px solid
+                rgba(
+                    210,
+                    173,
+                    104,
+                    .25
+                );
+
+        }
+
+
+        .combat-title-wrap {
+
+            min-width:
+                0;
+
+        }
+
+
+        .combat-header h1 {
+
+            margin:
+                0;
+
+            color:
+                var(--gold-light);
+
+            font-size:
+                clamp(
+                    22px,
+                    2vw,
+                    32px
+                );
+
+            line-height:
+                1;
+
+            letter-spacing:
+                2px;
+
+            text-shadow:
+                0 2px 7px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .8
+                );
+
+        }
+
+
+        .combat-status {
+
+            margin-top:
+                8px;
+
+            color:
+                var(--muted);
+
+            font-size:
+                13px;
+
+        }
+
+
+        .combat-master-badge {
+
+            display:
+                none;
+
+            margin-top:
+                6px;
+
+            color:
+                var(--gold);
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                .8px;
+
+        }
+
+
+        .combat-master-badge.visible {
+
+            display:
+                block;
+
+        }
+
+
+
+        /* ============================================================
+           LAYOUT GENERALE
+
+           REGISTRO | TURN+CHAT | MAPPA | PG | ABILITÀ/ZAINO
+        ============================================================ */
+
+        .combat-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(165px, .72fr)
+                minmax(190px, .86fr)
+                minmax(480px, 2.7fr)
+                minmax(235px, 1.12fr)
+                minmax(250px, 1.2fr);
+
+            grid-template-areas:
+
+                "log secondary map character drawer";
+
+            gap:
+                10px;
+
+            align-items:
+                stretch;
+
+            min-height:
+                calc(
+                    100vh - 105px
+                );
+
+        }
+
+
+
+        /* ============================================================
+           PANNELLO GENERICO
+        ============================================================ */
+
+        .combat-panel {
+
+            min-width:
+                0;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                8px;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    #1b1611 0%,
+                    #110e0b 100%
+                );
+
+            box-shadow:
+
+                inset
+                0 0 0 1px
+                rgba(
+                    255,
+                    220,
+                    155,
+                    .025
+                ),
+
+                0 5px 16px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .28
+                );
+
+            overflow:
+                hidden;
+
+        }
+
+
+        .combat-panel-header {
+
+            min-height:
+                43px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                10px;
+
+            padding:
+                9px 11px;
+
+            border-bottom:
+                1px solid
+                #4b3824;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    rgba(
+                        53,
+                        39,
+                        24,
+                        .64
+                    ),
+                    rgba(
+                        21,
+                        16,
+                        11,
+                        .48
+                    )
+                );
+
+        }
+
+
+        .combat-panel-header h2 {
+
+            margin:
+                0;
+
+            color:
+                var(--gold-light);
+
+            font-size:
+                14px;
+
+            line-height:
+                1.15;
+
+            letter-spacing:
+                .8px;
+
+            text-transform:
+                uppercase;
+
+        }
+
+
+        .combat-panel-body {
+
+            padding:
+                10px;
+
+        }
+
+
+
+        /* ============================================================
+           REGISTRO
+        ============================================================ */
+
+        .combat-log-column {
+
+            grid-area:
+                log;
+
+            min-width:
+                0;
+
+        }
+
+
+        .combat-log-panel {
+
+            height:
+                100%;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-log {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            padding:
+                10px;
+
+            overflow-y:
+                auto;
+
+            scrollbar-width:
+                thin;
+
+            scrollbar-color:
+                #725633
+                #100d0a;
+
+        }
+
+
+        .combat-log-entry {
+
+            padding:
+                8px 4px;
+
+            border-bottom:
+                1px solid
+                rgba(
+                    109,
+                    82,
+                    48,
+                    .35
+                );
+
+            color:
+                #d7c9b1;
+
+            font-size:
+                12px;
+
+            line-height:
+                1.45;
+
+        }
+
+
+        .combat-log-entry:last-child {
+
+            border-bottom:
+                none;
+
+        }
+
+
+        .combat-log-placeholder {
+
+            padding:
+                6px;
+
+            color:
+                #796e60;
+
+            font-size:
+                12px;
+
+            font-style:
+                italic;
+
+        }
+
+
+
+        /* ============================================================
+           COLONNA TURN ORDER + CHAT
+        ============================================================ */
+
+        .combat-secondary-column {
+
+            grid-area:
+                secondary;
+
+            display:
+                grid;
+
+            grid-template-rows:
+                minmax(
+                    220px,
+                    .78fr
+                )
+                minmax(
+                    260px,
+                    1.22fr
+                );
+
+            gap:
+                10px;
+
+            min-width:
+                0;
+
+        }
+
+
+
+        /* ============================================================
+           TURN ORDER
+        ============================================================ */
+
+        .turn-order-panel {
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .turn-order-panel
+        .combat-panel-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            overflow-y:
+                auto;
+
+        }
+
+
+        .combat-entity-list {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                6px;
+
+        }
+
+
+        .combat-entity-item {
+
+            padding:
+                8px;
+
+            border:
+                1px solid
+                #40301f;
+
+            border-radius:
+                5px;
+
+            background:
+                rgba(
+                    5,
+                    4,
+                    3,
+                    .34
+                );
+
+        }
+
+
+        .combat-entity-item.current-turn {
+
+            border-color:
+                var(--gold);
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    rgba(
+                        134,
+                        89,
+                        25,
+                        .25
+                    ),
+                    rgba(
+                        41,
+                        30,
+                        18,
+                        .6
+                    )
+                );
+
+            box-shadow:
+
+                inset
+                3px 0 0
+                var(--gold);
+
+        }
+
+
+        .combat-entity-item strong {
+
+            display:
+                block;
+
+            color:
+                #eadcbd;
+
+            font-size:
+                12px;
+
+        }
+
+
+        .combat-entity-meta {
+
+            margin-top:
+                3px;
+
+            color:
+                #948773;
+
+            font-size:
+                10px;
+
+            line-height:
+                1.35;
+
+        }
+
+
+
+        /* ============================================================
+           CHAT
+        ============================================================ */
+
+        .combat-chat-panel {
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-chat-panel
+        .combat-panel-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-chat-messages {
+
+            flex:
+                1;
+
+            min-height:
+                120px;
+
+            padding:
+                8px;
+
+            overflow-y:
+                auto;
+
+            border:
+                1px solid
+                #3b2d1e;
+
+            border-radius:
+                5px;
+
+            background:
+                #0c0a08;
+
+            color:
+                #cdbfa7;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.45;
+
+        }
+
+
+        .combat-chat-placeholder {
+
+            color:
+                #716658;
+
+            font-style:
+                italic;
+
+        }
+
+
+        .combat-chat-compose {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                1fr auto;
+
+            gap:
+                6px;
+
+            margin-top:
+                7px;
+
+        }
+
+
+        .combat-chat-input {
+
+            min-width:
+                0;
+
+            width:
+                100%;
+
+            padding:
+                7px 8px;
+
+            border:
+                1px solid
+                #4a3926;
+
+            border-radius:
+                5px;
+
+            outline:
+                none;
+
+            background:
+                #0c0a08;
+
+            color:
+                var(--text);
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-chat-input:focus {
+
+            border-color:
+                #8b6637;
+
+        }
+
+
+
+        /* ============================================================
+           MAPPA
+        ============================================================ */
+
+        .combat-map-column {
+
+            grid-area:
+                map;
+
+            min-width:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-map-panel {
+
+            height:
+                100%;
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-map-panel
+        .combat-panel-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            padding:
+                10px;
+
+            background:
+                #080706;
+
+        }
+
+
+        .combat-map {
+
+            position:
+                relative;
+
+            width:
+                min(
+                    100%,
+                    calc(
+                        100vh - 175px
+                    )
+                );
+
+            max-width:
+                100%;
+
+            aspect-ratio:
+                1 / 1;
+
+            border:
+                2px solid
+                #725430;
+
+            background-image:
+                url(
+                    "immagini/combat/combat_map_1.png"
+                );
+
+            background-size:
+                100% 100%;
+
+            background-position:
+                center;
+
+            background-repeat:
+                no-repeat;
+
+            overflow:
+                hidden;
+
+            box-shadow:
+
+                0 0 0 1px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .9
+                ),
+
+                0 0 24px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .5
+                );
+
+        }
+
+
+
+        /* ============================================================
+           TOKEN
+        ============================================================ */
+
+        .combat-token {
+
+            position:
+                absolute;
+
+            z-index:
+                20;
+
+            box-sizing:
+                border-box;
+
+            cursor:
+                pointer;
+
+            transition:
+
+                left
+                .15s ease,
+
+                top
+                .15s ease,
+
+                filter
+                .15s ease;
+
+        }
+
+
+        .combat-token.player {
+
+            filter:
+
+                drop-shadow(
+                    0 0 6px
+                    rgba(
+                        80,
+                        165,
+                        230,
+                        .9
+                    )
+                );
+
+        }
+
+
+        .combat-token.enemy {
+
+            filter:
+
+                drop-shadow(
+                    0 0 5px
+                    rgba(
+                        190,
+                        65,
+                        55,
+                        .7
+                    )
+                );
+
+        }
+
+        /* ============================================================
+   EVIDENZIA TOKEN DA TURN ORDER
+============================================================ */
+
+.combat-token.turn-order-hover {
+
+    z-index:
+        100 !important;
+
+    transform:
+        scale(1.18);
+
+    border-radius:
+        50%;
+
+    box-shadow:
+
+        0 0 0 4px
+        #f0c76b,
+
+        0 0 14px 7px
+        rgba(
+            240,
+            199,
+            107,
+            0.75
+        );
+
+}
+
+
+        /* ============================================================
+           COLONNA SCHEDA / BUFF / NOTE
+        ============================================================ */
+
+        .combat-character-column {
+
+            grid-area:
+                character;
+
+            min-width:
+                0;
+
+            display:
+                grid;
+
+            grid-template-rows:
+                auto
+                minmax(
+                    125px,
+                    auto
+                )
+                minmax(
+                    145px,
+                    1fr
+                );
+
+            gap:
+                10px;
+
+        }
+
+
+
+        /* ============================================================
+           SCHEDA
+        ============================================================ */
+
+        .character-name {
+
+            margin-bottom:
+                10px;
+
+            color:
+                var(--gold-light);
+
+            font-size:
+                18px;
+
+            font-weight:
+                700;
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+
+            white-space:
+                nowrap;
+
+        }
+
+
+        .combat-resource {
+
+            margin-bottom:
+                9px;
+
+        }
+
+
+        .combat-resource-row {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                10px;
+
+            margin-bottom:
+                4px;
+
+            color:
+                var(--muted);
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-resource-row strong {
+
+            color:
+                #e5d4b2;
+
+            font-size:
+                11px;
+
+        }
+
+
+        .combat-resource-bar {
+
+            height:
+                7px;
+
+            overflow:
+                hidden;
+
+            border:
+                1px solid
+                #423120;
+
+            border-radius:
+                20px;
+
+            background:
+                #080706;
+
+        }
+
+
+        .combat-resource-fill {
+
+            height:
+                100%;
+
+            width:
+                0;
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    #73312f,
+                    #af534b
+                );
+
+            transition:
+                width
+                .2s ease;
+
+        }
+
+
+        #combat-pm-bar {
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    #31566e,
+                    #5994b5
+                );
+
+        }
+
+
+
+        /* ============================================================
+           STATISTICHE
+        ============================================================ */
+
+        .combat-stats {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                1fr auto;
+
+            gap:
+                5px 8px;
+
+            margin-top:
+                12px;
+
+            padding:
+                8px 0;
+
+            border-top:
+                1px solid
+                #3f3020;
+
+            border-bottom:
+                1px solid
+                #3f3020;
+
+        }
+
+
+        .combat-stat-label {
+
+            color:
+                #958773;
+
+            font-size:
+                10px;
+
+            letter-spacing:
+                .4px;
+
+        }
+
+
+        .combat-stat-value {
+
+            color:
+                #f0dfbc;
+
+            font-size:
+                11px;
+
+            font-weight:
+                700;
+
+            text-align:
+                right;
+
+        }
+
+
+
+        /* ============================================================
+           RISORSE TURNO
+        ============================================================ */
+
+        .turn-resources {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                );
+
+            gap:
+                5px;
+
+            margin-top:
+                10px;
+
+        }
+
+
+        .turn-resource {
+
+            padding:
+                6px 3px;
+
+            border:
+                1px solid
+                #493823;
+
+            border-radius:
+                4px;
+
+            background:
+                #0d0b08;
+
+            color:
+                #756a5c;
+
+            font-size:
+                8px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                .2px;
+
+            text-align:
+                center;
+
+        }
+
+
+        .turn-resource.available {
+
+            color:
+                #b8d8ad;
+
+            border-color:
+                #4e734b;
+
+            background:
+                rgba(
+                    48,
+                    94,
+                    45,
+                    .18
+                );
+
+        }
+
+
+        .turn-resource.used {
+
+            color:
+                #8b7169;
+
+            border-color:
+                #56352f;
+
+            background:
+                rgba(
+                    99,
+                    41,
+                    34,
+                    .12
+                );
+
+        }
+
+
+
+        /* ============================================================
+           AZIONI SCHEDA
+        ============================================================ */
+
+        .combat-actions {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                6px;
+
+            margin-top:
+                10px;
+
+        }
+
+
+        .combat-button {
+
+            min-height:
+                33px;
+
+            padding:
+                7px 8px;
+
+            border:
+                1px solid
+                #71532e;
+
+            border-radius:
+                5px;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    #312315,
+                    #1b140e
+                );
+
+            color:
+                #ead7ad;
+
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                .25px;
+
+            cursor:
+                pointer;
+
+            transition:
+
+                border-color
+                .15s ease,
+
+                background
+                .15s ease,
+
+                transform
+                .08s ease;
+
+        }
+
+
+        .combat-button:hover:not(:disabled) {
+
+            border-color:
+                #bb8b46;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    #44301a,
+                    #22170f
+                );
+
+        }
+
+
+        .combat-button:active:not(:disabled) {
+
+            transform:
+                translateY(
+                    1px
+                );
+
+        }
+
+
+        .combat-button:disabled {
+
+            opacity:
+                .38;
+
+            cursor:
+                not-allowed;
+
+        }
+
+
+        .combat-button-pass {
+
+            grid-column:
+                1 / -1;
+
+            color:
+                #c7b798;
+
+            border-color:
+                #4e4336;
+
+            background:
+                #17130f;
+
+        }
+
+
+
+        /* ============================================================
+           BUFF ATTIVI
+        ============================================================ */
+
+        .buff-panel {
+
+            min-height:
+                0;
+
+        }
+
+
+        .combat-buff-list {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                6px;
+
+        }
+
+
+        .combat-buff-empty {
+
+            padding:
+                10px 4px;
+
+            color:
+                #796e5f;
+
+            font-size:
+                11px;
+
+            font-style:
+                italic;
+
+            text-align:
+                center;
+
+        }
+
+
+        .combat-buff-item {
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+
+            padding:
+                7px;
+
+            border:
+                1px solid
+                #40311f;
+
+            border-radius:
+                4px;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .2
+                );
+
+            font-size:
+                10px;
+
+        }
+
+
+        .combat-buff-name {
+
+            color:
+                #e6d2a8;
+
+        }
+
+
+        .combat-buff-duration {
+
+            color:
+                var(--gold);
+
+            white-space:
+                nowrap;
+
+        }
+
+
+
+        /* ============================================================
+           NOTE
+        ============================================================ */
+
+        .notes-panel {
+
+            min-height:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .notes-panel
+        .combat-panel-body {
+
+            flex:
+                1;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            min-height:
+                0;
+
+        }
+
+
+        .combat-notes {
+
+            flex:
+                1;
+
+            width:
+                100%;
+
+            min-height:
+                85px;
+
+            resize:
+                none;
+
+            padding:
+                8px;
+
+            border:
+                1px solid
+                #493821;
+
+            border-radius:
+                5px;
+
+            outline:
+                none;
+
+            background:
+                #0d0a08;
+
+            color:
+                #ded0b7;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.4;
+
+        }
+
+
+        .combat-notes:focus {
+
+            border-color:
+                #8d6737;
+
+        }
+
+
+        .notes-save {
+
+            width:
+                100%;
+
+            margin-top:
+                7px;
+
+        }
+
+
+
+        /* ============================================================
+           ABILITÀ / ZAINO
+        ============================================================ */
+
+        .combat-drawer-column {
+
+            grid-area:
+                drawer;
+
+            min-width:
+                0;
+
+            position:
+                relative;
+
+        }
+
+
+        .combat-drawer-column::before {
+
+            content:
+                "›";
+
+            position:
+                absolute;
+
+            left:
+                -10px;
+
+            top:
+                88px;
+
+            z-index:
+                30;
+
+            width:
+                20px;
+
+            height:
+                36px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            border:
+                1px solid
+                #71542e;
+
+            border-radius:
+                4px;
+
+            background:
+                #1b140e;
+
+            color:
+                var(--gold);
+
+            font-size:
+                25px;
+
+            line-height:
+                1;
+
+            pointer-events:
+                none;
+
+        }
+
+
+        .combat-drawer {
+
+            height:
+                100%;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+        }
+
+
+        .combat-drawer-header {
+
+            flex:
+                0 0 auto;
+
+        }
+
+
+        .combat-drawer-body {
+
+            flex:
+                1;
+
+            min-height:
+                0;
+
+            overflow-y:
+                auto;
+
+        }
+
+
+        .combat-drawer-placeholder {
+
+            padding:
+                22px 8px;
+
+            color:
+                #786c5c;
+
+            text-align:
+                center;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.55;
+
+            font-style:
+                italic;
+
+        }
+
+
+        .combat-drawer-close {
+
+            width:
+                27px;
+
+            height:
+                27px;
+
+            padding:
+                0;
+
+            border:
+                1px solid
+                #5a452d;
+
+            border-radius:
+                4px;
+
+            background:
+                #100d0a;
+
+            color:
+                #c6af83;
+
+            font-size:
+                19px;
+
+            line-height:
+                1;
+
+            cursor:
+                pointer;
+
+        }
+
+
+
+        /* ============================================================
+           CARTE ABILITÀ GENERATE DA combat.js
+        ============================================================ */
+
+        .combat-ability-card,
+        .combat-backpack-item {
+
+            margin-bottom:
+                8px;
+
+            padding:
+                9px;
+
+            border:
+                1px solid
+                #433320;
+
+            border-radius:
+                5px;
+
+            background:
+                #0e0b08;
+
+        }
+
+
+        .combat-ability-card.disabled {
+
+            opacity:
+                .48;
+
+        }
+
+
+        .combat-ability-header {
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            gap:
+                8px;
+
+        }
+
+
+        .combat-ability-name,
+        .combat-backpack-name {
+
+            color:
+                #ead5a7;
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+
+        }
+
+
+        .combat-ability-level {
+
+            color:
+                #a99167;
+
+            font-size:
+                9px;
+
+            white-space:
+                nowrap;
+
+        }
+
+
+        .combat-ability-description,
+        .combat-backpack-description {
+
+            margin-top:
+                5px;
+
+            color:
+                #9f927e;
+
+            font-size:
+                10px;
+
+            line-height:
+                1.4;
+
+        }
+
+
+        .combat-ability-footer {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+
+            margin-top:
+                8px;
+
+        }
+
+
+        .combat-ability-cost,
+        .combat-backpack-quantity {
+
+            color:
+                var(--gold);
+
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+        }
+
+
+
+        /* ============================================================
+           MASTER
+        ============================================================ */
+
+        .master-only {
+
+            display:
+                none;
+
+        }
+
+
+        body.master-observer
+        .player-only {
+
+            display:
+                none !important;
+
+        }
+
+
+        body.master-observer
+        .master-only {
+
+            display:
+                block;
+
+        }
+
+
+        body.master-observer
+        .combat-layout {
+
+            grid-template-columns:
+                minmax(
+                    170px,
+                    .7fr
+                )
+                minmax(
+                    190px,
+                    .8fr
+                )
+                minmax(
+                    520px,
+                    3fr
+                )
+                minmax(
+                    230px,
+                    1fr
+                );
+
+            grid-template-areas:
+
+                "log secondary map character";
+
+        }
+
+
+        .selected-entity-placeholder {
+
+            color:
+                #8e816f;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.5;
+
+        }
+
+
+
+        /* ============================================================
+           RANGE CELLS
+        ============================================================ */
+
+        .combat-range-cell {
+
+            pointer-events:
+                none;
+
+        }
+
+
+
+        /* ============================================================
+           RESPONSIVE - SCHERMI MEDI
+        ============================================================ */
+
+        @media (
+            max-width:
+            1450px
+        ) {
+
+            .combat-layout {
+
+                grid-template-columns:
+                    minmax(
+                        145px,
+                        .7fr
+                    )
+                    minmax(
+                        170px,
+                        .8fr
+                    )
+                    minmax(
+                        430px,
+                        2.4fr
+                    )
+                    minmax(
+                        210px,
+                        1fr
+                    )
+                    minmax(
+                        220px,
+                        1.05fr
+                    );
+
+                gap:
+                    8px;
+
+            }
+
+
+            body {
+
+                padding:
+                    10px;
+
+            }
+
+        }
+
+
+
+        /* ============================================================
+           RESPONSIVE - TABLET
+        ============================================================ */
+
+        @media (
+            max-width:
+            1100px
+        ) {
+
+            .combat-layout {
+
+                grid-template-columns:
+                    minmax(
+                        180px,
+                        .8fr
+                    )
+                    minmax(
+                        420px,
+                        2fr
+                    )
+                    minmax(
+                        230px,
+                        1fr
+                    );
+
+                grid-template-areas:
+
+                    "secondary map character"
+                    "log       map drawer";
+
+                align-items:
+                    stretch;
+
+            }
+
+
+            .combat-log-column {
+
+                min-height:
+                    330px;
+
+            }
+
+
+            .combat-drawer-column {
+
+                min-height:
+                    330px;
+
+            }
+
+        }
+
+
+
+        /* ============================================================
+           RESPONSIVE - TELEFONO
+        ============================================================ */
+
+        @media (
+            max-width:
+            760px
+        ) {
+
+            body {
+
+                padding:
+                    7px;
+
+            }
+
+
+            .combat-header {
+
+                align-items:
+                    flex-start;
+
+            }
+
+
+            .combat-layout {
+
+                display:
+                    flex;
+
+                flex-direction:
+                    column;
+
+                min-height:
+                    0;
+
+            }
+
+
+            .combat-map-column {
+
+                order:
+                    1;
+
+            }
+
+
+            .combat-character-column {
+
+                order:
+                    2;
+
+            }
+
+
+            .combat-secondary-column {
+
+                order:
+                    3;
+
+                grid-template-rows:
+                    auto
+                    minmax(
+                        280px,
+                        auto
+                    );
+
+            }
+
+
+            .combat-log-column {
+
+                order:
+                    4;
+
+                min-height:
+                    350px;
+
+            }
+
+
+            .combat-drawer-column {
+
+                order:
+                    5;
+
+                min-height:
+                    400px;
+
+            }
+
+
+            .combat-map {
+
+                width:
+                    100%;
+
+            }
+
+
+            .combat-character-column {
+
+                grid-template-rows:
+                    auto
+                    auto
+                    auto;
+
+            }
+
+
+            .combat-drawer-column::before {
+
+                display:
+                    none;
+
+            }
+
+        }
+
+        /* ============================================================
+   VITTORIA
+============================================================ */
+
+.combat-victory-overlay {
+
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    z-index:
+        10000;
+
+    display:
+        none;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        24px;
+
+    background:
+        rgba(
+            8,
+            6,
+            4,
+            0.88
+        );
+
+    backdrop-filter:
+        blur(5px);
+
+}
+
+
+.combat-victory-overlay.visible {
+
+    display:
+        flex;
+
+}
+
+
+.combat-victory-panel {
+
+    width:
+        min(
+            680px,
+            92vw
+        );
+
+    max-height:
+        88vh;
+
+    overflow-y:
+        auto;
+
+    padding:
+        34px;
+
+    border:
+        1px solid
+        rgba(
+            215,
+            176,
+            93,
+            0.6
+        );
+
+    border-radius:
+        14px;
+
+    background:
+
+        linear-gradient(
+            180deg,
+            rgba(
+                48,
+                36,
+                24,
+                0.98
+            ),
+            rgba(
+                20,
+                15,
+                11,
+                0.98
+            )
+        );
+
+    box-shadow:
+
+        0 0 40px
+        rgba(
+            0,
+            0,
+            0,
+            0.8
+        ),
+
+        0 0 24px
+        rgba(
+            215,
+            176,
+            93,
+            0.12
+        );
+
+    text-align:
+        center;
+
+}
+
+
+.combat-victory-kicker {
+
+    margin-bottom:
+        8px;
+
+    color:
+        #9e8c70;
+
+    font-size:
+        11px;
+
+    letter-spacing:
+        0.22em;
+
+}
+
+
+.combat-victory-panel h1 {
+
+    margin:
+        0;
+
+    color:
+        #e3c477;
+
+    font-size:
+        clamp(
+            38px,
+            7vw,
+            72px
+        );
+
+    letter-spacing:
+        0.08em;
+
+    text-shadow:
+
+        0 0 16px
+        rgba(
+            227,
+            196,
+            119,
+            0.25
+        );
+
+}
+
+
+.combat-victory-divider {
+
+    width:
+        90px;
+
+    height:
+        1px;
+
+    margin:
+        20px auto;
+
+    background:
+        #d7b05d;
+
+}
+
+
+.combat-victory-text {
+
+    margin:
+        0 0 24px;
+
+    color:
+        #d6c7ad;
+
+}
+
+
+.combat-victory-loot {
+
+    padding:
+        20px;
+
+    border:
+        1px solid
+        rgba(
+            215,
+            176,
+            93,
+            0.22
+        );
+
+    border-radius:
+        10px;
+
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.22
+        );
+
+    color:
+        #b9aa90;
+
+}
+
+.combat-vicory-exit {
+
+    margin-top:
+        24px;
+
+    padding:
+        12px 28px;
+
+    border-radius: 
+        8px;
+    
+    background:
+        rgba(215, 176, 93, 0.12);
+
+    color:
+        #e3c477;
+
+    font-size:
+        14px;
+
+    font-weight: 
+        700;
+
+    letter-spacing: 
+        0.12em;
+
+    cursor:
+        pointer;
+
+}
+
+.combat-vicory-exit:hover {
+
+    background:
+     rgba(215, 176, 93, 0.22);
+
+}
+
+.victory-loot-gold {
+
+    margin-bottom: 18px;
+
+    padding: 14px;
+
+    border: 1px solid rgba(215, 176, 93, 0.35);
+
+    border-radius: 8px;
+
+    color: #e3c477;
+
+    font-size: 18px;
+
+}
+
+
+.victory-loot-items {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+}
+
+
+.victory-loot-item {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 10px 12px;
+
+    border-radius: 7px;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    color: #d6c7ad;
+
+}
+
+
+.victory-loot-empty {
+
+    color: #9e8c70;
+
+    font-style: italic;
+
+}
