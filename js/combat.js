@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v37 CARICATO");
+console.log("COMBAT.JS v38 CARICATO");
 
 
 const db = supabaseClient;
@@ -792,22 +792,9 @@ async function loadCharacterPendingEffects() {
         data,
         error
     } =
-        await db
-            .from(
-                "character_pending_effects"
-            )
-            .select(`
-                id,
-                character_id,
-                effect_type,
-                value,
-                created_at,
-                updated_at
-            `)
-            .eq(
-                "character_id",
-                currentCharacter.id
-            );
+        await db.rpc(
+            "get_my_pending_effects"
+        );
 
 
     if (error) {
