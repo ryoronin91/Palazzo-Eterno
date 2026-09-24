@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v29 CARICATO");
+console.log("COMBAT.JS v30 CARICATO");
 
 
 const db = supabaseClient;
@@ -59,7 +59,13 @@ let activeDrawer = null;
 
 let victoryLootLoaded = false;
 let victoryLootLoading = false;
+let victoryLootData = [];
+let victoryGoldReceived = 0;
 
+let victoryLootDraftState = null;
+let victoryLootDraftInterval = null;
+
+let victoryLootPickInProgress = false;
 
 // ============================================================
 // MODALITÀ BERSAGLIO
@@ -1527,13 +1533,55 @@ function renderCombatVictory() {
         // 5. MOSTRA RISULTATO
         // ====================================================
 
-        renderVictoryLoot(
-            data || [],
-            myGold
-        );
+        // ====================================================
+// SALVA DATI LOCALI
+// ====================================================
+
+victoryLootData =
+    data || [];
+
+victoryGoldReceived =
+    myGold;
 
 
-        victoryLootLoaded = true;
+// ====================================================
+// INIZIALIZZA IL DRAFT DEGLI OGGETTI
+// ====================================================
+
+const {
+    error: draftInitError
+} =
+    await db.rpc(
+        "initialize_combat_loot_draft",
+        {
+            p_combat_id:
+                combatId
+        }
+    );
+
+
+if (draftInitError) {
+
+    throw draftInitError;
+
+}
+
+
+// ====================================================
+// CARICA STATO DRAFT
+// ====================================================
+
+await refreshVictoryLootDraft();
+
+
+// ====================================================
+// AVVIA TIMER
+// ====================================================
+
+startVictoryLootDraftLoop();
+
+
+victoryLootLoaded = true;
 
 
     } catch (error) {
@@ -1560,6 +1608,196 @@ function renderCombatVictory() {
 
 }
 
+// ============================================================
+// LOOP DRAFT LOOT
+// ============================================================
+
+function startVictoryLootDraftLoop() {
+
+    stopVictoryLootDraftLoop();
+
+
+    victoryLootDraftInterval =
+        setInterval(
+            async () => {
+
+                await refreshVictoryLootDraft();
+
+            },
+            1000
+        );
+
+}
+
+
+function stopVictoryLootDraftLoop() {
+
+    if (
+        victoryLootDraftInterval
+    ) {
+
+        clearInterval(
+            victoryLootDraftInterval
+        );
+
+
+        victoryLootDraftInterval =
+            null;
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA STATO DRAFT
+// ============================================================
+
+async function refreshVictoryLootDraft() {
+
+    if (!combatId) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_combat_loot_draft_state",
+                {
+                    p_combat_id:
+                        combatId
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        victoryLootDraftState =
+            data;
+
+
+        renderVictoryLoot(
+            victoryLootData,
+            victoryGoldReceived,
+            victoryLootDraftState
+        );
+
+
+        if (
+            data?.status ===
+            "complete"
+        ) {
+
+            stopVictoryLootDraftLoop();
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento draft loot:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// PRENDI OGGETTO
+// ============================================================
+
+async function pickVictoryLootItem(
+    itemId
+) {
+
+    if (
+        victoryLootPickInProgress ||
+        !itemId ||
+        !victoryLootDraftState?.is_my_turn
+    ) {
+
+        return;
+
+    }
+
+
+    victoryLootPickInProgress =
+        true;
+
+
+    try {
+
+        const {
+            error
+        } =
+            await db.rpc(
+                "pick_combat_loot_item",
+                {
+                    p_combat_id:
+                        combatId,
+
+                    p_item_id:
+                        itemId
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        // Aggiorna immediatamente inventario
+        await loadCharacterInventory();
+
+
+        // Aggiorna immediatamente il draft
+        await refreshVictoryLootDraft();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore scelta oggetto:",
+            error
+        );
+
+
+        alert(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+
+        await refreshVictoryLootDraft();
+
+
+    } finally {
+
+        victoryLootPickInProgress =
+            false;
+
+    }
+
+}
 
 // ============================================================
 // MOSTRA LOOT VITTORIA
@@ -1567,7 +1805,8 @@ function renderCombatVictory() {
 
 function renderVictoryLoot(
     loot,
-    myGold = null
+    myGold = 0,
+    draft = null
 ) {
 
     const container =
@@ -1581,6 +1820,268 @@ function renderVictoryLoot(
         return;
 
     }
+
+
+    let html = "";
+
+
+    // ========================================================
+    // ORO PERSONALE
+    // ========================================================
+
+    html += `
+        <div class="victory-loot-gold">
+
+            <div class="victory-loot-gold-label">
+                HAI RICEVUTO
+            </div>
+
+            <div class="victory-loot-gold-value">
+
+                <span class="victory-gold-coin"></span>
+
+                <strong>
+                    ${Number(myGold) || 0}
+                </strong>
+
+                monete d'oro
+
+            </div>
+
+        </div>
+    `;
+
+
+    // ========================================================
+    // DRAFT NON ANCORA DISPONIBILE
+    // ========================================================
+
+    if (!draft) {
+
+        html += `
+            <div class="victory-loot-empty">
+                Preparazione della spartizione...
+            </div>
+        `;
+
+        container.innerHTML =
+            html;
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // DRAFT COMPLETATO
+    // ========================================================
+
+    if (
+        draft.status ===
+        "complete"
+    ) {
+
+        html += `
+            <div class="victory-loot-draft-complete">
+
+                SPARTIZIONE COMPLETATA
+
+            </div>
+
+            <div class="victory-loot-empty">
+
+                Tutti gli oggetti sono stati assegnati.
+
+            </div>
+        `;
+
+
+        container.innerHTML =
+            html;
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // TURNO ATTUALE
+    // ========================================================
+
+    const seconds =
+        Math.max(
+            0,
+            Number(
+                draft.seconds_remaining
+            ) || 0
+        );
+
+
+    html += `
+        <div class="victory-loot-turn">
+
+            <div class="victory-loot-turn-label">
+                TURNO DI
+            </div>
+
+            <div class="victory-loot-turn-player">
+                ${escapeCombatHtml(
+                    draft.current_player_name ||
+                    "Giocatore"
+                )}
+            </div>
+
+            <div class="victory-loot-timer">
+                ${seconds}s
+            </div>
+
+        </div>
+    `;
+
+
+    if (
+        draft.is_my_turn
+    ) {
+
+        html += `
+            <div class="victory-loot-your-turn">
+                È il tuo turno. Scegli un oggetto.
+            </div>
+        `;
+
+    } else {
+
+        html += `
+            <div class="victory-loot-waiting">
+                Attendi che il giocatore scelga.
+            </div>
+        `;
+
+    }
+
+
+    // ========================================================
+    // OGGETTI DISPONIBILI
+    // ========================================================
+
+    const items =
+        Array.isArray(
+            draft.items
+        )
+            ? draft.items
+            : [];
+
+
+    if (
+        items.length === 0
+    ) {
+
+        html += `
+            <div class="victory-loot-empty">
+                Nessun oggetto rimasto.
+            </div>
+        `;
+
+    } else {
+
+        html += `
+            <div class="victory-loot-items">
+        `;
+
+
+        for (
+            const item
+            of items
+        ) {
+
+            html += `
+                <div class="victory-loot-item">
+
+                    <div class="victory-loot-item-info">
+
+                        <span>
+                            ${escapeCombatHtml(
+                                item.item_name ||
+                                item.item_id
+                            )}
+                        </span>
+
+                        <strong>
+                            ×${Number(item.quantity) || 0}
+                        </strong>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="victory-loot-pick"
+                        data-item-id="${escapeCombatHtml(
+                            item.item_id
+                        )}"
+                        ${draft.is_my_turn
+                            ? ""
+                            : "disabled"}
+                    >
+                        PRENDI
+                    </button>
+
+                </div>
+            `;
+
+        }
+
+
+        html += `
+            </div>
+        `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+
+    // ========================================================
+    // EVENTI PULSANTI
+    // ========================================================
+
+    container
+        .querySelectorAll(
+            ".victory-loot-pick"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    async () => {
+
+                        if (
+                            button.disabled
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        button.disabled =
+                            true;
+
+
+                        await pickVictoryLootItem(
+                            button.dataset.itemId
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+}
 
 
     // ========================================================
