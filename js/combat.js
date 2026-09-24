@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v25 CARICATO");
+console.log("COMBAT.JS v26 CARICATO");
 
 
 const db = supabaseClient;
@@ -247,6 +247,8 @@ await loadCombatEntities();
             // =================================================
 
             setupCombatActions();
+
+            setupVictoryExitButton();
 
             renderCombat();
 
@@ -1356,6 +1358,32 @@ function renderCombatVictory() {
 
     }
 
+}
+
+// ============================================================
+// PULSANTE USCITA VITTORIA
+// ============================================================
+
+function setupVictoryExitButton() {
+
+    const button =
+        document.getElementById(
+            "combat-victory-exit"
+        );
+
+    if (!button) {
+        return;
+
+    }
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            window.location.href =
+                "dungeon.html"
+        }
+    )
 }
 
 // ============================================================
