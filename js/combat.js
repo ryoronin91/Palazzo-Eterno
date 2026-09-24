@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v36 CARICATO");
+console.log("COMBAT.JS v37 CARICATO");
 
 
 const db = supabaseClient;
@@ -202,7 +202,8 @@ if (
 
 await Promise.all([
     loadCombatEntities(),
-    loadCombatEffects()
+    loadCombatEffects(),
+    loadCharacterPendingEffects()
 ]);
 
 console.log(
@@ -7248,7 +7249,8 @@ renderCombatVictory();
 
 await Promise.all([
     loadCombatEntities(),
-    loadCombatEffects()
+    loadCombatEffects(),
+    loadCharacterPendingEffects()
 ]);
 
 
