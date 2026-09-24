@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v30 CARICATO");
+console.log("COMBAT.JS v32 CARICATO");
 
 
 const db = supabaseClient;
@@ -1877,31 +1877,86 @@ function renderVictoryLoot(
     // ========================================================
 
     if (
-        draft.status ===
-        "complete"
+    draft.status ===
+    "complete"
+) {
+
+    html += `
+        <div class="victory-loot-draft-complete">
+            SPARTIZIONE COMPLETATA
+        </div>
+    `;
+
+
+    const myItems =
+        Array.isArray(
+            draft.my_items
+        )
+            ? draft.my_items
+            : [];
+
+
+    if (
+        myItems.length > 0
     ) {
 
         html += `
-            <div class="victory-loot-draft-complete">
+            <div class="victory-loot-items">
 
-                SPARTIZIONE COMPLETATA
-
-            </div>
-
-            <div class="victory-loot-empty">
-
-                Tutti gli oggetti sono stati assegnati.
-
-            </div>
+                <div class="victory-loot-gold-label">
+                    HAI OTTENUTO
+                </div>
         `;
 
 
-        container.innerHTML =
-            html;
+        for (
+            const item
+            of myItems
+        ) {
 
-        return;
+            html += `
+                <div class="victory-loot-item">
+
+                    <span>
+                        ${escapeCombatHtml(
+                            item.item_name ||
+                            item.item_id
+                        )}
+                    </span>
+
+                    <strong>
+                        ×${Number(
+                            item.quantity
+                        ) || 0}
+                    </strong>
+
+                </div>
+            `;
+
+        }
+
+
+        html += `
+            </div>
+        `;
+
+    } else {
+
+        html += `
+            <div class="victory-loot-empty">
+                Non hai ottenuto oggetti.
+            </div>
+        `;
 
     }
+
+
+    container.innerHTML =
+        html;
+
+    return;
+
+}
 
 
     // ========================================================
