@@ -2264,8 +2264,6 @@ monete d'oro
     container.innerHTML =
         html;
 
-}
-
 
 // ============================================================
 // ESCAPE HTML
