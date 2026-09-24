@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v24 CARICATO");
+console.log("COMBAT.JS v25 CARICATO");
 
 
 const db = supabaseClient;
@@ -6158,6 +6158,12 @@ async function refreshCombatState() {
 
 
         await loadCombatSession();
+
+// ============================================================
+// CONTROLLA SUBITO EVENTUALE VITTORIA
+// ============================================================
+
+renderCombatVictory();
 
 await Promise.all([
     loadCombatEntities(),
