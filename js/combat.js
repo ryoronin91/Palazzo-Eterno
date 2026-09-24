@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v26 CARICATO");
+console.log("COMBAT.JS v27 CARICATO");
 
 
 const db = supabaseClient;
@@ -55,8 +55,10 @@ let equipmentBonuses = {
 
 };
 
-
 let activeDrawer = null;
+
+let victoryLootLoaded = false;
+let victoryLootLoading = false;
 
 
 // ============================================================
@@ -1325,24 +1327,18 @@ function renderCombatVictory() {
             "combat-victory-overlay"
         );
 
-
     if (!overlay) {
-
         return;
-
     }
-
 
     const victory =
         combatSession?.status ===
         "victory";
 
-
     overlay.classList.toggle(
         "visible",
         victory
     );
-
 
     overlay.setAttribute(
         "aria-hidden",
@@ -1351,12 +1347,335 @@ function renderCombatVictory() {
             : "true"
     );
 
+    if (!victory) {
+        return;
+    }
 
-    if (victory) {
-
+    if (combatTargetMode) {
         cancelCombatTargeting();
+    }
+
+    if (
+        !victoryLootLoaded &&
+        !victoryLootLoading
+    ) {
+        loadVictoryLoot();
+    }
+
+}
+
+// ============================================================
+// CARICA LOOT VITTORIA
+// ============================================================
+
+async function loadVictoryLoot() {
+
+    if (
+        victoryLootLoaded ||
+        victoryLootLoading ||
+        !combatId
+    ) {
+        return;
+    }
+
+    victoryLootLoading = true;
+
+    const container =
+        document.getElementById(
+            "combat-victory-loot"
+        );
+
+    if (container) {
+        container.textContent =
+            "Generazione del bottino...";
+    }
+
+    try {
+
+        // ====================================================
+        // GENERA IL LOOT
+        //
+        // Se esiste già, la RPC non lo rigenera.
+        // ====================================================
+
+        const {
+            error: generateError
+        } =
+            await db.rpc(
+                "generate_combat_loot",
+                {
+                    p_combat_id:
+                        combatId
+                }
+            );
+
+        if (generateError) {
+            throw generateError;
+        }
+
+
+        // ====================================================
+        // RECUPERA IL LOOT SALVATO
+        // ====================================================
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_combat_loot",
+                {
+                    p_combat_id:
+                        combatId
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+
+        renderVictoryLoot(
+            data || []
+        );
+
+        victoryLootLoaded = true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento loot:",
+            error
+        );
+
+        if (container) {
+            container.textContent =
+                "Errore durante il caricamento del bottino.";
+        }
+
+    } finally {
+
+        victoryLootLoading = false;
 
     }
+
+}
+
+
+// ============================================================
+// MOSTRA LOOT VITTORIA
+// ============================================================
+
+function renderVictoryLoot(
+    loot
+) {
+
+    const container =
+        document.getElementById(
+            "combat-victory-loot"
+        );
+
+    if (!container) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(loot) ||
+        loot.length === 0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="victory-loot-empty">
+                    Nessun bottino trovato.
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // SOMMA LE MONETE
+    // ========================================================
+
+    let totalGold = 0;
+
+    const otherItems =
+        new Map();
+
+
+    loot.forEach(
+        entry => {
+
+            const quantity =
+                Number(
+                    entry.quantity
+                ) || 0;
+
+
+            if (
+                entry.item_id ===
+                "moneta_oro"
+            ) {
+
+                totalGold +=
+                    quantity;
+
+                return;
+
+            }
+
+
+            const existing =
+                otherItems.get(
+                    entry.item_id
+                );
+
+
+            if (existing) {
+
+                existing.quantity +=
+                    quantity;
+
+            } else {
+
+                otherItems.set(
+                    entry.item_id,
+                    {
+                        item_id:
+                            entry.item_id,
+
+                        item_name:
+                            entry.item_name,
+
+                        quantity:
+                            quantity
+                    }
+                );
+
+            }
+
+        }
+    );
+
+
+    // ========================================================
+    // HTML
+    // ========================================================
+
+    let html = "";
+
+
+    if (totalGold > 0) {
+
+        html += `
+            <div class="victory-loot-gold">
+                🪙
+                <strong>${totalGold}</strong>
+                Monete d'oro
+            </div>
+        `;
+
+    }
+
+
+    if (
+        otherItems.size > 0
+    ) {
+
+        html += `
+            <div class="victory-loot-items">
+        `;
+
+
+        for (
+            const item
+            of otherItems.values()
+        ) {
+
+            html += `
+                <div class="victory-loot-item">
+
+                    <span>
+                        ${escapeCombatHtml(
+                            item.item_name ||
+                            item.item_id
+                        )}
+                    </span>
+
+                    <strong>
+                        ×${item.quantity}
+                    </strong>
+
+                </div>
+            `;
+
+        }
+
+
+        html += `
+            </div>
+        `;
+
+    }
+
+
+    if (
+        totalGold <= 0 &&
+        otherItems.size === 0
+    ) {
+
+        html =
+            `
+                <div class="victory-loot-empty">
+                    Nessun bottino trovato.
+                </div>
+            `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeCombatHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 
