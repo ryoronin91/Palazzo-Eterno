@@ -7111,29 +7111,51 @@ function updateCombatTurnUI() {
     // TURNO NEMICO
     // ========================================================
 
-    if (
-        currentEntity.entity_type ===
-        "enemy"
-    ) {
+   if (
+    currentEntity.entity_type ===
+    "enemy"
+) {
 
-        setCombatStatus(
-            `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
+    setCombatStatus(
+        `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
+    );
+
+
+    if (combatTargetMode) {
+
+        cancelCombatTargeting();
+
+    }
+
+
+    updateActionButtons();
+
+
+    // ========================================================
+    // TEST IA GOBLIN BASE
+    // ========================================================
+
+    const target =
+        chooseGoblinTarget(
+            currentEntity
         );
 
 
-        if (combatTargetMode) {
+    if (target) {
 
-            cancelCombatTargeting();
-
-        }
-
-
-        updateActionButtons();
-
-
-        return;
+        console.log(
+            "IA GOBLIN:",
+            currentEntity.display_name,
+            "sceglie",
+            target.display_name
+        );
 
     }
+
+
+    return;
+
+}
 
 
     // ========================================================
