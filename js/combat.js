@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v45 CARICATO");
+console.log("COMBAT.JS v46 CARICATO");
 
 
 const db = supabaseClient;
@@ -2917,6 +2917,187 @@ function chooseGoblinTarget(
 
 
     return null;
+
+}
+
+// ============================================================
+// IA GOBLIN BASE - MOVIMENTO
+// ============================================================
+
+function isCombatCellOccupied(
+    x,
+    y,
+    ignoreEntityId = null
+) {
+
+    return Array.from(
+        combatEntities.values()
+    ).some(
+        entity =>
+            entity.id !== ignoreEntityId
+            &&
+            entity.status === "alive"
+            &&
+            Number(entity.current_hp) > 0
+            &&
+            Number(entity.x) === Number(x)
+            &&
+            Number(entity.y) === Number(y)
+    );
+
+}
+
+
+// ============================================================
+// PROSSIMA CASELLA VERSO IL BERSAGLIO
+// ============================================================
+
+function chooseGoblinNextStep(
+    goblin,
+    target
+) {
+
+    if (
+        !goblin ||
+        !target
+    ) {
+
+        return null;
+
+    }
+
+
+    const currentDistance =
+        getCombatDistance(
+            goblin.x,
+            goblin.y,
+            target.x,
+            target.y
+        );
+
+
+    // È già adiacente:
+    // non deve muoversi.
+    if (currentDistance <= 1) {
+
+        return null;
+
+    }
+
+
+    const directions = [
+
+        { dx: -1, dy: -1 },
+        { dx:  0, dy: -1 },
+        { dx:  1, dy: -1 },
+
+        { dx: -1, dy:  0 },
+        { dx:  1, dy:  0 },
+
+        { dx: -1, dy:  1 },
+        { dx:  0, dy:  1 },
+        { dx:  1, dy:  1 }
+
+    ];
+
+
+    let bestDistance =
+        currentDistance;
+
+    let candidates = [];
+
+
+    directions.forEach(
+        direction => {
+
+            const newX =
+                Number(goblin.x) +
+                direction.dx;
+
+            const newY =
+                Number(goblin.y) +
+                direction.dy;
+
+
+            // Fuori dalla mappa.
+            if (
+                newX < 0 ||
+                newX >= COMBAT_COLUMNS ||
+                newY < 0 ||
+                newY >= COMBAT_ROWS
+            ) {
+
+                return;
+
+            }
+
+
+            // Casella occupata.
+            if (
+                isCombatCellOccupied(
+                    newX,
+                    newY,
+                    goblin.id
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const distance =
+                getCombatDistance(
+                    newX,
+                    newY,
+                    target.x,
+                    target.y
+                );
+
+
+            // Accettiamo soltanto mosse
+            // che avvicinano realmente.
+            if (
+                distance <
+                bestDistance
+            ) {
+
+                bestDistance =
+                    distance;
+
+                candidates = [
+                    {
+                        x: newX,
+                        y: newY,
+                        dx: direction.dx,
+                        dy: direction.dy
+                    }
+                ];
+
+            } else if (
+                distance === bestDistance
+                &&
+                distance < currentDistance
+            ) {
+
+                candidates.push(
+                    {
+                        x: newX,
+                        y: newY,
+                        dx: direction.dx,
+                        dy: direction.dy
+                    }
+                );
+
+            }
+
+        }
+    );
+
+
+    return chooseRandomEntity(
+        candidates
+    );
 
 }
 
