@@ -2455,8 +2455,7 @@ async function handleCombatCharacterDeath() {
                 .select(`
                     id,
                     user_id,
-                    nome,
-                    score
+                    nome
                 `)
                 .eq(
                     "id",
@@ -2503,6 +2502,76 @@ async function handleCombatCharacterDeath() {
 
 
     // ========================================================
+    // CALCOLA SCORE FINALE
+    //
+    // characters.score
+    // +
+    // score di tutti gli oggetti posseduti
+    // +
+    // score delle monete possedute
+    // ========================================================
+
+    let deadFinalScore =
+        0;
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_character_final_score",
+                {
+
+                    p_character_id:
+                        currentCharacter.id
+
+                }
+            );
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        deadFinalScore =
+            Number(
+                data
+            ) || 0;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "Errore calcolo score finale:",
+            error
+        );
+
+
+        combatCharacterDeathInProgress =
+            false;
+
+
+        setCombatStatus(
+            "Errore durante il calcolo dello score finale."
+        );
+
+
+        return;
+
+    }
+
+
+    // ========================================================
     // SALVA STORICO DEL PERSONAGGIO MORTO
     // ========================================================
 
@@ -2527,9 +2596,7 @@ async function handleCombatCharacterDeath() {
                         deadCharacterData.nome,
 
                     score:
-                        Number(
-                            deadCharacterData.score
-                        ) || 0
+                        deadFinalScore
 
                 });
 
@@ -2576,12 +2643,6 @@ async function handleCombatCharacterDeath() {
         "Avventuriero";
 
 
-    const deadScore =
-        Number(
-            deadCharacterData.score
-        ) || 0;
-
-
     // ========================================================
     // ELIMINA PERSONAGGIO
     // ========================================================
@@ -2620,7 +2681,7 @@ async function handleCombatCharacterDeath() {
         // ====================================================
 
         window.location.href =
-            `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadScore)}`;
+            `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadFinalScore)}`;
 
 
     } catch (
