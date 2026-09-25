@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v38 CARICATO");
+console.log("COMBAT.JS v39 CARICATO");
 
 
 const db = supabaseClient;
@@ -2616,6 +2616,308 @@ function getCombatDistance(
 
 }
 
+// ============================================================
+// IA GOBLIN BASE - UTILITÀ
+// ============================================================
+
+function chooseRandomEntity(
+    entities
+) {
+
+    if (
+        !entities ||
+        entities.length === 0
+    ) {
+
+        return null;
+
+    }
+
+
+    const index =
+        Math.floor(
+            Math.random() *
+            entities.length
+        );
+
+
+    return entities[index];
+
+}
+
+
+
+// ============================================================
+// PG VIVI
+// ============================================================
+
+function getAliveCombatPlayers() {
+
+    return Array.from(
+        combatEntities.values()
+    ).filter(
+        entity =>
+            entity.entity_type ===
+                "player"
+            &&
+            entity.status ===
+                "alive"
+            &&
+            Number(
+                entity.current_hp
+            ) > 0
+    );
+
+}
+
+
+
+// ============================================================
+// PG PIÙ VICINO
+// ============================================================
+
+function chooseNearestPlayer(
+    enemy,
+    players
+) {
+
+    if (
+        !enemy ||
+        !players?.length
+    ) {
+
+        return null;
+
+    }
+
+
+    let minimumDistance =
+        Infinity;
+
+
+    let candidates = [];
+
+
+    players.forEach(
+        player => {
+
+            const distance =
+                getCombatDistance(
+
+                    enemy.x,
+                    enemy.y,
+
+                    player.x,
+                    player.y
+
+                );
+
+
+            if (
+                distance <
+                minimumDistance
+            ) {
+
+                minimumDistance =
+                    distance;
+
+                candidates = [
+                    player
+                ];
+
+            } else if (
+                distance ===
+                minimumDistance
+            ) {
+
+                candidates.push(
+                    player
+                );
+
+            }
+
+        }
+    );
+
+
+    return chooseRandomEntity(
+        candidates
+    );
+
+}
+
+
+
+// ============================================================
+// PG CON PIÙ PF
+// ============================================================
+
+function choosePlayerWithMostHP(
+    players
+) {
+
+    if (!players?.length) {
+
+        return null;
+
+    }
+
+
+    const maxHP =
+        Math.max(
+            ...players.map(
+                player =>
+                    Number(
+                        player.current_hp
+                    ) || 0
+            )
+        );
+
+
+    const candidates =
+        players.filter(
+            player =>
+                (
+                    Number(
+                        player.current_hp
+                    ) || 0
+                ) ===
+                maxHP
+        );
+
+
+    return chooseRandomEntity(
+        candidates
+    );
+
+}
+
+
+
+// ============================================================
+// PG CON MENO PF
+// ============================================================
+
+function choosePlayerWithLeastHP(
+    players
+) {
+
+    if (!players?.length) {
+
+        return null;
+
+    }
+
+
+    const minHP =
+        Math.min(
+            ...players.map(
+                player =>
+                    Number(
+                        player.current_hp
+                    ) || 0
+            )
+        );
+
+
+    const candidates =
+        players.filter(
+            player =>
+                (
+                    Number(
+                        player.current_hp
+                    ) || 0
+                ) ===
+                minHP
+        );
+
+
+    return chooseRandomEntity(
+        candidates
+    );
+
+}
+
+
+
+// ============================================================
+// IA GOBLIN BASE - SCELTA BERSAGLIO
+// ============================================================
+
+function chooseGoblinTarget(
+    goblin
+) {
+
+    if (!goblin) {
+
+        return null;
+
+    }
+
+
+    const players =
+        getAliveCombatPlayers();
+
+
+    if (!players.length) {
+
+        return null;
+
+    }
+
+
+    const currentHP =
+        Number(
+            goblin.current_hp
+        ) || 0;
+
+
+    // ========================================================
+    // 7 - 10 PF
+    // Attacca il PG più vicino
+    // ========================================================
+
+    if (currentHP >= 7) {
+
+        return chooseNearestPlayer(
+            goblin,
+            players
+        );
+
+    }
+
+
+    // ========================================================
+    // 4 - 6 PF
+    // Attacca il PG con più PF
+    // ========================================================
+
+    if (currentHP >= 4) {
+
+        return choosePlayerWithMostHP(
+            players
+        );
+
+    }
+
+
+    // ========================================================
+    // 1 - 3 PF
+    // Attacca il PG con meno PF
+    // ========================================================
+
+    if (currentHP >= 1) {
+
+        return choosePlayerWithLeastHP(
+            players
+        );
+
+    }
+
+
+    return null;
+
+}
 
 // ============================================================
 // PORTATA MODALITÀ ATTUALE
