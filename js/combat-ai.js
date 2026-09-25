@@ -757,19 +757,28 @@ async function runEnemyAI(
         // MOVIMENTO
         // ====================================================
 
-        const {
-            data: moveData,
-            error: moveError
-        } =
-            await db.rpc(
-                "run_goblin_movement_turn",
-                {
+const movementRpc =
+    monsterType ===
+        "goblin_sputafuoco"
 
-                    p_combat_id:
-                        combatId
+        ? "run_goblin_sputafuoco_movement_turn"
 
-                }
-            );
+        : "run_goblin_movement_turn";
+
+
+const {
+    data: moveData,
+    error: moveError
+} =
+    await db.rpc(
+        movementRpc,
+        {
+
+            p_combat_id:
+                combatId
+
+        }
+    );
 
 
         if (
@@ -827,17 +836,36 @@ async function runEnemyAI(
             null;
 
 
-        if (
-            moveData?.adjacent ===
-                true
-        ) {
+        const canAttack =
+    monsterType ===
+        "goblin_sputafuoco"
+
+        ? moveData?.in_range ===
+            true
+
+        : moveData?.adjacent ===
+            true;
+
+
+if (
+    canAttack
+) {
 
             const {
                 data: attackResult,
                 error: attackError
             } =
+
+            const attackRpc =
+    monsterType ===
+        "goblin_sputafuoco"
+
+        ? "run_goblin_sputafuoco_attack_turn"
+
+        : "run_goblin_attack_turn";
+
                 await db.rpc(
-                    "run_goblin_attack_turn",
+    attackRpc,
                     {
 
                         p_combat_id:
