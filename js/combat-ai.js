@@ -651,6 +651,35 @@ async function runEnemyAI(
 
     }
 
+    const monsterType =
+    String(
+        currentEntity.monster_type ||
+        ""
+    ).toLowerCase();
+
+
+if (
+    monsterType ===
+    "goblin_sputafuoco"
+) {
+
+    console.log(
+        "IA: GOBLIN SPUTAFUOCO"
+    );
+
+}
+
+
+if (
+    monsterType ===
+    "goblin_sciamano"
+) {
+
+    console.log(
+        "IA: GOBLIN SCIAMANO"
+    );
+
+}
 
     const aiTurnKey =
         `${combatSession.round_number}:${currentEntity.id}`;
