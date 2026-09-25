@@ -434,42 +434,56 @@
         }
 
 
-        .combat-log-panel {
+       .combat-log-panel {
 
-            height:
-                100%;
+    height:
+        calc(100vh - 105px);
 
-            display:
-                flex;
+    max-height:
+        calc(100vh - 105px);
 
-            flex-direction:
-                column;
+    display:
+        flex;
 
-        }
+    flex-direction:
+        column;
+
+    overflow:
+        hidden;
+
+}
 
 
         .combat-log {
 
-            flex:
-                1;
+    flex: 1;
 
-            min-height:
-                0;
+    min-height: 0;
 
-            padding:
-                10px;
+    max-height:
+        calc(100vh - 165px);
 
-            overflow-y:
-                auto;
+    overflow-y:
+        auto;
 
-            scrollbar-width:
-                thin;
+    overflow-x:
+        hidden;
 
-            scrollbar-color:
-                #725633
-                #100d0a;
+    padding:
+        10px;
 
-        }
+    box-sizing:
+        border-box;
+
+    scrollbar-width:
+        thin;
+
+    scrollbar-color:
+        #725633
+        #100d0a;
+
+}
+
 
 
         .combat-log-entry {

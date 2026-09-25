@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v50 CARICATO");
+console.log("COMBAT.JS v51 CARICATO");
 
 
 const db = supabaseClient;
@@ -7856,13 +7856,11 @@ function addCombatLog(
         text;
 
 
-    container.appendChild(
-        row
-    );
+    container.prepend(
+    row
+);
 
-
-    container.scrollTop =
-        container.scrollHeight;
+container.scrollTop = 0;
 
 }
 
