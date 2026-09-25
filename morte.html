@@ -1,684 +1,144 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Morte - Palazzo Eterno</title>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        html,
-        body {
-
-            margin: 0;
-
-            min-height: 100%;
-
-            background:
-                radial-gradient(
-                    circle at center,
-                    #1a0000 0%,
-                    #090000 45%,
-                    #000000 100%
-                );
-
-            color:
-                #f1e7d0;
-
-            font-family:
-                Georgia,
-                "Times New Roman",
-                serif;
-
-        }
-
-
-        body {
-
-            min-height:
-                100vh;
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            justify-content:
-                center;
-
-            padding:
-                24px;
-
-        }
-
-
-        .death-card {
-
-            width:
-                min(
-                    560px,
-                    100%
-                );
-
-            padding:
-                44px 28px;
-
-            text-align:
-                center;
-
-            background:
-                rgba(
-                    10,
-                    0,
-                    0,
-                    0.92
-                );
-
-            border:
-                1px solid
-                rgba(
-                    170,
-                    30,
-                    30,
-                    0.6
-                );
-
-            border-radius:
-                18px;
-
-            box-shadow:
-                0 20px 60px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.7
-                );
-
-        }
-
-
-        .death-symbol {
-
-            font-size:
-                64px;
-
-            line-height:
-                1;
-
-            margin-bottom:
-                16px;
-
-        }
-
-
-        h1 {
-
-            margin:
-                0 0 18px;
-
-            font-size:
-                clamp(
-                    42px,
-                    10vw,
-                    72px
-                );
-
-            letter-spacing:
-                0.08em;
-
-            color:
-                #b92d2d;
-
-            text-shadow:
-                0 0 18px
-                rgba(
-                    185,
-                    45,
-                    45,
-                    0.25
-                );
-
-        }
-
-
-        .death-text {
-
-            margin:
-                0 auto 26px;
-
-            max-width:
-                430px;
-
-            color:
-                #cdbda7;
-
-            font-size:
-                1.05rem;
-
-            line-height:
-                1.65;
-
-        }
-
-
-        /* ====================================================
-           SCORE PERSONAGGIO
-           ==================================================== */
-
-        .death-score-box {
-
-            margin:
-                0 auto 30px;
-
-            padding:
-                20px 24px;
-
-            max-width:
-                340px;
-
-            border:
-                1px solid
-                rgba(
-                    185,
-                    45,
-                    45,
-                    0.45
-                );
-
-            border-radius:
-                14px;
-
-            background:
-                rgba(
-                    90,
-                    0,
-                    0,
-                    0.18
-                );
-
-            box-shadow:
-                inset 0 0 20px
-                rgba(
-                    185,
-                    45,
-                    45,
-                    0.08
-                );
-
-        }
-
-
-        .death-character-name {
-
-            margin-bottom:
-                12px;
-
-            font-size:
-                1.25rem;
-
-            font-weight:
-                700;
-
-            color:
-                #f1e7d0;
-
-        }
-
-
-        .death-score-label {
-
-            margin-bottom:
-                6px;
-
-            font-size:
-                0.8rem;
-
-            letter-spacing:
-                0.14em;
-
-            color:
-                #a9937a;
-
-        }
-
-
-        .death-score-value {
-
-            font-size:
-                2.2rem;
-
-            font-weight:
-                700;
-
-            color:
-                #d36c6c;
-
-            text-shadow:
-                0 0 12px
-                rgba(
-                    211,
-                    108,
-                    108,
-                    0.2
-                );
-
-        }
-
-
-        /* ====================================================
-           PULSANTI
-           ==================================================== */
-
-        .death-actions {
-
-            display:
-                flex;
-
-            flex-wrap:
-                wrap;
-
-            justify-content:
-                center;
-
-            gap:
-                14px;
-
-        }
-
-
-        .death-button {
-
-            min-width:
-                180px;
-
-            padding:
-                13px 20px;
-
-            border-radius:
-                10px;
-
-            border:
-                1px solid
-                #8c2424;
-
-            background:
-                #8c2424;
-
-            color:
-                white;
-
-            font:
-                inherit;
-
-            font-weight:
-                700;
-
-            letter-spacing:
-                0.04em;
-
-            cursor:
-                pointer;
-
-            transition:
-                transform 0.15s ease,
-                background 0.15s ease,
-                border-color 0.15s ease;
-
-        }
-
-
-        .death-button:hover {
-
-            transform:
-                translateY(-1px);
-
-            background:
-                #a82b2b;
-
-            border-color:
-                #a82b2b;
-
-        }
-
-
-        .death-button.secondary {
-
-            background:
-                transparent;
-
-            color:
-                #d7c8b2;
-
-            border-color:
-                #625448;
-
-        }
-
-
-        .death-button.secondary:hover {
-
-            background:
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.06
-                );
-
-            border-color:
-                #8d7c6b;
-
-        }
-
-
-        .death-message {
-
-            margin-top:
-                18px;
-
-            min-height:
-                22px;
-
-            color:
-                #d36c6c;
-
-            font-size:
-                0.92rem;
-
-        }
-
-
-        /* ====================================================
-           MOBILE
-           ==================================================== */
-
-        @media (
-            max-width: 520px
-        ) {
-
-            .death-card {
-
-                padding:
-                    36px 20px;
-
-            }
-
-
-            .death-actions {
-
-                flex-direction:
-                    column;
-
-            }
-
-
-            .death-button {
-
-                width:
-                    100%;
-
-            }
-
-
-            .death-score-box {
-
-                padding:
-                    18px 16px;
-
-            }
-
-        }
-
-    </style>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morte - Palazzo Eterno</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at center,#1a0000 0%,#090000 45%,#000 100%);color:#f1e7d0;font-family:Georgia,"Times New Roman",serif}
+body{min-height:100vh;padding:24px}
+.death-page{width:min(980px,100%);margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:22px;align-items:start}
+.death-card,.leaderboard-card{background:rgba(10,0,0,.92);border:1px solid rgba(170,30,30,.6);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.death-card{padding:44px 28px;text-align:center}
+.death-symbol{font-size:64px;line-height:1;margin-bottom:16px}
+h1{margin:0 0 18px;font-size:clamp(42px,10vw,72px);letter-spacing:.08em;color:#b92d2d;text-shadow:0 0 18px rgba(185,45,45,.25)}
+.death-text{margin:0 auto 24px;max-width:430px;color:#cdbda7;font-size:1.05rem;line-height:1.65}
+.death-character{margin:0 0 22px;font-size:1.35rem;color:#f3dfbd}.death-character strong{color:#fff}
+.death-score-box{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 auto 26px;max-width:420px}
+.death-score-item{padding:14px 12px;border-radius:12px;border:1px solid rgba(185,45,45,.35);background:rgba(255,255,255,.025)}
+.death-score-label{display:block;margin-bottom:6px;color:#a9957d;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+.death-score-value{display:block;color:#f2dfbd;font-size:1.9rem;line-height:1;font-weight:700}.death-rank-value{color:#d7aa55}
+.death-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.death-button{min-width:180px;padding:13px 20px;border-radius:10px;border:1px solid #8c2424;background:#8c2424;color:#fff;font:inherit;font-weight:700;letter-spacing:.04em;cursor:pointer}
+.death-button.secondary{background:transparent;color:#d7c8b2;border-color:#625448}
+.death-message{margin-top:18px;min-height:22px;color:#d36c6c;font-size:.92rem}
+.leaderboard-card{padding:22px}
+.leaderboard-kicker{display:block;margin-bottom:5px;color:#9d8060;font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.leaderboard-card h2{margin:0 0 6px;color:#d9b36b;font-size:1.45rem;letter-spacing:.06em}
+.leaderboard-subtitle{margin:0 0 16px;color:#8f7f6d;font-size:.78rem;line-height:1.4}
+.leaderboard-list{display:flex;flex-direction:column;gap:6px}
+.leaderboard-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.025)}
+.leaderboard-row.is-current{border-color:rgba(215,170,85,.85);background:rgba(215,170,85,.12)}
+.leaderboard-position{color:#a88f70;font-size:.82rem;font-weight:700}
+.leaderboard-row:nth-child(1) .leaderboard-position{color:#e3bd55}.leaderboard-row:nth-child(2) .leaderboard-position{color:#c9c9c9}.leaderboard-row:nth-child(3) .leaderboard-position{color:#c98b55}
+.leaderboard-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e7dac7;font-size:.9rem}
+.leaderboard-row.is-current .leaderboard-name{color:#fff0c9;font-weight:700}
+.leaderboard-score{color:#d8b777;font-size:.86rem;font-weight:700;font-variant-numeric:tabular-nums}
+.leaderboard-empty,.leaderboard-loading{padding:20px 10px;text-align:center;color:#887867;font-size:.82rem}
+@media(max-width:820px){.death-page{grid-template-columns:1fr}}
+@media(max-width:520px){body{padding:12px}.death-card{padding:36px 20px}.death-score-box{grid-template-columns:1fr}.death-actions{flex-direction:column}.death-button{width:100%}}
+</style>
 </head>
-
-
 <body>
-
-    <main class="death-card">
-
-
-        <div class="death-symbol">
-            ☠
-        </div>
-
-
-        <h1>
-            MORTE
-        </h1>
-
-
-        <p class="death-text">
-
-            Il tuo viaggio nel Palazzo Eterno
-            termina qui.
-
-        </p>
-
-
-        <!-- ==================================================
-             SCORE FINALE
-             ================================================== -->
-
-        <div class="death-score-box">
-
-            <div
-                class="death-character-name"
-                id="death-character-name"
-            >
-                Avventuriero
-            </div>
-
-
-            <div class="death-score-label">
-                SCORE FINALE
-            </div>
-
-
-            <div
-                class="death-score-value"
-                id="death-score-value"
-            >
-                0
-            </div>
-
-        </div>
-
-
-        <!-- ==================================================
-             AZIONI
-             ================================================== -->
-
-        <div class="death-actions">
-
-            <button
-                id="exit-button"
-                class="death-button secondary"
-                type="button"
-            >
-                ESCI
-            </button>
-
-
-            <button
-                id="new-character-button"
-                class="death-button"
-                type="button"
-            >
-                NUOVO PERSONAGGIO
-            </button>
-
-        </div>
-
-
-        <div
-            id="death-message"
-            class="death-message"
-        ></div>
-
-
-    </main>
-
-
-
-    <script
-        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    ></script>
-
-    <script src="js/config.js?v=3"></script>
-
-
-    <script>
-
-        const deathDb =
-            supabaseClient;
-
-
-        // ====================================================
-        // DATI PERSONAGGIO MORTO
-        //
-        // Esempio:
-        //
-        // morte.html?nome=Thorin&score=125
-        // ====================================================
-
-        const deathParams =
-            new URLSearchParams(
-                window.location.search
-            );
-
-
-        const deathName =
-            deathParams.get(
-                "nome"
-            )
-            ||
-            "Avventuriero";
-
-
-        const deathScore =
-            Math.max(
-                0,
-                Number(
-                    deathParams.get(
-                        "score"
-                    )
-                ) || 0
-            );
-
-
-        const deathNameElement =
-            document.getElementById(
-                "death-character-name"
-            );
-
-
-        const deathScoreElement =
-            document.getElementById(
-                "death-score-value"
-            );
-
-
-        if (
-            deathNameElement
-        ) {
-
-            deathNameElement.textContent =
-                deathName;
-
-        }
-
-
-        if (
-            deathScoreElement
-        ) {
-
-            deathScoreElement.textContent =
-                deathScore.toLocaleString(
-                    "it-IT"
-                );
-
-        }
-
-
-
-        // ====================================================
-        // ESCI
-        // ====================================================
-
-        const exitButton =
-            document.getElementById(
-                "exit-button"
-            );
-
-
-        exitButton.addEventListener(
-            "click",
-            async () => {
-
-                try {
-
-                    await deathDb
-                        .auth
-                        .signOut();
-
-                } catch (
-                    error
-                ) {
-
-                    console.error(
-                        "Errore logout:",
-                        error
-                    );
-
-                }
-
-
-                window.location.href =
-                    "index.html";
-
-            }
-        );
-
-
-
-        // ====================================================
-        // NUOVO PERSONAGGIO
-        // ====================================================
-
-        const newCharacterButton =
-            document.getElementById(
-                "new-character-button"
-            );
-
-
-        newCharacterButton.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "personaggio.html";
-
-            }
-        );
-
-    </script>
-
+<main class="death-page">
+<section class="death-card">
+<div class="death-symbol">☠</div>
+<h1>MORTE</h1>
+<p class="death-text">Il tuo viaggio nel Palazzo Eterno termina qui.</p>
+<div id="death-character" class="death-character" hidden><strong id="death-character-name"></strong></div>
+<div class="death-score-box">
+<div class="death-score-item"><span class="death-score-label">Punteggio finale</span><strong id="death-score" class="death-score-value">—</strong></div>
+<div class="death-score-item"><span class="death-score-label">Posizione</span><strong id="death-rank" class="death-score-value death-rank-value">—</strong></div>
+</div>
+<div class="death-actions">
+<button id="exit-button" class="death-button secondary" type="button">ESCI</button>
+<button id="new-character-button" class="death-button" type="button">NUOVO PERSONAGGIO</button>
+</div>
+<div id="death-message" class="death-message"></div>
+</section>
+
+<aside class="leaderboard-card">
+<span class="leaderboard-kicker">CLASSIFICA</span>
+<h2>CADUTI DEL PALAZZO</h2>
+<p class="leaderboard-subtitle">I venti punteggi più alti registrati nel Palazzo Eterno.</p>
+<div id="leaderboard-list" class="leaderboard-list"><div class="leaderboard-loading">Caricamento classifica...</div></div>
+</aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=3"></script>
+<script>
+const deathDb=supabaseClient;
+const deathParams=new URLSearchParams(window.location.search);
+const deathCharacterId=deathParams.get("character_id");
+const deathCharacterName=deathParams.get("nome")||"";
+const deathScoreFromUrl=deathParams.get("score");
+const deathCharacterBox=document.getElementById("death-character");
+const deathCharacterNameElement=document.getElementById("death-character-name");
+const deathScoreElement=document.getElementById("death-score");
+const deathRankElement=document.getElementById("death-rank");
+const leaderboardList=document.getElementById("leaderboard-list");
+const deathMessage=document.getElementById("death-message");
+
+if(deathCharacterName){deathCharacterNameElement.textContent=deathCharacterName;deathCharacterBox.hidden=false}
+if(deathScoreFromUrl!==null){deathScoreElement.textContent=String(Number(deathScoreFromUrl)||0)}
+
+function escapeDeathHtml(value){
+ return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+async function loadDeathLeaderboard(){
+ try{
+  const {data,error}=await deathDb.rpc("get_dead_characters_leaderboard",{p_limit:20});
+  if(error) throw error;
+  renderDeathLeaderboard(data||[]);
+ }catch(error){
+  console.error("Errore classifica Caduti del Palazzo:",error);
+  leaderboardList.innerHTML='<div class="leaderboard-empty">Classifica non disponibile.</div>';
+ }
+}
+
+function renderDeathLeaderboard(rows){
+ if(!rows.length){leaderboardList.innerHTML='<div class="leaderboard-empty">Nessun caduto registrato.</div>';return}
+ leaderboardList.innerHTML=rows.map(row=>{
+  const isCurrent=!!(deathCharacterId&&row.character_id===deathCharacterId);
+  return `<div class="leaderboard-row${isCurrent?" is-current":""}">
+   <div class="leaderboard-position">#${Number(row.posizione)||0}</div>
+   <div class="leaderboard-name">${escapeDeathHtml(row.character_name||"Avventuriero")}</div>
+   <div class="leaderboard-score">${Number(row.score)||0}</div>
+  </div>`;
+ }).join("");
+}
+
+async function loadDeadCharacterRank(){
+ if(!deathCharacterId) return;
+ try{
+  const {data,error}=await deathDb.rpc("get_dead_character_rank",{p_character_id:deathCharacterId});
+  if(error) throw error;
+  const row=Array.isArray(data)?data[0]:data;
+  if(!row) return;
+  deathRankElement.textContent=`#${Number(row.posizione)||0}`;
+  deathScoreElement.textContent=String(Number(row.score)||0);
+  if(row.character_name){deathCharacterNameElement.textContent=row.character_name;deathCharacterBox.hidden=false}
+ }catch(error){
+  console.error("Errore posizione caduto:",error);
+  deathMessage.textContent="Posizione in classifica non disponibile.";
+ }
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+ await Promise.all([loadDeathLeaderboard(),loadDeadCharacterRank()]);
+});
+
+document.getElementById("exit-button").addEventListener("click",async()=>{
+ try{await deathDb.auth.signOut()}catch(error){console.error("Errore logout:",error)}
+ window.location.href="index.html";
+});
+
+document.getElementById("new-character-button").addEventListener("click",()=>{
+ window.location.href="personaggio.html";
+});
+</script>
 </body>
-
 </html>
