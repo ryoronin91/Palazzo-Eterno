@@ -5048,13 +5048,27 @@ async function triggerTrapEvent(
 
 
         // ====================================================
-        // SALVA DANNO
+        // AGGIORNAMENTO IMMEDIATO LATO CLIENT
+        //
+        // Il popup viene mostrato SUBITO.
+        // Il salvataggio Supabase avviene in background:
+        // non blocchiamo più l'interfaccia per 2-3 secondi.
         // ====================================================
 
-        const {
-            error: healthError
-        } =
-            await db
+        character.current_hp =
+            newHealth;
+
+
+        updateCharacterPanel();
+
+
+        setMessage(
+            `La trappola ti colpisce: perdi ${damage} PF.`
+        );
+
+
+        const trapSavePromise =
+            db
                 .from(
                     "characters"
                 )
@@ -5067,29 +5081,32 @@ async function triggerTrapEvent(
                 .eq(
                     "id",
                     character.id
+                )
+                .then(
+                    ({ error }) => {
+
+                        if (error) {
+
+                            throw error;
+
+                        }
+
+
+                        // Presence non deve rallentare il popup.
+                        updateMyPresence();
+
+                    }
+                )
+                .catch(
+                    error => {
+
+                        console.error(
+                            "Errore salvataggio danno trappola:",
+                            error
+                        );
+
+                    }
                 );
-
-
-        if (healthError) {
-
-            throw healthError;
-
-        }
-
-
-        character.current_hp =
-            newHealth;
-
-
-        updateCharacterPanel();
-
-
-        await updateMyPresence();
-
-
-        setMessage(
-            `La trappola ti colpisce: perdi ${damage} PF.`
-        );
 
 
         openTrapResultPrompt({
@@ -5128,7 +5145,10 @@ async function triggerTrapEvent(
                 false,
 
             lethal:
-                newHealth <= 0
+                newHealth <= 0,
+
+            savePromise:
+                trapSavePromise
 
         });
 
@@ -5309,6 +5329,17 @@ function openTrapResultPrompt(
                     true
                 ) {
 
+                    // In caso di morte aspettiamo solo che il danno
+                    // sia stato persistito prima di archiviare/eliminare.
+                    if (
+                        result.savePromise
+                    ) {
+
+                        await result.savePromise;
+
+                    }
+
+
                     await handleCharacterDeath();
 
                     return;
@@ -5316,6 +5347,8 @@ function openTrapResultPrompt(
                 }
 
 
+                // Per i colpi non letali non attendiamo Supabase.
+                // Il giocatore può riprendere subito a muoversi.
                 eventLocked =
                     false;
 

@@ -281,7 +281,7 @@ body {
 
     border-bottom: 1px solid #d5cdbb;
 
-    color: #17130f;
+    color: #eadfc9;
 }
 
 
@@ -294,7 +294,7 @@ body {
     font-size: 10px;
     font-weight: 900;
 
-    color: #75664d;
+    color: #c9b48d;
 
     text-align: center;
 }
@@ -311,6 +311,11 @@ body {
 
     font-size: 10px;
     font-weight: 800;
+
+    color: #f3e6cf;
+
+    text-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.85);
 }
 
 
@@ -318,7 +323,7 @@ body {
     font-size: 10px;
     font-weight: 900;
 
-    color: #8b641f;
+    color: #e0b75f;
 
     font-variant-numeric: tabular-nums;
 }
