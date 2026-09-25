@@ -2335,9 +2335,7 @@ async function handleCombatCharacterDeath() {
         !currentCharacter ||
         !currentCharacter.id
     ) {
-
         return;
-
     }
 
 
@@ -2346,7 +2344,7 @@ async function handleCombatCharacterDeath() {
 
 
     // ========================================================
-    // BLOCCA LE INTERAZIONI DEL COMBATTIMENTO
+    // BLOCCA EVENTUALI TARGETING
     // ========================================================
 
     try {
@@ -2371,6 +2369,10 @@ async function handleCombatCharacterDeath() {
     }
 
 
+    // ========================================================
+    // FERMA AGGIORNAMENTI COMBAT
+    // ========================================================
+
     stopCombatStateLoop();
 
 
@@ -2380,7 +2382,7 @@ async function handleCombatCharacterDeath() {
 
 
     // ========================================================
-    // CHIUDE LA CHAT REALTIME
+    // CHIUDE CHAT
     // ========================================================
 
     try {
@@ -2407,7 +2409,7 @@ async function handleCombatCharacterDeath() {
 
 
     // ========================================================
-    // RIMUOVE LA PRESENCE DAL DUNGEON
+    // RIMUOVE PRESENCE
     // ========================================================
 
     if (
@@ -2431,102 +2433,157 @@ async function handleCombatCharacterDeath() {
 
     }
 
+
     // ========================================================
-// SALVA STORICO DEL PERSONAGGIO MORTO
-// ========================================================
+    // DATI FINALI DEL PERSONAGGIO
+    // ========================================================
 
-try {
-
-    const {
-        data: deadCharacterData,
-        error: deadCharacterError
-    } =
-        await db
-            .from(
-                "characters"
-            )
-            .select(`
-                id,
-                user_id,
-                nome,
-                score
-            `)
-            .eq(
-                "id",
-                currentCharacter.id
-            )
-            .single();
+    let deadCharacterData =
+        null;
 
 
-    if (
-        deadCharacterError
-    ) {
+    try {
 
-        throw deadCharacterError;
-
-    }
-
-
-    const {
-        error: historyError
-    } =
-        await db
-            .from(
-                "dead_characters"
-            )
-            .insert({
-
-                character_id:
-                    deadCharacterData.id,
-
-                user_id:
-                    deadCharacterData.user_id,
-
-                character_name:
-                    deadCharacterData.nome,
-
-                score:
-                    Number(
-                        deadCharacterData.score
-                    ) || 0
-
-            });
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .select(`
+                    id,
+                    user_id,
+                    nome,
+                    score
+                `)
+                .eq(
+                    "id",
+                    currentCharacter.id
+                )
+                .single();
 
 
-    if (
-        historyError
-    ) {
+        if (
+            error
+        ) {
 
-        throw historyError;
+            throw error;
 
-    }
+        }
 
 
-} catch (
-    error
-) {
+        deadCharacterData =
+            data;
 
-    console.error(
-        "Errore salvataggio storico personaggio morto:",
+
+    } catch (
         error
-    );
+    ) {
+
+        console.error(
+            "Errore caricamento dati personaggio morto:",
+            error
+        );
 
 
-    combatCharacterDeathInProgress =
-        false;
+        combatCharacterDeathInProgress =
+            false;
 
 
-    setCombatStatus(
-        "Errore durante il salvataggio della morte."
-    );
+        setCombatStatus(
+            "Errore durante il caricamento dei dati della morte."
+        );
 
 
-    return;
+        return;
 
-}
+    }
+
 
     // ========================================================
-    // ELIMINA IL PERSONAGGIO DAL DATABASE
+    // SALVA STORICO DEL PERSONAGGIO MORTO
+    // ========================================================
+
+    try {
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "dead_characters"
+                )
+                .insert({
+
+                    character_id:
+                        deadCharacterData.id,
+
+                    user_id:
+                        deadCharacterData.user_id,
+
+                    character_name:
+                        deadCharacterData.nome,
+
+                    score:
+                        Number(
+                            deadCharacterData.score
+                        ) || 0
+
+                });
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "Errore salvataggio storico personaggio morto:",
+            error
+        );
+
+
+        combatCharacterDeathInProgress =
+            false;
+
+
+        setCombatStatus(
+            "Errore durante il salvataggio della morte."
+        );
+
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // PREPARA DATI PER MORTE.HTML
+    // ========================================================
+
+    const deadName =
+        deadCharacterData.nome ||
+        "Avventuriero";
+
+
+    const deadScore =
+        Number(
+            deadCharacterData.score
+        ) || 0;
+
+
+    // ========================================================
+    // ELIMINA PERSONAGGIO
     // ========================================================
 
     try {
@@ -2554,23 +2611,16 @@ try {
         }
 
 
- const deadName =
-    deadCharacterData.nome ||
-    "Avventuriero";
+        currentCharacter =
+            null;
 
 
-const deadScore =
-    Number(
-        deadCharacterData.score
-    ) || 0;
+        // ====================================================
+        // PAGINA MORTE
+        // ====================================================
 
-
-currentCharacter =
-    null;
-
-
-window.location.href =
-    `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadScore)}`;
+        window.location.href =
+            `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadScore)}`;
 
 
     } catch (
