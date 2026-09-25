@@ -333,6 +333,8 @@ function chooseGoblinTarget(
     return null;
 
 }
+
+
 // ============================================================
 // IA GOBLIN BASE - MOVIMENTO
 // ============================================================
@@ -651,7 +653,7 @@ async function runEnemyAI(
 
     }
 
-    
+
     const aiTurnKey =
         `${combatSession.round_number}:${currentEntity.id}`;
 
@@ -666,7 +668,8 @@ async function runEnemyAI(
 
     }
 
-        const monsterType =
+
+    const monsterType =
         String(
             currentEntity.monster_type ||
             ""
@@ -696,6 +699,7 @@ async function runEnemyAI(
 
     }
 
+
     enemyAITurnKey =
         aiTurnKey;
 
@@ -708,13 +712,6 @@ async function runEnemyAI(
 
         // ====================================================
         // AGGRO
-        //
-        // Prima che il Goblin scelga il bersaglio normale,
-        // controlliamo se esiste Aggro.
-        //
-        // Se esiste, apply_current_enemy_aggro salva il PG
-        // provocatore come target del turno nella tabella
-        // combat_enemy_turn_state.
         // ====================================================
 
         const {
@@ -757,28 +754,28 @@ async function runEnemyAI(
         // MOVIMENTO
         // ====================================================
 
-const movementRpc =
-    monsterType ===
-        "goblin_sputafuoco"
+        const movementRpc =
+            monsterType ===
+                "goblin_sputafuoco"
 
-        ? "run_goblin_sputafuoco_movement_turn"
+                ? "run_goblin_sputafuoco_movement_turn"
 
-        : "run_goblin_movement_turn";
+                : "run_goblin_movement_turn";
 
 
-const {
-    data: moveData,
-    error: moveError
-} =
-    await db.rpc(
-        movementRpc,
-        {
+        const {
+            data: moveData,
+            error: moveError
+        } =
+            await db.rpc(
+                movementRpc,
+                {
 
-            p_combat_id:
-                combatId
+                    p_combat_id:
+                        combatId
 
-        }
-    );
+                }
+            );
 
 
         if (
@@ -828,7 +825,9 @@ const {
             }
 
         }
-                // ====================================================
+
+
+        // ====================================================
         // ATTACCO
         // ====================================================
 
@@ -837,35 +836,35 @@ const {
 
 
         const canAttack =
-    monsterType ===
-        "goblin_sputafuoco"
+            monsterType ===
+                "goblin_sputafuoco"
 
-        ? moveData?.in_range ===
-            true
+                ? moveData?.in_range ===
+                    true
 
-        : moveData?.adjacent ===
-            true;
+                : moveData?.adjacent ===
+                    true;
 
 
-if (
-    canAttack
-) {
+        if (
+            canAttack
+        ) {
+
+            const attackRpc =
+                monsterType ===
+                    "goblin_sputafuoco"
+
+                    ? "run_goblin_sputafuoco_attack_turn"
+
+                    : "run_goblin_attack_turn";
+
 
             const {
                 data: attackResult,
                 error: attackError
             } =
-
-            const attackRpc =
-    monsterType ===
-        "goblin_sputafuoco"
-
-        ? "run_goblin_sputafuoco_attack_turn"
-
-        : "run_goblin_attack_turn";
-
                 await db.rpc(
-    attackRpc,
+                    attackRpc,
                     {
 
                         p_combat_id:
@@ -1007,11 +1006,9 @@ if (
         );
 
 
-        // Se questo client ha realmente fatto avanzare il turno,
-        // aggiorniamo subito lo stato.
-
         if (
-            turnAdvanced === true
+            turnAdvanced ===
+            true
         ) {
 
             await loadCombatSession();
@@ -1029,7 +1026,9 @@ if (
         }
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.error(
             "Errore IA nemico:",
