@@ -1931,7 +1931,46 @@ if (
 
 }
 
-     // ========================================================
+// ========================================================
+// TIMER SOLO PER I GIOCATORI
+// ========================================================
+
+const duration =
+    Number(
+        combatSession.turn_duration_seconds
+    ) || 60;
+
+
+const startedAt =
+    combatSession.turn_started_at
+
+        ? new Date(
+            combatSession.turn_started_at
+        ).getTime()
+
+        : Date.now();
+
+
+const elapsedSeconds =
+    (
+        Date.now() -
+        startedAt
+    )
+    /
+    1000;
+
+
+const remaining =
+    Math.max(
+        0,
+        Math.ceil(
+            duration -
+            elapsedSeconds
+        )
+    );
+
+    
+ // ========================================================
     // MIO TURNO
     // ========================================================
 
