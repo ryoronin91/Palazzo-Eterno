@@ -32,6 +32,21 @@
 
             box-sizing: border-box;
 
+            display: grid;
+
+            grid-template-columns:
+                230px
+                minmax(
+                    0,
+                    1200px
+                );
+
+            justify-content: center;
+
+            align-items: start;
+
+            gap: 18px;
+
         }
 
 
@@ -41,7 +56,7 @@
 
             max-width: 1200px;
 
-            margin: 0 auto;
+            margin: 0;
 
             padding: 24px;
 
@@ -64,6 +79,293 @@
                     0,
                     0,
                     0.45
+                );
+
+        }
+
+
+        /* =====================================================
+           CADUTI DEL PALAZZO
+        ===================================================== */
+
+        .sheet-leaderboard {
+
+            width: 100%;
+
+            max-height:
+                calc(
+                    100vh - 48px
+                );
+
+            overflow: hidden;
+
+            position: sticky;
+
+            top: 24px;
+
+            box-sizing: border-box;
+
+            border-radius: 14px;
+
+            background:
+                rgba(
+                    18,
+                    18,
+                    18,
+                    0.97
+                );
+
+            box-shadow:
+                0 10px 35px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.45
+                );
+
+            border:
+                1px solid
+                rgba(
+                    184,
+                    138,
+                    59,
+                    0.28
+                );
+
+        }
+
+
+        .sheet-leaderboard-title {
+
+            padding:
+                14px
+                12px;
+
+            border-bottom:
+                1px solid
+                rgba(
+                    184,
+                    138,
+                    59,
+                    0.35
+                );
+
+            color:
+                #d9b36b;
+
+            font-size:
+                0.9rem;
+
+            font-weight:
+                900;
+
+            letter-spacing:
+                0.06em;
+
+            text-align:
+                center;
+
+        }
+
+
+        .sheet-leaderboard-list {
+
+            max-height:
+                calc(
+                    100vh - 110px
+                );
+
+            overflow-y:
+                auto;
+
+            padding:
+                7px;
+
+        }
+
+
+        .sheet-leaderboard-row {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                34px
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            align-items:
+                center;
+
+            gap:
+                6px;
+
+            min-height:
+                31px;
+
+            padding:
+                5px
+                6px;
+
+            border-bottom:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.07
+                );
+
+        }
+
+
+        .sheet-leaderboard-row:last-child {
+
+            border-bottom:
+                0;
+
+        }
+
+
+        .sheet-leaderboard-position {
+
+            color:
+                #9e8a70;
+
+            font-size:
+                0.72rem;
+
+            font-weight:
+                900;
+
+            text-align:
+                center;
+
+        }
+
+
+        .sheet-leaderboard-row:nth-child(1)
+        .sheet-leaderboard-position {
+
+            color:
+                #e3bd55;
+
+        }
+
+
+        .sheet-leaderboard-row:nth-child(2)
+        .sheet-leaderboard-position {
+
+            color:
+                #c9c9c9;
+
+        }
+
+
+        .sheet-leaderboard-row:nth-child(3)
+        .sheet-leaderboard-position {
+
+            color:
+                #c98b55;
+
+        }
+
+
+        .sheet-leaderboard-name {
+
+            min-width:
+                0;
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+
+            white-space:
+                nowrap;
+
+            color:
+                #eee2cf;
+
+            font-size:
+                0.76rem;
+
+            font-weight:
+                700;
+
+        }
+
+
+        .sheet-leaderboard-score {
+
+            color:
+                #d8b777;
+
+            font-size:
+                0.72rem;
+
+            font-weight:
+                900;
+
+            font-variant-numeric:
+                tabular-nums;
+
+        }
+
+
+        .sheet-leaderboard-empty {
+
+            padding:
+                22px
+                10px;
+
+            color:
+                #938675;
+
+            font-size:
+                0.76rem;
+
+            font-style:
+                italic;
+
+            line-height:
+                1.4;
+
+            text-align:
+                center;
+
+        }
+
+
+        .sheet-leaderboard-list::-webkit-scrollbar {
+
+            width:
+                7px;
+
+        }
+
+
+        .sheet-leaderboard-list::-webkit-scrollbar-thumb {
+
+            background:
+                #6e5b3d;
+
+        }
+
+
+        .sheet-leaderboard-list::-webkit-scrollbar-track {
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.04
                 );
 
         }
@@ -1335,6 +1637,39 @@
         ===================================================== */
 
         @media (
+            max-width: 980px
+        ) {
+
+            .character-sheet-page {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .sheet-leaderboard {
+
+                position:
+                    static;
+
+                max-height:
+                    none;
+
+            }
+
+
+            .sheet-leaderboard-list {
+
+                max-height:
+                    330px;
+
+            }
+
+        }
+
+
+        @media (
             max-width: 650px
         ) {
 
@@ -1522,6 +1857,24 @@
 <body>
 
     <main class="character-sheet-page">
+
+        <aside class="sheet-leaderboard">
+
+            <div class="sheet-leaderboard-title">
+                CADUTI DEL PALAZZO
+            </div>
+
+            <div
+                id="sheet-leaderboard-list"
+                class="sheet-leaderboard-list"
+            >
+                <div class="sheet-leaderboard-empty">
+                    Caricamento classifica...
+                </div>
+            </div>
+
+        </aside>
+
 
         <div class="character-sheet">
 
@@ -2115,7 +2468,7 @@
 
     <script src="js/config.js"></script>
 
-    <script src="js/scheda.js?v=5"></script>
+    <script src="js/scheda.js?v=6"></script>
 
 </body>
 

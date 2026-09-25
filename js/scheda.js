@@ -96,6 +96,8 @@ document.addEventListener(
 
             await loadCharacter();
 
+            await loadSheetLeaderboard();
+
             ensureInventoryInterface();
 
             await Promise.all([
@@ -135,6 +137,198 @@ document.addEventListener(
 
     }
 );
+
+
+
+// ============================================================
+// CADUTI DEL PALAZZO
+// ============================================================
+
+async function loadSheetLeaderboard() {
+
+    const container =
+        document.getElementById(
+            "sheet-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_dead_characters_leaderboard",
+                {
+                    p_limit:
+                        20
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderSheetLeaderboard(
+            data || []
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento Caduti del Palazzo:",
+            error
+        );
+
+
+        container.innerHTML =
+            `
+                <div class="sheet-leaderboard-empty">
+                    Classifica non disponibile.
+                </div>
+            `;
+
+    }
+
+}
+
+
+// ============================================================
+// RENDER LEADERBOARD
+// ============================================================
+
+function renderSheetLeaderboard(
+    rows
+) {
+
+    const container =
+        document.getElementById(
+            "sheet-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(rows) ||
+        rows.length === 0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="sheet-leaderboard-empty">
+                    Nessun caduto registrato.
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        rows
+            .map(
+                row => {
+
+                    const position =
+                        Number(
+                            row.posizione
+                        ) || 0;
+
+
+                    const score =
+                        Number(
+                            row.score
+                        ) || 0;
+
+
+                    const name =
+                        escapeSheetLeaderboardHtml(
+                            row.character_name ||
+                            "Avventuriero"
+                        );
+
+
+                    return `
+                        <div class="sheet-leaderboard-row">
+
+                            <div class="sheet-leaderboard-position">
+                                #${position}
+                            </div>
+
+                            <div
+                                class="sheet-leaderboard-name"
+                                title="${name}"
+                            >
+                                ${name}
+                            </div>
+
+                            <div class="sheet-leaderboard-score">
+                                ${score}
+                            </div>
+
+                        </div>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+// ============================================================
+// ESCAPE HTML LEADERBOARD
+// ============================================================
+
+function escapeSheetLeaderboardHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
 
 
 // ============================================================
