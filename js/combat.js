@@ -72,7 +72,7 @@ let victoryLootPickInProgress = false;
 let enemyAITurnKey = null;
 let enemyAIInProgress = false;
 
-
+let lastRenderedTurnEntityId = null;
 
 
 // ============================================================
