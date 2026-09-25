@@ -98,6 +98,9 @@ const combatTokens =
     new Map();
 
 let combatTurnOrder = [];
+console.log(
+    "TURN ORDER MOD ATTIVA"
+);
 
 // ============================================================
 // CELLE RANGE
@@ -846,6 +849,10 @@ if (
 
 }
 
+console.log(
+    "ORDINE TURNI BASE:",
+    combatTurnOrder
+);
 // ============================================================
 // EFFETTI PERSISTENTI DEL PERSONAGGIO
 // ============================================================

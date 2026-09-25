@@ -779,7 +779,15 @@ function renderCombatEntityList() {
     // ========================================================
     // RENDER LISTA
     // ========================================================
-
+console.log(
+    "TURN ORDER VISIVO:",
+    orderedEntities.map(
+        entity =>
+            entity.display_name
+    ),
+    "TURNO ATTUALE:",
+    currentTurnId
+);
     orderedEntities.forEach(
         entity => {
 
