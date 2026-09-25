@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v44 CARICATO");
+console.log("COMBAT.JS v45 CARICATO");
 
 
 const db = supabaseClient;
@@ -7007,6 +7007,7 @@ async function passTurn() {
 // UI TURNO
 // ============================================================
 
+function updateCombatTurnUI() {
     const currentEntity =
         getCurrentTurnEntity();
 
