@@ -4745,117 +4745,114 @@ async function executeHeal(
 
 }
 // ============================================================
-// OTTIENI CASELLA CORRENTE
+// TRAPPOLE DEL PIANO
+// ============================================================
+//
+// Coordinate VISIBILI della mappa dungeon.
+//
+// Nessun timeout.
+// Nessun cooldown.
+// Nessuna dipendenza dagli oggetti di dungeonData.cells.
+//
 // ============================================================
 
-function getCurrentDungeonCell() {
+const DUNGEON_TRAPS = {
 
-    if (
-        !dungeonData ||
-        !dungeonData.cells ||
-        playerX === null ||
-        playerY === null
-    ) {
-        return null;
+    "11,11": {
+
+        id:
+            "blade_corridor",
+
+        name:
+            "LAMA",
+
+        defenseStat:
+            "destrezza",
+
+        defenseLabel:
+            "DES",
+
+        message:
+            "Una lama affilata attraversa il corridoio da muro a muro."
+
+    },
+
+
+    "9,15": {
+
+        id:
+            "acid_vapor",
+
+        name:
+            "VAPORE ACIDO",
+
+        defenseStat:
+            "resistenza",
+
+        defenseLabel:
+            "RES",
+
+        message:
+            "Dal pavimento una nube di vapore acido ti investe."
+
     }
 
-
-    const jsonX =
-        playerX +
-        GRID_OFFSET_X;
-
-
-    const jsonY =
-        playerY +
-        GRID_OFFSET_Y;
-
-
-    if (
-        jsonY < 0 ||
-        jsonY >= dungeonData.cells.length
-    ) {
-        return null;
-    }
-
-
-    if (
-        jsonX < 0 ||
-        jsonX >= dungeonData.cells[jsonY].length
-    ) {
-        return null;
-    }
-
-
-    return dungeonData.cells[
-        jsonY
-    ][
-        jsonX
-    ];
-
-}
+};
 
 
 // ============================================================
 // CONTROLLO EVENTO CASELLA
 // ============================================================
 //
-// Restituisce TRUE se è stato gestito un evento.
-// Restituisce FALSE se la casella non contiene eventi.
+// Le celle di dungeonData.cells sono valori numerici.
+// Quindi NON cerchiamo più cell.event / cell.type_event.
+//
+// Usiamo direttamente le coordinate visibili del PG.
 //
 // ============================================================
 
 async function checkDungeonCellEvent() {
 
-    const cell =
-        getCurrentDungeonCell();
-
-
     if (
-        !cell ||
-        typeof cell !== "object"
-    ) {
-        return false;
-    }
-
-
-    const eventType =
-        cell.event ||
-        cell.event_type ||
-        cell.type_event ||
-        null;
-
-
-    if (!eventType) {
-        return false;
-    }
-
-
-    const normalizedEvent =
-        String(
-            eventType
-        ).toLowerCase();
-
-
-    // ========================================================
-    // TRAPPOLA
-    // ========================================================
-
-    if (
-        normalizedEvent === "trap" ||
-        normalizedEvent === "trappola"
+        playerX === null ||
+        playerY === null
     ) {
 
-        await triggerTrapEvent(
-            cell
-        );
-
-
-        return true;
+        return false;
 
     }
 
 
-    return false;
+    const coordinateKey =
+        `${Number(playerX)},${Number(playerY)}`;
+
+
+    const dungeonTrap =
+        DUNGEON_TRAPS[
+            coordinateKey
+        ];
+
+
+    if (!dungeonTrap) {
+
+        return false;
+
+    }
+
+
+    console.log(
+        "TRAPPOLA RILEVATA:",
+        coordinateKey,
+        dungeonTrap
+    );
+
+
+    await triggerTrapEvent(
+        dungeonTrap
+    );
+
+
+    return true;
 
 }
 
@@ -4863,13 +4860,36 @@ async function checkDungeonCellEvent() {
 // ============================================================
 // TRAPPOLA
 // ============================================================
+//
+// Regola definitiva:
+//
+// 1d10 - LCK
+//
+// LAMA:
+// risultato contro DES
+//
+// ACIDO:
+// risultato contro RES
+//
+// Se risultato > difesa:
+// danno = risultato - difesa
+//
+// NESSUN COOLDOWN.
+//
+// ============================================================
 
 async function triggerTrapEvent(
-    dungeonEvent
+    dungeonTrap
 ) {
 
-    if (!character) {
+    if (
+        !character ||
+        !character.id ||
+        !dungeonTrap
+    ) {
+
         return;
+
     }
 
 
@@ -4877,153 +4897,41 @@ async function triggerTrapEvent(
         true;
 
 
-    // Interrompiamo eventuali passi già accodati.
-    // In questo modo il PG non continua a correre
-    // mentre sta risolvendo una trappola.
-
     movementQueue.length =
         0;
 
 
     try {
 
-        // ====================================================
-        // ATTRIBUTI EFFETTIVI
-        // ====================================================
-
-        const fortuna =
+        const luck =
             getDungeonEffectiveAttribute(
                 "fortuna"
             );
 
 
-        const requestedDefenseStat =
-            String(
-                dungeonEvent.defenseStat ||
-                dungeonEvent.defense_stat ||
-                "resistenza"
-            ).toLowerCase();
-
-
-        const supportedStats = [
-            "forza",
-            "resistenza",
-            "costituzione",
-            "intelligenza",
-            "destrezza",
-            "fortuna"
-        ];
-
-
-        const defenseStat =
-            supportedStats.includes(
-                requestedDefenseStat
-            )
-                ? requestedDefenseStat
-                : "resistenza";
-
-
-        const defenseValue =
+        const defense =
             getDungeonEffectiveAttribute(
-                defenseStat
+                dungeonTrap.defenseStat
             );
 
-
-        // ====================================================
-        // DIFFICOLTÀ
-        // ====================================================
-
-        const difficulty =
-            Number(
-                dungeonEvent.difficulty ||
-                dungeonEvent.dc
-            ) || 10;
-
-
-        // ====================================================
-        // TIRO
-        // ====================================================
 
         const roll =
             Math.floor(
-                Math.random() * 20
+                Math.random() *
+                10
             ) + 1;
 
 
-        const fortuneBonus =
-            Math.floor(
-                fortuna / 5
-            );
-
-
-        const total =
-            roll +
-            defenseValue +
-            fortuneBonus;
-
-
-        console.log(
-            "TRAPPOLA",
-            {
-                roll,
-                defenseStat,
-                defenseValue,
-                fortuna,
-                fortuneBonus,
-                total,
-                difficulty
-            }
-        );
-
-
-        // ====================================================
-        // TRAPPOLA EVITATA
-        // ====================================================
-
-        if (
-            total >=
-            difficulty
-        ) {
-
-            setMessage(
-                dungeonEvent.success_message ||
-                dungeonEvent.successMessage ||
-                "Riesci a evitare la trappola."
-            );
-
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // DANNO
-        // ====================================================
-
-        const baseDamage =
-            Number(
-                dungeonEvent.damage
-            ) || 1;
-
-
-        const costituzione =
-            getDungeonEffectiveAttribute(
-                "costituzione"
-            );
-
-
-        const constitutionReduction =
-            Math.floor(
-                costituzione / 10
-            );
+        const trapResult =
+            roll -
+            luck;
 
 
         const damage =
             Math.max(
-                1,
-                baseDamage -
-                constitutionReduction
+                0,
+                trapResult -
+                defense
             );
 
 
@@ -5056,18 +4964,67 @@ async function triggerTrapEvent(
             );
 
 
+        console.log(
+            "RISOLUZIONE TRAPPOLA:",
+            {
+                id:
+                    dungeonTrap.id,
+
+                coordinate:
+                    `${playerX},${playerY}`,
+
+                roll,
+                luck,
+                trapResult,
+
+                defenseStat:
+                    dungeonTrap.defenseStat,
+
+                defense,
+                damage,
+                oldHealth,
+                newHealth
+            }
+        );
+
+
         // ====================================================
-        // SALVA PF
+        // NESSUN DANNO
+        // ====================================================
+
+        if (
+            damage <= 0
+        ) {
+
+            setMessage(
+                `${dungeonTrap.name}: ${dungeonTrap.message} ` +
+                `1d10 (${roll}) - LCK ${luck} = ${trapResult} ` +
+                `contro ${dungeonTrap.defenseLabel} ${defense}. ` +
+                `Riesci a evitare la trappola.`
+            );
+
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // SALVA DANNO
         // ====================================================
 
         const {
-            error
+            error: healthError
         } =
             await db
-                .from("characters")
+                .from(
+                    "characters"
+                )
                 .update({
+
                     current_hp:
                         newHealth
+
                 })
                 .eq(
                     "id",
@@ -5075,8 +5032,10 @@ async function triggerTrapEvent(
                 );
 
 
-        if (error) {
-            throw error;
+        if (healthError) {
+
+            throw healthError;
+
         }
 
 
@@ -5086,13 +5045,15 @@ async function triggerTrapEvent(
 
         updateCharacterPanel();
 
-        updateMyPresence();
+
+        await updateMyPresence();
 
 
         setMessage(
-            dungeonEvent.fail_message ||
-            dungeonEvent.failMessage ||
-            `La trappola ti colpisce: perdi ${damage} PF.`
+            `${dungeonTrap.name}: ${dungeonTrap.message} ` +
+            `1d10 (${roll}) - LCK ${luck} = ${trapResult} ` +
+            `contro ${dungeonTrap.defenseLabel} ${defense}. ` +
+            `Perdi ${damage} PF.`
         );
 
 
