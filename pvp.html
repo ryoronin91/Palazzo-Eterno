@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Arena PvP - Palazzo Eterno</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/pvp.css?v=1">
+</head>
+<body>
+<main class="pvp-page">
+<header class="pvp-header">
+    <div>
+        <span class="pvp-kicker">PALAZZO ETERNO</span>
+        <h1>ARENA PvP</h1>
+        <p id="pvp-status">Caricamento arena...</p>
+    </div>
+    <a class="button secondary" href="dungeon.html">ESCI DALL'ARENA</a>
+</header>
+
+<section id="pvp-lobby" class="pvp-lobby">
+    <div class="pvp-panel">
+        <h2>ATTESA COMBATTENTI</h2>
+        <p>Servono almeno 2 giocatori. Massimo 8.</p>
+        <div id="pvp-lobby-list" class="pvp-lobby-list"></div>
+        <button id="pvp-start-button" class="pvp-button" type="button">
+            AVVIA ARENA
+        </button>
+    </div>
+</section>
+
+<section id="pvp-combat" class="pvp-layout" hidden>
+    <aside class="pvp-panel pvp-turn-panel">
+        <h2>ORDINE DI TURNO</h2>
+        <div id="pvp-turn-list"></div>
+
+        <h2 class="pvp-spaced">REGISTRO</h2>
+        <div id="pvp-log" class="pvp-log"></div>
+    </aside>
+
+    <section class="pvp-panel pvp-map-panel">
+        <div id="pvp-map" class="pvp-map" aria-label="Mappa arena PvP"></div>
+    </section>
+
+    <aside class="pvp-panel pvp-sheet-panel">
+        <h2 id="pvp-character-name">PERSONAGGIO</h2>
+
+        <div class="pvp-resource">
+            <span>PF</span>
+            <strong id="pvp-hp">—</strong>
+        </div>
+
+        <div class="pvp-resource">
+            <span>PM</span>
+            <strong id="pvp-pm">—</strong>
+        </div>
+
+        <div class="pvp-resource">
+            <span>MOVIMENTO</span>
+            <strong id="pvp-move">—</strong>
+        </div>
+
+        <div class="pvp-actions">
+            <button id="pvp-attack-button" class="pvp-button" type="button">
+                ATTACCO
+            </button>
+
+            <button id="pvp-pass-button" class="pvp-button secondary" type="button">
+                PASSA TURNO
+            </button>
+        </div>
+
+        <div class="pvp-help">
+            Movimento: WASD o frecce.<br>
+            Attacco: premi ATTACCO e poi clicca un avversario adiacente.
+        </div>
+    </aside>
+</section>
+
+<div id="pvp-victory" class="pvp-overlay" hidden>
+    <div class="pvp-victory-card">
+        <div class="pvp-victory-symbol">⚔</div>
+        <h2>ULTIMO SOPRAVVISSUTO</h2>
+        <p id="pvp-victory-name"></p>
+        <a href="dungeon.html" class="pvp-button">TORNA AL DUNGEON</a>
+    </div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=3"></script>
+<script src="js/pvp.js?v=2"></script>
+</body>
+</html>

@@ -52,6 +52,14 @@ const DUNGEON_COMBAT_EVENTS = [
         y: 20,
         encounter_id: "combat_5",
         token: "immagini/eventi/combat_goblin.png"
+    },
+
+    {
+        id: "PVP1",
+        x: 1,
+        y: 14,
+        type: "pvp",
+        token: "immagini/eventi/token_pvp.png"
     }
 
 ];
@@ -853,25 +861,50 @@ function openCombatPrompt(
         "combat-event-modal";
 
 
+    const isPvpEvent =
+        combatEvent.type ===
+        "pvp";
+
+
     modal.innerHTML = `
         <div class="combat-event-icon">
             ⚔
         </div>
 
         <h2>
-            COMBATTIMENTO
+            ${
+                isPvpEvent
+                    ? "ARENA PvP"
+                    : "COMBATTIMENTO"
+            }
         </h2>
 
         <p>
-            Una presenza ostile blocca il tuo cammino.
+            ${
+                isPvpEvent
+                    ? "Davanti a te si apre l'Arena del Palazzo."
+                    : "Una presenza ostile blocca il tuo cammino."
+            }
         </p>
 
         <div class="combat-event-warning">
-            Una volta entrato nel combattimento
-            non potrai abbandonarlo fino alla
-            <strong>vittoria</strong>
-            o alla
-            <strong>morte</strong>.
+            ${
+                isPvpEvent
+                    ? `
+                        Qui gli avventurieri possono
+                        combattere tra loro fino alla morte.
+                        Il vincitore conquista
+                        <strong>score ed equipaggiamento</strong>
+                        dello sconfitto.
+                    `
+                    : `
+                        Una volta entrato nel combattimento
+                        non potrai abbandonarlo fino alla
+                        <strong>vittoria</strong>
+                        o alla
+                        <strong>morte</strong>.
+                    `
+            }
         </div>
 
         <div class="combat-event-buttons">
@@ -881,7 +914,11 @@ function openCombatPrompt(
                 type="button"
                 class="combat-event-button combat-event-enter"
             >
-                ENTRA IN COMBATTIMENTO
+                ${
+                    isPvpEvent
+                        ? "ENTRA NELL'ARENA"
+                        : "ENTRA IN COMBATTIMENTO"
+                }
             </button>
 
             <button
@@ -921,7 +958,9 @@ function openCombatPrompt(
                 closeCombatPrompt();
 
                 setMessage(
-                    "Decidi di non entrare in combattimento."
+                    pendingCombatEvent?.type === "pvp"
+                        ? "Decidi di non entrare nell'Arena."
+                        : "Decidi di non entrare in combattimento."
                 );
 
             }
@@ -972,6 +1011,43 @@ function openCombatPrompt(
 
 
             try {
+
+                // ====================================================
+                // ARENA PvP
+                // ====================================================
+
+                if (
+                    selectedEvent.type ===
+                    "pvp"
+                ) {
+
+                    setMessage(
+                        "Ingresso nell'Arena PvP..."
+                    );
+
+
+                    if (
+                        typeof flushPositionSave ===
+                        "function"
+                    ) {
+
+                        await flushPositionSave();
+
+                    }
+
+
+                    window.location.href =
+                        "pvp.html";
+
+
+                    return;
+
+                }
+
+
+                // ====================================================
+                // COMBAT PvE NORMALE
+                // ====================================================
 
                 setMessage(
                     "Ingresso nel combattimento..."
@@ -1282,7 +1358,9 @@ function checkNearbyCombatEvents() {
 
 
     setMessage(
-        "Percepisci una presenza ostile nelle vicinanze."
+        combatEvent.type === "pvp"
+            ? "Scorgi l'ingresso dell'Arena PvP."
+            : "Percepisci una presenza ostile nelle vicinanze."
     );
 
 
@@ -1369,7 +1447,9 @@ function renderCombatEvents() {
 
 
                 token.title =
-                    `Evento Combat ${combatEvent.id}`;
+                    combatEvent.type === "pvp"
+                        ? "Arena PvP"
+                        : `Evento Combat ${combatEvent.id}`;
 
 
                 const image =
@@ -1383,7 +1463,9 @@ function renderCombatEvents() {
 
 
                 image.alt =
-                    `Evento Combat ${combatEvent.id}`;
+                    combatEvent.type === "pvp"
+                        ? "Arena PvP"
+                        : `Evento Combat ${combatEvent.id}`;
 
 
                 image.draggable =
