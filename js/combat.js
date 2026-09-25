@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v48 CARICATO");
+console.log("COMBAT.JS v50 CARICATO");
 
 
 const db = supabaseClient;
@@ -4073,6 +4073,57 @@ async function performFireBolt(
 
         renderCombat();
 
+    // ====================================================
+// LOG ATTACCO
+// ====================================================
+
+if (
+    attackData?.executed === true
+) {
+
+    if (
+        attackData.hit
+    ) {
+
+        let attackText =
+            `${attackData.attacker_name} attacca ${attackData.target_name}: `
+            +
+            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+            +
+            `contro DIF ${attackData.defense}. `
+            +
+            `${attackData.damage} danni`
+            +
+            ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
+
+
+        if (
+            attackData.target_dead
+        ) {
+
+            attackText +=
+                ` · ${attackData.target_name} è sconfitto!`;
+
+        }
+
+
+        addCombatLog(
+            attackText
+        );
+
+    } else {
+
+        addCombatLog(
+            `${attackData.attacker_name} attacca ${attackData.target_name}: `
+            +
+            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+            +
+            `contro DIF ${attackData.defense}. MANCATO.`
+        );
+
+    }
+
+}
 
         // ====================================================
         // MANCATO
@@ -7451,6 +7502,45 @@ async function updateCombatTurnUI() {
                 data
             );
 
+            // ====================================================
+// ATTACCO AUTOMATICO
+// ====================================================
+
+let attackData = null;
+
+
+if (
+    data?.adjacent === true
+) {
+
+    const {
+        data: attackResult,
+        error: attackError
+    } =
+        await db.rpc(
+            "run_goblin_attack_turn",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (attackError) {
+        throw attackError;
+    }
+
+
+    attackData =
+        attackResult;
+
+
+    console.log(
+        "ATTACCO IA GOBLIN:",
+        attackData
+    );
+
+}
 
             // ====================================================
             // RICARICA POSIZIONI E MOV
