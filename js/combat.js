@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v47 CARICATO");
+console.log("COMBAT.JS v48 CARICATO");
 
 
 const db = supabaseClient;
@@ -7288,7 +7288,7 @@ async function passTurn() {
 // UI TURNO
 // ============================================================
 
-function updateCombatTurnUI() {
+async function updateCombatTurnUI() {
     const currentEntity =
         getCurrentTurnEntity();
 
@@ -7374,64 +7374,132 @@ function updateCombatTurnUI() {
         updateActionButtons();
 
 
-        // ====================================================
-        // IA GOBLIN BASE
-        // UNA SOLA VOLTA PER TURNO
-        // ====================================================
+    // ====================================================
+// IA GOBLIN BASE
+// MOVIMENTO AUTOMATICO
+// ====================================================
 
-        const aiTurnKey =
-            `${combatSession.round_number}:${currentEntity.id}`;
+const aiTurnKey =
+    `${combatSession.round_number}:${currentEntity.id}`;
+
+
+if (
+    enemyAIInProgress ||
+    enemyAITurnKey === aiTurnKey
+) {
+
+    return;
+
+}
+
+
+enemyAITurnKey =
+    aiTurnKey;
+
+enemyAIInProgress =
+    true;
+
+
+try {
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "run_goblin_movement_turn",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    console.log(
+        "MOVIMENTO IA GOBLIN:",
+        data
+    );
+
+
+    // ====================================================
+    // RICARICA POSIZIONI E MOV
+    // ====================================================
+
+    await loadCombatEntities();
+
+
+    lastCombatEntitiesSnapshot =
+        createCombatSnapshot();
+
+
+    renderCombat();
+
+
+    // ====================================================
+    // LOG
+    // ====================================================
+
+    if (
+        data?.executed === true
+    ) {
+
+        if (
+            Number(data.steps) > 0
+        ) {
+
+            addCombatLog(
+                `${data.enemy_name} si muove di ${data.steps} ${
+                    Number(data.steps) === 1
+                        ? "quadretto"
+                        : "quadretti"
+                } verso ${data.target_name}.`
+            );
+
+        } else {
+
+            addCombatLog(
+                `${data.enemy_name} prende di mira ${data.target_name}.`
+            );
+
+        }
 
 
         if (
-            enemyAIInProgress ||
-            enemyAITurnKey === aiTurnKey
+            data.adjacent === true
         ) {
-            return;
-        }
 
-
-        enemyAITurnKey =
-            aiTurnKey;
-
-        enemyAIInProgress =
-            true;
-
-
-        try {
-
-            const target =
-                chooseGoblinTarget(
-                    currentEntity
-                );
-
-
-            if (target) {
-
-                console.log(
-                    "IA GOBLIN:",
-                    currentEntity.display_name,
-                    "sceglie",
-                    target.display_name
-                );
-
-
-                addCombatLog(
-                    `${currentEntity.display_name} prende di mira ${target.display_name}.`
-                );
-
-            }
-
-        } finally {
-
-            enemyAIInProgress =
-                false;
+            console.log(
+                `${data.enemy_name} è ora adiacente a ${data.target_name}.`
+            );
 
         }
 
-
-        return;
     }
+
+
+} catch (error) {
+
+    console.error(
+        "Errore movimento IA Goblin:",
+        error
+    );
+
+} finally {
+
+    enemyAIInProgress =
+        false;
+
+}
+
+
+return;    
 
 
     // ========================================================
