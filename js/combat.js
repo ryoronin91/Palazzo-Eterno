@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v42 CARICATO");
+console.log("COMBAT.JS v43 CARICATO");
 
 
 const db = supabaseClient;
@@ -7112,84 +7112,177 @@ function updateCombatTurnUI() {
     // TURNO NEMICO
     // ========================================================
 
-   if (
-    currentEntity.entity_type ===
-    "enemy"
-) {
+function updateCombatTurnUI() {
 
-    setCombatStatus(
-        `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
-    );
-
-
-    if (combatTargetMode) {
-
-        cancelCombatTargeting();
-
+    if (!combatSession) {
+        return;
     }
 
 
-    updateActionButtons();
+    if (
+        combatSession.status !==
+        "active"
+    ) {
+
+        setCombatStatus(
+            `Stato: ${combatSession.status}`
+        );
+
+
+        if (combatTargetMode) {
+            cancelCombatTargeting();
+        }
+
+
+        updateActionButtons();
+
+        return;
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    if (!currentEntity) {
+
+        setCombatStatus(
+            "Turno non disponibile."
+        );
+
+
+        if (combatTargetMode) {
+            cancelCombatTargeting();
+        }
+
+
+        updateActionButtons();
+
+        return;
+    }
+
+
+    const round =
+        Number(
+            combatSession.round_number
+        ) || 1;
+
+
+    const duration =
+        Number(
+            combatSession.turn_duration_seconds
+        ) || 60;
+
+
+    const startedAt =
+        combatSession.turn_started_at
+
+            ? new Date(
+                combatSession.turn_started_at
+            ).getTime()
+
+            : Date.now();
+
+
+    const elapsedSeconds =
+        (
+            Date.now() -
+            startedAt
+        )
+        /
+        1000;
+
+
+    const remaining =
+        Math.max(
+            0,
+            Math.ceil(
+                duration -
+                elapsedSeconds
+            )
+        );
 
 
     // ========================================================
-// IA GOBLIN BASE
-// ESEGUITA UNA SOLA VOLTA PER TURNO
-// ========================================================
+    // TURNO NEMICO
+    // ========================================================
 
-const aiTurnKey =
-    `${combatSession.round_number}:${currentEntity.id}`;
+    if (
+        currentEntity.entity_type ===
+        "enemy"
+    ) {
 
-
-if (
-    enemyAIInProgress ||
-    enemyAITurnKey === aiTurnKey
-) {
-
-    return;
-
-}
-
-
-enemyAITurnKey =
-    aiTurnKey;
-
-enemyAIInProgress =
-    true;
-
-
-try {
-
-    const target =
-        chooseGoblinTarget(
-            currentEntity
+        setCombatStatus(
+            `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
         );
 
 
-    if (target) {
+        if (combatTargetMode) {
+            cancelCombatTargeting();
+        }
 
-        console.log(
-            "IA GOBLIN:",
-            currentEntity.display_name,
-            "sceglie",
-            target.display_name
-        );
 
-        addCombatLog(
-            `${currentEntity.display_name} prende di mira ${target.display_name}.`
-        );
+        updateActionButtons();
 
+
+        // ====================================================
+        // IA GOBLIN BASE
+        // UNA SOLA VOLTA PER TURNO
+        // ====================================================
+
+        const aiTurnKey =
+            `${combatSession.round_number}:${currentEntity.id}`;
+
+
+        if (
+            enemyAIInProgress ||
+            enemyAITurnKey === aiTurnKey
+        ) {
+            return;
+        }
+
+
+        enemyAITurnKey =
+            aiTurnKey;
+
+        enemyAIInProgress =
+            true;
+
+
+        try {
+
+            const target =
+                chooseGoblinTarget(
+                    currentEntity
+                );
+
+
+            if (target) {
+
+                console.log(
+                    "IA GOBLIN:",
+                    currentEntity.display_name,
+                    "sceglie",
+                    target.display_name
+                );
+
+
+                addCombatLog(
+                    `${currentEntity.display_name} prende di mira ${target.display_name}.`
+                );
+
+            }
+
+        } finally {
+
+            enemyAIInProgress =
+                false;
+
+        }
+
+
+        return;
     }
-
-} finally {
-
-    enemyAIInProgress =
-        false;
-
-}
-
-
-return;
 
 
     // ========================================================
@@ -7210,9 +7303,7 @@ return;
 
 
         if (combatTargetMode) {
-
             cancelCombatTargeting();
-
         }
 
     }
