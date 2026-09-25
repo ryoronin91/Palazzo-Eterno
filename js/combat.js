@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v46 CARICATO");
+console.log("COMBAT.JS v47 CARICATO");
 
 
 const db = supabaseClient;
@@ -3098,6 +3098,106 @@ function chooseGoblinNextStep(
     return chooseRandomEntity(
         candidates
     );
+
+}
+
+// ============================================================
+// IA GOBLIN BASE - PERCORSO DEL TURNO
+// ============================================================
+
+function chooseGoblinMovementPath(
+    goblin,
+    target
+) {
+
+    if (
+        !goblin ||
+        !target
+    ) {
+
+        return [];
+
+    }
+
+
+    const movement =
+        Math.max(
+            0,
+            Number(
+                goblin.movement_remaining
+            ) || 0
+        );
+
+
+    if (movement <= 0) {
+
+        return [];
+
+    }
+
+
+    const path = [];
+
+
+    const simulatedGoblin = {
+        ...goblin,
+        x: Number(goblin.x),
+        y: Number(goblin.y)
+    };
+
+
+    for (
+        let stepNumber = 0;
+        stepNumber < movement;
+        stepNumber++
+    ) {
+
+        const distance =
+            getCombatDistance(
+                simulatedGoblin.x,
+                simulatedGoblin.y,
+                target.x,
+                target.y
+            );
+
+
+        // È già abbastanza vicino per attaccare.
+        if (distance <= 1) {
+
+            break;
+
+        }
+
+
+        const nextStep =
+            chooseGoblinNextStep(
+                simulatedGoblin,
+                target
+            );
+
+
+        if (!nextStep) {
+
+            break;
+
+        }
+
+
+        path.push(
+            nextStep
+        );
+
+
+        simulatedGoblin.x =
+            nextStep.x;
+
+        simulatedGoblin.y =
+            nextStep.y;
+
+    }
+
+
+    return path;
 
 }
 
