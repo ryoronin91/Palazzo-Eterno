@@ -2991,6 +2991,10 @@ function setupDungeonActions() {
             "dungeon-heal-button"
         );
 
+    const giornoPagaButton =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
 
     const healthPotionButton =
         document.getElementById(
@@ -3003,6 +3007,97 @@ function setupDungeonActions() {
             "dungeon-mana-potion-button"
         );
 
+
+// ============================================================
+// GIORNO PAGA NEL DUNGEON
+// ============================================================
+
+async function castDungeonGiornoPaga() {
+
+    if (!character) {
+        return;
+    }
+
+
+    if (
+        !hasDungeonAbility(
+            "giorno_paga"
+        )
+    ) {
+
+        setMessage(
+            "Il personaggio non conosce Giorno Paga."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "cast_dungeon_giorno_paga",
+                {
+                    p_character_id:
+                        character.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        // Aggiorna i PM locali.
+        if (
+            data?.current_pm !==
+            undefined
+        ) {
+
+            character.current_pm =
+                Number(
+                    data.current_pm
+                );
+
+        }
+
+
+        updateCharacterPanel();
+
+        updateDungeonActionAvailability();
+
+        updateMyPresence();
+
+
+        setMessage(
+            "Giorno Paga attivo: la tua quota d'oro del prossimo combattimento sarà raddoppiata."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore Giorno Paga:",
+            error
+        );
+
+
+        setMessage(
+            error.message ||
+            "Non è stato possibile usare Giorno Paga."
+        );
+
+    }
+
+}
 
     // ========================================================
     // CURA
@@ -3029,6 +3124,32 @@ function setupDungeonActions() {
 
     }
 
+// ========================================================
+// GIORNO PAGA
+// ========================================================
+
+if (giornoPagaButton) {
+
+    giornoPagaButton.addEventListener(
+        "click",
+        async () => {
+
+            if (
+                giornoPagaButton.disabled
+            ) {
+                return;
+            }
+
+
+            deactivateHealMode();
+
+
+            await castDungeonGiornoPaga();
+
+        }
+    );
+
+}
 
     // ========================================================
     // POZIONE VITA
@@ -3172,6 +3293,19 @@ function updateDungeonActionAvailability() {
             currentPM < 2;
 
     }
+
+const giornoPagaButton =
+    document.getElementById(
+        "dungeon-giorno-paga-button"
+    );
+
+
+if (giornoPagaButton) {
+
+    giornoPagaButton.disabled =
+        currentPM < 3;
+
+}
 
 
     const healthPotion =
