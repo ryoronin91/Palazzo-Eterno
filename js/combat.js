@@ -165,6 +165,12 @@ let enemyAITurnKey =
 let enemyAIInProgress =
     false;
 
+// ============================================================
+// MORTE PERSONAGGIO
+// ============================================================
+
+let combatCharacterDeathInProgress =
+    false;
 
 // ============================================================
 // MODALITÀ BERSAGLIO
@@ -335,6 +341,17 @@ document.addEventListener(
 
             ]);
 
+// ====================================================
+// CONTROLLO MORTE PG ALL'AVVIO
+// ====================================================
+
+if (
+    await checkMyCombatCharacterDeath()
+) {
+
+    return;
+
+}
 
             // =================================================
             // DATI DEL PG
@@ -1651,6 +1668,70 @@ function createCombatEffectsSnapshot() {
 
 }
 
+// ============================================================
+// CONTROLLO MORTE DEL MIO PERSONAGGIO
+// ============================================================
+
+async function checkMyCombatCharacterDeath() {
+
+    if (
+        combatCharacterDeathInProgress ||
+        masterObserverMode ||
+        !currentCharacter ||
+        !currentCharacter.id
+    ) {
+
+        return false;
+
+    }
+
+
+    const myEntity =
+        Array.from(
+            combatEntities.values()
+        ).find(
+            entity =>
+                entity.entity_type ===
+                    "player"
+                &&
+                entity.character_id ===
+                    currentCharacter.id
+        );
+
+
+    if (
+        !myEntity
+    ) {
+
+        return false;
+
+    }
+
+
+    const isDead =
+        myEntity.status !==
+            "alive"
+        ||
+        Number(
+            myEntity.current_hp
+        ) <= 0;
+
+
+    if (
+        !isDead
+    ) {
+
+        return false;
+
+    }
+
+
+    await handleCombatCharacterDeath();
+
+
+    return true;
+
+}
 
 // ============================================================
 // ENTITÀ DEL TURNO CORRENTE
@@ -2242,6 +2323,277 @@ function setCombatStatus(
 
 }
 
+// ============================================================
+// MORTE PERSONAGGIO IN COMBATTIMENTO
+// ============================================================
+
+async function handleCombatCharacterDeath() {
+
+    if (
+        combatCharacterDeathInProgress ||
+        masterObserverMode ||
+        !currentCharacter ||
+        !currentCharacter.id
+    ) {
+
+        return;
+
+    }
+
+
+    combatCharacterDeathInProgress =
+        true;
+
+
+    // ========================================================
+    // BLOCCA LE INTERAZIONI DEL COMBATTIMENTO
+    // ========================================================
+
+    try {
+
+        if (
+            combatTargetMode
+        ) {
+
+            cancelCombatTargeting();
+
+        }
+
+    } catch (
+        error
+    ) {
+
+        console.warn(
+            "Errore annullamento targeting durante la morte:",
+            error
+        );
+
+    }
+
+
+    stopCombatStateLoop();
+
+
+    setCombatStatus(
+        "Il tuo personaggio è morto..."
+    );
+
+
+    // ========================================================
+    // CHIUDE LA CHAT REALTIME
+    // ========================================================
+
+    try {
+
+        if (
+            typeof cleanupCombatChat ===
+            "function"
+        ) {
+
+            await cleanupCombatChat();
+
+        }
+
+    } catch (
+        error
+    ) {
+
+        console.warn(
+            "Errore chiusura chat durante la morte:",
+            error
+        );
+
+    }
+
+
+    // ========================================================
+    // RIMUOVE LA PRESENCE DAL DUNGEON
+    // ========================================================
+
+    if (
+        combatDungeonChannel
+    ) {
+
+        try {
+
+            await combatDungeonChannel.untrack();
+
+        } catch (
+            error
+        ) {
+
+            console.warn(
+                "Errore untrack Presence durante la morte:",
+                error
+            );
+
+        }
+
+    }
+
+    // ========================================================
+// SALVA STORICO DEL PERSONAGGIO MORTO
+// ========================================================
+
+try {
+
+    const {
+        data: deadCharacterData,
+        error: deadCharacterError
+    } =
+        await db
+            .from(
+                "characters"
+            )
+            .select(`
+                id,
+                user_id,
+                nome,
+                score
+            `)
+            .eq(
+                "id",
+                currentCharacter.id
+            )
+            .single();
+
+
+    if (
+        deadCharacterError
+    ) {
+
+        throw deadCharacterError;
+
+    }
+
+
+    const {
+        error: historyError
+    } =
+        await db
+            .from(
+                "dead_characters"
+            )
+            .insert({
+
+                character_id:
+                    deadCharacterData.id,
+
+                user_id:
+                    deadCharacterData.user_id,
+
+                character_name:
+                    deadCharacterData.nome,
+
+                score:
+                    Number(
+                        deadCharacterData.score
+                    ) || 0
+
+            });
+
+
+    if (
+        historyError
+    ) {
+
+        throw historyError;
+
+    }
+
+
+} catch (
+    error
+) {
+
+    console.error(
+        "Errore salvataggio storico personaggio morto:",
+        error
+    );
+
+
+    combatCharacterDeathInProgress =
+        false;
+
+
+    setCombatStatus(
+        "Errore durante il salvataggio della morte."
+    );
+
+
+    return;
+
+}
+
+    // ========================================================
+    // ELIMINA IL PERSONAGGIO DAL DATABASE
+    // ========================================================
+
+    try {
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .delete()
+                .eq(
+                    "id",
+                    currentCharacter.id
+                );
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+ const deadName =
+    deadCharacterData.nome ||
+    "Avventuriero";
+
+
+const deadScore =
+    Number(
+        deadCharacterData.score
+    ) || 0;
+
+
+currentCharacter =
+    null;
+
+
+window.location.href =
+    `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadScore)}`;
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "Errore eliminazione personaggio morto:",
+            error
+        );
+
+
+        combatCharacterDeathInProgress =
+            false;
+
+
+        setCombatStatus(
+            "Errore durante la gestione della morte."
+        );
+
+    }
+
+}
 
 // ============================================================
 // LOOP COMBAT
@@ -2386,6 +2738,17 @@ async function refreshCombatState() {
 
         ]);
 
+// ====================================================
+// CONTROLLO MORTE PG LOCALE
+// ====================================================
+
+if (
+    await checkMyCombatCharacterDeath()
+) {
+
+    return;
+
+}
 
         // ====================================================
         // SNAPSHOT
@@ -2768,7 +3131,7 @@ window.addEventListener(
     () => {
 
         stopCombatStateLoop();
-        
+
         cleanupCombatChat();
 
 

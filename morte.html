@@ -18,10 +18,14 @@
             box-sizing: border-box;
         }
 
+
         html,
         body {
+
             margin: 0;
+
             min-height: 100%;
+
             background:
                 radial-gradient(
                     circle at center,
@@ -29,31 +33,51 @@
                     #090000 45%,
                     #000000 100%
                 );
-            color: #f1e7d0;
+
+            color:
+                #f1e7d0;
+
             font-family:
                 Georgia,
                 "Times New Roman",
                 serif;
+
         }
+
 
         body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
+
+            min-height:
+                100vh;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            padding:
+                24px;
+
         }
 
+
         .death-card {
-            width: min(
-                560px,
-                100%
-            );
+
+            width:
+                min(
+                    560px,
+                    100%
+                );
 
             padding:
                 44px 28px;
 
-            text-align: center;
+            text-align:
+                center;
 
             background:
                 rgba(
@@ -83,15 +107,26 @@
                     0,
                     0.7
                 );
+
         }
+
 
         .death-symbol {
-            font-size: 64px;
-            line-height: 1;
-            margin-bottom: 16px;
+
+            font-size:
+                64px;
+
+            line-height:
+                1;
+
+            margin-bottom:
+                16px;
+
         }
 
+
         h1 {
+
             margin:
                 0 0 18px;
 
@@ -116,11 +151,14 @@
                     45,
                     0.25
                 );
+
         }
 
+
         .death-text {
+
             margin:
-                0 auto 30px;
+                0 auto 26px;
 
             max-width:
                 430px;
@@ -133,16 +171,137 @@
 
             line-height:
                 1.65;
+
         }
+
+
+        /* ====================================================
+           SCORE PERSONAGGIO
+           ==================================================== */
+
+        .death-score-box {
+
+            margin:
+                0 auto 30px;
+
+            padding:
+                20px 24px;
+
+            max-width:
+                340px;
+
+            border:
+                1px solid
+                rgba(
+                    185,
+                    45,
+                    45,
+                    0.45
+                );
+
+            border-radius:
+                14px;
+
+            background:
+                rgba(
+                    90,
+                    0,
+                    0,
+                    0.18
+                );
+
+            box-shadow:
+                inset 0 0 20px
+                rgba(
+                    185,
+                    45,
+                    45,
+                    0.08
+                );
+
+        }
+
+
+        .death-character-name {
+
+            margin-bottom:
+                12px;
+
+            font-size:
+                1.25rem;
+
+            font-weight:
+                700;
+
+            color:
+                #f1e7d0;
+
+        }
+
+
+        .death-score-label {
+
+            margin-bottom:
+                6px;
+
+            font-size:
+                0.8rem;
+
+            letter-spacing:
+                0.14em;
+
+            color:
+                #a9937a;
+
+        }
+
+
+        .death-score-value {
+
+            font-size:
+                2.2rem;
+
+            font-weight:
+                700;
+
+            color:
+                #d36c6c;
+
+            text-shadow:
+                0 0 12px
+                rgba(
+                    211,
+                    108,
+                    108,
+                    0.2
+                );
+
+        }
+
+
+        /* ====================================================
+           PULSANTI
+           ==================================================== */
 
         .death-actions {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 14px;
+
+            display:
+                flex;
+
+            flex-wrap:
+                wrap;
+
+            justify-content:
+                center;
+
+            gap:
+                14px;
+
         }
 
+
         .death-button {
+
             min-width:
                 180px;
 
@@ -162,7 +321,8 @@
             color:
                 white;
 
-            font: inherit;
+            font:
+                inherit;
 
             font-weight:
                 700;
@@ -177,9 +337,12 @@
                 transform 0.15s ease,
                 background 0.15s ease,
                 border-color 0.15s ease;
+
         }
 
+
         .death-button:hover {
+
             transform:
                 translateY(-1px);
 
@@ -188,9 +351,12 @@
 
             border-color:
                 #a82b2b;
+
         }
 
+
         .death-button.secondary {
+
             background:
                 transparent;
 
@@ -199,9 +365,12 @@
 
             border-color:
                 #625448;
+
         }
 
+
         .death-button.secondary:hover {
+
             background:
                 rgba(
                     255,
@@ -212,9 +381,12 @@
 
             border-color:
                 #8d7c6b;
+
         }
 
+
         .death-message {
+
             margin-top:
                 18px;
 
@@ -226,25 +398,47 @@
 
             font-size:
                 0.92rem;
+
         }
+
+
+        /* ====================================================
+           MOBILE
+           ==================================================== */
 
         @media (
             max-width: 520px
         ) {
 
             .death-card {
+
                 padding:
                     36px 20px;
+
             }
+
 
             .death-actions {
+
                 flex-direction:
                     column;
+
             }
 
+
             .death-button {
+
                 width:
                     100%;
+
+            }
+
+
+            .death-score-box {
+
+                padding:
+                    18px 16px;
+
             }
 
         }
@@ -253,22 +447,62 @@
 
 </head>
 
+
 <body>
 
     <main class="death-card">
+
 
         <div class="death-symbol">
             ☠
         </div>
 
+
         <h1>
             MORTE
         </h1>
 
+
         <p class="death-text">
+
             Il tuo viaggio nel Palazzo Eterno
             termina qui.
+
         </p>
+
+
+        <!-- ==================================================
+             SCORE FINALE
+             ================================================== -->
+
+        <div class="death-score-box">
+
+            <div
+                class="death-character-name"
+                id="death-character-name"
+            >
+                Avventuriero
+            </div>
+
+
+            <div class="death-score-label">
+                SCORE FINALE
+            </div>
+
+
+            <div
+                class="death-score-value"
+                id="death-score-value"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             AZIONI
+             ================================================== -->
 
         <div class="death-actions">
 
@@ -280,6 +514,7 @@
                 ESCI
             </button>
 
+
             <button
                 id="new-character-button"
                 class="death-button"
@@ -290,22 +525,96 @@
 
         </div>
 
+
         <div
             id="death-message"
             class="death-message"
         ></div>
 
+
     </main>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
 
     <script src="js/config.js?v=3"></script>
+
 
     <script>
 
         const deathDb =
             supabaseClient;
+
+
+        // ====================================================
+        // DATI PERSONAGGIO MORTO
+        //
+        // Esempio:
+        //
+        // morte.html?nome=Thorin&score=125
+        // ====================================================
+
+        const deathParams =
+            new URLSearchParams(
+                window.location.search
+            );
+
+
+        const deathName =
+            deathParams.get(
+                "nome"
+            )
+            ||
+            "Avventuriero";
+
+
+        const deathScore =
+            Math.max(
+                0,
+                Number(
+                    deathParams.get(
+                        "score"
+                    )
+                ) || 0
+            );
+
+
+        const deathNameElement =
+            document.getElementById(
+                "death-character-name"
+            );
+
+
+        const deathScoreElement =
+            document.getElementById(
+                "death-score-value"
+            );
+
+
+        if (
+            deathNameElement
+        ) {
+
+            deathNameElement.textContent =
+                deathName;
+
+        }
+
+
+        if (
+            deathScoreElement
+        ) {
+
+            deathScoreElement.textContent =
+                deathScore.toLocaleString(
+                    "it-IT"
+                );
+
+        }
+
 
 
         // ====================================================
@@ -328,7 +637,9 @@
                         .auth
                         .signOut();
 
-                } catch (error) {
+                } catch (
+                    error
+                ) {
 
                     console.error(
                         "Errore logout:",
@@ -343,6 +654,7 @@
 
             }
         );
+
 
 
         // ====================================================
