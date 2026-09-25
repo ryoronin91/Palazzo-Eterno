@@ -864,6 +864,68 @@ async function runEnemyAI(
 
         }
 
+        // ====================================================
+// FINE TURNO AUTOMATICA IA
+// ====================================================
+
+const {
+    data: turnAdvanced,
+    error: turnError
+} =
+    await db.rpc(
+        "finish_enemy_turn",
+        {
+
+            p_combat_id:
+                combatId,
+
+            p_enemy_entity_id:
+                currentEntity.id,
+
+            p_round_number:
+                Number(
+                    combatSession.round_number
+                )
+
+        }
+    );
+
+
+if (
+    turnError
+) {
+
+    throw turnError;
+
+}
+
+
+console.log(
+    "FINE TURNO IA:",
+    turnAdvanced
+);
+
+
+// Se questo client ha realmente fatto avanzare il turno,
+// aggiorniamo subito lo stato.
+
+if (
+    turnAdvanced === true
+) {
+
+    await loadCombatSession();
+
+
+    await loadCombatEntities();
+
+
+    lastCombatEntitiesSnapshot =
+        createCombatSnapshot();
+
+
+    renderCombat();
+
+}
 
     } catch (error) {
 

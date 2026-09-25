@@ -1876,6 +1876,60 @@ async function updateCombatTurnUI() {
 
     }
 
+    // ========================================================
+// TURN ORDER VISIVO
+// ========================================================
+
+refreshCombatTurnOrder();
+
+
+// ========================================================
+// ROUND
+// ========================================================
+
+const round =
+    Number(
+        combatSession.round_number
+    ) || 1;
+
+
+// ========================================================
+// TURNO NEMICO
+//
+// I nemici non hanno timer.
+// L'IA termina automaticamente il proprio turno.
+// ========================================================
+
+if (
+    currentEntity.entity_type ===
+    "enemy"
+) {
+
+    setCombatStatus(
+        `Round ${round} · Turno di ${currentEntity.display_name}`
+    );
+
+
+    if (
+        combatTargetMode
+    ) {
+
+        cancelCombatTargeting();
+
+    }
+
+
+    updateActionButtons();
+
+
+    await runEnemyAI(
+        currentEntity
+    );
+
+
+    return;
+
+}
 
     // ========================================================
     // TURN ORDER VISIVO
