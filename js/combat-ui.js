@@ -638,8 +638,325 @@ function cancelCombatTargeting() {
 // ============================================================
 // TURN ORDER
 // ============================================================
+//
+// Il backend usa questo ordine:
+//
+// 1. initiative DESC
+// 2. player prima di enemy a parità
+// 3. id ASC come spareggio stabile
+//
+// La UI ricostruisce lo stesso ordine e poi lo ruota
+// portando il turno corrente in cima.
+// ============================================================
 
-function renderCombatEntityList() {
+
+let lastTurnOrderSignature =
+    "";
+
+
+// ============================================================
+// ENTITÀ VIVE ORDINATE COME IL BACKEND
+// ============================================================
+
+function getCombatTurnOrderEntities() {
+
+    return Array.from(
+        combatEntities.values()
+    )
+
+        // =====================================================
+        // SOLO ENTITÀ VIVE
+        // =====================================================
+
+        .filter(
+            entity =>
+
+                entity.status ===
+                    "alive"
+
+                &&
+
+                Number(
+                    entity.current_hp
+                ) > 0
+        )
+
+
+        // =====================================================
+        // ORDINE REALE DI TURNAZIONE
+        // =====================================================
+
+        .sort(
+            (
+                a,
+                b
+            ) => {
+
+                // =============================================
+                // 1. INIZIATIVA PIÙ ALTA
+                // =============================================
+
+                const initiativeA =
+                    Number(
+                        a.initiative
+                    ) || 0;
+
+
+                const initiativeB =
+                    Number(
+                        b.initiative
+                    ) || 0;
+
+
+                if (
+                    initiativeA !==
+                    initiativeB
+                ) {
+
+                    return (
+                        initiativeB -
+                        initiativeA
+                    );
+
+                }
+
+
+                // =============================================
+                // 2. PLAYER PRIMA DI ENEMY
+                // =============================================
+
+                const priorityA =
+                    a.entity_type ===
+                    "player"
+
+                        ? 0
+
+                        : 1;
+
+
+                const priorityB =
+                    b.entity_type ===
+                    "player"
+
+                        ? 0
+
+                        : 1;
+
+
+                if (
+                    priorityA !==
+                    priorityB
+                ) {
+
+                    return (
+                        priorityA -
+                        priorityB
+                    );
+
+                }
+
+
+                // =============================================
+                // 3. ID ASC
+                // =============================================
+
+                return String(
+                    a.id
+                ).localeCompare(
+                    String(
+                        b.id
+                    )
+                );
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// RUOTA LA LISTA SUL TURNO CORRENTE
+// ============================================================
+
+function rotateCombatTurnOrder(
+    entities
+) {
+
+    if (
+        !Array.isArray(
+            entities
+        )
+        ||
+        entities.length === 0
+    ) {
+
+        return [];
+
+    }
+
+
+    const currentTurnId =
+        combatSession
+            ?.current_turn_entity_id;
+
+
+    if (
+        !currentTurnId
+    ) {
+
+        return entities;
+
+    }
+
+
+    const currentIndex =
+        entities.findIndex(
+            entity =>
+                entity.id ===
+                currentTurnId
+        );
+
+
+    // Se non lo troviamo oppure è già il primo.
+    if (
+        currentIndex <= 0
+    ) {
+
+        return entities;
+
+    }
+
+
+    return [
+
+        ...entities.slice(
+            currentIndex
+        ),
+
+        ...entities.slice(
+            0,
+            currentIndex
+        )
+
+    ];
+
+}
+
+
+// ============================================================
+// CREA FIRMA DEL TURN ORDER
+//
+// Serve per evitare di ridisegnarlo 4 volte al secondo
+// se non è cambiato nulla.
+// ============================================================
+
+function createCombatTurnOrderSignature(
+    entities
+) {
+
+    return JSON.stringify({
+
+        current:
+            combatSession
+                ?.current_turn_entity_id
+                ||
+                null,
+
+        entities:
+            entities.map(
+                entity => ({
+
+                    id:
+                        entity.id,
+
+                    initiative:
+                        Number(
+                            entity.initiative
+                        ) || 0,
+
+                    hp:
+                        Number(
+                            entity.current_hp
+                        ) || 0,
+
+                    maxHp:
+                        Number(
+                            entity.max_hp
+                        ) || 0,
+
+                    pm:
+                        Number(
+                            entity.current_pm
+                        ) || 0,
+
+                    maxPm:
+                        Number(
+                            entity.max_pm
+                        ) || 0,
+
+                    movement:
+                        Number(
+                            entity.movement_remaining
+                        ) || 0
+
+                })
+            )
+
+    });
+
+}
+
+
+// ============================================================
+// AGGIORNA TURN ORDER SOLO SE NECESSARIO
+// ============================================================
+
+function refreshCombatTurnOrder() {
+
+    const orderedEntities =
+        getCombatTurnOrderEntities();
+
+
+    const rotatedEntities =
+        rotateCombatTurnOrder(
+            orderedEntities
+        );
+
+
+    const signature =
+        createCombatTurnOrderSignature(
+            rotatedEntities
+        );
+
+
+    if (
+        signature ===
+        lastTurnOrderSignature
+    ) {
+
+        return;
+
+    }
+
+
+    lastTurnOrderSignature =
+        signature;
+
+
+    renderCombatEntityList(
+        rotatedEntities
+    );
+
+}
+
+
+// ============================================================
+// RENDER TURN ORDER
+// ============================================================
+
+function renderCombatEntityList(
+    suppliedEntities = null
+) {
 
     const container =
         document.getElementById(
@@ -647,7 +964,9 @@ function renderCombatEntityList() {
         );
 
 
-    if (!container) {
+    if (
+        !container
+    ) {
 
         return;
 
@@ -658,26 +977,39 @@ function renderCombatEntityList() {
 
 
     // ========================================================
-    // ENTITÀ VIVE
+    // CALCOLA ORDINE SE NON È STATO FORNITO
     // ========================================================
 
-    const aliveEntities =
-        Array.from(
-            combatEntities.values()
-        )
-            .filter(
-                entity =>
-                    entity.status ===
-                        "alive"
-                    &&
-                    Number(
-                        entity.current_hp
-                    ) > 0
-            );
+    let entities =
+        suppliedEntities;
 
 
     if (
-        aliveEntities.length === 0
+        !Array.isArray(
+            entities
+        )
+    ) {
+
+        entities =
+            rotateCombatTurnOrder(
+                getCombatTurnOrderEntities()
+            );
+
+    }
+
+
+    // Aggiorna la firma anche quando questa funzione
+    // viene richiamata da renderCombat().
+
+    lastTurnOrderSignature =
+        createCombatTurnOrderSignature(
+            entities
+        );
+
+
+    if (
+        entities.length ===
+        0
     ) {
 
         return;
@@ -685,111 +1017,20 @@ function renderCombatEntityList() {
     }
 
 
-    // ========================================================
-    // MAPPA ENTITÀ VIVE
-    // ========================================================
-
-    const aliveMap =
-        new Map(
-            aliveEntities.map(
-                entity => [
-                    entity.id,
-                    entity
-                ]
-            )
-        );
-
-
-    // ========================================================
-    // ORDINE BASE
-    // ========================================================
-
-    let orderedEntities =
-        combatTurnOrder
-            .map(
-                entityId =>
-                    aliveMap.get(
-                        entityId
-                    )
-            )
-            .filter(
-                Boolean
-            );
-
-
-    // Eventuali entità non presenti nell'ordine iniziale.
-    aliveEntities.forEach(
-        entity => {
-
-            if (
-                !orderedEntities.some(
-                    existing =>
-                        existing.id ===
-                        entity.id
-                )
-            ) {
-
-                orderedEntities.push(
-                    entity
-                );
-
-            }
-
-        }
-    );
-
-
-    // ========================================================
-    // PORTA IL TURNO ATTUALE IN CIMA
-    // ========================================================
-
     const currentTurnId =
         combatSession
             ?.current_turn_entity_id;
 
 
-    const currentIndex =
-        orderedEntities.findIndex(
-            entity =>
-                entity.id ===
-                currentTurnId
-        );
-
-
-    if (
-        currentIndex > 0
-    ) {
-
-        orderedEntities = [
-
-            ...orderedEntities.slice(
-                currentIndex
-            ),
-
-            ...orderedEntities.slice(
-                0,
-                currentIndex
-            )
-
-        ];
-
-    }
-
-
     // ========================================================
-    // RENDER LISTA
+    // CREA RIGHE
     // ========================================================
-console.log(
-    "TURN ORDER VISIVO:",
-    orderedEntities.map(
-        entity =>
-            entity.display_name
-    ),
-    "TURNO ATTUALE:",
-    currentTurnId
-);
-    orderedEntities.forEach(
-        entity => {
+
+    entities.forEach(
+        (
+            entity,
+            index
+        ) => {
 
             const item =
                 document.createElement(
@@ -802,7 +1043,37 @@ console.log(
 
 
             // =================================================
-            // HOVER
+            // TURNO ATTUALE
+            // =================================================
+
+            const isCurrentTurn =
+                entity.id ===
+                currentTurnId;
+
+
+            if (
+                isCurrentTurn
+            ) {
+
+                item.classList.add(
+                    "current-turn"
+                );
+
+            }
+
+
+            // =================================================
+            // POSIZIONE VISIVA
+            // =================================================
+
+            item.dataset.turnPosition =
+                String(
+                    index
+                );
+
+
+            // =================================================
+            // HOVER → EVIDENZIA TOKEN
             // =================================================
 
             item.addEventListener(
@@ -815,7 +1086,9 @@ console.log(
                         );
 
 
-                    if (token) {
+                    if (
+                        token
+                    ) {
 
                         token.classList.add(
                             "turn-order-hover"
@@ -837,7 +1110,9 @@ console.log(
                         );
 
 
-                    if (token) {
+                    if (
+                        token
+                    ) {
 
                         token.classList.remove(
                             "turn-order-hover"
@@ -847,22 +1122,6 @@ console.log(
 
                 }
             );
-
-
-            // =================================================
-            // TURNO ATTUALE
-            // =================================================
-
-            if (
-                entity.id ===
-                currentTurnId
-            ) {
-
-                item.classList.add(
-                    "current-turn"
-                );
-
-            }
 
 
             // =================================================
@@ -880,7 +1139,7 @@ console.log(
 
 
             // =================================================
-            // INFO
+            // INFORMAZIONI
             // =================================================
 
             const meta =
@@ -897,7 +1156,9 @@ console.log(
                 `${
                     entity.entity_type ===
                     "enemy"
+
                         ? "Nemico"
+
                         : "Giocatore"
                 } · PF ${
                     entity.current_hp
@@ -911,6 +1172,10 @@ console.log(
                     entity.movement_remaining ?? 0
                 }`;
 
+
+            // =================================================
+            // ASSEMBLA
+            // =================================================
 
             item.append(
                 name,

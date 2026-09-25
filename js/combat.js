@@ -1,122 +1,206 @@
 // ============================================================
 // PALAZZO ETERNO
 // COMBAT.JS
+// COORDINATORE PRINCIPALE DEL COMBATTIMENTO
 // ============================================================
 
-console.log("COMBAT.JS MODULARE v52 CARICATO");
+console.log(
+    "COMBAT.JS MODULARE v56 CARICATO"
+);
 
 
-const db = supabaseClient;
+const db =
+    supabaseClient;
 
-const COMBAT_COLUMNS = 12;
-const COMBAT_ROWS = 12;
+
+const COMBAT_COLUMNS =
+    12;
+
+const COMBAT_ROWS =
+    12;
 
 
 // ============================================================
-// STATO
+// STATO GENERALE
 // ============================================================
 
-let currentUser = null;
-let currentCharacter = null;
-let currentRole = "player";
+let currentUser =
+    null;
 
-let masterObserverMode = false;
+let currentCharacter =
+    null;
 
-let combatId = null;
-let combatSession = null;
+let currentRole =
+    "player";
 
-let combatTimerInterval = null;
-let combatStateInterval = null;
 
-let combatRefreshInProgress = false;
-let combatMoveInProgress = false;
+let masterObserverMode =
+    false;
 
-let combatMapResizeObserver = null;
 
-let lastCombatEntitiesSnapshot = "";
-let lastCombatEffectsSnapshot = "";
+let combatId =
+    null;
 
-let characterAbilities = [];
-let characterInventory = [];
-let characterEquipment = [];
-let combatEffects = [];
+let combatSession =
+    null;
+
+
+let combatTimerInterval =
+    null;
+
+let combatStateInterval =
+    null;
+
+
+let combatRefreshInProgress =
+    false;
+
+let combatMoveInProgress =
+    false;
+
+
+let combatMapResizeObserver =
+    null;
+
+
+let lastCombatEntitiesSnapshot =
+    "";
+
+let lastCombatEffectsSnapshot =
+    "";
+
+
+// ============================================================
+// DATI PERSONAGGIO
+// ============================================================
+
+let characterAbilities =
+    [];
+
+let characterInventory =
+    [];
+
+let characterEquipment =
+    [];
+
+let combatEffects =
+    [];
+
 
 let equipmentBonuses = {
 
-    attack_bonus: 0,
-    defense_bonus: 0,
+    attack_bonus:
+        0,
 
-    forza_bonus: 0,
-    resistenza_bonus: 0,
-    costituzione_bonus: 0,
-    intelligenza_bonus: 0,
-    destrezza_bonus: 0,
-    fortuna_bonus: 0
+    defense_bonus:
+        0,
+
+    forza_bonus:
+        0,
+
+    resistenza_bonus:
+        0,
+
+    costituzione_bonus:
+        0,
+
+    intelligenza_bonus:
+        0,
+
+    destrezza_bonus:
+        0,
+
+    fortuna_bonus:
+        0
 
 };
 
-let characterPendingEffects = [];
 
-let activeDrawer = null;
+let characterPendingEffects =
+    [];
 
-let victoryLootLoaded = false;
-let victoryLootLoading = false;
-let victoryLootData = [];
-let victoryGoldReceived = 0;
 
-let victoryLootDraftState = null;
-let victoryLootDraftInterval = null;
+// ============================================================
+// DRAWER
+// ============================================================
 
-let victoryLootPickInProgress = false;
+let activeDrawer =
+    null;
 
-let enemyAITurnKey = null;
-let enemyAIInProgress = false;
 
-let lastRenderedTurnEntityId = null;
+// ============================================================
+// LOOT
+// ============================================================
+
+let victoryLootLoaded =
+    false;
+
+let victoryLootLoading =
+    false;
+
+let victoryLootData =
+    [];
+
+let victoryGoldReceived =
+    0;
+
+
+let victoryLootDraftState =
+    null;
+
+let victoryLootDraftInterval =
+    null;
+
+let victoryLootPickInProgress =
+    false;
+
+
+// ============================================================
+// IA NEMICI
+// ============================================================
+
+let enemyAITurnKey =
+    null;
+
+let enemyAIInProgress =
+    false;
 
 
 // ============================================================
 // MODALITÀ BERSAGLIO
-//
-// null
-// basic_attack
-// fire_bolt
-// heal
-// buff:...
-// push_pull:...
 // ============================================================
 
-let combatTargetMode = null;
+let combatTargetMode =
+    null;
 
 
 // ============================================================
-// ENTITÀ
+// ENTITÀ COMBAT
 // ============================================================
 
 const combatEntities =
     new Map();
 
+
 const combatTokens =
     new Map();
 
-let combatTurnOrder = [];
-console.log(
-    "TURN ORDER MOD ATTIVA"
-);
 
 // ============================================================
 // CELLE RANGE
 // ============================================================
 
-let combatRangeCells = [];
+let combatRangeCells =
+    [];
 
 
 // ============================================================
-// PRESENCE DUNGEON MENTRE SI È IN COMBAT
+// PRESENCE DUNGEON DURANTE IL COMBAT
 // ============================================================
 
 const COMBAT_DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
+
 
 let combatDungeonChannel =
     null;
@@ -138,11 +222,12 @@ document.addEventListener(
 
             await loadCurrentUser();
 
+
             await loadCurrentRole();
 
 
             // =================================================
-            // MODALITÀ COMBAT
+            // MODALITÀ
             // =================================================
 
             masterObserverMode =
@@ -153,7 +238,9 @@ document.addEventListener(
                 getCombatIdFromUrl();
 
 
-            if (!combatId) {
+            if (
+                !combatId
+            ) {
 
                 throw new Error(
                     "Nessuna sessione di combattimento specificata."
@@ -198,7 +285,7 @@ document.addEventListener(
 
 
             // =================================================
-            // AVVIA COMBATTIMENTO
+            // INIZIALIZZA TURNI
             // =================================================
 
             if (
@@ -212,13 +299,17 @@ document.addEventListener(
                     await db.rpc(
                         "initialize_combat_turns",
                         {
+
                             p_combat_id:
                                 combatId
+
                         }
                     );
 
 
-                if (error) {
+                if (
+                    error
+                ) {
 
                     throw error;
 
@@ -231,7 +322,7 @@ document.addEventListener(
 
 
             // =================================================
-            // CARICA STATO
+            // CARICA STATO COMBAT
             // =================================================
 
             await Promise.all([
@@ -246,7 +337,7 @@ document.addEventListener(
 
 
             // =================================================
-            // DATI PG
+            // DATI DEL PG
             // =================================================
 
             if (
@@ -291,17 +382,23 @@ document.addEventListener(
 
             setupCombatActions();
 
+
             setupVictoryExitButton();
+
 
             renderCombat();
 
+
             setupCombatMapResizeObserver();
+
 
             updateCombatMode();
 
+
             setupCombatNotes();
 
-            updateCombatTurnUI();
+
+            await updateCombatTurnUI();
 
 
             // =================================================
@@ -311,7 +408,9 @@ document.addEventListener(
             startCombatStateLoop();
 
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
 
             console.error(
                 "Errore caricamento combat:",
@@ -345,17 +444,22 @@ async function loadCurrentUser() {
         await db.auth.getUser();
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
     }
 
 
-    if (!user) {
+    if (
+        !user
+    ) {
 
         window.location.href =
             "login.html";
+
 
         return;
 
@@ -392,7 +496,9 @@ async function loadCurrentRole() {
             .maybeSingle();
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -491,7 +597,9 @@ async function loadCurrentCharacter() {
             .maybeSingle();
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -505,7 +613,7 @@ async function loadCurrentCharacter() {
 
 
 // ============================================================
-// MANTIENE IL PG VISIBILE NEL DUNGEON DURANTE IL COMBAT
+// PRESENCE DUNGEON
 // ============================================================
 
 async function setupDungeonPresenceWhileInCombat() {
@@ -525,6 +633,7 @@ async function setupDungeonPresenceWhileInCombat() {
         db.channel(
             COMBAT_DUNGEON_CHANNEL_NAME,
             {
+
                 config: {
 
                     presence: {
@@ -535,6 +644,7 @@ async function setupDungeonPresenceWhileInCombat() {
                     }
 
                 }
+
             }
         );
 
@@ -607,7 +717,9 @@ async function setupDungeonPresenceWhileInCombat() {
                             resolve();
 
 
-                        } catch (error) {
+                        } catch (
+                            error
+                        ) {
 
                             reject(
                                 error
@@ -641,7 +753,7 @@ async function setupDungeonPresenceWhileInCombat() {
 
 
 // ============================================================
-// SESSIONE
+// SESSIONE COMBAT
 // ============================================================
 
 async function loadCombatSession() {
@@ -670,7 +782,9 @@ async function loadCombatSession() {
             .single();
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -717,7 +831,9 @@ async function joinCombatAsPlayer() {
         );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -753,7 +869,9 @@ async function generateCombatEnemies() {
         );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -789,6 +907,7 @@ async function loadCombatEntities() {
                 monster_type,
                 enemy_id,
                 display_name,
+                initiative,
                 x,
                 y,
                 current_hp,
@@ -806,7 +925,9 @@ async function loadCombatEntities() {
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -830,35 +951,11 @@ async function loadCombatEntities() {
         }
     );
 
-
-    // ============================================================
-    // ORDINE TURNI BASE
-    // ============================================================
-
-    if (
-        combatTurnOrder.length === 0
-    ) {
-
-        combatTurnOrder =
-            (
-                data ||
-                []
-            ).map(
-                entity =>
-                    entity.id
-            );
-
-    }
-
-
-    console.log(
-        "ORDINE TURNI BASE:",
-        combatTurnOrder
-    );
-
 }
+
+
 // ============================================================
-// EFFETTI PERSISTENTI DEL PERSONAGGIO
+// EFFETTI PERSISTENTI
 // ============================================================
 
 async function loadCharacterPendingEffects() {
@@ -869,6 +966,7 @@ async function loadCharacterPendingEffects() {
 
         characterPendingEffects =
             [];
+
 
         return;
 
@@ -884,7 +982,9 @@ async function loadCharacterPendingEffects() {
         );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -899,7 +999,7 @@ async function loadCharacterPendingEffects() {
 
 
 // ============================================================
-// EFFETTI TEMPORANEI DEL COMBATTIMENTO
+// EFFETTI TEMPORANEI COMBAT
 // ============================================================
 
 async function loadCombatEffects() {
@@ -931,7 +1031,9 @@ async function loadCombatEffects() {
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -946,7 +1048,7 @@ async function loadCombatEffects() {
 
 
 // ============================================================
-// BONUS EFFETTO TEMPORANEO
+// BONUS EFFETTO
 // ============================================================
 
 function getCombatEffectBonus(
@@ -995,7 +1097,7 @@ function getCombatEffectBonus(
 
 
 // ============================================================
-// ABILITÀ
+// ABILITÀ PG
 // ============================================================
 
 async function loadCharacterAbilities() {
@@ -1006,6 +1108,7 @@ async function loadCharacterAbilities() {
 
         characterAbilities =
             [];
+
 
         return;
 
@@ -1041,13 +1144,17 @@ async function loadCharacterAbilities() {
             .order(
                 "created_at",
                 {
+
                     ascending:
                         true
+
                 }
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -1073,6 +1180,7 @@ async function loadCharacterInventory() {
 
         characterInventory =
             [];
+
 
         return;
 
@@ -1115,13 +1223,17 @@ async function loadCharacterInventory() {
             .order(
                 "created_at",
                 {
+
                     ascending:
                         true
+
                 }
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -1147,6 +1259,7 @@ async function loadCharacterEquipment() {
 
         characterEquipment =
             [];
+
 
         return;
 
@@ -1188,7 +1301,9 @@ async function loadCharacterEquipment() {
             );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -1206,7 +1321,7 @@ async function loadCharacterEquipment() {
 
 
 // ============================================================
-// SINCRONIZZA STATISTICHE PG NEL COMBATTIMENTO
+// SINCRONIZZA STATISTICHE PG
 // ============================================================
 
 async function syncCombatPlayerStats() {
@@ -1239,7 +1354,9 @@ async function syncCombatPlayerStats() {
         );
 
 
-    if (error) {
+    if (
+        error
+    ) {
 
         throw error;
 
@@ -1412,6 +1529,24 @@ function createCombatSnapshot() {
                     id:
                         entity.id,
 
+                    entity_type:
+                        entity.entity_type,
+
+                    character_id:
+                        entity.character_id,
+
+                    monster_type:
+                        entity.monster_type,
+
+                    enemy_id:
+                        entity.enemy_id,
+
+                    display_name:
+                        entity.display_name,
+
+                    initiative:
+                        entity.initiative,
+
                     x:
                         entity.x,
 
@@ -1440,22 +1575,7 @@ function createCombatSnapshot() {
                         entity.item_used,
 
                     status:
-                        entity.status,
-
-                    entity_type:
-                        entity.entity_type,
-
-                    display_name:
-                        entity.display_name,
-
-                    character_id:
-                        entity.character_id,
-
-                    monster_type:
-                        entity.monster_type,
-
-                    enemy_id:
-                        entity.enemy_id
+                        entity.status
 
                 })
             )
@@ -1465,8 +1585,12 @@ function createCombatSnapshot() {
                     a,
                     b
                 ) =>
-                    a.id.localeCompare(
-                        b.id
+                    String(
+                        a.id
+                    ).localeCompare(
+                        String(
+                            b.id
+                        )
                     )
             )
 
@@ -1511,8 +1635,12 @@ function createCombatEffectsSnapshot() {
                     a,
                     b
                 ) =>
-                    a.id.localeCompare(
-                        b.id
+                    String(
+                        a.id
+                    ).localeCompare(
+                        String(
+                            b.id
+                        )
                     )
             )
 
@@ -1522,7 +1650,7 @@ function createCombatEffectsSnapshot() {
 
 
 // ============================================================
-// TURNO CORRENTE
+// ENTITÀ DEL TURNO CORRENTE
 // ============================================================
 
 function getCurrentTurnEntity() {
@@ -1584,7 +1712,7 @@ function isMyTurn() {
 
 
 // ============================================================
-// SALTA TURNO
+// PASSA TURNO
 // ============================================================
 
 async function passTurn() {
@@ -1648,7 +1776,9 @@ async function passTurn() {
         await refreshCombatState();
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.error(
             "Errore salto turno:",
@@ -1681,7 +1811,7 @@ async function updateCombatTurnUI() {
 
 
     // ========================================================
-    // COMBATTIMENTO NON ATTIVO
+    // COMBAT NON ATTIVO
     // ========================================================
 
     if (
@@ -1704,6 +1834,9 @@ async function updateCombatTurnUI() {
 
 
         updateActionButtons();
+
+
+        refreshCombatTurnOrder();
 
 
         return;
@@ -1736,26 +1869,22 @@ async function updateCombatTurnUI() {
         updateActionButtons();
 
 
+        refreshCombatTurnOrder();
+
+
         return;
 
     }
 
-// ========================================================
-// AGGIORNA TURN ORDER QUANDO CAMBIA TURNO
-// ========================================================
 
-if (
-    lastRenderedTurnEntityId !==
-    currentEntity.id
-) {
+    // ========================================================
+    // TURN ORDER VISIVO
+    //
+    // Tutta la logica è in combat-ui.js.
+    // ========================================================
 
-    lastRenderedTurnEntityId =
-        currentEntity.id;
+    refreshCombatTurnOrder();
 
-
-    renderCombatEntityList();
-
-}
 
     // ========================================================
     // TIMER
@@ -1828,7 +1957,6 @@ if (
         updateActionButtons();
 
 
-        // Tutta la logica nemico è ora in combat-ai.js.
         await runEnemyAI(
             currentEntity
         );
@@ -1840,7 +1968,7 @@ if (
 
 
     // ========================================================
-    // TURNO DEL MIO PG
+    // MIO TURNO
     // ========================================================
 
     if (
@@ -1855,7 +1983,7 @@ if (
 
 
     // ========================================================
-    // TURNO DI UN ALTRO PG
+    // TURNO ALTRO PG
     // ========================================================
 
     else {
@@ -1982,7 +2110,9 @@ function setupCombatNotes() {
                     "SALVATO ✓";
 
 
-            } catch (error) {
+            } catch (
+                error
+            ) {
 
                 console.error(
                     "Errore note:",
@@ -2019,7 +2149,7 @@ function setupCombatNotes() {
 
 
 // ============================================================
-// MASTER
+// MODALITÀ MASTER
 // ============================================================
 
 function updateCombatMode() {
@@ -2108,7 +2238,7 @@ function setCombatStatus(
 
 
 // ============================================================
-// LOOP
+// LOOP COMBAT
 // ============================================================
 
 function startCombatStateLoop() {
@@ -2116,7 +2246,10 @@ function startCombatStateLoop() {
     stopCombatStateLoop();
 
 
-    // Aggiornamento timer / turno.
+    // ========================================================
+    // TIMER / TURNO
+    // ========================================================
+
     combatTimerInterval =
         setInterval(
             () => {
@@ -2128,7 +2261,10 @@ function startCombatStateLoop() {
         );
 
 
-    // Aggiornamento stato server.
+    // ========================================================
+    // STATO SERVER
+    // ========================================================
+
     combatStateInterval =
         setInterval(
             async () => {
@@ -2181,7 +2317,7 @@ function stopCombatStateLoop() {
 
 
 // ============================================================
-// REFRESH
+// REFRESH STATO COMBAT
 // ============================================================
 
 async function refreshCombatState() {
@@ -2231,7 +2367,7 @@ async function refreshCombatState() {
 
 
         // ====================================================
-        // STATO COMBAT
+        // DATI COMBAT
         // ====================================================
 
         await Promise.all([
@@ -2258,7 +2394,7 @@ async function refreshCombatState() {
 
 
         // ====================================================
-        // RENDER SOLO SE È CAMBIATO QUALCOSA
+        // RENDER SE CAMBIA LO STATO
         // ====================================================
 
         if (
@@ -2285,13 +2421,15 @@ async function refreshCombatState() {
 
 
         // ====================================================
-        // UI TURNO
+        // TURNO
         // ====================================================
 
-        updateCombatTurnUI();
+        await updateCombatTurnUI();
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.error(
             "Errore aggiornamento stato combat:",
@@ -2400,7 +2538,9 @@ window.moveCombatPlayer =
             renderCombat();
 
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
 
             console.error(
                 "Errore movimento combattimento:",
@@ -2430,8 +2570,6 @@ document.addEventListener(
             event.target;
 
 
-        // Non intercettare frecce/WASD mentre
-        // l'utente sta scrivendo.
         if (
             target instanceof
                 HTMLInputElement
@@ -2516,7 +2654,9 @@ document.addEventListener(
 
                 cancelCombatTargeting();
 
+
                 closeCombatDrawer();
+
 
                 return;
 
@@ -2579,6 +2719,7 @@ function setupCombatMapResizeObserver() {
 
                         renderCombatTokens();
 
+
                         updateTargetSelectionVisuals();
 
                     }
@@ -2605,6 +2746,7 @@ window.addEventListener(
 
         renderCombatTokens();
 
+
         updateTargetSelectionVisuals();
 
     }
@@ -2612,7 +2754,7 @@ window.addEventListener(
 
 
 // ============================================================
-// USCITA
+// USCITA PAGINA
 // ============================================================
 
 window.addEventListener(
@@ -2620,6 +2762,7 @@ window.addEventListener(
     () => {
 
         stopCombatStateLoop();
+
 
         clearCombatRangeCells();
 
@@ -2629,6 +2772,7 @@ window.addEventListener(
         ) {
 
             combatMapResizeObserver.disconnect();
+
 
             combatMapResizeObserver =
                 null;
@@ -2644,7 +2788,9 @@ window.addEventListener(
 
                 combatDungeonChannel.untrack();
 
-            } catch (error) {
+            } catch (
+                error
+            ) {
 
                 console.warn(
                     "Errore chiusura Presence combat:",
