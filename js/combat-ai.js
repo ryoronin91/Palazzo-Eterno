@@ -333,8 +333,6 @@ function chooseGoblinTarget(
     return null;
 
 }
-
-
 // ============================================================
 // IA GOBLIN BASE - MOVIMENTO
 // ============================================================
@@ -680,6 +678,53 @@ async function runEnemyAI(
     try {
 
         // ====================================================
+        // AGGRO
+        //
+        // Prima che il Goblin scelga il bersaglio normale,
+        // controlliamo se esiste Aggro.
+        //
+        // Se esiste, apply_current_enemy_aggro salva il PG
+        // provocatore come target del turno nella tabella
+        // combat_enemy_turn_state.
+        // ====================================================
+
+        const {
+            data: aggroData,
+            error: aggroError
+        } =
+            await db.rpc(
+                "apply_current_enemy_aggro",
+                {
+
+                    p_combat_id:
+                        combatId
+
+                }
+            );
+
+
+        if (
+            aggroError
+        ) {
+
+            throw aggroError;
+
+        }
+
+
+        if (
+            aggroData?.applied ===
+            true
+        ) {
+
+            addCombatLog(
+                `${aggroData.enemy_name} è provocato da ${aggroData.target_name}!`
+            );
+
+        }
+
+
+        // ====================================================
         // MOVIMENTO
         // ====================================================
 
@@ -745,9 +790,7 @@ async function runEnemyAI(
             }
 
         }
-
-
-        // ====================================================
+                // ====================================================
         // ATTACCO
         // ====================================================
 
@@ -864,68 +907,70 @@ async function runEnemyAI(
 
         }
 
+
         // ====================================================
-// FINE TURNO AUTOMATICA IA
-// ====================================================
+        // FINE TURNO AUTOMATICA IA
+        // ====================================================
 
-const {
-    data: turnAdvanced,
-    error: turnError
-} =
-    await db.rpc(
-        "finish_enemy_turn",
-        {
+        const {
+            data: turnAdvanced,
+            error: turnError
+        } =
+            await db.rpc(
+                "finish_enemy_turn",
+                {
 
-            p_combat_id:
-                combatId,
+                    p_combat_id:
+                        combatId,
 
-            p_enemy_entity_id:
-                currentEntity.id,
+                    p_enemy_entity_id:
+                        currentEntity.id,
 
-            p_round_number:
-                Number(
-                    combatSession.round_number
-                )
+                    p_round_number:
+                        Number(
+                            combatSession.round_number
+                        )
+
+                }
+            );
+
+
+        if (
+            turnError
+        ) {
+
+            throw turnError;
 
         }
-    );
 
 
-if (
-    turnError
-) {
-
-    throw turnError;
-
-}
+        console.log(
+            "FINE TURNO IA:",
+            turnAdvanced
+        );
 
 
-console.log(
-    "FINE TURNO IA:",
-    turnAdvanced
-);
+        // Se questo client ha realmente fatto avanzare il turno,
+        // aggiorniamo subito lo stato.
+
+        if (
+            turnAdvanced === true
+        ) {
+
+            await loadCombatSession();
 
 
-// Se questo client ha realmente fatto avanzare il turno,
-// aggiorniamo subito lo stato.
-
-if (
-    turnAdvanced === true
-) {
-
-    await loadCombatSession();
+            await loadCombatEntities();
 
 
-    await loadCombatEntities();
+            lastCombatEntitiesSnapshot =
+                createCombatSnapshot();
 
 
-    lastCombatEntitiesSnapshot =
-        createCombatSnapshot();
+            renderCombat();
 
+        }
 
-    renderCombat();
-
-}
 
     } catch (error) {
 

@@ -59,6 +59,21 @@ function getCurrentTargetRange() {
     }
 
 
+    if (
+        combatTargetMode &&
+        combatTargetMode.startsWith(
+            "aggro:"
+        )
+    ) {
+
+        return Math.max(
+            COMBAT_COLUMNS,
+            COMBAT_ROWS
+        );
+
+    }
+
+
     return 0;
 
 }
@@ -458,6 +473,7 @@ async function handleCombatTokenClick(
                 "Questa abilità può essere usata soltanto su te stesso o su un alleato."
             );
 
+
             return;
 
         }
@@ -471,6 +487,7 @@ async function handleCombatTokenClick(
             addCombatLog(
                 "Questo personaggio non può ricevere il buff."
             );
+
 
             return;
 
@@ -515,6 +532,7 @@ async function handleCombatTokenClick(
                 "Questa abilità può essere usata soltanto su un nemico."
             );
 
+
             return;
 
         }
@@ -533,6 +551,7 @@ async function handleCombatTokenClick(
                 "Questo nemico non è un bersaglio valido."
             );
 
+
             return;
 
         }
@@ -548,6 +567,7 @@ async function handleCombatTokenClick(
                 "Il bersaglio è fuori portata."
             );
 
+
             return;
 
         }
@@ -561,6 +581,103 @@ async function handleCombatTokenClick(
 
 
         await performPushPull(
+            entity.id,
+            abilityId
+        );
+
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // AGGRO
+    // ========================================================
+
+    if (
+        combatTargetMode &&
+        combatTargetMode.startsWith(
+            "aggro:"
+        )
+    ) {
+
+        if (
+            entity.entity_type !==
+            "enemy"
+        ) {
+
+            addCombatLog(
+                "Aggro può essere usato soltanto su un Goblin."
+            );
+
+
+            return;
+
+        }
+
+
+        if (
+            entity.status !==
+            "alive"
+            ||
+            Number(
+                entity.current_hp
+            ) <= 0
+        ) {
+
+            addCombatLog(
+                "Questo Goblin non è un bersaglio valido."
+            );
+
+
+            return;
+
+        }
+
+
+        if (
+            String(
+                entity.monster_type ||
+                ""
+            ).toLowerCase() !==
+            "goblin"
+        ) {
+
+            addCombatLog(
+                "Aggro di livello 1 funziona solo sui Goblin."
+            );
+
+
+            return;
+
+        }
+
+
+        if (
+            !isEntityInCurrentTargetRange(
+                entity
+            )
+        ) {
+
+            addCombatLog(
+                "Il bersaglio è fuori portata."
+            );
+
+
+            return;
+
+        }
+
+
+        const abilityId =
+            combatTargetMode.replace(
+                "aggro:",
+                ""
+            );
+
+
+        await performAggro(
             entity.id,
             abilityId
         );
@@ -656,6 +773,9 @@ async function handleCombatTokenClick(
             entity.id
         );
 
+
+        return;
+
     }
 
 }
@@ -664,7 +784,6 @@ async function handleCombatTokenClick(
 // ============================================================
 // ATTACCO BASE
 // ============================================================
-
 async function performBasicAttack(
     targetEntityId
 ) {
@@ -1399,7 +1518,6 @@ async function performGiornoPaga() {
 // ============================================================
 // GESTIONE ABILITÀ
 // ============================================================
-
 function handleAbilityButton(
     entry
 ) {
@@ -1475,6 +1593,7 @@ function handleAbilityButton(
             entry
         );
 
+
         return;
 
     }
@@ -1496,6 +1615,7 @@ function handleAbilityButton(
             entry
         );
 
+
         return;
 
     }
@@ -1511,6 +1631,26 @@ function handleAbilityButton(
     ) {
 
         performGiornoPaga();
+
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // AGGRO
+    // ========================================================
+
+    if (
+        ability.id ===
+        "aggro"
+    ) {
+
+        startAggroTargeting(
+            entry
+        );
+
 
         return;
 
@@ -1737,6 +1877,7 @@ function startCombatBuffTargeting(
             "Hai già utilizzato la tua azione in questo turno."
         );
 
+
         return;
 
     }
@@ -1773,6 +1914,7 @@ function startCombatBuffTargeting(
         addCombatLog(
             `Non hai abbastanza PM per usare ${ability.name}.`
         );
+
 
         return;
 
@@ -1827,6 +1969,7 @@ function startPushPullTargeting(
             "Hai già utilizzato la tua azione in questo turno."
         );
 
+
         return;
 
     }
@@ -1864,6 +2007,7 @@ function startPushPullTargeting(
             `Non hai abbastanza PM per usare ${ability.name}.`
         );
 
+
         return;
 
     }
@@ -1888,6 +2032,212 @@ function startPushPullTargeting(
 
 
     updateTargetSelectionVisuals();
+
+}
+
+
+// ============================================================
+// AGGRO - TARGET
+// ============================================================
+
+function startAggroTargeting(
+    entry
+) {
+
+    const player =
+        getMyPlayerEntity();
+
+
+    if (
+        !player ||
+        !isMyTurn()
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        player.action_used ===
+        true
+    ) {
+
+        addCombatLog(
+            "Hai già utilizzato la tua azione in questo turno."
+        );
+
+
+        return;
+
+    }
+
+
+    const ability =
+        entry?.ability;
+
+
+    if (
+        !ability
+    ) {
+
+        return;
+
+    }
+
+
+    const pmCost =
+        Number(
+            ability.pm_cost
+        ) || 0;
+
+
+    const currentPM =
+        Number(
+            player.current_pm
+        ) || 0;
+
+
+    if (
+        currentPM <
+        pmCost
+    ) {
+
+        addCombatLog(
+            "Non hai abbastanza PM per usare Aggro."
+        );
+
+
+        return;
+
+    }
+
+
+    combatTargetMode =
+        `aggro:${ability.id}`;
+
+
+    closeCombatDrawer();
+
+
+    addCombatLog(
+        "AGGRO: seleziona un Goblin."
+    );
+
+
+    updateTargetSelectionVisuals();
+
+}
+
+
+// ============================================================
+// USA AGGRO
+// ============================================================
+
+async function performAggro(
+    targetEntityId,
+    abilityId
+) {
+
+    if (
+        !currentCharacter ||
+        !isMyTurn()
+    ) {
+
+        cancelCombatTargeting();
+
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "cast_combat_aggro",
+                {
+
+                    p_combat_id:
+                        combatId,
+
+                    p_character_id:
+                        currentCharacter.id,
+
+                    p_target_entity_id:
+                        targetEntityId,
+
+                    p_ability_id:
+                        abilityId
+
+                }
+            );
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        cancelCombatTargeting();
+
+
+        await loadCombatEntities();
+
+
+        lastCombatEntitiesSnapshot =
+            createCombatSnapshot();
+
+
+        renderCombat();
+
+
+        if (
+            currentCharacter &&
+            data?.current_pm !==
+                undefined
+        ) {
+
+            currentCharacter.current_pm =
+                Number(
+                    data.current_pm
+                );
+
+        }
+
+
+        addCombatLog(
+            `${data.caster_name} usa AGGRO su ${data.target_name}: `
+            +
+            `il Goblin lo prenderà di mira nel suo prossimo turno.`
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            "Errore Aggro:",
+            error
+        );
+
+
+        addCombatLog(
+            cleanCombatError(
+                error.message
+            )
+        );
+
+    }
 
 }
 
