@@ -1794,13 +1794,30 @@ if (
     // EVENTO CASELLA
     // --------------------------------------------------------
 
-    const hasEvent =
-        await checkDungeonCellEvent();
+const hasEvent =
+    await checkDungeonCellEvent();
 
 
-    if (
+let hasCommunicationEvent =
+    false;
+
+
+if (
+    typeof checkCommunicationEvent ===
+    "function"
+) {
+
+    hasCommunicationEvent =
+        checkCommunicationEvent() ===
+        true;
+
+}
+
+
+if (
     !hasEvent &&
-    !hasNearbyCombatEvent
+    !hasNearbyCombatEvent &&
+    !hasCommunicationEvent
 ) {
 
     setMessage(

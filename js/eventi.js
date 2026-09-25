@@ -57,6 +57,93 @@ const DUNGEON_COMBAT_EVENTS = [
 ];
 
 // ============================================================
+// EVENTI COMUNICAZIONE DEL PIANO 1
+// ============================================================
+
+const DUNGEON_COMMUNICATION_EVENTS = [
+
+    {
+        id: "stairs_down",
+        x: 11,
+        y: 17,
+        message:
+            "Queste scale scendono ad un piano inferiore."
+    },
+
+    {
+        id: "dead_end",
+        x: 15,
+        y: 22,
+        message:
+            "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì"
+    }
+
+];
+
+
+// ============================================================
+// CONTROLLO EVENTO COMUNICAZIONE
+// ============================================================
+
+function checkCommunicationEvent() {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return false;
+
+    }
+
+
+    const communicationEvent =
+        DUNGEON_COMMUNICATION_EVENTS.find(
+            dungeonEvent =>
+
+                Number(
+                    dungeonEvent.x
+                ) ===
+                Number(
+                    playerX
+                )
+
+                &&
+
+                Number(
+                    dungeonEvent.y
+                ) ===
+                Number(
+                    playerY
+                )
+        );
+
+
+    if (
+        !communicationEvent
+    ) {
+
+        return false;
+
+    }
+
+
+    setMessage(
+        communicationEvent.message
+    );
+
+
+    console.log(
+        "Evento comunicazione:",
+        communicationEvent
+    );
+
+
+    return true;
+
+}
+
+// ============================================================
 // POPUP COMBATTIMENTO
 // ============================================================
 
