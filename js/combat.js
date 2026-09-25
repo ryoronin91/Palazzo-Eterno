@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v39 CARICATO");
+console.log("COMBAT.JS v41 CARICATO");
 
 
 const db = supabaseClient;
@@ -69,7 +69,8 @@ let victoryLootDraftInterval = null;
 
 let victoryLootPickInProgress = false;
 
-
+let enemyAITurnKey = null;
+let enemyAIInProgress = false;
 
 // ============================================================
 // MODALITÀ BERSAGLIO
@@ -7132,8 +7133,32 @@ function updateCombatTurnUI() {
 
 
     // ========================================================
-    // TEST IA GOBLIN BASE
-    // ========================================================
+// IA GOBLIN BASE
+// ESEGUITA UNA SOLA VOLTA PER TURNO
+// ========================================================
+
+const aiTurnKey =
+    `${combatSession.round_number}:${currentEntity.id}`;
+
+
+if (
+    enemyAIInProgress ||
+    enemyAITurnKey === aiTurnKey
+) {
+
+    return;
+
+}
+
+
+enemyAITurnKey =
+    aiTurnKey;
+
+enemyAIInProgress =
+    true;
+
+
+try {
 
     const target =
         chooseGoblinTarget(
@@ -7150,12 +7175,21 @@ function updateCombatTurnUI() {
             target.display_name
         );
 
+        addCombatLog(
+            `${currentEntity.display_name} prende di mira ${target.display_name}.`
+        );
+
     }
 
+} finally {
 
-    return;
+    enemyAIInProgress =
+        false;
 
 }
+
+
+return;
 
 
     // ========================================================
