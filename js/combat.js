@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v43 CARICATO");
+console.log("COMBAT.JS v44 CARICATO");
 
 
 const db = supabaseClient;
@@ -7006,139 +7006,6 @@ async function passTurn() {
 // ============================================================
 // UI TURNO
 // ============================================================
-
-function updateCombatTurnUI() {
-
-    if (!combatSession) {
-
-        return;
-
-    }
-
-
-    if (
-        combatSession.status !==
-        "active"
-    ) {
-
-        setCombatStatus(
-            `Stato: ${combatSession.status}`
-        );
-
-
-        if (combatTargetMode) {
-
-            cancelCombatTargeting();
-
-        }
-
-
-        updateActionButtons();
-
-
-        return;
-
-    }
-
-
-    const currentEntity =
-        getCurrentTurnEntity();
-
-
-    if (!currentEntity) {
-
-        setCombatStatus(
-            "Turno non disponibile."
-        );
-
-
-        if (combatTargetMode) {
-
-            cancelCombatTargeting();
-
-        }
-
-
-        updateActionButtons();
-
-
-        return;
-
-    }
-
-
-    const round =
-        Number(
-            combatSession.round_number
-        ) || 1;
-
-
-    const duration =
-        Number(
-            combatSession.turn_duration_seconds
-        ) || 60;
-
-
-    const startedAt =
-        combatSession.turn_started_at
-
-            ? new Date(
-                combatSession.turn_started_at
-            ).getTime()
-
-            : Date.now();
-
-
-    const elapsedSeconds =
-        (
-            Date.now() -
-            startedAt
-        )
-        /
-        1000;
-
-
-    const remaining =
-        Math.max(
-            0,
-            Math.ceil(
-                duration -
-                elapsedSeconds
-            )
-        );
-
-
-    // ========================================================
-    // TURNO NEMICO
-    // ========================================================
-
-function updateCombatTurnUI() {
-
-    if (!combatSession) {
-        return;
-    }
-
-
-    if (
-        combatSession.status !==
-        "active"
-    ) {
-
-        setCombatStatus(
-            `Stato: ${combatSession.status}`
-        );
-
-
-        if (combatTargetMode) {
-            cancelCombatTargeting();
-        }
-
-
-        updateActionButtons();
-
-        return;
-    }
-
 
     const currentEntity =
         getCurrentTurnEntity();
