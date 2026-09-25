@@ -4903,6 +4903,54 @@ async function triggerTrapEvent(
 
     try {
 
+        // ====================================================
+        // COOLDOWN GLOBALE TRAPPOLA - 15 MINUTI
+        // ====================================================
+
+        const {
+            data: trapTriggered,
+            error: trapTriggerError
+        } =
+            await db.rpc(
+                "try_trigger_trap",
+                {
+                    p_trap_id:
+                        dungeonTrap.id,
+
+                    p_character_id:
+                        character.id
+                }
+            );
+
+
+        if (trapTriggerError) {
+
+            throw trapTriggerError;
+
+        }
+
+
+        // La trappola è ancora in cooldown.
+        // Nessun tiro, nessun popup, nessun blocco persistente.
+        if (
+            trapTriggered !==
+            true
+        ) {
+
+            eventLocked =
+                false;
+
+
+            setMessage(
+                "La trappola è temporaneamente disattivata."
+            );
+
+
+            return;
+
+        }
+
+
         const luck =
             getDungeonEffectiveAttribute(
                 "fortuna"
