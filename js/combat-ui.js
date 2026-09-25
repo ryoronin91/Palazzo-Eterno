@@ -657,6 +657,10 @@ function renderCombatEntityList() {
     container.replaceChildren();
 
 
+    // ========================================================
+    // ENTITÀ VIVE
+    // ========================================================
+
     const aliveEntities =
         Array.from(
             combatEntities.values()
@@ -672,7 +676,111 @@ function renderCombatEntityList() {
             );
 
 
+    if (
+        aliveEntities.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // MAPPA ENTITÀ VIVE
+    // ========================================================
+
+    const aliveMap =
+        new Map(
+            aliveEntities.map(
+                entity => [
+                    entity.id,
+                    entity
+                ]
+            )
+        );
+
+
+    // ========================================================
+    // ORDINE BASE
+    // ========================================================
+
+    let orderedEntities =
+        combatTurnOrder
+            .map(
+                entityId =>
+                    aliveMap.get(
+                        entityId
+                    )
+            )
+            .filter(
+                Boolean
+            );
+
+
+    // Eventuali entità non presenti nell'ordine iniziale.
     aliveEntities.forEach(
+        entity => {
+
+            if (
+                !orderedEntities.some(
+                    existing =>
+                        existing.id ===
+                        entity.id
+                )
+            ) {
+
+                orderedEntities.push(
+                    entity
+                );
+
+            }
+
+        }
+    );
+
+
+    // ========================================================
+    // PORTA IL TURNO ATTUALE IN CIMA
+    // ========================================================
+
+    const currentTurnId =
+        combatSession
+            ?.current_turn_entity_id;
+
+
+    const currentIndex =
+        orderedEntities.findIndex(
+            entity =>
+                entity.id ===
+                currentTurnId
+        );
+
+
+    if (
+        currentIndex > 0
+    ) {
+
+        orderedEntities = [
+
+            ...orderedEntities.slice(
+                currentIndex
+            ),
+
+            ...orderedEntities.slice(
+                0,
+                currentIndex
+            )
+
+        ];
+
+    }
+
+
+    // ========================================================
+    // RENDER LISTA
+    // ========================================================
+
+    orderedEntities.forEach(
         entity => {
 
             const item =
@@ -686,7 +794,7 @@ function renderCombatEntityList() {
 
 
             // =================================================
-            // HOVER TURN ORDER → TOKEN
+            // HOVER
             // =================================================
 
             item.addEventListener(
@@ -739,8 +847,7 @@ function renderCombatEntityList() {
 
             if (
                 entity.id ===
-                combatSession
-                    ?.current_turn_entity_id
+                currentTurnId
             ) {
 
                 item.classList.add(
@@ -782,9 +889,7 @@ function renderCombatEntityList() {
                 `${
                     entity.entity_type ===
                     "enemy"
-
                         ? "Nemico"
-
                         : "Giocatore"
                 } · PF ${
                     entity.current_hp

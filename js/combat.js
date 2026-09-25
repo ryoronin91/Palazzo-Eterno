@@ -97,6 +97,7 @@ const combatEntities =
 const combatTokens =
     new Map();
 
+let combatTurnOrder = [];
 
 // ============================================================
 // CELLE RANGE
@@ -826,6 +827,24 @@ async function loadCombatEntities() {
 
 }
 
+// ============================================================
+// ORDINE TURNI BASE
+// ============================================================
+
+if (
+    combatTurnOrder.length === 0
+) {
+
+    combatTurnOrder =
+        (
+            data ||
+            []
+        ).map(
+            entity =>
+                entity.id
+        );
+
+}
 
 // ============================================================
 // EFFETTI PERSISTENTI DEL PERSONAGGIO
