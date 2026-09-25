@@ -181,6 +181,13 @@ document.addEventListener(
 
 
             // ------------------------------------------------
+            // CADUTI DEL PALAZZO
+            // ------------------------------------------------
+
+            await loadDungeonLeaderboard();
+
+
+            // ------------------------------------------------
             // NOTE
             // ------------------------------------------------
 
@@ -263,6 +270,198 @@ document.addEventListener(
 
     }
 );
+
+
+
+// ============================================================
+// CADUTI DEL PALAZZO
+// ============================================================
+
+async function loadDungeonLeaderboard() {
+
+    const container =
+        document.getElementById(
+            "dungeon-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_dead_characters_leaderboard",
+                {
+                    p_limit:
+                        20
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderDungeonLeaderboard(
+            data || []
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento Caduti del Palazzo:",
+            error
+        );
+
+
+        container.innerHTML =
+            `
+                <div class="dungeon-leaderboard-empty">
+                    Classifica non disponibile.
+                </div>
+            `;
+
+    }
+
+}
+
+
+// ============================================================
+// RENDER CADUTI DEL PALAZZO
+// ============================================================
+
+function renderDungeonLeaderboard(
+    rows
+) {
+
+    const container =
+        document.getElementById(
+            "dungeon-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(rows) ||
+        rows.length === 0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-leaderboard-empty">
+                    Nessun caduto registrato.
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        rows
+            .map(
+                row => {
+
+                    const position =
+                        Number(
+                            row.posizione
+                        ) || 0;
+
+
+                    const score =
+                        Number(
+                            row.score
+                        ) || 0;
+
+
+                    const name =
+                        escapeDungeonLeaderboardHtml(
+                            row.character_name ||
+                            "Avventuriero"
+                        );
+
+
+                    return `
+                        <div class="dungeon-leaderboard-row">
+
+                            <div class="dungeon-leaderboard-position">
+                                #${position}
+                            </div>
+
+                            <div
+                                class="dungeon-leaderboard-name"
+                                title="${name}"
+                            >
+                                ${name}
+                            </div>
+
+                            <div class="dungeon-leaderboard-score">
+                                ${score}
+                            </div>
+
+                        </div>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+// ============================================================
+// ESCAPE HTML LEADERBOARD
+// ============================================================
+
+function escapeDungeonLeaderboardHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
 
 
 // ============================================================
@@ -480,26 +679,10 @@ function updateDungeonAbilityVisibility() {
         );
 
 
-    const giornoPagaButton =
-        document.getElementById(
-            "dungeon-giorno-paga-button"
-        );
-
-
     if (healButton) {
 
         healButton.style.display =
             hasDungeonAbility("cura")
-                ? ""
-                : "none";
-
-    }
-
-
-    if (giornoPagaButton) {
-
-        giornoPagaButton.style.display =
-            hasDungeonAbility("giorno_paga")
                 ? ""
                 : "none";
 
@@ -1794,30 +1977,13 @@ if (
     // EVENTO CASELLA
     // --------------------------------------------------------
 
-const hasEvent =
-    await checkDungeonCellEvent();
+    const hasEvent =
+        await checkDungeonCellEvent();
 
 
-let hasCommunicationEvent =
-    false;
-
-
-if (
-    typeof checkCommunicationEvent ===
-    "function"
-) {
-
-    hasCommunicationEvent =
-        checkCommunicationEvent() ===
-        true;
-
-}
-
-
-if (
+    if (
     !hasEvent &&
-    !hasNearbyCombatEvent &&
-    !hasCommunicationEvent
+    !hasNearbyCombatEvent
 ) {
 
     setMessage(
@@ -3008,10 +3174,6 @@ function setupDungeonActions() {
             "dungeon-heal-button"
         );
 
-    const giornoPagaButton =
-        document.getElementById(
-            "dungeon-giorno-paga-button"
-        );
 
     const healthPotionButton =
         document.getElementById(
@@ -3024,97 +3186,6 @@ function setupDungeonActions() {
             "dungeon-mana-potion-button"
         );
 
-
-// ============================================================
-// GIORNO PAGA NEL DUNGEON
-// ============================================================
-
-async function castDungeonGiornoPaga() {
-
-    if (!character) {
-        return;
-    }
-
-
-    if (
-        !hasDungeonAbility(
-            "giorno_paga"
-        )
-    ) {
-
-        setMessage(
-            "Il personaggio non conosce Giorno Paga."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "cast_dungeon_giorno_paga",
-                {
-                    p_character_id:
-                        character.id
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        // Aggiorna i PM locali.
-        if (
-            data?.current_pm !==
-            undefined
-        ) {
-
-            character.current_pm =
-                Number(
-                    data.current_pm
-                );
-
-        }
-
-
-        updateCharacterPanel();
-
-        updateDungeonActionAvailability();
-
-        updateMyPresence();
-
-
-        setMessage(
-            "Giorno Paga attivo: la tua quota d'oro del prossimo combattimento sarà raddoppiata."
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore Giorno Paga:",
-            error
-        );
-
-
-        setMessage(
-            error.message ||
-            "Non è stato possibile usare Giorno Paga."
-        );
-
-    }
-
-}
 
     // ========================================================
     // CURA
@@ -3141,32 +3212,6 @@ async function castDungeonGiornoPaga() {
 
     }
 
-// ========================================================
-// GIORNO PAGA
-// ========================================================
-
-if (giornoPagaButton) {
-
-    giornoPagaButton.addEventListener(
-        "click",
-        async () => {
-
-            if (
-                giornoPagaButton.disabled
-            ) {
-                return;
-            }
-
-
-            deactivateHealMode();
-
-
-            await castDungeonGiornoPaga();
-
-        }
-    );
-
-}
 
     // ========================================================
     // POZIONE VITA
@@ -3310,19 +3355,6 @@ function updateDungeonActionAvailability() {
             currentPM < 2;
 
     }
-
-const giornoPagaButton =
-    document.getElementById(
-        "dungeon-giorno-paga-button"
-    );
-
-
-if (giornoPagaButton) {
-
-    giornoPagaButton.disabled =
-        currentPM < 3;
-
-}
 
 
     const healthPotion =
@@ -4764,122 +4796,66 @@ function getCurrentDungeonCell() {
 
 
 // ============================================================
-// TRAPPOLE DEL PIANO
-// ============================================================
-
-const DUNGEON_TRAPS = {
-
-    "11,11": {
-
-        id:
-            "blade_corridor",
-
-        name:
-            "LAMA",
-
-        defenseStat:
-            "destrezza",
-
-        defenseLabel:
-            "DES",
-
-        message:
-            "Una lama affilata attraversa il corridoio da muro a muro."
-
-    },
-
-
-    "9,15": {
-
-        id:
-            "acid_vapor",
-
-        name:
-            "VAPORE ACIDO",
-
-        defenseStat:
-            "resistenza",
-
-        defenseLabel:
-            "RES",
-
-        message:
-            "Dal pavimento una nube di vapore acido ti investe."
-
-    }
-
-};
-
-
-// ============================================================
 // CONTROLLO EVENTO CASELLA
 // ============================================================
 //
-// Le trappole sono definite tramite coordinate visibili
-// del dungeon, le stesse usate dalla pagina Master.
+// Restituisce TRUE se è stato gestito un evento.
+// Restituisce FALSE se la casella non contiene eventi.
 //
 // ============================================================
 
 async function checkDungeonCellEvent() {
 
-    console.log(
-        "DEBUG TRAPPOLA - posizione PG:",
-        playerX,
-        playerY
-    );
+    const cell =
+        getCurrentDungeonCell();
 
 
     if (
-        playerX === null ||
-        playerY === null
+        !cell ||
+        typeof cell !== "object"
+    ) {
+        return false;
+    }
+
+
+    const eventType =
+        cell.event ||
+        cell.event_type ||
+        cell.type_event ||
+        null;
+
+
+    if (!eventType) {
+        return false;
+    }
+
+
+    const normalizedEvent =
+        String(
+            eventType
+        ).toLowerCase();
+
+
+    // ========================================================
+    // TRAPPOLA
+    // ========================================================
+
+    if (
+        normalizedEvent === "trap" ||
+        normalizedEvent === "trappola"
     ) {
 
-        return false;
+        await triggerTrapEvent(
+            cell
+        );
+
+
+        return true;
 
     }
 
 
-    const coordinateKey =
-        `${Number(playerX)},${Number(playerY)}`;
-
-
-    console.log(
-        "DEBUG TRAPPOLA - chiave:",
-        coordinateKey
-    );
-
-
-    const dungeonTrap =
-        DUNGEON_TRAPS[
-            coordinateKey
-        ];
-
-
-    console.log(
-        "DEBUG TRAPPOLA - trovata:",
-        dungeonTrap
-    );
-
-
-    if (!dungeonTrap) {
-
-        return false;
-
-    }
-
-
-    console.log(
-        "DEBUG TRAPPOLA - ATTIVO:",
-        dungeonTrap.id
-    );
-
-
-    await triggerTrapEvent(
-        dungeonTrap
-    );
-
-
-    return true;
+    return false;
 
 }
 
@@ -4887,41 +4863,23 @@ async function checkDungeonCellEvent() {
 // ============================================================
 // TRAPPOLA
 // ============================================================
-//
-// Regola:
-//
-// 1d10 - LCK
-//
-// Lama:
-// risultato contro DES
-//
-// Acido:
-// risultato contro RES
-//
-// Se risultato > difesa:
-//
-// danno = risultato - difesa
-//
-// ============================================================
 
 async function triggerTrapEvent(
-    dungeonTrap
+    dungeonEvent
 ) {
 
-    if (
-        !character ||
-        !character.id ||
-        !dungeonTrap
-    ) {
-
+    if (!character) {
         return;
-
     }
 
 
     eventLocked =
         true;
 
+
+    // Interrompiamo eventuali passi già accodati.
+    // In questo modo il PG non continua a correre
+    // mentre sta risolvendo una trappola.
 
     movementQueue.length =
         0;
@@ -4930,131 +4888,152 @@ async function triggerTrapEvent(
     try {
 
         // ====================================================
-        // TENTA ATTIVAZIONE GLOBALE
+        // ATTRIBUTI EFFETTIVI
         // ====================================================
 
-        const {
-            data: triggerData,
-            error: triggerError
-        } =
-            await db.rpc(
-                "try_trigger_trap",
-                {
-
-                    p_trap_id:
-                        dungeonTrap.id,
-
-                    p_character_id:
-                        character.id
-
-                }
-            );
-
-            console.log(
-    "DEBUG RPC TRAPPOLA:",
-    {
-        trap:
-            dungeonTrap.id,
-
-        data:
-            triggerData,
-
-        error:
-            triggerError
-    }
-);
-
-
-        if (triggerError) {
-
-            throw triggerError;
-
-        }
-
-
-        // ====================================================
-        // TRAPPOLA IN COOLDOWN
-        //
-        // Non mostra nulla e non fa alcun tiro.
-        // ====================================================
-
-        if (
-    triggerData !==
-    true
-) {
-
-    eventLocked =
-        false;
-
-    return;
-
-}
-
-
-        // ====================================================
-        // STATISTICHE
-        // ====================================================
-
-        const luck =
+        const fortuna =
             getDungeonEffectiveAttribute(
                 "fortuna"
             );
 
 
-        const defense =
+        const requestedDefenseStat =
+            String(
+                dungeonEvent.defenseStat ||
+                dungeonEvent.defense_stat ||
+                "resistenza"
+            ).toLowerCase();
+
+
+        const supportedStats = [
+            "forza",
+            "resistenza",
+            "costituzione",
+            "intelligenza",
+            "destrezza",
+            "fortuna"
+        ];
+
+
+        const defenseStat =
+            supportedStats.includes(
+                requestedDefenseStat
+            )
+                ? requestedDefenseStat
+                : "resistenza";
+
+
+        const defenseValue =
             getDungeonEffectiveAttribute(
-                dungeonTrap.defenseStat
+                defenseStat
             );
 
 
         // ====================================================
-        // 1D10
+        // DIFFICOLTÀ
+        // ====================================================
+
+        const difficulty =
+            Number(
+                dungeonEvent.difficulty ||
+                dungeonEvent.dc
+            ) || 10;
+
+
+        // ====================================================
+        // TIRO
         // ====================================================
 
         const roll =
             Math.floor(
-                Math.random() *
-                10
+                Math.random() * 20
             ) + 1;
 
 
+        const fortuneBonus =
+            Math.floor(
+                fortuna / 5
+            );
+
+
+        const total =
+            roll +
+            defenseValue +
+            fortuneBonus;
+
+
+        console.log(
+            "TRAPPOLA",
+            {
+                roll,
+                defenseStat,
+                defenseValue,
+                fortuna,
+                fortuneBonus,
+                total,
+                difficulty
+            }
+        );
+
+
         // ====================================================
-        // RISULTATO TRAPPOLA
-        //
-        // Può anche andare sotto zero.
+        // TRAPPOLA EVITATA
         // ====================================================
 
-        const trapResult =
-            roll -
-            luck;
+        if (
+            total >=
+            difficulty
+        ) {
+
+            setMessage(
+                dungeonEvent.success_message ||
+                dungeonEvent.successMessage ||
+                "Riesci a evitare la trappola."
+            );
+
+
+            return;
+
+        }
 
 
         // ====================================================
         // DANNO
         // ====================================================
 
-        const damage =
-            Math.max(
-                0,
-                trapResult -
-                defense
+        const baseDamage =
+            Number(
+                dungeonEvent.damage
+            ) || 1;
+
+
+        const costituzione =
+            getDungeonEffectiveAttribute(
+                "costituzione"
             );
 
 
-        // ====================================================
-        // PF
-        // ====================================================
+        const constitutionReduction =
+            Math.floor(
+                costituzione / 10
+            );
+
+
+        const damage =
+            Math.max(
+                1,
+                baseDamage -
+                constitutionReduction
+            );
+
 
         const stats =
             getDungeonCalculatedStats();
 
 
         const oldHealth =
-            character.current_hp ===
-                null
-            ||
-            character.current_hp ===
-                undefined
+            character.current_hp === null ||
+            character.current_hp === undefined
 
                 ? stats.maxHealth
 
@@ -5077,106 +5056,18 @@ async function triggerTrapEvent(
             );
 
 
-        console.log(
-            "TRAPPOLA",
-            {
-
-                id:
-                    dungeonTrap.id,
-
-                roll,
-
-                luck,
-
-                trapResult,
-
-                defenseStat:
-                    dungeonTrap.defenseStat,
-
-                defense,
-
-                damage,
-
-                oldHealth,
-
-                newHealth
-
-            }
-        );
-
-
         // ====================================================
-        // NESSUN DANNO
-        // ====================================================
-
-        if (
-            damage <= 0
-        ) {
-
-            setMessage(
-                "Riesci a evitare la trappola."
-            );
-
-
-            openTrapResultPrompt({
-
-                title:
-                    dungeonTrap.name,
-
-                message:
-                    dungeonTrap.message,
-
-                roll:
-                    roll,
-
-                luck:
-                    luck,
-
-                trapResult:
-                    trapResult,
-
-                defenseLabel:
-                    dungeonTrap.defenseLabel,
-
-                defense:
-                    defense,
-
-                damage:
-                    0,
-
-                currentHealth:
-                    oldHealth,
-
-                maxHealth:
-                    stats.maxHealth,
-
-                avoided:
-                    true
-
-            });
-
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // SALVA DANNO
+        // SALVA PF
         // ====================================================
 
         const {
-            error: healthError
+            error
         } =
             await db
-                .from(
-                    "characters"
-                )
+                .from("characters")
                 .update({
-
                     current_hp:
                         newHealth
-
                 })
                 .eq(
                     "id",
@@ -5184,10 +5075,8 @@ async function triggerTrapEvent(
                 );
 
 
-        if (healthError) {
-
-            throw healthError;
-
+        if (error) {
+            throw error;
         }
 
 
@@ -5197,58 +5086,27 @@ async function triggerTrapEvent(
 
         updateCharacterPanel();
 
-
-        await updateMyPresence();
+        updateMyPresence();
 
 
         setMessage(
+            dungeonEvent.fail_message ||
+            dungeonEvent.failMessage ||
             `La trappola ti colpisce: perdi ${damage} PF.`
         );
 
 
         // ====================================================
-        // POPUP
+        // MORTE
         // ====================================================
 
-        openTrapResultPrompt({
+        if (
+            newHealth <= 0
+        ) {
 
-            title:
-                dungeonTrap.name,
+            await handleCharacterDeath();
 
-            message:
-                dungeonTrap.message,
-
-            roll:
-                roll,
-
-            luck:
-                luck,
-
-            trapResult:
-                trapResult,
-
-            defenseLabel:
-                dungeonTrap.defenseLabel,
-
-            defense:
-                defense,
-
-            damage:
-                damage,
-
-            currentHealth:
-                newHealth,
-
-            maxHealth:
-                stats.maxHealth,
-
-            avoided:
-                false,
-
-            lethal:
-                newHealth <= 0
-
-        });
+        }
 
 
     } catch (error) {
@@ -5264,6 +5122,8 @@ async function triggerTrapEvent(
         );
 
 
+    } finally {
+
         eventLocked =
             false;
 
@@ -5271,216 +5131,6 @@ async function triggerTrapEvent(
 
 }
 
-
-// ============================================================
-// POPUP RISULTATO TRAPPOLA
-// ============================================================
-
-function openTrapResultPrompt(
-    result
-) {
-
-    const oldOverlay =
-        document.getElementById(
-            "trap-event-overlay"
-        );
-
-
-    if (oldOverlay) {
-
-        oldOverlay.remove();
-
-    }
-
-
-    const overlay =
-        document.createElement(
-            "div"
-        );
-
-
-    overlay.id =
-        "trap-event-overlay";
-
-
-    // Riutilizza lo stile già presente per i popup evento.
-    overlay.className =
-        "combat-event-overlay";
-
-
-    const modal =
-        document.createElement(
-            "div"
-        );
-
-
-    modal.className =
-        "combat-event-modal";
-
-
-    const resultText =
-        result.avoided
-
-            ? "RIESCI A EVITARE LA TRAPPOLA"
-
-            : `SUBISCI ${result.damage} DANNI`;
-
-
-    modal.innerHTML = `
-
-        <div class="combat-event-icon">
-            ⚠
-        </div>
-
-        <h2>
-            ${escapeTrapHtml(
-                result.title
-            )}
-        </h2>
-
-        <p>
-            ${escapeTrapHtml(
-                result.message
-            )}
-        </p>
-
-        <div class="combat-event-warning">
-
-            <div>
-                <strong>Tiro:</strong>
-                1d10 = ${result.roll}
-            </div>
-
-            <div>
-                <strong>LCK:</strong>
-                ${result.luck}
-            </div>
-
-            <div>
-                <strong>Risultato:</strong>
-                ${result.roll} - ${result.luck}
-                = ${result.trapResult}
-            </div>
-
-            <div>
-                <strong>${escapeTrapHtml(
-                    result.defenseLabel
-                )}:</strong>
-                ${result.defense}
-            </div>
-
-            <br>
-
-            <div>
-                <strong>
-                    ${escapeTrapHtml(
-                        resultText
-                    )}
-                </strong>
-            </div>
-
-            <div>
-                Vita:
-                ${result.currentHealth}
-                /
-                ${result.maxHealth}
-            </div>
-
-        </div>
-
-        <div class="combat-event-buttons">
-
-            <button
-                id="trap-event-close"
-                type="button"
-                class="combat-event-button combat-event-cancel"
-            >
-                CONTINUA
-            </button>
-
-        </div>
-    `;
-
-
-    overlay.appendChild(
-        modal
-    );
-
-
-    document.body.appendChild(
-        overlay
-    );
-
-
-    document
-        .getElementById(
-            "trap-event-close"
-        )
-        ?.addEventListener(
-            "click",
-            async () => {
-
-                overlay.remove();
-
-
-                // ============================================
-                // MORTE
-                // ============================================
-
-                if (
-                    result.lethal ===
-                    true
-                ) {
-
-                    await handleCharacterDeath();
-
-                    return;
-
-                }
-
-
-                eventLocked =
-                    false;
-
-            }
-        );
-
-}
-
-
-// ============================================================
-// ESCAPE HTML POPUP TRAPPOLA
-// ============================================================
-
-function escapeTrapHtml(
-    value
-) {
-
-    return String(
-        value ?? ""
-    )
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-
-}
 
 // ============================================================
 // MORTE
@@ -5492,9 +5142,7 @@ async function handleCharacterDeath() {
         !character ||
         !character.id
     ) {
-
         return;
-
     }
 
 
@@ -5506,140 +5154,56 @@ async function handleCharacterDeath() {
         0;
 
 
-    const characterId =
-        character.id;
-
-
-    const deadName =
-        character.nome ||
-        "Avventuriero";
-
-
     setMessage(
         "Il tuo personaggio è morto..."
     );
 
 
-    try {
+    // ========================================================
+    // RIMUOVE PRESENCE
+    // ========================================================
 
-        // ====================================================
-        // SCORE FINALE
-        // ====================================================
+    if (
+        dungeonChannel &&
+        realtimeReady
+    ) {
 
-        const {
-            data: finalScoreData,
-            error: finalScoreError
-        } =
-            await db.rpc(
-                "get_character_final_score",
-                {
+        try {
 
-                    p_character_id:
-                        characterId
+            await dungeonChannel.untrack();
 
-                }
+        } catch (error) {
+
+            console.error(
+                "Errore untrack:",
+                error
             );
 
-
-        if (finalScoreError) {
-
-            throw finalScoreError;
-
         }
 
-
-        const finalScore =
-            Number(
-                finalScoreData
-            ) || 0;
+    }
 
 
-        // ====================================================
-        // ARCHIVIA PERSONAGGIO
-        // ====================================================
+    // ========================================================
+    // ELIMINA PERSONAGGIO
+    // ========================================================
+
+    try {
 
         const {
-            error: archiveError
+            error
         } =
             await db
-                .from(
-                    "dead_characters"
-                )
-                .insert({
-
-                    character_id:
-                        characterId,
-
-                    user_id:
-                        character.user_id ||
-                        currentUser?.id ||
-                        null,
-
-                    character_name:
-                        deadName,
-
-                    score:
-                        finalScore
-
-                });
-
-
-        if (archiveError) {
-
-            throw archiveError;
-
-        }
-
-
-        // ====================================================
-        // PRESENCE
-        // ====================================================
-
-        if (
-            dungeonChannel &&
-            realtimeReady
-        ) {
-
-            try {
-
-                await dungeonChannel.untrack();
-
-            } catch (
-                presenceError
-            ) {
-
-                console.error(
-                    "Errore untrack:",
-                    presenceError
-                );
-
-            }
-
-        }
-
-
-        // ====================================================
-        // ELIMINA PERSONAGGIO VIVO
-        // ====================================================
-
-        const {
-            error: deleteError
-        } =
-            await db
-                .from(
-                    "characters"
-                )
+                .from("characters")
                 .delete()
                 .eq(
                     "id",
-                    characterId
+                    character.id
                 );
 
 
-        if (deleteError) {
-
-            throw deleteError;
-
+        if (error) {
+            throw error;
         }
 
 
@@ -5647,22 +5211,14 @@ async function handleCharacterDeath() {
             null;
 
 
-        // ====================================================
-        // PAGINA MORTE
-        // ====================================================
-
         window.location.href =
-            `morte.html?nome=${encodeURIComponent(
-                deadName
-            )}&score=${encodeURIComponent(
-                finalScore
-            )}`;
+            "morte.html";
 
 
     } catch (error) {
 
         console.error(
-            "Errore gestione morte nel dungeon:",
+            "Errore eliminazione personaggio:",
             error
         );
 

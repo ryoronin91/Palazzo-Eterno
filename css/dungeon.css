@@ -171,7 +171,7 @@ body {
     display: grid;
 
     grid-template-columns:
-        170px
+        350px
         minmax(500px, 720px)
         minmax(430px, 1fr);
 
@@ -222,16 +222,161 @@ body {
 
 .dungeon-chat-column {
     min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(165px, 1fr)
+        minmax(165px, 1fr);
+
+    gap: 10px;
+
+    align-items: stretch;
+}
+
+
+/* ============================================================
+   CADUTI DEL PALAZZO
+   ============================================================ */
+
+.dungeon-leaderboard-panel {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+}
+
+
+.dungeon-leaderboard-list {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding: 6px;
+
+    box-sizing: border-box;
+}
+
+
+.dungeon-leaderboard-row {
+    display: grid;
+
+    grid-template-columns:
+        28px
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 5px;
+
+    min-height: 27px;
+
+    padding: 4px 5px;
+
+    border-bottom: 1px solid #d5cdbb;
+
+    color: #17130f;
+}
+
+
+.dungeon-leaderboard-row:last-child {
+    border-bottom: 0;
+}
+
+
+.dungeon-leaderboard-position {
+    font-size: 10px;
+    font-weight: 900;
+
+    color: #75664d;
+
+    text-align: center;
+}
+
+
+.dungeon-leaderboard-name {
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 10px;
+    font-weight: 800;
+}
+
+
+.dungeon-leaderboard-score {
+    font-size: 10px;
+    font-weight: 900;
+
+    color: #8b641f;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+.dungeon-leaderboard-row:nth-child(1)
+.dungeon-leaderboard-position {
+    color: #a57200;
+}
+
+
+.dungeon-leaderboard-row:nth-child(2)
+.dungeon-leaderboard-position {
+    color: #6f6f6f;
+}
+
+
+.dungeon-leaderboard-row:nth-child(3)
+.dungeon-leaderboard-position {
+    color: #9a5626;
+}
+
+
+.dungeon-leaderboard-empty {
+    padding: 16px 8px;
+
+    color: #8d8473;
+
+    text-align: center;
+
+    font-size: 11px;
+    font-style: italic;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar-thumb {
+    background: #a18f68;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar-track {
+    background: #e8dfca;
 }
 
 
 .dungeon-chat-panel {
+    min-width: 0;
+
     display: flex;
 
     flex-direction: column;
 
-    height: 100%;
-    min-height: 600px;
+    min-height: 420px;
 }
 
 
@@ -1264,11 +1409,20 @@ body {
 
     .dungeon-layout {
         grid-template-columns:
-            150px
+            300px
             minmax(460px, 620px)
             minmax(390px, 1fr);
 
         gap: 9px;
+    }
+
+
+    .dungeon-chat-column {
+        grid-template-columns:
+            minmax(140px, 1fr)
+            minmax(140px, 1fr);
+
+        gap: 8px;
     }
 
 
@@ -1351,9 +1505,19 @@ body {
     }
 
 
+    .dungeon-chat-column {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: 10px;
+    }
+
+
+    .dungeon-leaderboard-panel,
     .dungeon-chat-panel {
-        height: 250px;
-        min-height: 250px;
+        height: 280px;
+        min-height: 280px;
     }
 
 }
@@ -1458,6 +1622,49 @@ body {
 
     .dungeon-chat-column {
         order: 3;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: 7px;
+    }
+
+
+    .dungeon-leaderboard-panel,
+    .dungeon-chat-panel {
+        height: 300px;
+        min-height: 300px;
+    }
+
+
+    .dungeon-panel-title {
+        font-size: 13px;
+        padding: 7px 4px;
+    }
+
+
+    .dungeon-leaderboard-row {
+        grid-template-columns:
+            24px
+            minmax(0, 1fr);
+
+        gap: 3px;
+
+        padding: 4px 3px;
+    }
+
+
+    .dungeon-leaderboard-score {
+        grid-column: 2;
+
+        font-size: 9px;
+    }
+
+
+    .dungeon-leaderboard-name,
+    .dungeon-leaderboard-position {
+        font-size: 9px;
     }
 
 
