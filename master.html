@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=2"
+        href="css/master.css?v=3"
     >
 <style>
 
@@ -253,7 +253,7 @@
 
 
                 <!-- ==================================================
-                     GIOCATORI ONLINE
+                     GIOCATORI DEL PIANO
                 =================================================== -->
 
                 <aside class="master-players-panel">
@@ -284,13 +284,48 @@
                     >
 
                         <div class="master-player-empty">
-                            Nessun giocatore collegato.
+                            Nessun personaggio presente nel piano.
                         </div>
 
                     </div>
 
                 </aside>
 
+                <!-- ==================================================
+                     COMBATTIMENTI ATTIVI
+                =================================================== -->
+
+                <aside class="master-combats-panel">
+
+                    <div class="master-panel-header">
+
+                        <span class="panel-label">
+                            CONTROLLO
+                        </span>
+
+                        <h2>
+                            COMBATTIMENTI
+                        </h2>
+
+                        <div
+                            id="master-combat-count"
+                            class="master-online-count"
+                        >
+                            Nessun combattimento attivo
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="master-combat-list"
+                        class="master-combat-list"
+                    >
+                        <div class="master-player-empty">
+                            Nessun combattimento in corso.
+                        </div>
+                    </div>
+
+                </aside>
 
 
                 <!-- ==================================================
@@ -386,6 +421,14 @@
             =================================================== -->
 
             <div class="master-map-column">
+
+                <div class="master-map-legend" aria-label="Legenda mappa Master">
+                    <span><b class="legend-dot is-online"></b> PG online</span>
+                    <span><b class="legend-dot is-offline"></b> PG offline</span>
+                    <span><b class="legend-symbol combat">⚔</b> Combat</span>
+                    <span><b class="legend-symbol trap">⚠</b> Trappola</span>
+                    <span><b class="legend-symbol event">◆</b> Evento</span>
+                </div>
 
                 <div
                     id="master-map"
@@ -572,6 +615,46 @@
                 </div>
 
 
+
+
+                <div class="master-character-runtime">
+
+                    <div class="master-runtime-box">
+                        <span>STATO</span>
+                        <strong id="master-character-online-status">OFFLINE</strong>
+                    </div>
+
+                    <div class="master-runtime-box">
+                        <span>PF ATTUALI</span>
+                        <strong id="master-character-current-hp">-</strong>
+                    </div>
+
+                    <div class="master-runtime-box">
+                        <span>PM ATTUALI</span>
+                        <strong id="master-character-current-pm">-</strong>
+                    </div>
+
+                </div>
+
+                <div
+                    id="master-character-combat-box"
+                    class="master-character-combat-box"
+                    hidden
+                >
+                    <div>
+                        <span>COMBATTIMENTO ATTIVO</span>
+                        <strong id="master-character-combat-label">-</strong>
+                    </div>
+
+                    <button
+                        id="master-character-observe-combat"
+                        type="button"
+                        class="button master-observe-button"
+                    >
+                        OSSERVA COMBATTIMENTO
+                    </button>
+                </div>
+
                 <div class="master-character-position">
 
                     <span>
@@ -612,7 +695,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=2"></script>
+    <script src="js/master.js?v=3"></script>
 
 
 </body>
