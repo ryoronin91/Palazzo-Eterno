@@ -480,10 +480,26 @@ function updateDungeonAbilityVisibility() {
         );
 
 
+    const giornoPagaButton =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
+
+
     if (healButton) {
 
         healButton.style.display =
             hasDungeonAbility("cura")
+                ? ""
+                : "none";
+
+    }
+
+
+    if (giornoPagaButton) {
+
+        giornoPagaButton.style.display =
+            hasDungeonAbility("giorno_paga")
                 ? ""
                 : "none";
 
