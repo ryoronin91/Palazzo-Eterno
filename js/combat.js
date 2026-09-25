@@ -3,7 +3,7 @@
 // COMBAT.JS
 // ============================================================
 
-console.log("COMBAT.JS v51 CARICATO");
+console.log("COMBAT.JS MODULARE v52 CARICATO");
 
 
 const db = supabaseClient;
@@ -72,6 +72,7 @@ let victoryLootPickInProgress = false;
 let enemyAITurnKey = null;
 let enemyAIInProgress = false;
 
+
 // ============================================================
 // MODALITÀ BERSAGLIO
 //
@@ -79,6 +80,8 @@ let enemyAIInProgress = false;
 // basic_attack
 // fire_bolt
 // heal
+// buff:...
+// push_pull:...
 // ============================================================
 
 let combatTargetMode = null;
@@ -88,8 +91,11 @@ let combatTargetMode = null;
 // ENTITÀ
 // ============================================================
 
-const combatEntities = new Map();
-const combatTokens = new Map();
+const combatEntities =
+    new Map();
+
+const combatTokens =
+    new Map();
 
 
 // ============================================================
@@ -97,6 +103,7 @@ const combatTokens = new Map();
 // ============================================================
 
 let combatRangeCells = [];
+
 
 // ============================================================
 // PRESENCE DUNGEON MENTRE SI È IN COMBAT
@@ -108,6 +115,7 @@ const COMBAT_DUNGEON_CHANNEL_NAME =
 let combatDungeonChannel =
     null;
 
+
 // ============================================================
 // AVVIO
 // ============================================================
@@ -118,10 +126,18 @@ document.addEventListener(
 
         try {
 
+            // =================================================
+            // UTENTE
+            // =================================================
+
             await loadCurrentUser();
 
             await loadCurrentRole();
 
+
+            // =================================================
+            // MODALITÀ COMBAT
+            // =================================================
 
             masterObserverMode =
                 getMasterObserverModeFromUrl();
@@ -140,9 +156,23 @@ document.addEventListener(
             }
 
 
+            // =================================================
+            // PERSONAGGIO
+            // =================================================
+
             await loadCurrentCharacter();
 
+
+            // =================================================
+            // PRESENCE DUNGEON
+            // =================================================
+
             await setupDungeonPresenceWhileInCombat();
+
+
+            // =================================================
+            // SESSIONE
+            // =================================================
 
             await loadCombatSession();
 
@@ -158,72 +188,56 @@ document.addEventListener(
             // GENERA NEMICI
             // =================================================
 
-           await generateCombatEnemies();
+            await generateCombatEnemies();
 
 
-// =================================================
-// AVVIA IL COMBATTIMENTO SE È ANCORA IN ATTESA
-// =================================================
+            // =================================================
+            // AVVIA COMBATTIMENTO
+            // =================================================
 
-if (
-    combatSession.status ===
-    "waiting"
-) {
+            if (
+                combatSession.status ===
+                "waiting"
+            ) {
 
-    const {
-        error
-    } =
-        await db.rpc(
-            "initialize_combat_turns",
-            {
-                p_combat_id:
-                    combatId
+                const {
+                    error
+                } =
+                    await db.rpc(
+                        "initialize_combat_turns",
+                        {
+                            p_combat_id:
+                                combatId
+                        }
+                    );
+
+
+                if (error) {
+
+                    throw error;
+
+                }
+
+
+                await loadCombatSession();
+
             }
-        );
 
 
-    if (error) {
+            // =================================================
+            // CARICA STATO
+            // =================================================
 
-        throw error;
+            await Promise.all([
 
-    }
+                loadCombatEntities(),
 
+                loadCombatEffects(),
 
-    // Ricarichiamo la sessione perché ora
-    // contiene status=active, primo turno e timer.
+                loadCharacterPendingEffects()
 
-    await loadCombatSession();
+            ]);
 
-}
-
-
-// =================================================
-// CARICA ENTITÀ
-// =================================================
-
-await Promise.all([
-    loadCombatEntities(),
-    loadCombatEffects(),
-    loadCharacterPendingEffects()
-]);
-
-console.log(
-    "DEBUG COMBAT EFFECTS:",
-    combatEffects
-);
-
-console.log(
-    "DEBUG PLAYER ENTITY:",
-    getMyPlayerEntity()
-);
-
-console.log(
-    "DEBUG ATTACK BUFF:",
-    getCombatEffectBonus(
-        getMyPlayerEntity()?.id,
-        "attack_bonus"
-    )
-);
 
             // =================================================
             // DATI PG
@@ -243,17 +257,26 @@ console.log(
                     loadCharacterEquipment()
 
                 ]);
-await syncCombatPlayerStats();
 
-await loadCombatEntities();
+
+                await syncCombatPlayerStats();
+
+
+                await loadCombatEntities();
+
             }
 
+
+            // =================================================
+            // SNAPSHOT INIZIALE
+            // =================================================
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
-                lastCombatEffectsSnapshot =
-    createCombatEffectsSnapshot();
+
+            lastCombatEffectsSnapshot =
+                createCombatEffectsSnapshot();
 
 
             // =================================================
@@ -273,6 +296,11 @@ await loadCombatEntities();
             setupCombatNotes();
 
             updateCombatTurnUI();
+
+
+            // =================================================
+            // LOOP
+            // =================================================
 
             startCombatStateLoop();
 
@@ -328,7 +356,8 @@ async function loadCurrentUser() {
     }
 
 
-    currentUser = user;
+    currentUser =
+        user;
 
 }
 
@@ -344,8 +373,12 @@ async function loadCurrentRole() {
         error
     } =
         await db
-            .from("user_roles")
-            .select("role")
+            .from(
+                "user_roles"
+            )
+            .select(
+                "role"
+            )
             .eq(
                 "user_id",
                 currentUser.id
@@ -395,7 +428,9 @@ function getMasterObserverModeFromUrl() {
 
 
     return (
-        params.get("mode") ===
+        params.get(
+            "mode"
+        ) ===
         "master"
     );
 
@@ -408,7 +443,9 @@ function getMasterObserverModeFromUrl() {
 
 async function loadCurrentCharacter() {
 
-    if (masterObserverMode) {
+    if (
+        masterObserverMode
+    ) {
 
         return;
 
@@ -420,7 +457,9 @@ async function loadCurrentCharacter() {
         error
     } =
         await db
-            .from("characters")
+            .from(
+                "characters"
+            )
             .select(`
                 id,
                 nome,
@@ -453,9 +492,11 @@ async function loadCurrentCharacter() {
     }
 
 
-    currentCharacter = data;
+    currentCharacter =
+        data;
 
 }
+
 
 // ============================================================
 // MANTIENE IL PG VISIBILE NEL DUNGEON DURANTE IL COMBAT
@@ -468,7 +509,9 @@ async function setupDungeonPresenceWhileInCombat() {
         !currentCharacter ||
         !currentUser
     ) {
+
         return;
+
     }
 
 
@@ -477,10 +520,14 @@ async function setupDungeonPresenceWhileInCombat() {
             COMBAT_DUNGEON_CHANNEL_NAME,
             {
                 config: {
+
                     presence: {
+
                         key:
                             currentCharacter.id
+
                     }
+
                 }
             }
         );
@@ -553,6 +600,7 @@ async function setupDungeonPresenceWhileInCombat() {
 
                             resolve();
 
+
                         } catch (error) {
 
                             reject(
@@ -586,7 +634,6 @@ async function setupDungeonPresenceWhileInCombat() {
 }
 
 
-
 // ============================================================
 // SESSIONE
 // ============================================================
@@ -598,7 +645,9 @@ async function loadCombatSession() {
         error
     } =
         await db
-            .from("combat_sessions")
+            .from(
+                "combat_sessions"
+            )
             .select(`
                 id,
                 encounter_id,
@@ -622,7 +671,8 @@ async function loadCombatSession() {
     }
 
 
-    combatSession = data;
+    combatSession =
+        data;
 
 }
 
@@ -723,7 +773,9 @@ async function loadCombatEntities() {
         error
     } =
         await db
-            .from("combat_entities")
+            .from(
+                "combat_entities"
+            )
             .select(`
                 id,
                 entity_type,
@@ -774,15 +826,19 @@ async function loadCombatEntities() {
 
 }
 
+
 // ============================================================
 // EFFETTI PERSISTENTI DEL PERSONAGGIO
 // ============================================================
 
 async function loadCharacterPendingEffects() {
 
-    if (!currentCharacter) {
+    if (
+        !currentCharacter
+    ) {
 
-        characterPendingEffects = [];
+        characterPendingEffects =
+            [];
 
         return;
 
@@ -806,9 +862,11 @@ async function loadCharacterPendingEffects() {
 
 
     characterPendingEffects =
-        data || [];
+        data ||
+        [];
 
 }
+
 
 // ============================================================
 // EFFETTI TEMPORANEI DEL COMBATTIMENTO
@@ -851,12 +909,14 @@ async function loadCombatEffects() {
 
 
     combatEffects =
-        data || [];
+        data ||
+        [];
 
 }
 
+
 // ============================================================
-// BONUS EFFETTO TEMPORANEO SU ENTITÀ
+// BONUS EFFETTO TEMPORANEO
 // ============================================================
 
 function getCombatEffectBonus(
@@ -865,33 +925,44 @@ function getCombatEffectBonus(
 ) {
 
     return combatEffects
+
         .filter(
             effect =>
+
                 effect.target_entity_id ===
                     entityId
+
                 &&
+
                 effect.effect_type ===
                     effectType
+
                 &&
+
                 Number(
                     effect.remaining_rounds
                 ) > 0
         )
+
         .reduce(
             (
                 total,
                 effect
             ) =>
+
                 total +
+
                 (
                     Number(
                         effect.value
                     ) || 0
                 ),
+
             0
         );
 
 }
+
 
 // ============================================================
 // ABILITÀ
@@ -899,12 +970,26 @@ function getCombatEffectBonus(
 
 async function loadCharacterAbilities() {
 
+    if (
+        !currentCharacter
+    ) {
+
+        characterAbilities =
+            [];
+
+        return;
+
+    }
+
+
     const {
         data,
         error
     } =
         await db
-            .from("character_abilities")
+            .from(
+                "character_abilities"
+            )
             .select(`
                 id,
                 ability_id,
@@ -926,7 +1011,8 @@ async function loadCharacterAbilities() {
             .order(
                 "created_at",
                 {
-                    ascending: true
+                    ascending:
+                        true
                 }
             );
 
@@ -939,7 +1025,8 @@ async function loadCharacterAbilities() {
 
 
     characterAbilities =
-        data || [];
+        data ||
+        [];
 
 }
 
@@ -950,12 +1037,26 @@ async function loadCharacterAbilities() {
 
 async function loadCharacterInventory() {
 
+    if (
+        !currentCharacter
+    ) {
+
+        characterInventory =
+            [];
+
+        return;
+
+    }
+
+
     const {
         data,
         error
     } =
         await db
-            .from("character_inventory")
+            .from(
+                "character_inventory"
+            )
             .select(`
                 id,
                 item_id,
@@ -984,7 +1085,8 @@ async function loadCharacterInventory() {
             .order(
                 "created_at",
                 {
-                    ascending: true
+                    ascending:
+                        true
                 }
             );
 
@@ -997,7 +1099,8 @@ async function loadCharacterInventory() {
 
 
     characterInventory =
-        data || [];
+        data ||
+        [];
 
 }
 
@@ -1008,12 +1111,26 @@ async function loadCharacterInventory() {
 
 async function loadCharacterEquipment() {
 
+    if (
+        !currentCharacter
+    ) {
+
+        characterEquipment =
+            [];
+
+        return;
+
+    }
+
+
     const {
         data,
         error
     } =
         await db
-            .from("character_inventory")
+            .from(
+                "character_inventory"
+            )
             .select(`
                 id,
                 equipped_slot,
@@ -1049,12 +1166,14 @@ async function loadCharacterEquipment() {
 
 
     characterEquipment =
-        data || [];
+        data ||
+        [];
 
 
     calculateCombatEquipmentBonuses();
 
 }
+
 
 // ============================================================
 // SINCRONIZZA STATISTICHE PG NEL COMBATTIMENTO
@@ -1104,6 +1223,7 @@ async function syncCombatPlayerStats() {
 
 }
 
+
 // ============================================================
 // BONUS EQUIPAGGIAMENTO
 // ============================================================
@@ -1112,15 +1232,29 @@ function calculateCombatEquipmentBonuses() {
 
     equipmentBonuses = {
 
-        attack_bonus: 0,
-        defense_bonus: 0,
+        attack_bonus:
+            0,
 
-        forza_bonus: 0,
-        resistenza_bonus: 0,
-        costituzione_bonus: 0,
-        intelligenza_bonus: 0,
-        destrezza_bonus: 0,
-        fortuna_bonus: 0
+        defense_bonus:
+            0,
+
+        forza_bonus:
+            0,
+
+        resistenza_bonus:
+            0,
+
+        costituzione_bonus:
+            0,
+
+        intelligenza_bonus:
+            0,
+
+        destrezza_bonus:
+            0,
+
+        fortuna_bonus:
+            0
 
     };
 
@@ -1128,7 +1262,9 @@ function calculateCombatEquipmentBonuses() {
     characterEquipment.forEach(
         entry => {
 
-            if (!entry.item) {
+            if (
+                !entry.item
+            ) {
 
                 return;
 
@@ -1202,7 +1338,9 @@ function getCombatEffectiveAttribute(
 
     const base =
         Number(
-            currentCharacter?.[name]
+            currentCharacter?.[
+                name
+            ]
         ) || 1;
 
 
@@ -1218,7 +1356,8 @@ function getCombatEffectiveAttribute(
         1,
         Math.min(
             30,
-            base + bonus
+            base +
+            bonus
         )
     );
 
@@ -1226,7 +1365,7 @@ function getCombatEffectiveAttribute(
 
 
 // ============================================================
-// SNAPSHOT
+// SNAPSHOT ENTITÀ
 // ============================================================
 
 function createCombatSnapshot() {
@@ -1292,7 +1431,10 @@ function createCombatSnapshot() {
             )
 
             .sort(
-                (a, b) =>
+                (
+                    a,
+                    b
+                ) =>
                     a.id.localeCompare(
                         b.id
                     )
@@ -1301,6 +1443,7 @@ function createCombatSnapshot() {
     );
 
 }
+
 
 // ============================================================
 // SNAPSHOT EFFETTI
@@ -1311,6 +1454,7 @@ function createCombatEffectsSnapshot() {
     return JSON.stringify(
 
         combatEffects
+
             .map(
                 effect => ({
 
@@ -1331,4341 +1475,18 @@ function createCombatEffectsSnapshot() {
 
                 })
             )
+
             .sort(
-                (a, b) =>
+                (
+                    a,
+                    b
+                ) =>
                     a.id.localeCompare(
                         b.id
                     )
             )
 
     );
-
-}
-
-// ============================================================
-// RENDER COMPLETO
-// ============================================================
-
-function renderCombat() {
-
-    renderCombatTokens();
-
-    renderCombatEntityList();
-
-    renderPlayerCombatSheet();
-
-    renderActiveCombatBuffs();
-
-    updateActionButtons();
-
-    updateTargetSelectionVisuals();
-
-    renderCombatVictory();
-
-}
-
-// ============================================================
-// SCHERMATA VITTORIA
-// ============================================================
-
-function renderCombatVictory() {
-
-    const overlay =
-        document.getElementById(
-            "combat-victory-overlay"
-        );
-
-    if (!overlay) {
-        return;
-    }
-
-    const victory =
-        combatSession?.status ===
-        "victory";
-
-    overlay.classList.toggle(
-        "visible",
-        victory
-    );
-
-    overlay.setAttribute(
-        "aria-hidden",
-        victory
-            ? "false"
-            : "true"
-    );
-
-    if (!victory) {
-        return;
-    }
-
-    if (combatTargetMode) {
-        cancelCombatTargeting();
-    }
-
-    if (
-        !victoryLootLoaded &&
-        !victoryLootLoading
-    ) {
-        loadVictoryLoot();
-    }
-
-}
-
-// ============================================================
-// CARICA LOOT VITTORIA
-// ============================================================
-
-    async function loadVictoryLoot() {
-
-    if (
-        victoryLootLoaded ||
-        victoryLootLoading ||
-        !combatId
-    ) {
-        return;
-    }
-
-
-    victoryLootLoading = true;
-
-
-    const container =
-        document.getElementById(
-            "combat-victory-loot"
-        );
-
-
-    if (container) {
-
-        container.textContent =
-            "Generazione del bottino...";
-
-    }
-
-
-    try {
-
-        // ====================================================
-        // 1. GENERA IL LOOT
-        //
-        // Se è già stato generato, la RPC non lo rigenera.
-        // ====================================================
-
-        const {
-            error: generateError
-        } =
-            await db.rpc(
-                "generate_combat_loot",
-                {
-                    p_combat_id:
-                        combatId
-                }
-            );
-
-
-        if (generateError) {
-
-            throw generateError;
-
-        }
-
-
-        // ====================================================
-        // 2. DISTRIBUISCE AUTOMATICAMENTE L'ORO
-        //
-        // Solo i giocatori partecipanti eseguono questa RPC.
-        // Il master osservatore non possiede un PG nel combat.
-        //
-        // La funzione SQL impedisce comunque una doppia
-        // distribuzione.
-        // ====================================================
-
-        if (
-            !masterObserverMode &&
-            currentCharacter
-        ) {
-
-            const {
-                error: distributeError
-            } =
-                await db.rpc(
-                    "distribute_combat_gold",
-                    {
-                        p_combat_id:
-                            combatId
-                    }
-                );
-
-
-            if (distributeError) {
-
-                throw distributeError;
-
-            }
-
-        }
-
-
-        // ====================================================
-        // 3. RECUPERA LA QUOTA PERSONALE DI ORO
-        // ====================================================
-
-        let myGold = null;
-
-
-        if (
-            !masterObserverMode &&
-            currentCharacter
-        ) {
-
-            const {
-                data: goldData,
-                error: goldError
-            } =
-                await db.rpc(
-                    "get_my_combat_gold",
-                    {
-                        p_combat_id:
-                            combatId
-                    }
-                );
-
-
-            if (goldError) {
-
-                throw goldError;
-
-            }
-
-
-            myGold =
-                Number(
-                    goldData
-                ) || 0;
-
-        }
-
-
-        // ====================================================
-        // 4. RECUPERA IL LOOT COMPLETO
-        // ====================================================
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "get_combat_loot",
-                {
-                    p_combat_id:
-                        combatId
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        // ====================================================
-        // 5. MOSTRA RISULTATO
-        // ====================================================
-
-        // ====================================================
-// SALVA DATI LOCALI
-// ====================================================
-
-victoryLootData =
-    data || [];
-
-victoryGoldReceived =
-    myGold;
-
-
-// ====================================================
-// INIZIALIZZA IL DRAFT DEGLI OGGETTI
-// ====================================================
-
-const {
-    error: draftInitError
-} =
-    await db.rpc(
-        "initialize_combat_loot_draft",
-        {
-            p_combat_id:
-                combatId
-        }
-    );
-
-
-if (draftInitError) {
-
-    throw draftInitError;
-
-}
-
-
-// ====================================================
-// CARICA STATO DRAFT
-// ====================================================
-
-await refreshVictoryLootDraft();
-
-
-// ====================================================
-// AVVIA TIMER
-// ====================================================
-
-startVictoryLootDraftLoop();
-
-
-victoryLootLoaded = true;
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore caricamento loot:",
-            error
-        );
-
-
-        if (container) {
-
-            container.textContent =
-                "Errore durante il caricamento del bottino.";
-
-        }
-
-
-    } finally {
-
-        victoryLootLoading = false;
-
-    }
-
-}
-
-// ============================================================
-// LOOP DRAFT LOOT
-// ============================================================
-
-function startVictoryLootDraftLoop() {
-
-    stopVictoryLootDraftLoop();
-
-
-    victoryLootDraftInterval =
-        setInterval(
-            async () => {
-
-                await refreshVictoryLootDraft();
-
-            },
-            1000
-        );
-
-}
-
-
-function stopVictoryLootDraftLoop() {
-
-    if (
-        victoryLootDraftInterval
-    ) {
-
-        clearInterval(
-            victoryLootDraftInterval
-        );
-
-
-        victoryLootDraftInterval =
-            null;
-
-    }
-
-}
-
-
-// ============================================================
-// AGGIORNA STATO DRAFT
-// ============================================================
-
-async function refreshVictoryLootDraft() {
-
-    if (!combatId) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "get_combat_loot_draft_state",
-                {
-                    p_combat_id:
-                        combatId
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        victoryLootDraftState =
-            data;
-
-
-        renderVictoryLoot(
-            victoryLootData,
-            victoryGoldReceived,
-            victoryLootDraftState
-        );
-
-
-        if (
-            data?.status ===
-            "complete"
-        ) {
-
-            stopVictoryLootDraftLoop();
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore aggiornamento draft loot:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// PRENDI OGGETTO
-// ============================================================
-
-async function pickVictoryLootItem(
-    itemId
-) {
-
-    if (
-        victoryLootPickInProgress ||
-        !itemId ||
-        !victoryLootDraftState?.is_my_turn
-    ) {
-
-        return;
-
-    }
-
-
-    victoryLootPickInProgress =
-        true;
-
-
-    try {
-
-        const {
-            error
-        } =
-            await db.rpc(
-                "pick_combat_loot_item",
-                {
-                    p_combat_id:
-                        combatId,
-
-                    p_item_id:
-                        itemId
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        // Aggiorna immediatamente inventario
-        await loadCharacterInventory();
-
-
-        // Aggiorna immediatamente il draft
-        await refreshVictoryLootDraft();
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore scelta oggetto:",
-            error
-        );
-
-
-        alert(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-
-        await refreshVictoryLootDraft();
-
-
-    } finally {
-
-        victoryLootPickInProgress =
-            false;
-
-    }
-
-}
-
-// ============================================================
-// MOSTRA LOOT VITTORIA
-// ============================================================
-
-function renderVictoryLoot(
-    loot,
-    myGold = 0,
-    draft = null
-) {
-
-    const container =
-        document.getElementById(
-            "combat-victory-loot"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    let html = "";
-
-
-    // ========================================================
-    // ORO PERSONALE
-    // ========================================================
-
-    html += `
-        <div class="victory-loot-gold">
-
-            <div class="victory-loot-gold-label">
-                HAI RICEVUTO
-            </div>
-
-            <div class="victory-loot-gold-value">
-
-                <span class="victory-gold-coin"></span>
-
-                <strong>
-                    ${Number(myGold) || 0}
-                </strong>
-
-                monete d'oro
-
-            </div>
-
-        </div>
-    `;
-
-
-    // ========================================================
-    // DRAFT NON ANCORA DISPONIBILE
-    // ========================================================
-
-    if (!draft) {
-
-        html += `
-            <div class="victory-loot-empty">
-                Preparazione della spartizione...
-            </div>
-        `;
-
-        container.innerHTML =
-            html;
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // DRAFT COMPLETATO
-    // ========================================================
-
-    if (
-    draft.status ===
-    "complete"
-) {
-
-    html += `
-        <div class="victory-loot-draft-complete">
-            SPARTIZIONE COMPLETATA
-        </div>
-    `;
-
-
-    const myItems =
-        Array.isArray(
-            draft.my_items
-        )
-            ? draft.my_items
-            : [];
-
-
-    if (
-        myItems.length > 0
-    ) {
-
-        html += `
-            <div class="victory-loot-items">
-
-                <div class="victory-loot-gold-label">
-                    HAI OTTENUTO
-                </div>
-        `;
-
-
-        for (
-            const item
-            of myItems
-        ) {
-
-            html += `
-                <div class="victory-loot-item">
-
-                    <span>
-                        ${escapeCombatHtml(
-                            item.item_name ||
-                            item.item_id
-                        )}
-                    </span>
-
-                    <strong>
-                        ×${Number(
-                            item.quantity
-                        ) || 0}
-                    </strong>
-
-                </div>
-            `;
-
-        }
-
-
-        html += `
-            </div>
-        `;
-
-    } else {
-
-        html += `
-            <div class="victory-loot-empty">
-                Non hai ottenuto oggetti.
-            </div>
-        `;
-
-    }
-
-
-    container.innerHTML =
-        html;
-
-    return;
-
-}
-
-
-    // ========================================================
-    // TURNO ATTUALE
-    // ========================================================
-
-    const seconds =
-        Math.max(
-            0,
-            Number(
-                draft.seconds_remaining
-            ) || 0
-        );
-
-
-    html += `
-        <div class="victory-loot-turn">
-
-            <div class="victory-loot-turn-label">
-                TURNO DI
-            </div>
-
-            <div class="victory-loot-turn-player">
-                ${escapeCombatHtml(
-                    draft.current_player_name ||
-                    "Giocatore"
-                )}
-            </div>
-
-            <div class="victory-loot-timer">
-                ${seconds}s
-            </div>
-
-        </div>
-    `;
-
-
-    if (
-        draft.is_my_turn
-    ) {
-
-        html += `
-            <div class="victory-loot-your-turn">
-                È il tuo turno. Scegli un oggetto.
-            </div>
-        `;
-
-    } else {
-
-        html += `
-            <div class="victory-loot-waiting">
-                Attendi che il giocatore scelga.
-            </div>
-        `;
-
-    }
-
-
-    // ========================================================
-    // OGGETTI DISPONIBILI
-    // ========================================================
-
-    const items =
-        Array.isArray(
-            draft.items
-        )
-            ? draft.items
-            : [];
-
-
-    if (
-        items.length === 0
-    ) {
-
-        html += `
-            <div class="victory-loot-empty">
-                Nessun oggetto rimasto.
-            </div>
-        `;
-
-    } else {
-
-        html += `
-            <div class="victory-loot-items">
-        `;
-
-
-        for (
-            const item
-            of items
-        ) {
-
-            html += `
-                <div class="victory-loot-item">
-
-                    <div class="victory-loot-item-info">
-
-                        <span>
-                            ${escapeCombatHtml(
-                                item.item_name ||
-                                item.item_id
-                            )}
-                        </span>
-
-                        <strong>
-                            ×${Number(item.quantity) || 0}
-                        </strong>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="victory-loot-pick"
-                        data-item-id="${escapeCombatHtml(
-                            item.item_id
-                        )}"
-                        ${draft.is_my_turn
-                            ? ""
-                            : "disabled"}
-                    >
-                        PRENDI
-                    </button>
-
-                </div>
-            `;
-
-        }
-
-
-        html += `
-            </div>
-        `;
-
-    }
-
-
-    container.innerHTML =
-        html;
-
-
-    // ========================================================
-    // EVENTI PULSANTI
-    // ========================================================
-
-    container
-        .querySelectorAll(
-            ".victory-loot-pick"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    async () => {
-
-                        if (
-                            button.disabled
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        button.disabled =
-                            true;
-
-
-                        await pickVictoryLootItem(
-                            button.dataset.itemId
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-// ============================================================
-// ESCAPE HTML
-// ============================================================
-
-function escapeCombatHtml(
-    value
-) {
-
-    return String(
-        value ?? ""
-    )
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-
-}
-
-// ============================================================
-// PULSANTE USCITA VITTORIA
-// ============================================================
-
-function setupVictoryExitButton() {
-
-    const button =
-        document.getElementById(
-            "combat-victory-exit"
-        );
-
-    if (!button) {
-        return;
-
-    }
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "dungeon.html"
-        }
-    )
-}
-
-// ============================================================
-// TOKEN
-// ============================================================
-
-function renderCombatTokens() {
-
-    const map =
-        document.getElementById(
-            "combat-map"
-        );
-
-
-    if (!map) {
-
-        return;
-
-    }
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-    const cellWidth =
-        rect.width /
-        COMBAT_COLUMNS;
-
-
-    const cellHeight =
-        rect.height /
-        COMBAT_ROWS;
-
-
-    const activeEntityIds =
-        new Set();
-
-
-    combatEntities.forEach(
-        entity => {
-
-            activeEntityIds.add(
-                entity.id
-            );
-
-
-            if (
-                entity.status ===
-                "dead" ||
-                Number(
-                    entity.current_hp
-                ) <= 0
-            ) {
-
-                const oldToken =
-                    combatTokens.get(
-                        entity.id
-                    );
-
-
-                if (oldToken) {
-
-                    oldToken.remove();
-
-                    combatTokens.delete(
-                        entity.id
-                    );
-
-                }
-
-
-                return;
-
-            }
-
-
-            let token =
-                combatTokens.get(
-                    entity.id
-                );
-
-
-            if (!token) {
-
-                token =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                token.className =
-                    "combat-token";
-
-
-                if (
-                    entity.entity_type ===
-                    "player"
-                ) {
-
-                    token.classList.add(
-                        "player"
-                    );
-
-
-                    renderPlayerTokenContent(
-                        token,
-                        entity
-                    );
-
-                } else {
-
-                    token.classList.add(
-                        "enemy"
-                    );
-
-
-                    renderEnemyTokenContent(
-                        token,
-                        entity
-                    );
-
-                }
-
-
-                token.title =
-                    entity.display_name;
-
-
-                token.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-
-                        handleCombatTokenClick(
-                            entity.id
-                        );
-
-                    }
-                );
-
-
-                map.appendChild(
-                    token
-                );
-
-
-                combatTokens.set(
-                    entity.id,
-                    token
-                );
-
-            }
-
-
-            const size =
-                Math.min(
-                    cellWidth,
-                    cellHeight
-                ) *
-                0.82;
-
-
-            token.style.width =
-                `${size}px`;
-
-
-            token.style.height =
-                `${size}px`;
-
-
-            token.style.left =
-                `${
-                    (
-                        Number(entity.x) +
-                        0.5
-                    )
-                    *
-                    cellWidth
-                    -
-                    size / 2
-                }px`;
-
-
-            token.style.top =
-                `${
-                    (
-                        Number(entity.y) +
-                        0.5
-                    )
-                    *
-                    cellHeight
-                    -
-                    size / 2
-                }px`;
-
-        }
-    );
-
-
-    for (
-        const [
-            entityId,
-            token
-        ]
-        of combatTokens
-    ) {
-
-        if (
-            !activeEntityIds.has(
-                entityId
-            )
-        ) {
-
-            token.remove();
-
-            combatTokens.delete(
-                entityId
-            );
-
-        }
-
-    }
-
-}
-
-
-// ============================================================
-// TOKEN PG
-// ============================================================
-
-async function renderPlayerTokenContent(
-    token,
-    entity
-) {
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-
-    image.style.width =
-        "100%";
-
-
-    image.style.height =
-        "100%";
-
-
-    image.style.objectFit =
-        "contain";
-
-
-    image.alt =
-        entity.display_name;
-
-
-    image.src =
-        "immagini/token/token_1.png";
-
-
-    if (
-        entity.character_id
-    ) {
-
-        const {
-            data
-        } =
-            await db
-                .from("characters")
-                .select("token")
-                .eq(
-                    "id",
-                    entity.character_id
-                )
-                .maybeSingle();
-
-
-        if (
-            data?.token
-        ) {
-
-            image.src =
-                `immagini/token/${data.token}`;
-
-        }
-
-    }
-
-
-    token.appendChild(
-        image
-    );
-
-}
-
-
-// ============================================================
-// TOKEN NEMICO
-// ============================================================
-
-function renderEnemyTokenContent(
-    token,
-    entity
-) {
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-
-    image.style.width =
-        "100%";
-
-
-    image.style.height =
-        "100%";
-
-
-    image.style.objectFit =
-        "contain";
-
-
-    image.style.display =
-        "block";
-
-
-    image.alt =
-        entity.display_name ||
-        "Nemico";
-
-
-    image.src =
-        entity.enemy_id
-            ? `immagini/nemici/${entity.enemy_id}.png`
-            : "immagini/nemici/goblin.png";
-
-
-    token.appendChild(
-        image
-    );
-
-}
-
-
-// ============================================================
-// DISTANZA
-//
-// Chebyshev:
-// diagonali comprese.
-// ============================================================
-
-function getCombatDistance(
-    x1,
-    y1,
-    x2,
-    y2
-) {
-
-    return Math.max(
-
-        Math.abs(
-            Number(x1) -
-            Number(x2)
-        ),
-
-        Math.abs(
-            Number(y1) -
-            Number(y2)
-        )
-
-    );
-
-}
-
-// ============================================================
-// IA GOBLIN BASE - UTILITÀ
-// ============================================================
-
-function chooseRandomEntity(
-    entities
-) {
-
-    if (
-        !entities ||
-        entities.length === 0
-    ) {
-
-        return null;
-
-    }
-
-
-    const index =
-        Math.floor(
-            Math.random() *
-            entities.length
-        );
-
-
-    return entities[index];
-
-}
-
-
-
-// ============================================================
-// PG VIVI
-// ============================================================
-
-function getAliveCombatPlayers() {
-
-    return Array.from(
-        combatEntities.values()
-    ).filter(
-        entity =>
-            entity.entity_type ===
-                "player"
-            &&
-            entity.status ===
-                "alive"
-            &&
-            Number(
-                entity.current_hp
-            ) > 0
-    );
-
-}
-
-
-
-// ============================================================
-// PG PIÙ VICINO
-// ============================================================
-
-function chooseNearestPlayer(
-    enemy,
-    players
-) {
-
-    if (
-        !enemy ||
-        !players?.length
-    ) {
-
-        return null;
-
-    }
-
-
-    let minimumDistance =
-        Infinity;
-
-
-    let candidates = [];
-
-
-    players.forEach(
-        player => {
-
-            const distance =
-                getCombatDistance(
-
-                    enemy.x,
-                    enemy.y,
-
-                    player.x,
-                    player.y
-
-                );
-
-
-            if (
-                distance <
-                minimumDistance
-            ) {
-
-                minimumDistance =
-                    distance;
-
-                candidates = [
-                    player
-                ];
-
-            } else if (
-                distance ===
-                minimumDistance
-            ) {
-
-                candidates.push(
-                    player
-                );
-
-            }
-
-        }
-    );
-
-
-    return chooseRandomEntity(
-        candidates
-    );
-
-}
-
-
-
-// ============================================================
-// PG CON PIÙ PF
-// ============================================================
-
-function choosePlayerWithMostHP(
-    players
-) {
-
-    if (!players?.length) {
-
-        return null;
-
-    }
-
-
-    const maxHP =
-        Math.max(
-            ...players.map(
-                player =>
-                    Number(
-                        player.current_hp
-                    ) || 0
-            )
-        );
-
-
-    const candidates =
-        players.filter(
-            player =>
-                (
-                    Number(
-                        player.current_hp
-                    ) || 0
-                ) ===
-                maxHP
-        );
-
-
-    return chooseRandomEntity(
-        candidates
-    );
-
-}
-
-
-
-// ============================================================
-// PG CON MENO PF
-// ============================================================
-
-function choosePlayerWithLeastHP(
-    players
-) {
-
-    if (!players?.length) {
-
-        return null;
-
-    }
-
-
-    const minHP =
-        Math.min(
-            ...players.map(
-                player =>
-                    Number(
-                        player.current_hp
-                    ) || 0
-            )
-        );
-
-
-    const candidates =
-        players.filter(
-            player =>
-                (
-                    Number(
-                        player.current_hp
-                    ) || 0
-                ) ===
-                minHP
-        );
-
-
-    return chooseRandomEntity(
-        candidates
-    );
-
-}
-
-
-
-// ============================================================
-// IA GOBLIN BASE - SCELTA BERSAGLIO
-// ============================================================
-
-function chooseGoblinTarget(
-    goblin
-) {
-
-    if (!goblin) {
-
-        return null;
-
-    }
-
-
-    const players =
-        getAliveCombatPlayers();
-
-
-    if (!players.length) {
-
-        return null;
-
-    }
-
-
-    const currentHP =
-        Number(
-            goblin.current_hp
-        ) || 0;
-
-
-    // ========================================================
-    // 7 - 10 PF
-    // Attacca il PG più vicino
-    // ========================================================
-
-    if (currentHP >= 7) {
-
-        return chooseNearestPlayer(
-            goblin,
-            players
-        );
-
-    }
-
-
-    // ========================================================
-    // 4 - 6 PF
-    // Attacca il PG con più PF
-    // ========================================================
-
-    if (currentHP >= 4) {
-
-        return choosePlayerWithMostHP(
-            players
-        );
-
-    }
-
-
-    // ========================================================
-    // 1 - 3 PF
-    // Attacca il PG con meno PF
-    // ========================================================
-
-    if (currentHP >= 1) {
-
-        return choosePlayerWithLeastHP(
-            players
-        );
-
-    }
-
-
-    return null;
-
-}
-
-// ============================================================
-// IA GOBLIN BASE - MOVIMENTO
-// ============================================================
-
-function isCombatCellOccupied(
-    x,
-    y,
-    ignoreEntityId = null
-) {
-
-    return Array.from(
-        combatEntities.values()
-    ).some(
-        entity =>
-            entity.id !== ignoreEntityId
-            &&
-            entity.status === "alive"
-            &&
-            Number(entity.current_hp) > 0
-            &&
-            Number(entity.x) === Number(x)
-            &&
-            Number(entity.y) === Number(y)
-    );
-
-}
-
-
-// ============================================================
-// PROSSIMA CASELLA VERSO IL BERSAGLIO
-// ============================================================
-
-function chooseGoblinNextStep(
-    goblin,
-    target
-) {
-
-    if (
-        !goblin ||
-        !target
-    ) {
-
-        return null;
-
-    }
-
-
-    const currentDistance =
-        getCombatDistance(
-            goblin.x,
-            goblin.y,
-            target.x,
-            target.y
-        );
-
-
-    // È già adiacente:
-    // non deve muoversi.
-    if (currentDistance <= 1) {
-
-        return null;
-
-    }
-
-
-    const directions = [
-
-        { dx: -1, dy: -1 },
-        { dx:  0, dy: -1 },
-        { dx:  1, dy: -1 },
-
-        { dx: -1, dy:  0 },
-        { dx:  1, dy:  0 },
-
-        { dx: -1, dy:  1 },
-        { dx:  0, dy:  1 },
-        { dx:  1, dy:  1 }
-
-    ];
-
-
-    let bestDistance =
-        currentDistance;
-
-    let candidates = [];
-
-
-    directions.forEach(
-        direction => {
-
-            const newX =
-                Number(goblin.x) +
-                direction.dx;
-
-            const newY =
-                Number(goblin.y) +
-                direction.dy;
-
-
-            // Fuori dalla mappa.
-            if (
-                newX < 0 ||
-                newX >= COMBAT_COLUMNS ||
-                newY < 0 ||
-                newY >= COMBAT_ROWS
-            ) {
-
-                return;
-
-            }
-
-
-            // Casella occupata.
-            if (
-                isCombatCellOccupied(
-                    newX,
-                    newY,
-                    goblin.id
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            const distance =
-                getCombatDistance(
-                    newX,
-                    newY,
-                    target.x,
-                    target.y
-                );
-
-
-            // Accettiamo soltanto mosse
-            // che avvicinano realmente.
-            if (
-                distance <
-                bestDistance
-            ) {
-
-                bestDistance =
-                    distance;
-
-                candidates = [
-                    {
-                        x: newX,
-                        y: newY,
-                        dx: direction.dx,
-                        dy: direction.dy
-                    }
-                ];
-
-            } else if (
-                distance === bestDistance
-                &&
-                distance < currentDistance
-            ) {
-
-                candidates.push(
-                    {
-                        x: newX,
-                        y: newY,
-                        dx: direction.dx,
-                        dy: direction.dy
-                    }
-                );
-
-            }
-
-        }
-    );
-
-
-    return chooseRandomEntity(
-        candidates
-    );
-
-}
-
-// ============================================================
-// IA GOBLIN BASE - PERCORSO DEL TURNO
-// ============================================================
-
-function chooseGoblinMovementPath(
-    goblin,
-    target
-) {
-
-    if (
-        !goblin ||
-        !target
-    ) {
-
-        return [];
-
-    }
-
-
-    const movement =
-        Math.max(
-            0,
-            Number(
-                goblin.movement_remaining
-            ) || 0
-        );
-
-
-    if (movement <= 0) {
-
-        return [];
-
-    }
-
-
-    const path = [];
-
-
-    const simulatedGoblin = {
-        ...goblin,
-        x: Number(goblin.x),
-        y: Number(goblin.y)
-    };
-
-
-    for (
-        let stepNumber = 0;
-        stepNumber < movement;
-        stepNumber++
-    ) {
-
-        const distance =
-            getCombatDistance(
-                simulatedGoblin.x,
-                simulatedGoblin.y,
-                target.x,
-                target.y
-            );
-
-
-        // È già abbastanza vicino per attaccare.
-        if (distance <= 1) {
-
-            break;
-
-        }
-
-
-        const nextStep =
-            chooseGoblinNextStep(
-                simulatedGoblin,
-                target
-            );
-
-
-        if (!nextStep) {
-
-            break;
-
-        }
-
-
-        path.push(
-            nextStep
-        );
-
-
-        simulatedGoblin.x =
-            nextStep.x;
-
-        simulatedGoblin.y =
-            nextStep.y;
-
-    }
-
-
-    return path;
-
-}
-
-// ============================================================
-// PORTATA MODALITÀ ATTUALE
-// ============================================================
-
-function getCurrentTargetRange() {
-
-    if (
-        combatTargetMode ===
-        "basic_attack"
-    ) {
-
-        return 1;
-
-    }
-
-
-    if (
-        combatTargetMode ===
-        "fire_bolt"
-    ) {
-
-        return getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-    }
-
-
-    if (
-        combatTargetMode ===
-        "heal"
-    ) {
-
-        return getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-    }
-
-    if (
-    combatTargetMode &&
-    combatTargetMode.startsWith(
-        "push_pull:"
-    )
-) {
-
-    return getCombatEffectiveAttribute(
-        "intelligenza"
-    );
-
-}
-
-    return 0;
-
-}
-
-
-// ============================================================
-// ENTITÀ IN PORTATA?
-// ============================================================
-
-function isEntityInCurrentTargetRange(
-    entity
-) {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    const range =
-        getCurrentTargetRange();
-
-
-    if (
-        !player ||
-        !entity ||
-        range <= 0
-    ) {
-
-        return false;
-
-    }
-
-
-    const distance =
-        getCombatDistance(
-
-            player.x,
-            player.y,
-
-            entity.x,
-            entity.y
-
-        );
-
-
-    // Cura può essere usata
-    // anche su se stessi.
-
-    if (
-        combatTargetMode ===
-        "heal"
-    ) {
-
-        return (
-            distance >= 0 &&
-            distance <= range
-        );
-
-    }
-
-
-    return (
-        distance >= 1 &&
-        distance <= range
-    );
-
-}
-
-
-// ============================================================
-// CELLE DELLA PORTATA
-// ============================================================
-
-function renderCombatRangeCells() {
-
-    clearCombatRangeCells();
-
-
-    if (!combatTargetMode) {
-
-        return;
-
-    }
-
-
-    const map =
-        document.getElementById(
-            "combat-map"
-        );
-
-
-    const player =
-        getMyPlayerEntity();
-
-
-    const range =
-        getCurrentTargetRange();
-
-
-    if (
-        !map ||
-        !player ||
-        range <= 0
-    ) {
-
-        return;
-
-    }
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-    const cellWidth =
-        rect.width /
-        COMBAT_COLUMNS;
-
-
-    const cellHeight =
-        rect.height /
-        COMBAT_ROWS;
-
-
-    const playerX =
-        Number(
-            player.x
-        );
-
-
-    const playerY =
-        Number(
-            player.y
-        );
-
-
-    const minimumDistance =
-        combatTargetMode === "heal"
-            ? 0
-            : 1;
-
-
-    const isHeal =
-        combatTargetMode ===
-        "heal";
-
-
-    for (
-        let y = 0;
-        y < COMBAT_ROWS;
-        y++
-    ) {
-
-        for (
-            let x = 0;
-            x < COMBAT_COLUMNS;
-            x++
-        ) {
-
-            const distance =
-                getCombatDistance(
-
-                    playerX,
-                    playerY,
-
-                    x,
-                    y
-
-                );
-
-
-            if (
-                distance < minimumDistance ||
-                distance > range
-            ) {
-
-                continue;
-
-            }
-
-
-            const cell =
-                document.createElement(
-                    "div"
-                );
-
-
-            cell.className =
-                "combat-range-cell";
-
-
-            cell.style.position =
-                "absolute";
-
-
-            cell.style.left =
-                `${x * cellWidth}px`;
-
-
-            cell.style.top =
-                `${y * cellHeight}px`;
-
-
-            cell.style.width =
-                `${cellWidth}px`;
-
-
-            cell.style.height =
-                `${cellHeight}px`;
-
-
-            cell.style.boxSizing =
-                "border-box";
-
-
-            // =================================================
-            // COLORE
-            //
-            // Verde = Cura
-            // Oro = Attacchi
-            // =================================================
-
-            if (isHeal) {
-
-                cell.style.background =
-                    "rgba(112, 217, 139, 0.16)";
-
-
-                cell.style.border =
-                    "1px solid rgba(112, 217, 139, 0.40)";
-
-            } else {
-
-                cell.style.background =
-                    "rgba(215, 176, 93, 0.18)";
-
-
-                cell.style.border =
-                    "1px solid rgba(215, 176, 93, 0.42)";
-
-            }
-
-
-            cell.style.pointerEvents =
-                "none";
-
-
-            cell.style.zIndex =
-                "6";
-
-
-            map.appendChild(
-                cell
-            );
-
-
-            combatRangeCells.push(
-                cell
-            );
-
-        }
-
-    }
-
-}
-
-
-// ============================================================
-// CANCELLA CELLE RANGE
-// ============================================================
-
-function clearCombatRangeCells() {
-
-    combatRangeCells.forEach(
-        cell => {
-
-            cell.remove();
-
-        }
-    );
-
-
-    combatRangeCells = [];
-
-}
-
-
-// ============================================================
-// CLICK TOKEN
-// ============================================================
-
-async function handleCombatTokenClick(
-    entityId
-) {
-
-    if (!combatTargetMode) {
-
-        return;
-
-    }
-
-
-    const entity =
-        combatEntities.get(
-            entityId
-        );
-
-
-    if (!entity) {
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // CURA
-    // ========================================================
-
-    if (
-        combatTargetMode ===
-        "heal"
-    ) {
-
-        if (
-            entity.entity_type !==
-            "player"
-        ) {
-
-            addCombatLog(
-                "Cura può essere usata soltanto su te stesso o su un alleato."
-            );
-
-
-            return;
-
-        }
-
-
-        if (
-            entity.status !==
-            "alive"
-        ) {
-
-            addCombatLog(
-                "Questo personaggio non può essere curato."
-            );
-
-
-            return;
-
-        }
-
-
-        if (
-            !isEntityInCurrentTargetRange(
-                entity
-            )
-        ) {
-
-            addCombatLog(
-                "Il bersaglio è fuori portata."
-            );
-
-
-            return;
-
-        }
-
-
-        await performHeal(
-            entity.id
-        );
-
-
-        return;
-
-    }
-
-// ========================================================
-// BUFF
-// ========================================================
-
-if (
-    combatTargetMode &&
-    combatTargetMode.startsWith(
-        "buff:"
-    )
-) {
-
-    if (
-        entity.entity_type !==
-        "player"
-    ) {
-
-        addCombatLog(
-            "Questa abilità può essere usata soltanto su te stesso o su un alleato."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        entity.status !==
-        "alive"
-    ) {
-
-        addCombatLog(
-            "Questo personaggio non può ricevere il buff."
-        );
-
-        return;
-
-    }
-
-
-    const abilityId =
-        combatTargetMode.replace(
-            "buff:",
-            ""
-        );
-
-
-    await performCombatBuff(
-        entity.id,
-        abilityId
-    );
-
-
-    return;
-
-}
-
-// ========================================================
-// ATTRAZIONE / REPULSIONE
-// ========================================================
-
-if (
-    combatTargetMode &&
-    combatTargetMode.startsWith(
-        "push_pull:"
-    )
-) {
-
-    if (
-        entity.entity_type !==
-        "enemy"
-    ) {
-
-        addCombatLog(
-            "Questa abilità può essere usata soltanto su un nemico."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        entity.status !==
-        "alive"
-        ||
-        Number(
-            entity.current_hp
-        ) <= 0
-    ) {
-
-        addCombatLog(
-            "Questo nemico non è un bersaglio valido."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !isEntityInCurrentTargetRange(
-            entity
-        )
-    ) {
-
-        addCombatLog(
-            "Il bersaglio è fuori portata."
-        );
-
-        return;
-
-    }
-
-
-    const abilityId =
-        combatTargetMode.replace(
-            "push_pull:",
-            ""
-        );
-
-
-    await performPushPull(
-        entity.id,
-        abilityId
-    );
-
-
-    return;
-
-}
-
-    // ========================================================
-    // ATTACCHI
-    // ========================================================
-
-    if (
-        entity.entity_type !==
-        "enemy"
-    ) {
-
-        addCombatLog(
-            "Devi selezionare un nemico."
-        );
-
-
-        return;
-
-    }
-
-
-    if (
-        entity.status !==
-        "alive" ||
-        Number(
-            entity.current_hp
-        ) <= 0
-    ) {
-
-        addCombatLog(
-            "Questo nemico è già sconfitto."
-        );
-
-
-        return;
-
-    }
-
-
-    if (
-        !isEntityInCurrentTargetRange(
-            entity
-        )
-    ) {
-
-        addCombatLog(
-            "Il bersaglio è fuori portata."
-        );
-
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // ATTACCO BASE
-    // ========================================================
-
-    if (
-        combatTargetMode ===
-        "basic_attack"
-    ) {
-
-        await performBasicAttack(
-            entity.id
-        );
-
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // DARDO DI FUOCO
-    // ========================================================
-
-    if (
-        combatTargetMode ===
-        "fire_bolt"
-    ) {
-
-        await performFireBolt(
-            entity.id
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// ATTACCO BASE
-// ============================================================
-
-async function performBasicAttack(
-    targetEntityId
-) {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        cancelCombatTargeting();
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "combat_basic_attack",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_target_entity_id:
-                        targetEntityId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        cancelCombatTargeting();
-
-
-        await loadCombatEntities();
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        // ====================================================
-        // MANCATO
-        // ====================================================
-
-        if (!data.hit) {
-
-            addCombatLog(
-                `${data.attacker_name} attacca ${data.target_name}: `
-                +
-                `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
-                +
-                `contro DIF ${data.defense}. MANCATO.`
-            );
-
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // COLPITO
-        // ====================================================
-
-        let text =
-            `${data.attacker_name} attacca ${data.target_name}: `
-            +
-            `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
-            +
-            `contro DIF ${data.defense}. `
-            +
-            `${data.damage} danni`;
-
-
-        if (
-            data.critical
-        ) {
-
-            text +=
-                " · CRITICO!";
-
-        }
-
-
-        text +=
-            ` · PF ${data.target_hp}/${data.target_max_hp}`;
-
-
-        if (
-            data.target_dead
-        ) {
-
-            text +=
-                ` · ${data.target_name} è sconfitto!`;
-
-        }
-
-
-        addCombatLog(
-            text
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore attacco base:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// DARDO DI FUOCO
-// ============================================================
-
-async function performFireBolt(
-    targetEntityId
-) {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        cancelCombatTargeting();
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "combat_fire_bolt",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_target_entity_id:
-                        targetEntityId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        cancelCombatTargeting();
-
-
-        if (
-            currentCharacter &&
-            data?.current_pm !==
-            undefined
-        ) {
-
-            currentCharacter.current_pm =
-                Number(
-                    data.current_pm
-                );
-
-        }
-
-
-        await loadCombatEntities();
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-    // ====================================================
-// LOG ATTACCO
-// ====================================================
-
-if (
-    attackData?.executed === true
-) {
-
-    if (
-        attackData.hit
-    ) {
-
-        let attackText =
-            `${attackData.attacker_name} attacca ${attackData.target_name}: `
-            +
-            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
-            +
-            `contro DIF ${attackData.defense}. `
-            +
-            `${attackData.damage} danni`
-            +
-            ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
-
-
-        if (
-            attackData.target_dead
-        ) {
-
-            attackText +=
-                ` · ${attackData.target_name} è sconfitto!`;
-
-        }
-
-
-        addCombatLog(
-            attackText
-        );
-
-    } else {
-
-        addCombatLog(
-            `${attackData.attacker_name} attacca ${attackData.target_name}: `
-            +
-            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
-            +
-            `contro DIF ${attackData.defense}. MANCATO.`
-        );
-
-    }
-
-}
-
-        // ====================================================
-        // MANCATO
-        // ====================================================
-
-        if (!data.hit) {
-
-            addCombatLog(
-                `${data.attacker_name} usa Dardo di Fuoco contro ${data.target_name}: `
-                +
-                `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
-                +
-                `contro DIF ${data.defense}. MANCATO. `
-                +
-                `PM ${data.current_pm}/${data.max_pm}.`
-            );
-
-
-            return;
-
-        }
-
-
-        // ====================================================
-        // COLPITO
-        // ====================================================
-
-        let text =
-            `${data.attacker_name} usa Dardo di Fuoco contro ${data.target_name}: `
-            +
-            `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
-            +
-            `contro DIF ${data.defense}. `
-            +
-            `${data.damage} danni`;
-
-
-        if (
-            data.critical
-        ) {
-
-            text +=
-                " · CRITICO!";
-
-        }
-
-
-        text +=
-            ` · PF ${data.target_hp}/${data.target_max_hp}`;
-
-
-        text +=
-            ` · PM ${data.current_pm}/${data.max_pm}`;
-
-
-        if (
-            data.target_dead
-        ) {
-
-            text +=
-                ` · ${data.target_name} è sconfitto!`;
-
-        }
-
-
-        addCombatLog(
-            text
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore Dardo di Fuoco:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// CURA
-// ============================================================
-
-async function performHeal(
-    targetEntityId
-) {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        cancelCombatTargeting();
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "combat_heal",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_target_entity_id:
-                        targetEntityId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        cancelCombatTargeting();
-
-
-        if (
-            currentCharacter &&
-            data?.current_pm !==
-            undefined
-        ) {
-
-            currentCharacter.current_pm =
-                Number(
-                    data.current_pm
-                );
-
-        }
-
-
-        await loadCombatEntities();
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        addCombatLog(
-            `${data.caster_name} usa Cura su ${data.target_name}: `
-            +
-            `+${data.heal_amount} PF `
-            +
-            `· PF ${data.target_hp}/${data.target_max_hp} `
-            +
-            `· PM ${data.current_pm}/${data.max_pm}.`
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore Cura:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-// ============================================================
-// USA BUFF
-// ============================================================
-
-async function performCombatBuff(
-    targetEntityId,
-    abilityId
-) {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        cancelCombatTargeting();
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            error
-        } =
-            await db.rpc(
-                "cast_combat_buff",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_target_entity_id:
-                        targetEntityId,
-
-                    p_ability_id:
-                        abilityId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        const abilityEntry =
-            characterAbilities.find(
-                entry =>
-                    entry.ability_id ===
-                    abilityId
-            );
-
-
-        const abilityName =
-            abilityEntry?.ability?.name ||
-            abilityId;
-
-
-        cancelCombatTargeting();
-
-
-        await Promise.all([
-    loadCombatEntities(),
-    loadCombatEffects(),
-    loadCharacterPendingEffects()
-]);
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        addCombatLog(
-            `${abilityName} applicata con successo.`
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore buff:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-// ============================================================
-// USA ATTRAZIONE / REPULSIONE
-// ============================================================
-
-async function performPushPull(
-    targetEntityId,
-    abilityId
-) {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        cancelCombatTargeting();
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "cast_combat_push_pull",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id,
-
-                    p_target_entity_id:
-                        targetEntityId,
-
-                    p_ability_id:
-                        abilityId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        cancelCombatTargeting();
-
-
-        await loadCombatEntities();
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        if (
-            currentCharacter &&
-            data?.current_pm !==
-            undefined
-        ) {
-
-            currentCharacter.current_pm =
-                Number(
-                    data.current_pm
-                );
-
-        }
-
-
-        if (
-            data?.moved
-        ) {
-
-            addCombatLog(
-                `${data.ability_name} sposta ${data.target_name} da (${data.old_x}, ${data.old_y}) a (${data.new_x}, ${data.new_y}).`
-            );
-
-        } else {
-
-            addCombatLog(
-                `${data.ability_name} colpisce ${data.target_name}, ma non può spostarlo: la casella di destinazione è bloccata.`
-            );
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore Attrazione/Repulsione:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-// ============================================================
-// GIORNO PAGA
-// ============================================================
-
-async function performGiornoPaga() {
-
-    if (
-        !currentCharacter ||
-        !isMyTurn()
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "cast_giorno_paga",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_character_id:
-                        currentCharacter.id
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        closeCombatDrawer();
-
-
-        // Ricarica PM e stato azione del PG.
-        await Promise.all([
-    loadCombatEntities(),
-    loadCharacterPendingEffects()
-]);
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        addCombatLog(
-            `${data.character_name} usa GIORNO PAGA! `
-            +
-            `L'oro dell'incontro sarà raddoppiato. `
-            +
-            `PM ${data.current_pm}/${data.max_pm}.`
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore Giorno Paga:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-// ============================================================
-// VISUALI TARGET
-// ============================================================
-
-function updateTargetSelectionVisuals() {
-
-    renderCombatRangeCells();
-
-
-    combatTokens.forEach(
-        (
-            token,
-            entityId
-        ) => {
-
-            token.style.outline =
-                "";
-
-
-            token.style.outlineOffset =
-                "";
-
-
-            token.style.cursor =
-                "default";
-
-
-            if (!combatTargetMode) {
-
-                return;
-
-            }
-
-
-            const entity =
-                combatEntities.get(
-                    entityId
-                );
-
-
-            if (
-                !entity ||
-                entity.status !==
-                "alive"
-            ) {
-
-                return;
-
-            }
-
-
-            // =================================================
-            // CURA
-            // =================================================
-
-            if (
-                combatTargetMode ===
-                "heal"
-            ) {
-
-                if (
-                    entity.entity_type !==
-                    "player"
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
-                    isEntityInCurrentTargetRange(
-                        entity
-                    )
-                ) {
-
-                    token.style.outline =
-                        "3px solid #70d98b";
-
-
-                    token.style.outlineOffset =
-                        "2px";
-
-
-                    token.style.cursor =
-                        "pointer";
-
-                }
-
-
-                return;
-
-            }
-
-            // =================================================
-// BUFF
-// =================================================
-
-if (
-    combatTargetMode &&
-    combatTargetMode.startsWith(
-        "buff:"
-    )
-) {
-
-    if (
-        entity.entity_type !==
-        "player"
-    ) {
-
-        return;
-
-    }
-
-
-    token.style.outline =
-        "3px solid #7aa7ff";
-
-
-    token.style.outlineOffset =
-        "2px";
-
-
-    token.style.cursor =
-        "pointer";
-
-
-    return;
-
-}
-
-            // =================================================
-            // ATTACCHI
-            // =================================================
-
-            if (
-                entity.entity_type !==
-                "enemy"
-            ) {
-
-                return;
-
-            }
-
-
-            if (
-                isEntityInCurrentTargetRange(
-                    entity
-                )
-            ) {
-
-                token.style.outline =
-                    "3px solid #d7b05d";
-
-
-                token.style.outlineOffset =
-                    "2px";
-
-
-                token.style.cursor =
-                    "pointer";
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// ANNULLA TARGET
-// ============================================================
-
-function cancelCombatTargeting() {
-
-    combatTargetMode = null;
-
-
-    clearCombatRangeCells();
-
-
-    updateTargetSelectionVisuals();
-
-}
-
-
-// ============================================================
-// TURN ORDER
-// ============================================================
-
-function renderCombatEntityList() {
-
-    const container =
-        document.getElementById(
-            "combat-entity-list"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.replaceChildren();
-
-
-    const aliveEntities =
-        Array.from(
-            combatEntities.values()
-        )
-            .filter(
-                entity =>
-                    entity.status ===
-                        "alive"
-                    &&
-                    Number(
-                        entity.current_hp
-                    ) > 0
-            );
-
-
-    aliveEntities.forEach(
-        entity => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-
-            item.className =
-                "combat-entity-item";
-
-                item.addEventListener(
-    "mouseenter",
-    () => {
-
-        const token =
-            combatTokens.get(
-                entity.id
-            );
-
-
-        if (token) {
-
-            token.classList.add(
-                "turn-order-hover"
-            );
-
-        }
-
-    }
-);
-
-
-item.addEventListener(
-    "mouseleave",
-    () => {
-
-        const token =
-            combatTokens.get(
-                entity.id
-            );
-
-
-        if (token) {
-
-            token.classList.remove(
-                "turn-order-hover"
-            );
-
-        }
-
-    }
-);
-
-
-            if (
-                entity.id ===
-                combatSession?.current_turn_entity_id
-            ) {
-
-                item.classList.add(
-                    "current-turn"
-                );
-
-            }
-
-
-            const name =
-                document.createElement(
-                    "strong"
-                );
-
-
-            name.textContent =
-                entity.display_name;
-
-
-            const meta =
-                document.createElement(
-                    "div"
-                );
-
-
-            meta.className =
-                "combat-entity-meta";
-
-
-            meta.textContent =
-                `${
-                    entity.entity_type ===
-                    "enemy"
-                        ? "Nemico"
-                        : "Giocatore"
-                } · PF ${
-                    entity.current_hp
-                }/${
-                    entity.max_hp
-                } · PM ${
-                    entity.current_pm ?? 0
-                }/${
-                    entity.max_pm ?? 0
-                } · MOV ${
-                    entity.movement_remaining ?? 0
-                }`;
-
-
-            item.append(
-                name,
-                meta
-            );
-
-
-            container.appendChild(
-                item
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// MIO PG
-// ============================================================
-
-function getMyPlayerEntity() {
-
-    if (!currentCharacter) {
-
-        return null;
-
-    }
-
-
-    return Array.from(
-        combatEntities.values()
-    ).find(
-        entity =>
-            entity.entity_type ===
-                "player"
-            &&
-            entity.character_id ===
-                currentCharacter.id
-    ) || null;
-
-}
-
-
-// ============================================================
-// SCHEDA PG
-// ============================================================
-
-function renderPlayerCombatSheet() {
-
-    if (
-        masterObserverMode ||
-        !currentCharacter
-    ) {
-
-        return;
-
-    }
-
-
-    const playerEntity =
-        getMyPlayerEntity();
-
-    const attackBuff =
-    getCombatEffectBonus(
-        playerEntity.id,
-        "attack_bonus"
-    );
-
-const defenseBuff =
-    getCombatEffectBonus(
-        playerEntity.id,
-        "defense_bonus"
-    );
-
-const movementBuff =
-    getCombatEffectBonus(
-        playerEntity.id,
-        "movement_bonus"
-    );
-
-const criticalBuff =
-    getCombatEffectBonus(
-        playerEntity.id,
-        "critical_bonus"
-    );
-
-
-    if (!playerEntity) {
-
-        return;
-
-    }
-
-
-    const forza =
-        getCombatEffectiveAttribute(
-            "forza"
-        );
-
-
-    const resistenza =
-        getCombatEffectiveAttribute(
-            "resistenza"
-        );
-
-
-    const costituzione =
-        getCombatEffectiveAttribute(
-            "costituzione"
-        );
-
-
-    const intelligenza =
-        getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-
-    const destrezza =
-        getCombatEffectiveAttribute(
-            "destrezza"
-        );
-
-
-    const fortuna =
-        getCombatEffectiveAttribute(
-            "fortuna"
-        );
-
-
-    const attack =
-    Math.ceil(
-        forza / 2
-    )
-    +
-    (
-        Number(
-            equipmentBonuses.attack_bonus
-        ) || 0
-    )
-    +
-    getCombatEffectBonus(
-        playerEntity.id,
-        "attack_bonus"
-    );
-
-
-    const defense =
-    Math.ceil(
-        7 +
-        resistenza / 2
-    )
-    +
-    (
-        Number(
-            equipmentBonuses.defense_bonus
-        ) || 0
-    )
-    +
-    getCombatEffectBonus(
-        playerEntity.id,
-        "defense_bonus"
-    );
-
-
-    const fallbackMaxPF =
-        Math.ceil(
-            5 *
-            (
-                costituzione / 2
-            )
-        );
-
-
-    const fallbackMaxPM =
-        Math.ceil(
-            5 *
-            (
-                intelligenza / 2
-            )
-        );
-
-
-    const fallbackMovement =
-    Math.ceil(
-        4 +
-        destrezza / 2
-    )
-    +
-    getCombatEffectBonus(
-        playerEntity.id,
-        "movement_bonus"
-    );
-
-
-    const critical =
-    (
-        fortuna *
-        (
-            50 / 30
-        )
-        +
-        getCombatEffectBonus(
-            playerEntity.id,
-            "critical_bonus"
-        )
-    ).toFixed(
-        2
-    );
-
-
-    const currentPF =
-        Math.max(
-            0,
-            Number(
-                playerEntity.current_hp
-            ) || 0
-        );
-
-
-    const maxPF =
-        Number(
-            playerEntity.max_hp
-        ) ||
-        fallbackMaxPF;
-
-
-    const currentPM =
-        playerEntity.current_pm ===
-            null
-        ||
-        playerEntity.current_pm ===
-            undefined
-
-            ? fallbackMaxPM
-
-            : Math.max(
-                0,
-                Number(
-                    playerEntity.current_pm
-                )
-            );
-
-
-    const maxPM =
-        Number(
-            playerEntity.max_pm
-        ) ||
-        fallbackMaxPM;
-
-
-    const currentMovement =
-        Number(
-            playerEntity.movement_remaining
-        ) || 0;
-
-
-    setText(
-        "combat-character-name",
-        currentCharacter.nome
-    );
-
-
-    setText(
-        "combat-pf-value",
-        `${currentPF} / ${maxPF}`
-    );
-
-
-    setText(
-        "combat-pm-value",
-        `${currentPM} / ${maxPM}`
-    );
-
-
-    setText(
-    "combat-attack-value",
-    attackBuff > 0
-        ? `${attack - attackBuff} +${attackBuff}`
-        : attack
-);
-
-
-    setText(
-    "combat-defense-value",
-    defenseBuff > 0
-        ? `${defense - defenseBuff} +${defenseBuff}`
-        : defense
-);
-
-
-    setText(
-    "combat-movement-value",
-    `${currentMovement} / ${fallbackMovement}`
-);
-
-
-    setText(
-    "combat-critical-value",
-    criticalBuff > 0
-        ? `${
-            (
-                Number(critical) -
-                criticalBuff
-            ).toFixed(2)
-        }% +${criticalBuff}%`
-        : `${critical}%`
-);
-
-
-    updateBar(
-        "combat-pf-bar",
-        currentPF,
-        maxPF
-    );
-
-
-    updateBar(
-        "combat-pm-bar",
-        currentPM,
-        maxPM
-    );
-
-
-    updateTurnResourceIndicators();
-
-}
-
-// ============================================================
-// BUFF ATTIVI
-// ============================================================
-
-function renderActiveCombatBuffs() {
-
-    const container =
-        document.getElementById(
-            "combat-active-buffs"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.replaceChildren();
-
-
-    const player =
-        getMyPlayerEntity();
-
-
-    if (!player) {
-
-        return;
-
-    }
-
-
-    const playerBuffs =
-        combatEffects.filter(
-            effect =>
-                effect.target_entity_id ===
-                    player.id
-                &&
-                Number(
-                    effect.remaining_rounds
-                ) > 0
-        );
-
-const pendingBuffs =
-    characterPendingEffects.filter(
-        effect =>
-            effect.effect_type ===
-            "giorno_paga"
-    );
-
-    if (
-    playerBuffs.length === 0 &&
-    pendingBuffs.length === 0
-) {
-
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-
-        empty.className =
-            "combat-buff-empty";
-
-
-        empty.textContent =
-            "Nessun buff attivo.";
-
-
-        container.appendChild(
-            empty
-        );
-
-
-        return;
-
-    }
-
-
-    const buffNames = {
-
-        attack_bonus:
-            "Arma Potenziata",
-
-        defense_bonus:
-            "Armatura Potenziata",
-
-        critical_bonus:
-            "Affilatura",
-
-        movement_bonus:
-            "Rapidità"
-
-    };
-
-
-    const buffValues = {
-
-        attack_bonus:
-            value =>
-                `+${value} ATT`,
-
-        defense_bonus:
-            value =>
-                `+${value} DIF`,
-
-        critical_bonus:
-            value =>
-                `+${value}% CRIT`,
-
-        movement_bonus:
-            value =>
-                `+${value} MOV`
-
-    };
-
-
-    playerBuffs.forEach(
-        effect => {
-
-            const row =
-                document.createElement(
-                    "div"
-                );
-
-
-            row.className =
-                "combat-buff-item";
-
-
-            const left =
-                document.createElement(
-                    "div"
-                );
-
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-
-            name.className =
-                "combat-buff-name";
-
-
-            name.textContent =
-                buffNames[
-                    effect.effect_type
-                ]
-                ||
-                effect.effect_type;
-
-
-            const value =
-                document.createElement(
-                    "div"
-                );
-
-
-            value.style.marginTop =
-                "2px";
-
-
-            value.style.color =
-                "#a99a82";
-
-
-            value.style.fontSize =
-                "9px";
-
-
-            const valueFormatter =
-                buffValues[
-                    effect.effect_type
-                ];
-
-
-            value.textContent =
-                valueFormatter
-                    ? valueFormatter(
-                        Number(
-                            effect.value
-                        ) || 0
-                    )
-                    : "";
-
-
-            left.append(
-                name,
-                value
-            );
-
-
-            const duration =
-                document.createElement(
-                    "div"
-                );
-
-
-            duration.className =
-                "combat-buff-duration";
-
-
-            const rounds =
-                Number(
-                    effect.remaining_rounds
-                ) || 0;
-
-
-            duration.textContent =
-                rounds === 1
-                    ? "1 round"
-                    : `${rounds} round`;
-
-
-            row.append(
-                left,
-                duration
-            );
-
-
-            container.appendChild(
-                row
-            );
-
-        }
-    );
-
-    pendingBuffs.forEach(
-    effect => {
-
-        const row =
-            document.createElement(
-                "div"
-            );
-
-        row.className =
-            "combat-buff-item";
-
-
-        const left =
-            document.createElement(
-                "div"
-            );
-
-
-        const name =
-            document.createElement(
-                "div"
-            );
-
-        name.className =
-            "combat-buff-name";
-
-        name.textContent =
-            "Giorno Paga";
-
-
-        const value =
-            document.createElement(
-                "div"
-            );
-
-        value.style.marginTop =
-            "2px";
-
-        value.style.color =
-            "#a99a82";
-
-        value.style.fontSize =
-            "9px";
-
-        value.textContent =
-            `Oro ×${Number(effect.value) || 2}`;
-
-
-        left.append(
-            name,
-            value
-        );
-
-
-        const duration =
-            document.createElement(
-                "div"
-            );
-
-        duration.className =
-            "combat-buff-duration";
-
-        duration.textContent =
-            "incontro corrente";
-
-
-        row.append(
-            left,
-            duration
-        );
-
-
-        container.appendChild(
-            row
-        );
-
-    }
-);
-
-}
-
-// ============================================================
-// BARRE
-// ============================================================
-
-function updateBar(
-    id,
-    current,
-    max
-) {
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-    if (!element) {
-
-        return;
-
-    }
-
-
-    const percentage =
-        max > 0
-
-            ? Math.max(
-                0,
-                Math.min(
-                    100,
-                    (
-                        current /
-                        max
-                    ) *
-                    100
-                )
-            )
-
-            : 0;
-
-
-    element.style.width =
-        `${percentage}%`;
-
-}
-
-
-// ============================================================
-// TESTO
-// ============================================================
-
-function setText(
-    id,
-    value
-) {
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-    if (element) {
-
-        element.textContent =
-            value;
-
-    }
 
 }
 
@@ -5714,1548 +1535,20 @@ function isMyTurn() {
 
 
     return !!(
-        currentEntity &&
+
+        currentEntity
+
+        &&
+
         currentEntity.entity_type ===
             "player"
+
         &&
+
         currentEntity.character_id ===
             currentCharacter.id
+
     );
-
-}
-
-
-// ============================================================
-// RISORSE TURNO
-// ============================================================
-
-function updateTurnResourceIndicators() {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    const movement =
-        document.getElementById(
-            "turn-resource-movement"
-        );
-
-
-    const action =
-        document.getElementById(
-            "turn-resource-action"
-        );
-
-
-    const item =
-        document.getElementById(
-            "turn-resource-item"
-        );
-
-
-    if (!player) {
-
-        return;
-
-    }
-
-
-    setResourceIndicator(
-        movement,
-        Number(
-            player.movement_remaining
-        ) > 0
-    );
-
-
-    setResourceIndicator(
-        action,
-        player.action_used !== true
-    );
-
-
-    setResourceIndicator(
-        item,
-        player.item_used !== true
-    );
-
-}
-
-
-function setResourceIndicator(
-    element,
-    available
-) {
-
-    if (!element) {
-
-        return;
-
-    }
-
-
-    element.classList.toggle(
-        "available",
-        available
-    );
-
-
-    element.classList.toggle(
-        "used",
-        !available
-    );
-
-}
-
-
-// ============================================================
-// BOTTONI PRINCIPALI
-// ============================================================
-
-function setupCombatActions() {
-
-    const attack =
-        document.getElementById(
-            "combat-action-attack"
-        );
-
-
-    const abilities =
-        document.getElementById(
-            "combat-action-abilities"
-        );
-
-
-    const backpack =
-        document.getElementById(
-            "combat-action-backpack"
-        );
-
-
-    const pass =
-        document.getElementById(
-            "combat-action-pass"
-        );
-
-
-    const close =
-        document.getElementById(
-            "combat-drawer-close"
-        );
-
-
-    // ========================================================
-    // ATTACCO BASE
-    // ========================================================
-
-    attack?.addEventListener(
-        "click",
-        () => {
-
-            if (
-                !canUseMainAction()
-            ) {
-
-                return;
-
-            }
-
-
-            closeCombatDrawer();
-
-
-            combatTargetMode =
-                "basic_attack";
-
-
-            addCombatLog(
-                "ATTACCO BASE: seleziona un nemico in una delle 8 caselle evidenziate."
-            );
-
-
-            updateTargetSelectionVisuals();
-
-        }
-    );
-
-
-    // ========================================================
-    // ABILITÀ
-    // ========================================================
-
-    abilities?.addEventListener(
-        "click",
-        () => {
-
-            cancelCombatTargeting();
-
-            openAbilityPanel();
-
-        }
-    );
-
-
-    // ========================================================
-    // ZAINO
-    // ========================================================
-
-    backpack?.addEventListener(
-        "click",
-        () => {
-
-            cancelCombatTargeting();
-
-            openBackpackPanel();
-
-        }
-    );
-
-
-    // ========================================================
-    // SALTA TURNO
-    // ========================================================
-
-    pass?.addEventListener(
-        "click",
-        async () => {
-
-            await passTurn();
-
-        }
-    );
-
-
-    close?.addEventListener(
-        "click",
-        () => {
-
-            closeCombatDrawer();
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// PANNELLO ABILITÀ
-// ============================================================
-
-function openAbilityPanel() {
-
-    activeDrawer =
-        "abilities";
-
-
-    document.body.classList.add(
-        "combat-drawer-open"
-    );
-
-
-    setText(
-        "combat-drawer-title",
-        "ABILITÀ"
-    );
-
-
-    renderAbilityPanel();
-
-}
-
-
-// ============================================================
-// RENDER ABILITÀ
-// ============================================================
-
-function renderAbilityPanel() {
-
-    if (
-        activeDrawer !==
-        "abilities"
-    ) {
-
-        return;
-
-    }
-
-
-    const container =
-        document.getElementById(
-            "combat-drawer-body"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.replaceChildren();
-
-
-    if (
-        characterAbilities.length ===
-        0
-    ) {
-
-        renderDrawerMessage(
-            container,
-            "Il personaggio non conosce abilità."
-        );
-
-
-        return;
-
-    }
-
-
-    const player =
-        getMyPlayerEntity();
-
-
-    characterAbilities.forEach(
-        entry => {
-
-            if (!entry.ability) {
-
-                return;
-
-            }
-
-
-            const ability =
-                entry.ability;
-
-
-            const pmCost =
-                Number(
-                    ability.pm_cost
-                ) || 0;
-
-
-            const currentPM =
-                Number(
-                    player?.current_pm
-                ) || 0;
-
-
-            const unavailable =
-                !isMyTurn()
-                ||
-                player?.action_used ===
-                    true
-                ||
-                currentPM < pmCost;
-
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "combat-ability-card";
-
-
-            if (unavailable) {
-
-                card.classList.add(
-                    "disabled"
-                );
-
-            }
-
-
-            const header =
-                document.createElement(
-                    "div"
-                );
-
-
-            header.className =
-                "combat-ability-header";
-
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-
-            name.className =
-                "combat-ability-name";
-
-
-            name.textContent =
-                ability.name;
-
-
-            const level =
-                document.createElement(
-                    "div"
-                );
-
-
-            level.className =
-                "combat-ability-level";
-
-
-            level.textContent =
-                `LV.${entry.level || 1}`;
-
-
-            header.append(
-                name,
-                level
-            );
-
-
-            const description =
-                document.createElement(
-                    "div"
-                );
-
-
-            description.className =
-                "combat-ability-description";
-
-
-            description.textContent =
-                ability.description ||
-                "";
-
-
-            const footer =
-                document.createElement(
-                    "div"
-                );
-
-
-            footer.className =
-                "combat-ability-footer";
-
-
-            const cost =
-                document.createElement(
-                    "div"
-                );
-
-
-            cost.className =
-                "combat-ability-cost";
-
-
-            cost.textContent =
-                `${pmCost} PM`;
-
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.type =
-                "button";
-
-
-            button.className =
-                "combat-button";
-
-
-            button.textContent =
-                "USA";
-
-
-            button.disabled =
-                unavailable;
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    handleAbilityButton(
-                        entry
-                    );
-
-                }
-            );
-
-
-            footer.append(
-                cost,
-                button
-            );
-
-
-            card.append(
-                header,
-                description,
-                footer
-            );
-
-
-            container.appendChild(
-                card
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// GESTIONE ABILITÀ
-// ============================================================
-
-function handleAbilityButton(
-    entry
-) {
-
-    const ability =
-        entry?.ability;
-
-
-    if (!ability) {
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // DARDO DI FUOCO
-    // ========================================================
-
-    if (
-        ability.id ===
-        "dardo_di_fuoco"
-    ) {
-
-        startFireBoltTargeting(
-            entry
-        );
-
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // CURA
-    // ========================================================
-
-    if (
-        ability.id ===
-        "cura"
-    ) {
-
-        startHealTargeting(
-            entry
-        );
-
-
-        return;
-
-    }
-
-// ========================================================
-// BUFF
-// ========================================================
-
-if (
-    ability.id ===
-        "affilatura"
-    ||
-    ability.id ===
-        "arma_potenziata"
-    ||
-    ability.id ===
-        "armatura_potenziata"
-    ||
-    ability.id ===
-        "rapidita"
-) {
-
-    startCombatBuffTargeting(
-        entry
-    );
-
-    return;
-
-}
-
-// ========================================================
-// ATTRAZIONE / REPULSIONE
-// ========================================================
-
-if (
-    ability.id === "attrazione"
-    ||
-    ability.id === "repulsione"
-) {
-
-    startPushPullTargeting(
-        entry
-    );
-
-    return;
-
-}
-
-// ========================================================
-// GIORNO PAGA
-// ========================================================
-
-if (
-    ability.id ===
-    "giorno_paga"
-) {
-
-    performGiornoPaga();
-
-    return;
-
-}
-
-    addCombatLog(
-        `${ability.name}: questa abilità non è ancora implementata nel combattimento.`
-    );
-
-}
-
-
-// ============================================================
-// DARDO DI FUOCO - TARGET
-// ============================================================
-
-function startFireBoltTargeting(
-    entry
-) {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    if (
-        !player ||
-        !isMyTurn()
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        player.action_used ===
-        true
-    ) {
-
-        addCombatLog(
-            "Hai già utilizzato la tua azione in questo turno."
-        );
-
-
-        return;
-
-    }
-
-
-    const ability =
-        entry.ability;
-
-
-    const pmCost =
-        Number(
-            ability.pm_cost
-        ) || 1;
-
-
-    const currentPM =
-        Number(
-            player.current_pm
-        ) || 0;
-
-
-    if (
-        currentPM <
-        pmCost
-    ) {
-
-        addCombatLog(
-            "Non hai abbastanza PM per usare Dardo di Fuoco."
-        );
-
-
-        return;
-
-    }
-
-
-    combatTargetMode =
-        "fire_bolt";
-
-
-    closeCombatDrawer();
-
-
-    const range =
-        getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-
-    addCombatLog(
-        `DARDO DI FUOCO: seleziona un nemico entro ${range} quadretti.`
-    );
-
-
-    updateTargetSelectionVisuals();
-
-}
-
-
-// ============================================================
-// CURA - TARGET
-// ============================================================
-
-function startHealTargeting(
-    entry
-) {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    if (
-        !player ||
-        !isMyTurn()
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        player.action_used ===
-        true
-    ) {
-
-        addCombatLog(
-            "Hai già utilizzato la tua azione in questo turno."
-        );
-
-
-        return;
-
-    }
-
-
-    const ability =
-        entry.ability;
-
-
-    const pmCost =
-        Number(
-            ability.pm_cost
-        ) || 2;
-
-
-    const currentPM =
-        Number(
-            player.current_pm
-        ) || 0;
-
-
-    if (
-        currentPM <
-        pmCost
-    ) {
-
-        addCombatLog(
-            "Non hai abbastanza PM per usare Cura."
-        );
-
-
-        return;
-
-    }
-
-
-    combatTargetMode =
-        "heal";
-
-
-    closeCombatDrawer();
-
-
-    const range =
-        getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-
-    addCombatLog(
-        `CURA: seleziona te stesso o un alleato entro ${range} quadretti.`
-    );
-
-
-    updateTargetSelectionVisuals();
-
-}
-
-// ============================================================
-// BUFF - TARGET
-// ============================================================
-
-function startCombatBuffTargeting(
-    entry
-) {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    if (
-        !player ||
-        !isMyTurn()
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        player.action_used ===
-        true
-    ) {
-
-        addCombatLog(
-            "Hai già utilizzato la tua azione in questo turno."
-        );
-
-        return;
-
-    }
-
-
-    const ability =
-        entry?.ability;
-
-
-    if (!ability) {
-
-        return;
-
-    }
-
-
-    const pmCost =
-        Number(
-            ability.pm_cost
-        ) || 2;
-
-
-    const currentPM =
-        Number(
-            player.current_pm
-        ) || 0;
-
-
-    if (
-        currentPM <
-        pmCost
-    ) {
-
-        addCombatLog(
-            `Non hai abbastanza PM per usare ${ability.name}.`
-        );
-
-        return;
-
-    }
-
-
-    combatTargetMode =
-        `buff:${ability.id}`;
-
-
-    closeCombatDrawer();
-
-
-    addCombatLog(
-        `${ability.name.toUpperCase()}: seleziona te stesso o un alleato.`
-    );
-
-
-    updateTargetSelectionVisuals();
-
-}
-
-// ============================================================
-// ATTRAZIONE / REPULSIONE - TARGET
-// ============================================================
-
-function startPushPullTargeting(
-    entry
-) {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    if (
-        !player ||
-        !isMyTurn()
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        player.action_used ===
-        true
-    ) {
-
-        addCombatLog(
-            "Hai già utilizzato la tua azione in questo turno."
-        );
-
-        return;
-
-    }
-
-
-    const ability =
-        entry?.ability;
-
-
-    if (!ability) {
-
-        return;
-
-    }
-
-
-    const pmCost =
-        Number(
-            ability.pm_cost
-        ) || 0;
-
-
-    const currentPM =
-        Number(
-            player.current_pm
-        ) || 0;
-
-
-    if (
-        currentPM <
-        pmCost
-    ) {
-
-        addCombatLog(
-            `Non hai abbastanza PM per usare ${ability.name}.`
-        );
-
-        return;
-
-    }
-
-
-    combatTargetMode =
-        `push_pull:${ability.id}`;
-
-
-    closeCombatDrawer();
-
-
-    const range =
-        getCombatEffectiveAttribute(
-            "intelligenza"
-        );
-
-
-    addCombatLog(
-        `${ability.name.toUpperCase()}: seleziona un nemico entro ${range} quadretti.`
-    );
-
-
-    updateTargetSelectionVisuals();
-
-}
-
-// ============================================================
-// ZAINO
-// ============================================================
-
-function openBackpackPanel() {
-
-    activeDrawer =
-        "backpack";
-
-
-    document.body.classList.add(
-        "combat-drawer-open"
-    );
-
-
-    setText(
-        "combat-drawer-title",
-        "ZAINO"
-    );
-
-
-    renderBackpackPanel();
-
-}
-
-
-// ============================================================
-// RENDER ZAINO
-// ============================================================
-
-function renderBackpackPanel() {
-
-    if (
-        activeDrawer !==
-        "backpack"
-    ) {
-
-        return;
-
-    }
-
-
-    const container =
-        document.getElementById(
-            "combat-drawer-body"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.replaceChildren();
-
-
-    const usableItems =
-        characterInventory.filter(
-            entry =>
-                entry.item &&
-                entry.item.item_type ===
-                    "consumable"
-        );
-
-
-    if (
-        usableItems.length ===
-        0
-    ) {
-
-        renderDrawerMessage(
-            container,
-            "Non hai oggetti utilizzabili in combattimento."
-        );
-
-
-        return;
-
-    }
-
-
-    const player =
-        getMyPlayerEntity();
-
-
-    usableItems.forEach(
-        entry => {
-
-            const item =
-                entry.item;
-
-
-            const unavailable =
-                !isMyTurn()
-                ||
-                player?.item_used ===
-                    true;
-
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "combat-backpack-item";
-
-
-            if (unavailable) {
-
-                card.classList.add(
-                    "disabled"
-                );
-
-            }
-
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-
-            name.className =
-                "combat-backpack-name";
-
-
-            name.textContent =
-                item.name;
-
-
-            const description =
-                document.createElement(
-                    "div"
-                );
-
-
-            description.className =
-                "combat-backpack-description";
-
-
-            description.textContent =
-                item.description ||
-                "";
-
-
-            const footer =
-                document.createElement(
-                    "div"
-                );
-
-
-            footer.className =
-                "combat-backpack-footer";
-
-
-            const quantity =
-                document.createElement(
-                    "div"
-                );
-
-
-            quantity.className =
-                "combat-backpack-quantity";
-
-
-            quantity.textContent =
-                `×${Number(entry.quantity) || 1}`;
-
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.type =
-                "button";
-
-
-            button.className =
-                "combat-button";
-
-
-            button.textContent =
-                "USA";
-
-
-            button.disabled =
-                unavailable;
-
-
-            button.addEventListener(
-                "click",
-                async () => {
-
-                    await useCombatInventoryItem(
-                        entry.id
-                    );
-
-                }
-            );
-
-
-            footer.append(
-                quantity,
-                button
-            );
-
-
-            card.append(
-                name,
-                description,
-                footer
-            );
-
-
-            container.appendChild(
-                card
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// USA OGGETTO
-// ============================================================
-
-async function useCombatInventoryItem(
-    inventoryId
-) {
-
-    if (!isMyTurn()) {
-
-        addCombatLog(
-            "Non è il tuo turno."
-        );
-
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "use_combat_inventory_item",
-                {
-
-                    p_combat_id:
-                        combatId,
-
-                    p_inventory_id:
-                        inventoryId
-
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        if (
-            currentCharacter &&
-            data
-        ) {
-
-            if (
-                data.current_hp !==
-                undefined
-            ) {
-
-                currentCharacter.current_hp =
-                    Number(
-                        data.current_hp
-                    );
-
-            }
-
-
-            if (
-                data.current_pm !==
-                undefined
-            ) {
-
-                currentCharacter.current_pm =
-                    Number(
-                        data.current_pm
-                    );
-
-            }
-
-        }
-
-
-        await Promise.all([
-
-            loadCombatEntities(),
-
-            loadCharacterInventory()
-
-        ]);
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-        renderBackpackPanel();
-
-
-        if (data) {
-
-            addCombatLog(
-                `${data.item_name} utilizzata. `
-                +
-                `PF ${data.current_hp}/${data.max_hp} `
-                +
-                `· PM ${data.current_pm}/${data.max_pm}.`
-            );
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore utilizzo oggetto:",
-            error
-        );
-
-
-        addCombatLog(
-            cleanCombatError(
-                error.message
-            )
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// DRAWER
-// ============================================================
-
-function closeCombatDrawer() {
-
-    activeDrawer = null;
-
-
-    document.body.classList.remove(
-        "combat-drawer-open"
-    );
-
-
-    setText(
-        "combat-drawer-title",
-        "AZIONI"
-    );
-
-
-    const container =
-        document.getElementById(
-            "combat-drawer-body"
-        );
-
-
-    if (container) {
-
-        container.innerHTML =
-            `
-            <div class="combat-drawer-placeholder">
-                Seleziona ABILITÀ oppure ZAINO.
-            </div>
-            `;
-
-    }
-
-
-    setTimeout(
-        () => {
-
-            renderCombatTokens();
-
-            updateTargetSelectionVisuals();
-
-        },
-        200
-    );
-
-}
-
-
-// ============================================================
-// MESSAGGIO DRAWER
-// ============================================================
-
-function renderDrawerMessage(
-    container,
-    text
-) {
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-
-    message.className =
-        "combat-drawer-placeholder";
-
-
-    message.textContent =
-        text;
-
-
-    container.appendChild(
-        message
-    );
-
-}
-
-
-// ============================================================
-// AZIONE PRINCIPALE DISPONIBILE?
-// ============================================================
-
-function canUseMainAction() {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    return !!(
-        player &&
-        isMyTurn() &&
-        player.action_used !== true
-    );
-
-}
-
-
-// ============================================================
-// AGGIORNA BOTTONI
-// ============================================================
-
-function updateActionButtons() {
-
-    const player =
-        getMyPlayerEntity();
-
-
-    const myTurn =
-        isMyTurn();
-
-
-    const actionAvailable =
-        !!(
-            player &&
-            myTurn &&
-            player.action_used !== true
-        );
-
-
-    const attack =
-        document.getElementById(
-            "combat-action-attack"
-        );
-
-
-    const abilities =
-        document.getElementById(
-            "combat-action-abilities"
-        );
-
-
-    const backpack =
-        document.getElementById(
-            "combat-action-backpack"
-        );
-
-
-    const pass =
-        document.getElementById(
-            "combat-action-pass"
-        );
-
-
-    if (attack) {
-
-        attack.disabled =
-            !actionAvailable;
-
-    }
-
-
-    if (abilities) {
-
-        abilities.disabled =
-            !myTurn;
-
-    }
-
-
-    if (backpack) {
-
-        backpack.disabled =
-            !myTurn;
-
-    }
-
-
-    if (pass) {
-
-        pass.disabled =
-            !myTurn;
-
-    }
-
-
-    if (
-        activeDrawer ===
-        "abilities"
-    ) {
-
-        renderAbilityPanel();
-
-    }
-
-
-    if (
-        activeDrawer ===
-        "backpack"
-    ) {
-
-        renderBackpackPanel();
-
-    }
-
-
-    updateTurnResourceIndicators();
 
 }
 
@@ -7266,7 +1559,9 @@ function updateActionButtons() {
 
 async function passTurn() {
 
-    if (!isMyTurn()) {
+    if (
+        !isMyTurn()
+    ) {
 
         return;
 
@@ -7282,9 +1577,12 @@ async function passTurn() {
         );
 
 
-    if (button) {
+    if (
+        button
+    ) {
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
     }
 
@@ -7305,7 +1603,9 @@ async function passTurn() {
             );
 
 
-        if (error) {
+        if (
+            error
+        ) {
 
             throw error;
 
@@ -7334,16 +1634,25 @@ async function passTurn() {
 
 }
 
+
 // ============================================================
 // UI TURNO
 // ============================================================
 
 async function updateCombatTurnUI() {
 
-    if (!combatSession) {
+    if (
+        !combatSession
+    ) {
+
         return;
+
     }
 
+
+    // ========================================================
+    // COMBATTIMENTO NON ATTIVO
+    // ========================================================
 
     if (
         combatSession.status !==
@@ -7355,14 +1664,20 @@ async function updateCombatTurnUI() {
         );
 
 
-        if (combatTargetMode) {
+        if (
+            combatTargetMode
+        ) {
+
             cancelCombatTargeting();
+
         }
 
 
         updateActionButtons();
 
+
         return;
+
     }
 
 
@@ -7370,23 +1685,35 @@ async function updateCombatTurnUI() {
         getCurrentTurnEntity();
 
 
-    if (!currentEntity) {
+    if (
+        !currentEntity
+    ) {
 
         setCombatStatus(
             "Turno non disponibile."
         );
 
 
-        if (combatTargetMode) {
+        if (
+            combatTargetMode
+        ) {
+
             cancelCombatTargeting();
+
         }
 
 
         updateActionButtons();
 
+
         return;
+
     }
 
+
+    // ========================================================
+    // TIMER
+    // ========================================================
 
     const round =
         Number(
@@ -7443,199 +1770,61 @@ async function updateCombatTurnUI() {
         );
 
 
-        if (combatTargetMode) {
+        if (
+            combatTargetMode
+        ) {
+
             cancelCombatTargeting();
+
         }
 
 
         updateActionButtons();
 
 
-        // ====================================================
-        // IA GOBLIN BASE
-        // MOVIMENTO AUTOMATICO
-        // ====================================================
-
-        const aiTurnKey =
-            `${combatSession.round_number}:${currentEntity.id}`;
-
-
-        if (
-            enemyAIInProgress ||
-            enemyAITurnKey === aiTurnKey
-        ) {
-
-            return;
-
-        }
-
-
-        enemyAITurnKey =
-            aiTurnKey;
-
-        enemyAIInProgress =
-            true;
-
-
-        try {
-
-            const {
-                data,
-                error
-            } =
-                await db.rpc(
-                    "run_goblin_movement_turn",
-                    {
-                        p_combat_id:
-                            combatId
-                    }
-                );
-
-
-            if (error) {
-                throw error;
-            }
-
-
-            console.log(
-                "MOVIMENTO IA GOBLIN:",
-                data
-            );
-
-            // ====================================================
-// ATTACCO AUTOMATICO
-// ====================================================
-
-let attackData = null;
-
-
-if (
-    data?.adjacent === true
-) {
-
-    const {
-        data: attackResult,
-        error: attackError
-    } =
-        await db.rpc(
-            "run_goblin_attack_turn",
-            {
-                p_combat_id:
-                    combatId
-            }
+        // Tutta la logica nemico è ora in combat-ai.js.
+        await runEnemyAI(
+            currentEntity
         );
 
 
-    if (attackError) {
-        throw attackError;
-    }
-
-
-    attackData =
-        attackResult;
-
-
-    console.log(
-        "ATTACCO IA GOBLIN:",
-        attackData
-    );
-
-}
-
-            // ====================================================
-            // RICARICA POSIZIONI E MOV
-            // ====================================================
-
-            await loadCombatEntities();
-
-
-            lastCombatEntitiesSnapshot =
-                createCombatSnapshot();
-
-
-            renderCombat();
-
-
-            // ====================================================
-            // LOG
-            // ====================================================
-
-            if (
-                data?.executed === true
-            ) {
-
-                if (
-                    Number(data.steps) > 0
-                ) {
-
-                    addCombatLog(
-                        `${data.enemy_name} si muove di ${data.steps} ${
-                            Number(data.steps) === 1
-                                ? "quadretto"
-                                : "quadretti"
-                        } verso ${data.target_name}.`
-                    );
-
-                } else {
-
-                    addCombatLog(
-                        `${data.enemy_name} prende di mira ${data.target_name}.`
-                    );
-
-                }
-
-
-                if (
-                    data.adjacent === true
-                ) {
-
-                    console.log(
-                        `${data.enemy_name} è ora adiacente a ${data.target_name}.`
-                    );
-
-                }
-
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "Errore movimento IA Goblin:",
-                error
-            );
-
-        } finally {
-
-            enemyAIInProgress =
-                false;
-
-        }
-
-
         return;
+
     }
 
 
     // ========================================================
-    // TURNO PG
+    // TURNO DEL MIO PG
     // ========================================================
 
-    if (isMyTurn()) {
+    if (
+        isMyTurn()
+    ) {
 
         setCombatStatus(
             `Round ${round} · IL TUO TURNO · ${remaining}s`
         );
 
-    } else {
+    }
+
+
+    // ========================================================
+    // TURNO DI UN ALTRO PG
+    // ========================================================
+
+    else {
 
         setCombatStatus(
             `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
         );
 
 
-        if (combatTargetMode) {
+        if (
+            combatTargetMode
+        ) {
+
             cancelCombatTargeting();
+
         }
 
     }
@@ -7644,11 +1833,6 @@ if (
     updateActionButtons();
 
 }
-
-
-// ============================================================
-// NOTE
-// ============================================================
 
 
 // ============================================================
@@ -7720,10 +1904,14 @@ function setupCombatNotes() {
                     error
                 } =
                     await db
-                        .from("characters")
+                        .from(
+                            "characters"
+                        )
                         .update({
+
                             notes:
                                 newNotes
+
                         })
                         .eq(
                             "id",
@@ -7731,7 +1919,9 @@ function setupCombatNotes() {
                         );
 
 
-                if (error) {
+                if (
+                    error
+                ) {
 
                     throw error;
 
@@ -7794,7 +1984,9 @@ function updateCombatMode() {
         );
 
 
-    if (badge) {
+    if (
+        badge
+    ) {
 
         badge.classList.toggle(
             "visible",
@@ -7813,59 +2005,6 @@ function updateCombatMode() {
 
 
 // ============================================================
-// LOG
-// ============================================================
-
-function addCombatLog(
-    text
-) {
-
-    const container =
-        document.getElementById(
-            "combat-log"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    const placeholder =
-        container.querySelector(
-            ".combat-log-placeholder"
-        );
-
-
-    placeholder?.remove();
-
-
-    const row =
-        document.createElement(
-            "div"
-        );
-
-
-    row.className =
-        "combat-log-entry";
-
-
-    row.textContent =
-        text;
-
-
-    container.prepend(
-    row
-);
-
-container.scrollTop = 0;
-
-}
-
-
-// ============================================================
 // ERRORI
 // ============================================================
 
@@ -7873,25 +2012,31 @@ function cleanCombatError(
     text
 ) {
 
-    if (!text) {
+    if (
+        !text
+    ) {
 
-        return "Si è verificato un errore.";
+        return (
+            "Si è verificato un errore."
+        );
 
     }
 
 
     return text
+
         .replace(
             /^.*?: /,
             ""
         )
+
         .trim();
 
 }
 
 
 // ============================================================
-// STATO
+// STATO TESTUALE
 // ============================================================
 
 function setCombatStatus(
@@ -7904,7 +2049,9 @@ function setCombatStatus(
         );
 
 
-    if (element) {
+    if (
+        element
+    ) {
 
         element.textContent =
             text;
@@ -7923,6 +2070,7 @@ function startCombatStateLoop() {
     stopCombatStateLoop();
 
 
+    // Aggiornamento timer / turno.
     combatTimerInterval =
         setInterval(
             () => {
@@ -7934,6 +2082,7 @@ function startCombatStateLoop() {
         );
 
 
+    // Aggiornamento stato server.
     combatStateInterval =
         setInterval(
             async () => {
@@ -7953,26 +2102,32 @@ function startCombatStateLoop() {
 
 function stopCombatStateLoop() {
 
-    if (combatTimerInterval) {
+    if (
+        combatTimerInterval
+    ) {
 
         clearInterval(
             combatTimerInterval
         );
 
 
-        combatTimerInterval = null;
+        combatTimerInterval =
+            null;
 
     }
 
 
-    if (combatStateInterval) {
+    if (
+        combatStateInterval
+    ) {
 
         clearInterval(
             combatStateInterval
         );
 
 
-        combatStateInterval = null;
+        combatStateInterval =
+            null;
 
     }
 
@@ -7994,10 +2149,15 @@ async function refreshCombatState() {
     }
 
 
-    combatRefreshInProgress = true;
+    combatRefreshInProgress =
+        true;
 
 
     try {
+
+        // ====================================================
+        // TIMEOUT TURNO
+        // ====================================================
 
         await db.rpc(
             "advance_combat_if_timeout",
@@ -8010,46 +2170,77 @@ async function refreshCombatState() {
         );
 
 
+        // ====================================================
+        // SESSIONE
+        // ====================================================
+
         await loadCombatSession();
 
-// ============================================================
-// CONTROLLA SUBITO EVENTUALE VITTORIA
-// ============================================================
 
-renderCombatVictory();
+        // ====================================================
+        // VITTORIA
+        // ====================================================
 
-await Promise.all([
-    loadCombatEntities(),
-    loadCombatEffects(),
-    loadCharacterPendingEffects()
-]);
+        renderCombatVictory();
 
+
+        // ====================================================
+        // STATO COMBAT
+        // ====================================================
+
+        await Promise.all([
+
+            loadCombatEntities(),
+
+            loadCombatEffects(),
+
+            loadCharacterPendingEffects()
+
+        ]);
+
+
+        // ====================================================
+        // SNAPSHOT
+        // ====================================================
 
         const snapshot =
-    createCombatSnapshot();
-
-const effectsSnapshot =
-    createCombatEffectsSnapshot();
+            createCombatSnapshot();
 
 
-if (
-    snapshot !==
-        lastCombatEntitiesSnapshot
-    ||
-    effectsSnapshot !==
-        lastCombatEffectsSnapshot
-) {
-
-    lastCombatEntitiesSnapshot =
-        snapshot;
-
-    lastCombatEffectsSnapshot =
-        effectsSnapshot;
+        const effectsSnapshot =
+            createCombatEffectsSnapshot();
 
 
-    renderCombat();
+        // ====================================================
+        // RENDER SOLO SE È CAMBIATO QUALCOSA
+        // ====================================================
 
-}
+        if (
+            snapshot !==
+                lastCombatEntitiesSnapshot
+
+            ||
+
+            effectsSnapshot !==
+                lastCombatEffectsSnapshot
+        ) {
+
+            lastCombatEntitiesSnapshot =
+                snapshot;
+
+
+            lastCombatEffectsSnapshot =
+                effectsSnapshot;
+
+
+            renderCombat();
+
+        }
+
+
+        // ====================================================
+        // UI TURNO
+        // ====================================================
 
         updateCombatTurnUI();
 
@@ -8064,7 +2255,8 @@ if (
 
     } finally {
 
-        combatRefreshInProgress = false;
+        combatRefreshInProgress =
+            false;
 
     }
 
@@ -8072,7 +2264,7 @@ if (
 
 
 // ============================================================
-// MOVIMENTO
+// MOVIMENTO PG
 // ============================================================
 
 window.moveCombatPlayer =
@@ -8095,14 +2287,17 @@ window.moveCombatPlayer =
         }
 
 
-        if (!isMyTurn()) {
+        if (
+            !isMyTurn()
+        ) {
 
             return;
 
         }
 
 
-        combatMoveInProgress = true;
+        combatMoveInProgress =
+            true;
 
 
         try {
@@ -8131,14 +2326,18 @@ window.moveCombatPlayer =
                 );
 
 
-            if (error) {
+            if (
+                error
+            ) {
 
                 throw error;
 
             }
 
 
-            if (!data) {
+            if (
+                !data
+            ) {
 
                 return;
 
@@ -8165,7 +2364,8 @@ window.moveCombatPlayer =
 
         } finally {
 
-            combatMoveInProgress = false;
+            combatMoveInProgress =
+                false;
 
         }
 
@@ -8184,10 +2384,24 @@ document.addEventListener(
             event.target;
 
 
+        // Non intercettare frecce/WASD mentre
+        // l'utente sta scrivendo.
         if (
-            target instanceof HTMLInputElement ||
-            target instanceof HTMLTextAreaElement ||
-            target instanceof HTMLSelectElement ||
+            target instanceof
+                HTMLInputElement
+
+            ||
+
+            target instanceof
+                HTMLTextAreaElement
+
+            ||
+
+            target instanceof
+                HTMLSelectElement
+
+            ||
+
             target?.isContentEditable
         ) {
 
@@ -8196,15 +2410,20 @@ document.addEventListener(
         }
 
 
-        if (event.repeat) {
+        if (
+            event.repeat
+        ) {
 
             return;
 
         }
 
 
-        let dx = 0;
-        let dy = 0;
+        let dx =
+            0;
+
+        let dy =
+            0;
 
 
         switch (
@@ -8214,7 +2433,8 @@ document.addEventListener(
             case "w":
             case "arrowup":
 
-                dy = -1;
+                dy =
+                    -1;
 
                 break;
 
@@ -8222,7 +2442,8 @@ document.addEventListener(
             case "s":
             case "arrowdown":
 
-                dy = 1;
+                dy =
+                    1;
 
                 break;
 
@@ -8230,7 +2451,8 @@ document.addEventListener(
             case "a":
             case "arrowleft":
 
-                dx = -1;
+                dx =
+                    -1;
 
                 break;
 
@@ -8238,7 +2460,8 @@ document.addEventListener(
             case "d":
             case "arrowright":
 
-                dx = 1;
+                dx =
+                    1;
 
                 break;
 
@@ -8283,7 +2506,9 @@ function setupCombatMapResizeObserver() {
         );
 
 
-    if (!map) {
+    if (
+        !map
+    ) {
 
         return;
 
@@ -8359,7 +2584,28 @@ window.addEventListener(
 
             combatMapResizeObserver.disconnect();
 
-            combatMapResizeObserver = null;
+            combatMapResizeObserver =
+                null;
+
+        }
+
+
+        if (
+            combatDungeonChannel
+        ) {
+
+            try {
+
+                combatDungeonChannel.untrack();
+
+            } catch (error) {
+
+                console.warn(
+                    "Errore chiusura Presence combat:",
+                    error
+                );
+
+            }
 
         }
 
