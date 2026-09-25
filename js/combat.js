@@ -398,7 +398,10 @@ document.addEventListener(
             setupCombatNotes();
 
 
-            await updateCombatTurnUI();
+                await setupCombatChat();
+
+
+                await updateCombatTurnUI();
 
 
             // =================================================
@@ -1969,7 +1972,7 @@ const remaining =
         )
     );
 
-    
+
  // ========================================================
     // MIO TURNO
     // ========================================================
@@ -2765,6 +2768,8 @@ window.addEventListener(
     () => {
 
         stopCombatStateLoop();
+        
+        cleanupCombatChat();
 
 
         clearCombatRangeCells();
