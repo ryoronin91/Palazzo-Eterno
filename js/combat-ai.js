@@ -514,10 +514,7 @@ function chooseGoblinNextStep(
         candidates
     );
 
-}
-
-
-// ============================================================
+}// ============================================================
 // IA GOBLIN BASE - PERCORSO DEL TURNO
 // ============================================================
 
@@ -676,30 +673,6 @@ async function runEnemyAI(
         ).toLowerCase();
 
 
-    if (
-        monsterType ===
-        "goblin_sputafuoco"
-    ) {
-
-        console.log(
-            "IA: GOBLIN SPUTAFUOCO"
-        );
-
-    }
-
-
-    if (
-        monsterType ===
-        "goblin_sciamano"
-    ) {
-
-        console.log(
-            "IA: GOBLIN SCIAMANO"
-        );
-
-    }
-
-
     enemyAITurnKey =
         aiTurnKey;
 
@@ -721,10 +694,8 @@ async function runEnemyAI(
             await db.rpc(
                 "apply_current_enemy_aggro",
                 {
-
                     p_combat_id:
                         combatId
-
                 }
             );
 
@@ -751,220 +722,463 @@ async function runEnemyAI(
 
 
         // ====================================================
-        // MOVIMENTO
+        // GOBLIN SCIAMANO
+        //
+        // La RPC dedicata decide autonomamente se:
+        // - curare un Goblin ferito entro INT quadretti;
+        // - muoversi e attaccare come un Goblin base;
+        // - rispettare un eventuale Aggro già applicato.
         // ====================================================
 
-        const movementRpc =
+        if (
             monsterType ===
-                "goblin_sputafuoco"
+            "goblin_sciamano"
+        ) {
 
-                ? "run_goblin_sputafuoco_movement_turn"
-
-                : "run_goblin_movement_turn";
-
-
-        const {
-            data: moveData,
-            error: moveError
-        } =
-            await db.rpc(
-                movementRpc,
-                {
-
-                    p_combat_id:
-                        combatId
-
-                }
+            console.log(
+                "IA: GOBLIN SCIAMANO"
             );
 
 
-        if (
-            moveError
-        ) {
-
-            throw moveError;
-
-        }
-
-
-        console.log(
-            "MOVIMENTO IA NEMICO:",
-            moveData
-        );
-
-
-        // ====================================================
-        // LOG MOVIMENTO
-        // ====================================================
-
-        if (
-            moveData?.executed ===
-                true
-        ) {
-
-            if (
-                Number(
-                    moveData.steps
-                ) > 0
-            ) {
-
-                addCombatLog(
-                    `${moveData.enemy_name} si muove di ${moveData.steps} ${
-                        Number(moveData.steps) === 1
-                            ? "quadretto"
-                            : "quadretti"
-                    } verso ${moveData.target_name}.`
-                );
-
-            } else {
-
-                addCombatLog(
-                    `${moveData.enemy_name} prende di mira ${moveData.target_name}.`
-                );
-
-            }
-
-        }
-
-
-        // ====================================================
-        // ATTACCO
-        // ====================================================
-
-        let attackData =
-            null;
-
-
-        const canAttack =
-            monsterType ===
-                "goblin_sputafuoco"
-
-                ? moveData?.in_range ===
-                    true
-
-                : moveData?.adjacent ===
-                    true;
-
-
-        if (
-            canAttack
-        ) {
-
-            const attackRpc =
-                monsterType ===
-                    "goblin_sputafuoco"
-
-                    ? "run_goblin_sputafuoco_attack_turn"
-
-                    : "run_goblin_attack_turn";
-
-
             const {
-                data: attackResult,
-                error: attackError
+                data: shamanData,
+                error: shamanError
             } =
                 await db.rpc(
-                    attackRpc,
+                    "run_goblin_sciamano_turn",
                     {
-
                         p_combat_id:
                             combatId
-
                     }
                 );
 
 
             if (
-                attackError
+                shamanError
             ) {
 
-                throw attackError;
+                throw shamanError;
 
             }
 
 
-            attackData =
-                attackResult;
-
-
             console.log(
-                "ATTACCO IA NEMICO:",
-                attackData
+                "AZIONE IA SCIAMANO:",
+                shamanData
             );
 
-        }
-
-
-        // ====================================================
-        // AGGIORNA STATO VISIVO
-        // ====================================================
-
-        await loadCombatEntities();
-
-
-        lastCombatEntitiesSnapshot =
-            createCombatSnapshot();
-
-
-        renderCombat();
-
-
-        // ====================================================
-        // LOG ATTACCO
-        // ====================================================
-
-        if (
-            attackData?.executed ===
-                true
-        ) {
 
             if (
-                attackData.hit ===
-                    true
+                shamanData?.mode ===
+                "heal"
+                &&
+                shamanData?.executed ===
+                true
             ) {
 
-                let attackText =
-                    `${attackData.attacker_name} attacca ${attackData.target_name}: `
-                    +
-                    `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
-                    +
-                    `contro DIF ${attackData.defense}. `
-                    +
-                    `${attackData.damage} danni`
-                    +
-                    ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
-
-
-                if (
-                    attackData.target_dead
-                ) {
-
-                    attackText +=
-                        ` · ${attackData.target_name} è sconfitto!`;
-
-                }
-
-
                 addCombatLog(
-                    attackText
+                    `${shamanData.enemy_name} usa Cura su ${shamanData.target_name}: `
+                    +
+                    `+${shamanData.heal_amount} PF `
+                    +
+                    `· PF ${shamanData.target_hp}/${shamanData.target_max_hp} `
+                    +
+                    `· PM ${shamanData.current_pm}/${shamanData.max_pm}.`
                 );
 
             } else {
 
-                addCombatLog(
-                    `${attackData.attacker_name} attacca ${attackData.target_name}: `
-                    +
-                    `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
-                    +
-                    `contro DIF ${attackData.defense}. MANCATO.`
+                const moveData =
+                    shamanData?.move ||
+                    null;
+
+
+                if (
+                    moveData?.executed ===
+                    true
+                ) {
+
+                    if (
+                        Number(
+                            moveData.steps
+                        ) > 0
+                    ) {
+
+                        addCombatLog(
+                            `${moveData.enemy_name} si muove di ${moveData.steps} ${
+                                Number(moveData.steps) === 1
+                                    ? "quadretto"
+                                    : "quadretti"
+                            } verso ${moveData.target_name}.`
+                        );
+
+                    } else if (
+                        moveData.target_name
+                    ) {
+
+                        addCombatLog(
+                            `${moveData.enemy_name} prende di mira ${moveData.target_name}.`
+                        );
+
+                    }
+
+                }
+
+
+                const attackData =
+                    shamanData?.attack ||
+                    null;
+
+
+                if (
+                    attackData?.executed ===
+                    true
+                ) {
+
+                    if (
+                        attackData.hit ===
+                        true
+                    ) {
+
+                        let attackText =
+                            `${attackData.attacker_name} attacca ${attackData.target_name}: `
+                            +
+                            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                            +
+                            `contro DIF ${attackData.defense}. `
+                            +
+                            `${attackData.damage} danni`
+                            +
+                            ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
+
+
+                        if (
+                            attackData.target_dead
+                        ) {
+
+                            attackText +=
+                                ` · ${attackData.target_name} è sconfitto!`;
+
+                        }
+
+
+                        addCombatLog(
+                            attackText
+                        );
+
+                    } else {
+
+                        addCombatLog(
+                            `${attackData.attacker_name} attacca ${attackData.target_name}: `
+                            +
+                            `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                            +
+                            `contro DIF ${attackData.defense}. MANCATO.`
+                        );
+
+                    }
+
+                }
+
+            }
+
+
+            await loadCombatEntities();
+
+
+            lastCombatEntitiesSnapshot =
+                createCombatSnapshot();
+
+
+            renderCombat();
+
+        } else {
+                        // ====================================================
+            // GOBLIN BASE / GOBLIN SPUTAFUOCO
+            // ====================================================
+
+            const isFireGoblin =
+                monsterType ===
+                "goblin_sputafuoco";
+
+
+            if (
+                isFireGoblin
+            ) {
+
+                console.log(
+                    "IA: GOBLIN SPUTAFUOCO"
                 );
 
             }
 
+
+            // ====================================================
+            // MOVIMENTO
+            // ====================================================
+
+            const movementRpc =
+                isFireGoblin
+
+                    ? "run_goblin_sputafuoco_movement_turn"
+
+                    : "run_goblin_movement_turn";
+
+
+            const {
+                data: moveData,
+                error: moveError
+            } =
+                await db.rpc(
+                    movementRpc,
+                    {
+                        p_combat_id:
+                            combatId
+                    }
+                );
+
+
+            if (
+                moveError
+            ) {
+
+                throw moveError;
+
+            }
+
+
+            console.log(
+                "MOVIMENTO IA NEMICO:",
+                moveData
+            );
+
+
+            // ====================================================
+            // LOG MOVIMENTO
+            // ====================================================
+
+            if (
+                moveData?.executed ===
+                true
+            ) {
+
+                if (
+                    Number(
+                        moveData.steps
+                    ) > 0
+                ) {
+
+                    addCombatLog(
+                        `${moveData.enemy_name} si muove di ${moveData.steps} ${
+                            Number(moveData.steps) === 1
+                                ? "quadretto"
+                                : "quadretti"
+                        } verso ${moveData.target_name}.`
+                    );
+
+                } else if (
+                    moveData.target_name
+                ) {
+
+                    addCombatLog(
+                        `${moveData.enemy_name} prende di mira ${moveData.target_name}.`
+                    );
+
+                }
+
+            }
+
+
+            // ====================================================
+            // ATTACCO
+            // ====================================================
+
+            let attackData =
+                null;
+
+
+            const fireGoblinHasMana =
+                isFireGoblin
+                &&
+                Number(
+                    currentEntity.current_pm
+                ) > 0;
+
+
+            const canAttack =
+                isFireGoblin
+
+                    ? (
+                        fireGoblinHasMana
+                            ? moveData?.in_range ===
+                                true
+                            : moveData?.adjacent ===
+                                true
+                    )
+
+                    : moveData?.adjacent ===
+                        true;
+
+
+            if (
+                canAttack
+            ) {
+
+                const attackRpc =
+                    isFireGoblin
+
+                        ? "run_goblin_sputafuoco_attack_turn"
+
+                        : "run_goblin_attack_turn";
+
+
+                const {
+                    data: attackResult,
+                    error: attackError
+                } =
+                    await db.rpc(
+                        attackRpc,
+                        {
+                            p_combat_id:
+                                combatId
+                        }
+                    );
+
+
+                if (
+                    attackError
+                ) {
+
+                    throw attackError;
+
+                }
+
+
+                attackData =
+                    attackResult;
+
+
+                console.log(
+                    "ATTACCO IA NEMICO:",
+                    attackData
+                );
+
+            }
+
+
+            // ====================================================
+            // AGGIORNA STATO VISIVO
+            // ====================================================
+
+            await loadCombatEntities();
+
+
+            lastCombatEntitiesSnapshot =
+                createCombatSnapshot();
+
+
+            renderCombat();
+
+
+            // ====================================================
+            // LOG ATTACCO
+            // ====================================================
+
+            if (
+                attackData?.executed ===
+                true
+            ) {
+
+                const isFireBolt =
+                    attackData.ability ===
+                    "dardo_di_fuoco";
+
+
+                const actionText =
+                    isFireBolt
+
+                        ? `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
+
+                        : `${attackData.attacker_name} attacca ${attackData.target_name}: `;
+
+
+                if (
+                    attackData.hit ===
+                    true
+                ) {
+
+                    let attackText =
+                        actionText
+                        +
+                        `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                        +
+                        `contro DIF ${attackData.defense}. `
+                        +
+                        `${attackData.damage} danni`
+                        +
+                        ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
+
+
+                    if (
+                        isFireBolt
+                        &&
+                        attackData.current_pm !==
+                        undefined
+                    ) {
+
+                        attackText +=
+                            ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
+
+                    }
+
+
+                    if (
+                        attackData.target_dead
+                    ) {
+
+                        attackText +=
+                            ` · ${attackData.target_name} è sconfitto!`;
+
+                    }
+
+
+                    addCombatLog(
+                        attackText
+                    );
+
+                } else {
+
+                    let missText =
+                        actionText
+                        +
+                        `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                        +
+                        `contro DIF ${attackData.defense}. MANCATO.`;
+
+
+                    if (
+                        isFireBolt
+                        &&
+                        attackData.current_pm !==
+                        undefined
+                    ) {
+
+                        missText +=
+                            ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
+
+                    }
+
+
+                    addCombatLog(
+                        missText
+                    );
+
+                }
+
+            }
+
         }
-
-
-        // ====================================================
+                // ====================================================
         // FINE TURNO AUTOMATICA IA
         // ====================================================
 
@@ -975,7 +1189,6 @@ async function runEnemyAI(
             await db.rpc(
                 "finish_enemy_turn",
                 {
-
                     p_combat_id:
                         combatId,
 
@@ -986,7 +1199,6 @@ async function runEnemyAI(
                         Number(
                             combatSession.round_number
                         )
-
                 }
             );
 
