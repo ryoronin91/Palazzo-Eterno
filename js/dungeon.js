@@ -4979,17 +4979,16 @@ async function triggerTrapEvent(
         // ====================================================
 
         if (
-            triggerData?.triggered !==
-            true
-        ) {
+    triggerData !==
+    true
+) {
 
-            eventLocked =
-                false;
+    eventLocked =
+        false;
 
+    return;
 
-            return;
-
-        }
+}
 
 
         // ====================================================
