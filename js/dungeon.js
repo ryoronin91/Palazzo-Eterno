@@ -5444,43 +5444,6 @@ function escapeTrapHtml(
 
 }
 
-
-        // ====================================================
-        // MORTE
-        // ====================================================
-
-        if (
-            newHealth <= 0
-        ) {
-
-            await handleCharacterDeath();
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore trappola:",
-            error
-        );
-
-
-        setMessage(
-            "Errore durante la risoluzione della trappola."
-        );
-
-
-    } finally {
-
-        eventLocked =
-            false;
-
-    }
-
-}
-
-
 // ============================================================
 // MORTE
 // ============================================================
