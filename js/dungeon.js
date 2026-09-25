@@ -4997,11 +4997,49 @@ async function triggerTrapEvent(
         ) {
 
             setMessage(
-                `${dungeonTrap.name}: ${dungeonTrap.message} ` +
-                `1d10 (${roll}) - LCK ${luck} = ${trapResult} ` +
-                `contro ${dungeonTrap.defenseLabel} ${defense}. ` +
-                `Riesci a evitare la trappola.`
+                "Riesci a evitare la trappola."
             );
+
+
+            openTrapResultPrompt({
+
+                title:
+                    dungeonTrap.name,
+
+                message:
+                    dungeonTrap.message,
+
+                roll:
+                    roll,
+
+                luck:
+                    luck,
+
+                trapResult:
+                    trapResult,
+
+                defenseLabel:
+                    dungeonTrap.defenseLabel,
+
+                defense:
+                    defense,
+
+                damage:
+                    0,
+
+                currentHealth:
+                    oldHealth,
+
+                maxHealth:
+                    stats.maxHealth,
+
+                avoided:
+                    true,
+
+                lethal:
+                    false
+
+            });
 
 
             return;
@@ -5050,24 +5088,49 @@ async function triggerTrapEvent(
 
 
         setMessage(
-            `${dungeonTrap.name}: ${dungeonTrap.message} ` +
-            `1d10 (${roll}) - LCK ${luck} = ${trapResult} ` +
-            `contro ${dungeonTrap.defenseLabel} ${defense}. ` +
-            `Perdi ${damage} PF.`
+            `La trappola ti colpisce: perdi ${damage} PF.`
         );
 
 
-        // ====================================================
-        // MORTE
-        // ====================================================
+        openTrapResultPrompt({
 
-        if (
-            newHealth <= 0
-        ) {
+            title:
+                dungeonTrap.name,
 
-            await handleCharacterDeath();
+            message:
+                dungeonTrap.message,
 
-        }
+            roll:
+                roll,
+
+            luck:
+                luck,
+
+            trapResult:
+                trapResult,
+
+            defenseLabel:
+                dungeonTrap.defenseLabel,
+
+            defense:
+                defense,
+
+            damage:
+                damage,
+
+            currentHealth:
+                newHealth,
+
+            maxHealth:
+                stats.maxHealth,
+
+            avoided:
+                false,
+
+            lethal:
+                newHealth <= 0
+
+        });
 
 
     } catch (error) {
@@ -5083,12 +5146,216 @@ async function triggerTrapEvent(
         );
 
 
-    } finally {
-
         eventLocked =
             false;
 
     }
+
+}
+
+
+// ============================================================
+// POPUP RISULTATO TRAPPOLA
+// ============================================================
+
+function openTrapResultPrompt(
+    result
+) {
+
+    const oldOverlay =
+        document.getElementById(
+            "trap-event-overlay"
+        );
+
+
+    if (oldOverlay) {
+
+        oldOverlay.remove();
+
+    }
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "trap-event-overlay";
+
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    const resultText =
+        result.avoided
+
+            ? "RIESCI A EVITARE LA TRAPPOLA"
+
+            : `SUBISCI ${result.damage} DANNI`;
+
+
+    modal.innerHTML = `
+
+        <div class="combat-event-icon">
+            ⚠
+        </div>
+
+        <h2>
+            ${escapeTrapHtml(
+                result.title
+            )}
+        </h2>
+
+        <p>
+            ${escapeTrapHtml(
+                result.message
+            )}
+        </p>
+
+        <div class="combat-event-warning">
+
+            <div>
+                <strong>Tiro:</strong>
+                1d10 = ${result.roll}
+            </div>
+
+            <div>
+                <strong>LCK:</strong>
+                ${result.luck}
+            </div>
+
+            <div>
+                <strong>Risultato:</strong>
+                ${result.roll} - ${result.luck}
+                = ${result.trapResult}
+            </div>
+
+            <div>
+                <strong>${escapeTrapHtml(
+                    result.defenseLabel
+                )}:</strong>
+                ${result.defense}
+            </div>
+
+            <br>
+
+            <div>
+                <strong>
+                    ${escapeTrapHtml(
+                        resultText
+                    )}
+                </strong>
+            </div>
+
+            <div>
+                Vita:
+                ${result.currentHealth}
+                /
+                ${result.maxHealth}
+            </div>
+
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="trap-event-close"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                CONTINUA
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "trap-event-close"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                overlay.remove();
+
+
+                if (
+                    result.lethal ===
+                    true
+                ) {
+
+                    await handleCharacterDeath();
+
+                    return;
+
+                }
+
+
+                eventLocked =
+                    false;
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// ESCAPE HTML POPUP TRAPPOLA
+// ============================================================
+
+function escapeTrapHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 
