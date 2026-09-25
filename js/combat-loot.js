@@ -974,9 +974,7 @@ function setupVictoryExitButton() {
         );
 
 
-    if (
-        !button
-    ) {
+    if (!button) {
 
         return;
 
@@ -985,10 +983,121 @@ function setupVictoryExitButton() {
 
     button.addEventListener(
         "click",
-        () => {
+        async () => {
 
-            stopVictoryLootDraftLoop();
+            try {
 
+                // ====================================================
+                // AZZERA STATO COMBATTIMENTO DEL PERSONAGGIO
+                // ====================================================
+
+                if (
+                    currentCharacter?.id
+                ) {
+
+                    const {
+                        error
+                    } =
+                        await db
+                            .from(
+                                "characters"
+                            )
+                            .update({
+
+                                active_combat_id:
+                                    null
+
+                            })
+                            .eq(
+                                "id",
+                                currentCharacter.id
+                            );
+
+
+                    if (
+                        error
+                    ) {
+
+                        throw error;
+
+                    }
+
+
+                    currentCharacter.active_combat_id =
+                        null;
+
+                }
+
+
+                // ====================================================
+                // AGGIORNA PRESENCE NEL DUNGEON
+                // ====================================================
+
+                if (
+                    combatDungeonChannel &&
+                    currentCharacter &&
+                    currentUser
+                ) {
+
+                    await combatDungeonChannel.track({
+
+                        character_id:
+                            currentCharacter.id,
+
+                        user_id:
+                            currentUser.id,
+
+                        name:
+                            currentCharacter.nome ||
+                            "Avventuriero",
+
+                        token:
+                            currentCharacter.token ||
+                            "token_1.png",
+
+                        x:
+                            Number(
+                                currentCharacter.dungeon_x
+                            ),
+
+                        y:
+                            Number(
+                                currentCharacter.dungeon_y
+                            ),
+
+                        current_hp:
+                            currentCharacter.current_hp,
+
+                        active_combat_id:
+                            null,
+
+                        in_combat:
+                            false,
+
+                        online_at:
+                            new Date()
+                                .toISOString()
+
+                    });
+
+                }
+
+
+            } catch (
+                error
+            ) {
+
+                console.error(
+                    "Errore uscita dal combattimento:",
+                    error
+                );
+
+            }
+
+
+            // ====================================================
+            // TORNA NEL DUNGEON
+            // ====================================================
 
             window.location.href =
                 "dungeon.html";
