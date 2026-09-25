@@ -4822,6 +4822,13 @@ const DUNGEON_TRAPS = {
 
 async function checkDungeonCellEvent() {
 
+    console.log(
+        "DEBUG TRAPPOLA - posizione PG:",
+        playerX,
+        playerY
+    );
+
+
     if (
         playerX === null ||
         playerY === null
@@ -4836,10 +4843,22 @@ async function checkDungeonCellEvent() {
         `${Number(playerX)},${Number(playerY)}`;
 
 
+    console.log(
+        "DEBUG TRAPPOLA - chiave:",
+        coordinateKey
+    );
+
+
     const dungeonTrap =
         DUNGEON_TRAPS[
             coordinateKey
         ];
+
+
+    console.log(
+        "DEBUG TRAPPOLA - trovata:",
+        dungeonTrap
+    );
 
 
     if (!dungeonTrap) {
@@ -4847,6 +4866,12 @@ async function checkDungeonCellEvent() {
         return false;
 
     }
+
+
+    console.log(
+        "DEBUG TRAPPOLA - ATTIVO:",
+        dungeonTrap.id
+    );
 
 
     await triggerTrapEvent(
@@ -4924,6 +4949,20 @@ async function triggerTrapEvent(
 
                 }
             );
+
+            console.log(
+    "DEBUG RPC TRAPPOLA:",
+    {
+        trap:
+            dungeonTrap.id,
+
+        data:
+            triggerData,
+
+        error:
+            triggerError
+    }
+);
 
 
         if (triggerError) {
