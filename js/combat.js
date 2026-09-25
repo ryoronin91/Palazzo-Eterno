@@ -73,6 +73,8 @@ let enemyAITurnKey = null;
 let enemyAIInProgress = false;
 
 
+
+
 // ============================================================
 // MODALITÀ BERSAGLIO
 //
@@ -1738,6 +1740,22 @@ async function updateCombatTurnUI() {
 
     }
 
+// ========================================================
+// AGGIORNA TURN ORDER QUANDO CAMBIA TURNO
+// ========================================================
+
+if (
+    lastRenderedTurnEntityId !==
+    currentEntity.id
+) {
+
+    lastRenderedTurnEntityId =
+        currentEntity.id;
+
+
+    renderCombatEntityList();
+
+}
 
     // ========================================================
     // TIMER
