@@ -66,19 +66,65 @@ const DUNGEON_COMMUNICATION_EVENTS = [
         id: "stairs_down",
         x: 11,
         y: 17,
+        type: "stairs",
         message:
-            "Queste scale scendono ad un piano inferiore."
+            "Queste scale scendono verso il prossimo livello del Palazzo."
     },
 
     {
         id: "dead_end",
         x: 15,
         y: 22,
+        type: "monkey_finger",
         message:
-            "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì"
+            "Il vicolo cieco nasconde qualcosa tra le macerie."
     }
 
 ];
+
+// ============================================================
+// EVENTI COMUNICAZIONE - UTILITÀ
+// ============================================================
+
+function escapeCommunicationHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+// ============================================================
+// TROVA EVENTO COMUNICAZIONE SULLA CASELLA ATTUALE
+// ============================================================
+
+function getCurrentCommunicationEvent() {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return null;
+
+    }
+
+
+    return DUNGEON_COMMUNICATION_EVENTS.find(
+        dungeonEvent =>
+            Number(dungeonEvent.x) === Number(playerX) &&
+            Number(dungeonEvent.y) === Number(playerY)
+    ) || null;
+
+}
 
 
 // ============================================================
@@ -87,61 +133,659 @@ const DUNGEON_COMMUNICATION_EVENTS = [
 
 function checkCommunicationEvent() {
 
-    if (
-        playerX === null ||
-        playerY === null
-    ) {
+    const dungeonEvent =
+        getCurrentCommunicationEvent();
+
+
+    if (!dungeonEvent) {
 
         return false;
 
     }
-
-
-    const communicationEvent =
-        DUNGEON_COMMUNICATION_EVENTS.find(
-            dungeonEvent =>
-
-                Number(
-                    dungeonEvent.x
-                ) ===
-                Number(
-                    playerX
-                )
-
-                &&
-
-                Number(
-                    dungeonEvent.y
-                ) ===
-                Number(
-                    playerY
-                )
-        );
-
-
-    if (
-        !communicationEvent
-    ) {
-
-        return false;
-
-    }
-
-
-    setMessage(
-        communicationEvent.message
-    );
 
 
     console.log(
-        "Evento comunicazione:",
-        communicationEvent
+        `Evento comunicazione: ${dungeonEvent.id}`,
+        dungeonEvent
     );
 
 
-    return true;
+    if (
+        dungeonEvent.type ===
+        "stairs"
+    ) {
+
+        openStairsPrompt(
+            dungeonEvent
+        );
+
+        return true;
+
+    }
+
+
+    if (
+        dungeonEvent.type ===
+        "monkey_finger"
+    ) {
+
+        triggerMonkeyFingerEvent(
+            dungeonEvent
+        );
+
+        return true;
+
+    }
+
+
+    return false;
 
 }
+
+
+// ============================================================
+// POPUP SCALE
+// ============================================================
+
+function openStairsPrompt(
+    dungeonEvent
+) {
+
+    if (
+        !dungeonEvent ||
+        document.getElementById(
+            "stairs-event-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "stairs-event-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ▼
+        </div>
+
+        <h2>
+            SCALE
+        </h2>
+
+        <p>
+            ${escapeCommunicationHtml(
+                dungeonEvent.message
+            )}
+        </p>
+
+        <div class="combat-event-warning">
+            Scendere al prossimo livello conclude
+            questa esplorazione e assegna
+            <strong>+50 punti</strong>.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="stairs-stay-button"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                RIMANI
+            </button>
+
+            <button
+                id="stairs-descend-button"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                SCENDI AL PROSSIMO LIVELLO
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "stairs-stay-button"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                overlay.remove();
+
+                eventLocked =
+                    false;
+
+                setMessage(
+                    "Decidi di rimanere su questo piano."
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "stairs-descend-button"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await descendToNextFloor();
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// SCENDI AL PROSSIMO LIVELLO
+// +50 SCORE, ARCHIVIA LA RUN, ELIMINA IL PG, PAGINA MORTE
+// ============================================================
+
+async function descendToNextFloor() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "stairs-descend-button"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "DISCESA...";
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    try {
+
+        const characterId =
+            character.id;
+
+        const deadName =
+            character.nome ||
+            "Avventuriero";
+
+        const currentScore =
+            Number(
+                character.score
+            ) || 0;
+
+        const scoreWithFloorBonus =
+            currentScore + 50;
+
+
+        // ----------------------------------------------------
+        // 1. BONUS DISCESA
+        // ----------------------------------------------------
+
+        const {
+            error: scoreError
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .update({
+                    score:
+                        scoreWithFloorBonus
+                })
+                .eq(
+                    "id",
+                    characterId
+                );
+
+
+        if (scoreError) {
+
+            throw scoreError;
+
+        }
+
+
+        character.score =
+            scoreWithFloorBonus;
+
+
+        // ----------------------------------------------------
+        // 2. SCORE FINALE
+        // Include anche il valore degli oggetti in inventario.
+        // ----------------------------------------------------
+
+        const {
+            data: finalScoreData,
+            error: finalScoreError
+        } =
+            await db.rpc(
+                "get_character_final_score",
+                {
+                    p_character_id:
+                        characterId
+                }
+            );
+
+
+        if (finalScoreError) {
+
+            throw finalScoreError;
+
+        }
+
+
+        const deadFinalScore =
+            Number(
+                finalScoreData
+            ) || 0;
+
+
+        // ----------------------------------------------------
+        // 3. ARCHIVIA LA RUN
+        // ----------------------------------------------------
+
+        const {
+            error: archiveError
+        } =
+            await db
+                .from(
+                    "dead_characters"
+                )
+                .insert({
+
+                    character_id:
+                        characterId,
+
+                    user_id:
+                        character.user_id ||
+                        currentUser?.id ||
+                        null,
+
+                    character_name:
+                        deadName,
+
+                    score:
+                        deadFinalScore
+
+                });
+
+
+        if (archiveError) {
+
+            throw archiveError;
+
+        }
+
+
+        // ----------------------------------------------------
+        // 4. RIMUOVE PRESENCE
+        // ----------------------------------------------------
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            try {
+
+                await dungeonChannel.untrack();
+
+            } catch (presenceError) {
+
+                console.error(
+                    "Errore untrack durante discesa:",
+                    presenceError
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------------
+        // 5. ELIMINA IL PERSONAGGIO VIVO
+        // ----------------------------------------------------
+
+        const {
+            error: deleteError
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .delete()
+                .eq(
+                    "id",
+                    characterId
+                );
+
+
+        if (deleteError) {
+
+            throw deleteError;
+
+        }
+
+
+        character =
+            null;
+
+
+        // ----------------------------------------------------
+        // 6. PAGINA FINALE
+        // ----------------------------------------------------
+
+        window.location.href =
+            `morte.html?nome=${encodeURIComponent(
+                deadName
+            )}&score=${encodeURIComponent(
+                deadFinalScore
+            )}`;
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore discesa al prossimo livello:",
+            error
+        );
+
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile scendere al prossimo livello."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "SCENDI AL PROSSIMO LIVELLO";
+
+        }
+
+
+        eventLocked =
+            false;
+
+    }
+
+}
+
+
+// ============================================================
+// VICOLO CIECO - DITO DI SCIMMIA
+// ============================================================
+
+async function triggerMonkeyFingerEvent(
+    dungeonEvent
+) {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    setMessage(
+        dungeonEvent?.message ||
+        "Cerchi tra le macerie..."
+    );
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "claim_monkey_finger",
+                {
+                    p_character_id:
+                        character.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (
+            data?.obtained ===
+            true
+        ) {
+
+            if (
+                typeof loadCharacterEquipment ===
+                "function"
+            ) {
+
+                await loadCharacterEquipment();
+
+            }
+
+
+            openSimpleDungeonEventPrompt(
+                "DITO DI SCIMMIA",
+                "Tra le macerie trovi un piccolo dito mummificato. Hai ottenuto il Dito di Scimmia."
+            );
+
+        } else {
+
+            openSimpleDungeonEventPrompt(
+                "VICOLO CIECO",
+                "Cerchi tra le macerie, ma non trovi nulla di utile."
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore Dito di Scimmia:",
+            error
+        );
+
+
+        openSimpleDungeonEventPrompt(
+            "VICOLO CIECO",
+            "Non riesci a recuperare ciò che si nasconde tra le macerie."
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// POPUP SEMPLICE EVENTO DUNGEON
+// ============================================================
+
+function openSimpleDungeonEventPrompt(
+    title,
+    message
+) {
+
+    const oldOverlay =
+        document.getElementById(
+            "communication-event-overlay"
+        );
+
+
+    if (oldOverlay) {
+
+        oldOverlay.remove();
+
+    }
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "communication-event-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ◆
+        </div>
+
+        <h2>
+            ${escapeCommunicationHtml(
+                title
+            )}
+        </h2>
+
+        <p>
+            ${escapeCommunicationHtml(
+                message
+            )}
+        </p>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="communication-event-close"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                CONTINUA
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "communication-event-close"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                overlay.remove();
+
+                eventLocked =
+                    false;
+
+            }
+        );
+
+}
+
 
 // ============================================================
 // POPUP COMBATTIMENTO
@@ -491,6 +1135,11 @@ document.addEventListener(
             DUNGEON_COMBAT_EVENTS
         );
 
+        console.log(
+            "Eventi comunicazione disponibili:",
+            DUNGEON_COMMUNICATION_EVENTS
+        );
+
 
         renderCombatEvents();
 
@@ -577,6 +1226,24 @@ function getNearbyCombatEvent() {
 
 function checkNearbyCombatEvents() {
 
+    // ========================================================
+    // EVENTO COMUNICAZIONE SULLA CASELLA ATTUALE
+    // ========================================================
+
+    if (
+        checkCommunicationEvent() ===
+        true
+    ) {
+
+        return true;
+
+    }
+
+
+    // ========================================================
+    // EVENTO COMBAT NELLE VICINANZE
+    // ========================================================
+
     const combatEvent =
         getNearbyCombatEvent();
 
@@ -615,16 +1282,17 @@ function checkNearbyCombatEvents() {
 
 
     setMessage(
-    "Percepisci una presenza ostile nelle vicinanze."
-);
+        "Percepisci una presenza ostile nelle vicinanze."
+    );
 
 
-openCombatPrompt(
-    combatEvent
-);
+    openCombatPrompt(
+        combatEvent
+    );
 
 
-return true;
+    return true;
+
 }
 
 // ============================================================
