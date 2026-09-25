@@ -828,31 +828,33 @@ async function loadCombatEntities() {
         }
     );
 
+
+    // ============================================================
+    // ORDINE TURNI BASE
+    // ============================================================
+
+    if (
+        combatTurnOrder.length === 0
+    ) {
+
+        combatTurnOrder =
+            (
+                data ||
+                []
+            ).map(
+                entity =>
+                    entity.id
+            );
+
+    }
+
+
+    console.log(
+        "ORDINE TURNI BASE:",
+        combatTurnOrder
+    );
+
 }
-
-// ============================================================
-// ORDINE TURNI BASE
-// ============================================================
-
-if (
-    combatTurnOrder.length === 0
-) {
-
-    combatTurnOrder =
-        (
-            data ||
-            []
-        ).map(
-            entity =>
-                entity.id
-        );
-
-}
-
-console.log(
-    "ORDINE TURNI BASE:",
-    combatTurnOrder
-);
 // ============================================================
 // EFFETTI PERSISTENTI DEL PERSONAGGIO
 // ============================================================
