@@ -722,6 +722,265 @@ async function runEnemyAI(
 
 
         // ====================================================
+        // GOBLIN BOSS
+        // ====================================================
+
+        if (
+            monsterType ===
+            "goblin_boss"
+        ) {
+
+            console.log(
+                "IA: GOBLIN BOSS"
+            );
+
+
+            const {
+                data: bossData,
+                error: bossError
+            } =
+                await db.rpc(
+                    "run_goblin_boss_turn",
+                    {
+                        p_combat_id:
+                            combatId
+                    }
+                );
+
+
+            if (
+                bossError
+            ) {
+
+                throw bossError;
+
+            }
+
+
+            console.log(
+                "AZIONE IA GOBLIN BOSS:",
+                bossData
+            );
+
+
+            if (
+                bossData?.spawned_enemy_name
+            ) {
+
+                addCombatLog(
+                    `${bossData.boss_name || "Goblin Boss"} evoca ${bossData.spawned_enemy_name}!`
+                );
+
+            }
+
+
+            const bossMove =
+                bossData?.move ||
+                null;
+
+
+            if (
+                bossMove?.executed ===
+                true
+                &&
+                Number(
+                    bossMove.steps
+                ) > 0
+            ) {
+
+                addCombatLog(
+                    `${bossMove.enemy_name || bossData.boss_name || "Goblin Boss"} si muove di ${bossMove.steps} ${
+                        Number(bossMove.steps) === 1
+                            ? "quadretto"
+                            : "quadretti"
+                    } verso ${bossMove.target_name}.`
+                );
+
+            }
+
+
+            if (
+                bossData?.mode ===
+                "heal"
+            ) {
+
+                addCombatLog(
+                    `${bossData.boss_name || "Goblin Boss"} usa Cura su se stesso: `
+                    +
+                    `+${bossData.heal_amount} PF `
+                    +
+                    `· PF ${bossData.current_hp}/${bossData.max_hp} `
+                    +
+                    `· PM ${bossData.current_pm}/${bossData.max_pm}.`
+                );
+
+            }
+
+
+            if (
+                bossData?.mode ===
+                "fire_bolt"
+                &&
+                bossData?.attack
+            ) {
+
+                const attackData =
+                    bossData.attack;
+
+
+                if (
+                    attackData.hit ===
+                    true
+                ) {
+
+                    let attackText =
+                        `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
+                        +
+                        `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                        +
+                        `contro DIF ${attackData.defense}. `
+                        +
+                        `${attackData.damage} danni`
+                        +
+                        ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`
+                        +
+                        ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
+
+
+                    if (
+                        attackData.target_dead
+                    ) {
+
+                        attackText +=
+                            ` · ${attackData.target_name} è sconfitto!`;
+
+                    }
+
+
+                    addCombatLog(
+                        attackText
+                    );
+
+                } else {
+
+                    addCombatLog(
+                        `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
+                        +
+                        `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                        +
+                        `contro DIF ${attackData.defense}. MANCATO. `
+                        +
+                        `PM ${attackData.current_pm}/${attackData.max_pm}.`
+                    );
+
+                }
+
+            }
+
+
+            if (
+                bossData?.mode ===
+                "fire_bolt_out_of_range"
+            ) {
+
+                addCombatLog(
+                    `${bossData.boss_name || "Goblin Boss"} prova a prendere di mira ${bossData.target_name}, `
+                    +
+                    `ma resta fuori portata (${bossData.distance}/${bossData.range}).`
+                );
+
+            }
+
+
+            if (
+                bossData?.mode ===
+                "double_melee"
+            ) {
+
+                const attacks = [
+                    bossData.attack_1,
+                    bossData.attack_2
+                ];
+
+
+                attacks.forEach(
+                    (
+                        attackData,
+                        index
+                    ) => {
+
+                        if (
+                            !attackData?.executed
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        if (
+                            attackData.hit ===
+                            true
+                        ) {
+
+                            let attackText =
+                                `${attackData.attacker_name} attacca ${attackData.target_name} `
+                                +
+                                `(colpo ${index + 1}/2): `
+                                +
+                                `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                                +
+                                `contro DIF ${attackData.defense}. `
+                                +
+                                `${attackData.damage} danni`
+                                +
+                                ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
+
+
+                            if (
+                                attackData.target_dead
+                            ) {
+
+                                attackText +=
+                                    ` · ${attackData.target_name} è sconfitto!`;
+
+                            }
+
+
+                            addCombatLog(
+                                attackText
+                            );
+
+                        } else {
+
+                            addCombatLog(
+                                `${attackData.attacker_name} attacca ${attackData.target_name} `
+                                +
+                                `(colpo ${index + 1}/2): `
+                                +
+                                `1d10 (${attackData.roll}) + ATT ${attackData.attack} = ${attackData.total} `
+                                +
+                                `contro DIF ${attackData.defense}. MANCATO.`
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+
+
+            await loadCombatEntities();
+
+
+            lastCombatEntitiesSnapshot =
+                createCombatSnapshot();
+
+
+            renderCombat();
+
+        } else         // ====================================================
         // GOBLIN SCIAMANO
         //
         // La RPC dedicata decide autonomamente se:

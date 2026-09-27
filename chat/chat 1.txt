@@ -1,0 +1,498 @@
+RIASSUNTO CHAT – PALAZZO ETERNO
+================================
+
+Contesto generale
+-----------------
+Sessione dedicata allo sviluppo del sistema di combattimento, vittoria, score nascosto e loot di Palazzo Eterno, con frontend HTML/JS e backend Supabase/PostgreSQL.
+
+OBIETTIVI PRINCIPALI AFFRONTATI
+-------------------------------
+1. Assegnare score ai PG quando uccidono un nemico.
+2. Mantenere lo score completamente nascosto durante il piano.
+3. Rilevare automaticamente la vittoria quando muore l’ultimo nemico.
+4. Mostrare una schermata VITTORIA nel combat.
+5. Aggiungere un pulsante ESCI dalla schermata vittoria.
+6. Correggere PF/PM all’ingresso di un nuovo combattimento.
+7. Progettare e iniziare a implementare il sistema loot persistente.
+8. Definire la divisione delle monete in base allo score nascosto.
+
+MODIFICHE EFFETTUATE
+====================
+
+1. SCORE DEI PERSONAGGI
+-----------------------
+È stata aggiunta la colonna score alla tabella characters:
+
+ALTER TABLE public.characters
+ADD COLUMN IF NOT EXISTS score integer NOT NULL DEFAULT 0;
+
+UPDATE public.characters
+SET score = 0
+WHERE score IS NULL;
+
+Sono stati aggiunti alla tabella combat_entities i campi:
+
+- killed_by_character_id
+- score_awarded
+
+con lo scopo di:
+- registrare chi ha dato il colpo di grazia;
+- evitare che lo score venga assegnato due volte allo stesso nemico.
+
+2. COMBAT_BASIC_ATTACK
+----------------------
+La funzione public.combat_basic_attack è stata aggiornata per:
+
+- mantenere il sistema di attacco esistente;
+- usare bonus equipaggiamento e buff temporanei;
+- calcolare attacco e critico;
+- segnare il nemico come dead a 0 PF;
+- assegnare al killer enemies.score_value;
+- impostare killed_by_character_id;
+- impostare score_awarded = true.
+
+Importante:
+lo score viene aggiornato nel database ma NON viene restituito nel JSON della RPC.
+
+Quindi il giocatore non vede:
+- score guadagnato;
+- score totale.
+
+3. COMBAT_FIRE_BOLT
+-------------------
+La funzione public.combat_fire_bolt è stata aggiornata con la stessa logica dello score:
+
+- il colpo di grazia assegna score;
+- score_awarded impedisce doppie assegnazioni;
+- killed_by_character_id salva il killer;
+- nessun dato relativo allo score viene restituito al browser.
+
+La funzione continua anche a:
+- consumare PM;
+- sincronizzare current_pm su combat_entities e characters;
+- applicare critico e danno;
+- rispettare la portata basata su INT.
+
+4. SCORE NASCOSTO
+-----------------
+Regola confermata:
+
+Lo score deve restare COMPLETAMENTE NASCOSTO durante il piano.
+
+Viene rivelato solo:
+- alla morte del PG;
+- quando il PG scende le scale verso il livello successivo.
+
+Lo score può comunque essere usato dal server per:
+- ordine di distribuzione loot;
+- assegnazione resti monete;
+- priorità di scelta oggetti.
+
+5. VITTORIA AUTOMATICA
+----------------------
+Dentro combat_basic_attack e combat_fire_bolt è stato aggiunto un controllo dopo la morte del bersaglio.
+
+Se non esistono più nemici con:
+- entity_type = 'enemy'
+- status = 'alive'
+- current_hp > 0
+
+la sessione viene aggiornata:
+
+status = 'victory'
+current_turn_entity_id = NULL
+
+Questo ha funzionato: in interfaccia compariva inizialmente “Stato: victory”.
+
+6. OVERLAY VITTORIA
+-------------------
+Nel combat.html è stato aggiunto:
+
+- overlay #combat-victory-overlay
+- pannello centrale
+- titolo VITTORIA
+- testo “Tutti i nemici sono stati sconfitti.”
+- contenitore #combat-victory-loot
+
+È stato aggiunto il CSS relativo alla schermata vittoria.
+
+Nel combat.js è stata aggiunta:
+
+renderCombatVictory()
+
+che:
+- mostra l’overlay se combatSession.status === 'victory';
+- lo nasconde negli altri casi;
+- annulla eventuale targeting attivo.
+
+Inizialmente l’overlay non compariva perché veniva ridisegnato solo quando cambiavano le entità.
+Correzione effettuata:
+
+renderCombatVictory();
+
+viene chiamata subito dopo:
+
+await loadCombatSession();
+
+dentro refreshCombatState().
+
+Dopo questa modifica l’overlay VITTORIA ha iniziato a comparire correttamente.
+
+7. PULSANTE ESCI
+----------------
+Nella schermata VITTORIA è stato aggiunto il pulsante:
+
+#combat-victory-exit
+
+Nel combat.js è stata aggiunta:
+
+setupVictoryExitButton()
+
+Il pulsante reindirizza a:
+
+dungeon.html
+
+Questo permette di uscire dal combat e continuare i test.
+
+8. PROBLEMA PF/PM TRA COMBATTIMENTI
+-----------------------------------
+Problema rilevato:
+entrando in un nuovo combattimento, il PG riceveva PF e PM massimi invece dei valori realmente rimasti sulla scheda.
+
+È stata analizzata la funzione:
+
+public.sync_combat_player_stats
+
+Problema:
+usava:
+
+v_entity.current_hp
+v_entity.current_pm
+
+cioè i valori della nuova entità combat, che nasceva già piena.
+
+Correzione:
+ora usa:
+
+v_character.current_hp
+v_character.current_pm
+
+quindi i valori persistenti dalla tabella characters.
+
+Comportamento corretto ora:
+se il PG ha, per esempio:
+
+PF 7 / 20
+PM 3 / 15
+
+entra nel nuovo combat con:
+
+PF 7 / 20
+PM 3 / 15
+
+Il movimento viene invece ripristinato correttamente al massimo a ogni nuovo combattimento.
+
+La correzione è stata testata e confermata funzionante.
+
+9. STRUTTURA LOOT ESISTENTE
+---------------------------
+È stato verificato lo schema Supabase.
+
+Tabelle rilevanti:
+
+character_inventory
+- id
+- character_id
+- item_id
+- quantity
+- equipped_slot
+- created_at
+- updated_at
+
+enemy_loot
+- id
+- enemy_id
+- item_id
+- drop_chance
+- min_quantity
+- max_quantity
+- created_at
+
+items
+- id
+- name
+- description
+- item_type
+- equip_slot
+- hand_rule
+- stackable
+- max_stack
+- bonus vari
+- heal_pf
+- heal_pm
+- gold_value
+- unique_world
+- vendor_unlimited
+- recipe_only
+- created_at
+
+item_scores
+- item_id
+- score_value
+
+10. MONETA D’ORO
+----------------
+È stato verificato che l’oro è già gestito come normale oggetto:
+
+item_id = 'moneta_oro'
+
+Caratteristiche:
+- item_type = currency
+- stackable = true
+- max_stack = 999999
+
+Quindi non serve una colonna oro separata sul personaggio.
+
+11. DROP DEI GOBLIN
+-------------------
+Dalle configurazioni attuali di enemy_loot:
+
+Goblin
+- moneta_oro: 100%, quantità 1–11
+- orecchio_goblin: 10%, quantità 1
+
+Goblin Sciamano
+- moneta_oro: 100%, quantità 1–11
+- orecchio_goblin: 20%
+- pietra_goblin: 10%
+
+Goblin Sputafuoco
+- moneta_oro: 100%, quantità 1–11
+- orecchio_goblin: 20%
+- lingua_bruciata: 10%
+
+12. TABELLA COMBAT_LOOT
+-----------------------
+È stata creata la tabella:
+
+public.combat_loot
+
+Campi:
+- id
+- combat_id
+- source_entity_id
+- item_id
+- quantity
+- claimed_by_character_id
+- claimed_at
+- created_at
+
+Sono stati aggiunti gli indici su:
+- combat_id
+- item_id
+- claimed_by_character_id
+
+È stata aggiunta a combat_sessions la colonna:
+
+loot_generated boolean NOT NULL DEFAULT false
+
+Scopo:
+il loot deve essere generato UNA SOLA VOLTA e rimanere identico per tutti.
+
+13. GENERATE_COMBAT_LOOT
+------------------------
+È stata creata la RPC:
+
+public.generate_combat_loot(p_combat_id uuid)
+
+Funzionamento:
+- verifica che la sessione esista;
+- verifica che il chiamante appartenga al combattimento;
+- richiede status = 'victory';
+- se loot_generated = true non rigenera;
+- scorre tutti i nemici presenti nel combat;
+- legge enemy_loot;
+- tira random() per drop_chance;
+- tira una quantità casuale tra min_quantity e max_quantity;
+- salva i drop in combat_loot;
+- imposta loot_generated = true.
+
+14. GET_COMBAT_LOOT
+-------------------
+È stata creata la RPC:
+
+public.get_combat_loot(p_combat_id uuid)
+
+Restituisce:
+- loot_id
+- item_id
+- item_name
+- item_type
+- quantity
+- claimed_by_character_id
+
+Ordina le monete prima degli altri oggetti.
+
+15. VISUALIZZAZIONE LOOT NELLA VITTORIA
+---------------------------------------
+Nel combat.js è stata preparata la logica per:
+
+- victoryLootLoaded
+- victoryLootLoading
+
+Dentro renderCombatVictory(), quando arriva la vittoria:
+- chiama loadVictoryLoot() una sola volta.
+
+loadVictoryLoot():
+1. chiama generate_combat_loot;
+2. chiama get_combat_loot;
+3. passa i dati a renderVictoryLoot().
+
+renderVictoryLoot():
+- somma tutte le monete;
+- raggruppa gli altri oggetti per item_id;
+- mostra il bottino nella schermata vittoria.
+
+Esempio visuale previsto:
+
+17 Monete d’oro
+Orecchio goblin ×2
+Pietra goblin ×1
+
+È stato aggiunto anche CSS per:
+- .victory-loot-gold
+- .victory-loot-items
+- .victory-loot-item
+- .victory-loot-empty
+
+16. SCRIPT TEST VITTORIA RAPIDA
+-------------------------------
+È stato creato uno script SQL temporaneo di test che:
+
+- prende l’ultimo combattimento active;
+- imposta tutti i nemici vivi a:
+  current_hp = 0
+  status = 'dead'
+- imposta la sessione a:
+  status = 'victory'
+  current_turn_entity_id = NULL
+
+Scopo:
+arrivare rapidamente alla schermata VITTORIA senza combattere.
+
+Nota:
+questo script NON assegna score perché bypassa le RPC di attacco.
+
+Il test ha confermato che:
+- l’overlay victory compare;
+- il loot viene generato/mostrato.
+
+17. REGOLE DIVISIONE MONETE
+----------------------------
+Regole definite:
+
+- partecipano solo i PG vivi;
+- i PG morti non ricevono monete;
+- l’ordine è per score crescente;
+- a parità di score ha precedenza il PG creato più recentemente;
+- ulteriore tie-break tecnico: character id.
+
+Esempio:
+17 monete, 3 PG
+
+PG1 score più basso -> 6
+PG2 -> 6
+PG3 score più alto -> 5
+
+Il resto viene distribuito uno alla volta seguendo l’ordine di priorità.
+
+18. DISTRIBUTE_COMBAT_GOLD
+--------------------------
+È stata aggiunta a combat_sessions la colonna:
+
+gold_distributed boolean NOT NULL DEFAULT false
+
+È stata creata la RPC:
+
+public.distribute_combat_gold(p_combat_id uuid)
+
+Funzionamento:
+- verifica accesso;
+- richiede status = victory;
+- richiede loot_generated = true;
+- non distribuisce due volte;
+- somma tutti i combat_loot con item_id = 'moneta_oro';
+- conta solo i PG vivi;
+- calcola quota base e resto;
+- ordina i PG per:
+  score ASC
+  created_at DESC
+  id ASC
+- aggiunge la quota di monete all’inventario;
+- se esiste già uno stack moneta_oro lo aggiorna;
+- altrimenti crea una nuova riga;
+- imposta gold_distributed = true.
+
+19. STATO ATTUALE DEL LAVORO
+----------------------------
+Ultimo passo completato:
+la RPC distribute_combat_gold è stata creata con successo.
+
+Passo successivo pianificato:
+salvare quanto oro ha ricevuto ciascun PG in una tabella dedicata e creare una RPC che permetta a ogni giocatore di vedere SOLO la propria quota.
+
+Era stato proposto di creare:
+
+public.combat_gold_distribution
+
+con:
+- combat_id
+- character_id
+- quantity
+
+e la funzione:
+
+public.get_my_combat_gold(p_combat_id uuid)
+
+così la schermata vittoria potrà mostrare:
+
+“Hai ricevuto X monete”
+
+senza mostrare:
+- score;
+- ordine dei giocatori;
+- score degli altri.
+
+20. REGOLE LOOT OGGETTI – DA IMPLEMENTARE
+-----------------------------------------
+Il sistema concordato per gli oggetti non monetari è:
+
+- scelta basata su score crescente;
+- PG con score più basso sceglie per primo;
+- a parità di score precede il PG creato più recentemente;
+- ogni turno di scelta dura 30 secondi;
+- allo scadere il PG perde quella opportunità;
+- il PG può premere ESCI e rinunciare alle scelte rimanenti;
+- il sistema dovrà probabilmente ciclare tra i PG finché ci sono oggetti disponibili;
+- Giorno Paga verrà collegato in seguito al sistema loot.
+
+21. REGOLE SCORE NEMICI NOTE
+----------------------------
+Valori già stabiliti nel database:
+
+- Goblin -> 11
+- Goblin Sputafuoco -> 14
+- Goblin Sciamano -> 14
+
+22. NOTE TECNICHE IMPORTANTI
+----------------------------
+- Lo score NON deve essere esposto tramite RPC o UI durante il piano.
+- Le RPC che usano score lo fanno solo lato server.
+- PF/PM devono persistere tra un combattimento e l’altro.
+- Il loot deve essere generato una sola volta.
+- Le monete sono normali item stackabili.
+- La logica di vittoria è server-side.
+- Il browser si limita a rilevare status = victory e mostrare l’overlay.
+- La pagina combat ha già un pulsante ESCI funzionante verso dungeon.html.
+
+FINE RIASSUNTO
