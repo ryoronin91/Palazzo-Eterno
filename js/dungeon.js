@@ -2158,6 +2158,44 @@ function wait(
 }
 
 // ============================================================
+// VARCHI STANZA BOSS
+// ============================================================
+//
+// I due ingressi alla zona del Boss condividono lo stesso
+// permesso. Per ora l'accesso parte chiuso; nel passaggio
+// successivo questo stato verrà caricato da Supabase e
+// sbloccato tramite il popup con codice.
+//
+// ============================================================
+
+const BOSS_ROOM_GATE_CELLS = [
+    { x: 19, y: 16 },
+    { x: 16, y: 17 }
+];
+
+let bossRoomAccessUnlocked = false;
+
+function isBossRoomGateCell(
+    x,
+    y
+) {
+
+    return BOSS_ROOM_GATE_CELLS.some(
+        gate =>
+            Number(gate.x) === Number(x) &&
+            Number(gate.y) === Number(y)
+    );
+
+}
+
+function hasBossRoomAccess() {
+
+    return bossRoomAccessUnlocked === true;
+
+}
+
+
+// ============================================================
 // CONTROLLO CASELLA OCCUPATA DA EVENTO COMBAT
 // ============================================================
 //
@@ -2234,6 +2272,24 @@ function canMoveTo(
         !Array.isArray(
             dungeonData.cells
         )
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // VARCHI STANZA BOSS
+    // --------------------------------------------------------
+
+    if (
+        isBossRoomGateCell(
+            visibleX,
+            visibleY
+        )
+        &&
+        !hasBossRoomAccess()
     ) {
 
         return false;
@@ -6334,6 +6390,23 @@ function isVisionBlockingCell(
     x,
     y
 ) {
+
+    // I varchi della stanza Boss bloccano anche la visuale
+    // finché questo personaggio non possiede l'accesso.
+
+    if (
+        isBossRoomGateCell(
+            x,
+            y
+        )
+        &&
+        !hasBossRoomAccess()
+    ) {
+
+        return true;
+
+    }
+
 
     const value =
         getDungeonCellValue(
