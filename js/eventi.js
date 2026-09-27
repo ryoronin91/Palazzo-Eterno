@@ -75,6 +75,17 @@ const DUNGEON_COMMUNICATION_EVENTS = [
         x: 11,
         y: 17,
         type: "stairs",
+        score_bonus: 50,
+        message:
+            "Queste scale scendono verso il prossimo livello del Palazzo."
+    },
+
+    {
+        id: "stairs_down_secret",
+        x: 19,
+        y: 22,
+        type: "stairs",
+        score_bonus: 100,
         message:
             "Queste scale scendono verso il prossimo livello del Palazzo."
     },
@@ -259,7 +270,7 @@ function openStairsPrompt(
         <div class="combat-event-warning">
             Scendere al prossimo livello conclude
             questa esplorazione e assegna
-            <strong>+50 punti</strong>.
+            <strong>+${Number(dungeonEvent.score_bonus) || 50} punti</strong>.
         </div>
 
         <div class="combat-event-buttons">
@@ -323,7 +334,9 @@ function openStairsPrompt(
             "click",
             async () => {
 
-                await descendToNextFloor();
+                await descendToNextFloor(
+                    dungeonEvent
+                );
 
             }
         );
@@ -336,7 +349,9 @@ function openStairsPrompt(
 // +50 SCORE, ARCHIVIA LA RUN, ELIMINA IL PG, PAGINA MORTE
 // ============================================================
 
-async function descendToNextFloor() {
+async function descendToNextFloor(
+    dungeonEvent
+) {
 
     if (
         !character ||
@@ -386,8 +401,14 @@ async function descendToNextFloor() {
                 character.score
             ) || 0;
 
+        const floorBonus =
+            Number(
+                dungeonEvent?.score_bonus
+            ) || 50;
+
         const scoreWithFloorBonus =
-            currentScore + 50;
+            currentScore +
+            floorBonus;
 
 
         // ----------------------------------------------------
