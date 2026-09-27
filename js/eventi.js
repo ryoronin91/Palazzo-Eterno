@@ -895,6 +895,14 @@ function openCombatPrompt(
         "pvp";
 
 
+    const isBossEvent =
+        combatEvent.id ===
+            "BOSS1"
+        ||
+        combatEvent.encounter_id ===
+            "combat_boss";
+
+
     modal.innerHTML = `
         <div class="combat-event-icon">
             ⚔
@@ -904,7 +912,11 @@ function openCombatPrompt(
             ${
                 isPvpEvent
                     ? "ARENA PvP"
-                    : "COMBATTIMENTO"
+                    : (
+                        isBossEvent
+                            ? "GOBLIN BOSS"
+                            : "COMBATTIMENTO"
+                    )
             }
         </h2>
 
@@ -912,7 +924,11 @@ function openCombatPrompt(
             ${
                 isPvpEvent
                     ? "Davanti a te si apre l'Arena del Palazzo."
-                    : "Una presenza ostile blocca il tuo cammino."
+                    : (
+                        isBossEvent
+                            ? "Davanti a te si erge il Goblin Boss, a guardia delle scale."
+                            : "Una presenza ostile blocca il tuo cammino."
+                    )
             }
         </p>
 
@@ -926,13 +942,28 @@ function openCombatPrompt(
                         <strong>score ed equipaggiamento</strong>
                         dello sconfitto.
                     `
-                    : `
-                        Una volta entrato nel combattimento
-                        non potrai abbandonarlo fino alla
-                        <strong>vittoria</strong>
-                        o alla
-                        <strong>morte</strong>.
-                    `
+                    : (
+                        isBossEvent
+                            ? `
+                                Questo sarà uno
+                                <strong>scontro difficile</strong>:
+                                sarebbe meglio affrontarlo
+                                <strong>in gruppo</strong>.<br><br>
+
+                                In compenso, i
+                                <strong>premi saranno alti</strong>
+                                e le scale protette dal Boss
+                                sembrano decisamente migliori
+                                di quelle lasciate incustodite.
+                            `
+                            : `
+                                Una volta entrato nel combattimento
+                                non potrai abbandonarlo fino alla
+                                <strong>vittoria</strong>
+                                o alla
+                                <strong>morte</strong>.
+                            `
+                    )
             }
         </div>
 
@@ -946,7 +977,11 @@ function openCombatPrompt(
                 ${
                     isPvpEvent
                         ? "ENTRA NELL'ARENA"
-                        : "ENTRA IN COMBATTIMENTO"
+                        : (
+                            isBossEvent
+                                ? "AFFRONTA IL BOSS"
+                                : "ENTRA IN COMBATTIMENTO"
+                        )
                 }
             </button>
 
