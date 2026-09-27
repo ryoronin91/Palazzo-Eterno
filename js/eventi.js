@@ -73,6 +73,192 @@ const DUNGEON_COMBAT_EVENTS = [
 ];
 
 // ============================================================
+// STATO GLOBALE GOBLIN BOSS
+// ============================================================
+//
+// Il backend decide se il Boss è disponibile.
+// Durante il cooldown:
+//
+// - il token del Boss viene nascosto;
+// - il Boss non viene rilevato come evento vicino;
+// - la sua casella NON blocca il movimento;
+// - allo scadere del cooldown il Boss ricompare.
+//
+// ============================================================
+
+let goblinBossAvailable =
+    true;
+
+let goblinBossCooldownUntil =
+    null;
+
+let goblinBossCooldownRefreshInterval =
+    null;
+
+
+// ============================================================
+// EVENTO È DISPONIBILE?
+// ============================================================
+
+function isDungeonCombatEventAvailable(
+    combatEvent
+) {
+
+    if (!combatEvent) {
+
+        return false;
+
+    }
+
+
+    const isBossEvent =
+        combatEvent.id ===
+            "BOSS1"
+        ||
+        combatEvent.encounter_id ===
+            "combat_boss";
+
+
+    if (!isBossEvent) {
+
+        return true;
+
+    }
+
+
+    return goblinBossAvailable ===
+        true;
+
+}
+
+
+// ============================================================
+// AGGIORNA STATO BOSS DAL SERVER
+// ============================================================
+
+async function refreshGoblinBossState() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_goblin_boss_state"
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        goblinBossAvailable =
+            data?.available !==
+            false;
+
+
+        goblinBossCooldownUntil =
+            data?.cooldown_until ||
+            null;
+
+
+        renderCombatEvents();
+
+
+        // Se il Boss è diventato indisponibile mentre
+        // avevamo il suo popup aperto, lo chiudiamo.
+
+        if (
+            goblinBossAvailable !==
+                true
+            &&
+            pendingCombatEvent
+            &&
+            (
+                pendingCombatEvent.id ===
+                    "BOSS1"
+                ||
+                pendingCombatEvent.encounter_id ===
+                    "combat_boss"
+            )
+        ) {
+
+            closeCombatPrompt();
+
+        }
+
+
+        // Se il Boss non è più disponibile,
+        // azzeriamo anche la rilevazione di vicinanza.
+
+        if (
+            goblinBossAvailable !==
+            true
+            &&
+            nearbyCombatEventId ===
+                "BOSS1"
+        ) {
+
+            nearbyCombatEventId =
+                null;
+
+        }
+
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Errore stato Goblin Boss:",
+            error
+        );
+
+
+        // In caso di errore manteniamo l'ultimo stato noto.
+        // Non alteriamo gli altri eventi del dungeon.
+
+        return null;
+
+    }
+
+}
+
+
+// ============================================================
+// REFRESH PERIODICO STATO BOSS
+// ============================================================
+
+function startGoblinBossStateRefresh() {
+
+    if (
+        goblinBossCooldownRefreshInterval
+    ) {
+
+        clearInterval(
+            goblinBossCooldownRefreshInterval
+        );
+
+    }
+
+
+    goblinBossCooldownRefreshInterval =
+        setInterval(
+            async () => {
+
+                await refreshGoblinBossState();
+
+            },
+            15000
+        );
+
+}
+
+// ============================================================
 // EVENTI COMUNICAZIONE DEL PIANO 1
 // ============================================================
 
@@ -1118,12 +1304,22 @@ function openCombatPrompt(
                 );
 
 
+                const isBossEvent =
+                    selectedEvent.id ===
+                        "BOSS1"
+                    ||
+                    selectedEvent.encounter_id ===
+                        "combat_boss";
+
+
                 const {
                     data,
                     error
                 } =
                     await db.rpc(
-                        "enter_dungeon_combat",
+                        isBossEvent
+                            ? "enter_dungeon_combat_checked"
+                            : "enter_dungeon_combat",
                         {
 
                             p_encounter_id:
@@ -1223,6 +1419,19 @@ function openCombatPrompt(
                     message
                 );
 
+
+                if (
+                    selectedEvent?.id ===
+                        "BOSS1"
+                    ||
+                    selectedEvent?.encounter_id ===
+                        "combat_boss"
+                ) {
+
+                    await refreshGoblinBossState();
+
+                }
+
             }
 
         }
@@ -1268,7 +1477,7 @@ function closeCombatPrompt() {
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    async () => {
 
         console.log(
             "Eventi combat disponibili:",
@@ -1281,7 +1490,19 @@ document.addEventListener(
         );
 
 
+        // Prima di mostrare i token leggiamo
+        // lo stato globale del Goblin Boss.
+
+        await refreshGoblinBossState();
+
+
         renderCombatEvents();
+
+
+        // Durante la permanenza nel dungeon controlliamo
+        // periodicamente se il cooldown è terminato.
+
+        startGoblinBossStateRefresh();
 
     }
 );
@@ -1319,6 +1540,17 @@ function getNearbyCombatEvent() {
         const combatEvent
         of DUNGEON_COMBAT_EVENTS
     ) {
+
+        if (
+            !isDungeonCombatEventAvailable(
+                combatEvent
+            )
+        ) {
+
+            continue;
+
+        }
+
 
         const dx =
             Math.abs(
@@ -1554,11 +1786,29 @@ function renderCombatEvents() {
             }
 
 
-            positionCombatEventToken(
-                token,
-                combatEvent.x,
-                combatEvent.y
-            );
+            const eventAvailable =
+                isDungeonCombatEventAvailable(
+                    combatEvent
+                );
+
+
+            token.style.display =
+                eventAvailable
+                    ? ""
+                    : "none";
+
+
+            if (
+                eventAvailable
+            ) {
+
+                positionCombatEventToken(
+                    token,
+                    combatEvent.x,
+                    combatEvent.y
+                );
+
+            }
 
         }
     );
@@ -1680,6 +1930,24 @@ function repositionCombatEvents() {
             }
 
 
+            if (
+                !isDungeonCombatEventAvailable(
+                    combatEvent
+                )
+            ) {
+
+                token.style.display =
+                    "none";
+
+                return;
+
+            }
+
+
+            token.style.display =
+                "";
+
+
             positionCombatEventToken(
                 token,
                 combatEvent.x,
@@ -1690,3 +1958,28 @@ function repositionCombatEvents() {
     );
 
 }
+
+// ============================================================
+// CHIUSURA PAGINA - STOP REFRESH BOSS
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (
+            goblinBossCooldownRefreshInterval
+        ) {
+
+            clearInterval(
+                goblinBossCooldownRefreshInterval
+            );
+
+            goblinBossCooldownRefreshInterval =
+                null;
+
+        }
+
+    }
+);
+

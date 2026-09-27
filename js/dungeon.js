@@ -2186,9 +2186,35 @@ function isCombatEventCellOccupied(
 
 
     return DUNGEON_COMBAT_EVENTS.some(
-        combatEvent =>
-            Number(combatEvent.x) === Number(visibleX) &&
-            Number(combatEvent.y) === Number(visibleY)
+        combatEvent => {
+
+            // Se eventi.js espone uno stato dinamico
+            // dell'evento (es. Boss in cooldown),
+            // una pedina non disponibile NON occupa la casella.
+
+            if (
+                typeof isDungeonCombatEventAvailable ===
+                    "function"
+                &&
+                !isDungeonCombatEventAvailable(
+                    combatEvent
+                )
+            ) {
+
+                return false;
+
+            }
+
+
+            return (
+                Number(combatEvent.x) ===
+                    Number(visibleX)
+                &&
+                Number(combatEvent.y) ===
+                    Number(visibleY)
+            );
+
+        }
     );
 
 }
