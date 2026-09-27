@@ -2285,15 +2285,9 @@ function isHiddenBehindClosedBossGate(
     return BOSS_ROOM_GATE_CELLS.some(
         gate => {
 
-            // Il varco stesso può essere visto: è ciò che si
-            // trova oltre il varco che deve sparire.
-            if (
-                Number(targetX) === Number(gate.x) &&
-                Number(targetY) === Number(gate.y)
-            ) {
-                return false;
-            }
-
+            // Anche la cella del varco chiuso deve essere
+            // completamente nascosta, non solo ciò che si trova
+            // oltre di essa.
             return doesSightSegmentCrossCell(
                 playerX,
                 playerY,
@@ -6227,13 +6221,6 @@ function hasLineOfSight(
         !hasBossRoomAccess() &&
         BOSS_ROOM_GATE_CELLS.some(
             gate => {
-
-                if (
-                    Number(targetX) === Number(gate.x) &&
-                    Number(targetY) === Number(gate.y)
-                ) {
-                    return false;
-                }
 
                 return doesSightSegmentCrossCell(
                     startX,
