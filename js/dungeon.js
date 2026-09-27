@@ -2196,6 +2196,119 @@ function hasBossRoomAccess() {
 
 
 // ============================================================
+// OCCLUSIONE VISIVA DEI VARCHI BOSS
+// ============================================================
+//
+// Controlla se il segmento che unisce il centro della casella
+// del PG al centro della casella bersaglio attraversa una
+// specifica cella-varco. Usiamo un'intersezione geometrica
+// inclusiva, così anche le diagonali che sfiorano il bordo del
+// varco non permettono di vedere "un quadretto oltre".
+//
+// ============================================================
+
+function doesSightSegmentCrossCell(
+    startX,
+    startY,
+    targetX,
+    targetY,
+    cellX,
+    cellY
+) {
+
+    const x0 = Number(startX) + 0.5;
+    const y0 = Number(startY) + 0.5;
+    const x1 = Number(targetX) + 0.5;
+    const y1 = Number(targetY) + 0.5;
+
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+
+    const minX = Number(cellX);
+    const maxX = Number(cellX) + 1;
+    const minY = Number(cellY);
+    const maxY = Number(cellY) + 1;
+
+    let tMin = 0;
+    let tMax = 1;
+
+    const checks = [
+        [-dx, x0 - minX],
+        [ dx, maxX - x0],
+        [-dy, y0 - minY],
+        [ dy, maxY - y0]
+    ];
+
+    for (const [p, q] of checks) {
+
+        if (Math.abs(p) < 1e-12) {
+
+            if (q < 0) {
+                return false;
+            }
+
+            continue;
+
+        }
+
+        const r = q / p;
+
+        if (p < 0) {
+            tMin = Math.max(tMin, r);
+        } else {
+            tMax = Math.min(tMax, r);
+        }
+
+        if (tMin > tMax) {
+            return false;
+        }
+
+    }
+
+    return true;
+}
+
+
+function isHiddenBehindClosedBossGate(
+    targetX,
+    targetY
+) {
+
+    if (
+        hasBossRoomAccess() ||
+        playerX === null ||
+        playerY === null
+    ) {
+        return false;
+    }
+
+    return BOSS_ROOM_GATE_CELLS.some(
+        gate => {
+
+            // Il varco stesso può essere visto: è ciò che si
+            // trova oltre il varco che deve sparire.
+            if (
+                Number(targetX) === Number(gate.x) &&
+                Number(targetY) === Number(gate.y)
+            ) {
+                return false;
+            }
+
+            return doesSightSegmentCrossCell(
+                playerX,
+                playerY,
+                targetX,
+                targetY,
+                gate.x,
+                gate.y
+            );
+
+        }
+    );
+}
+
+
+// ============================================================
 // CONTROLLO CASELLA OCCUPATA DA EVENTO COMBAT
 // ============================================================
 //
@@ -6105,6 +6218,39 @@ function hasLineOfSight(
     }
 
 
+    // I varchi Boss chiusi sono pareti ottiche complete.
+    // Questo controllo aggiuntivo evita che la supercover
+    // lasci visibile la prima casella immediatamente oltre
+    // il varco, soprattutto sulle diagonali.
+
+    if (
+        !hasBossRoomAccess() &&
+        BOSS_ROOM_GATE_CELLS.some(
+            gate => {
+
+                if (
+                    Number(targetX) === Number(gate.x) &&
+                    Number(targetY) === Number(gate.y)
+                ) {
+                    return false;
+                }
+
+                return doesSightSegmentCrossCell(
+                    startX,
+                    startY,
+                    targetX,
+                    targetY,
+                    gate.x,
+                    gate.y
+                );
+
+            }
+        )
+    ) {
+        return false;
+    }
+
+
     const line =
         getGridLine(
             startX,
@@ -6654,6 +6800,32 @@ function renderFogOfWar() {
                     x,
                     y
                 );
+
+
+            // Dietro a un varco Boss ancora chiuso:
+            // nero pieno anche se la cella era già stata
+            // esplorata in precedenza.
+
+            if (
+                isHiddenBehindClosedBossGate(
+                    x,
+                    y
+                )
+            ) {
+
+                context.fillStyle =
+                    "rgba(0, 0, 0, 1)";
+
+                context.fillRect(
+                    x * cellWidth - 0.5,
+                    y * cellHeight - 0.5,
+                    cellWidth + 1,
+                    cellHeight + 1
+                );
+
+                continue;
+
+            }
 
 
             // Visibile in questo momento.
