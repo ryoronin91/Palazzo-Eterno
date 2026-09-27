@@ -2158,6 +2158,43 @@ function wait(
 }
 
 // ============================================================
+// CONTROLLO CASELLA OCCUPATA DA EVENTO COMBAT
+// ============================================================
+//
+// I token degli eventi combat (C1-C5, PvP, Boss, ecc.)
+// occupano realmente la loro casella nel dungeon.
+// Un PG può quindi arrivare accanto al token, ma non può
+// attraversarlo o fermarsi sulla sua stessa casella.
+//
+// ============================================================
+
+function isCombatEventCellOccupied(
+    visibleX,
+    visibleY
+) {
+
+    if (
+        typeof DUNGEON_COMBAT_EVENTS === "undefined" ||
+        !Array.isArray(
+            DUNGEON_COMBAT_EVENTS
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    return DUNGEON_COMBAT_EVENTS.some(
+        combatEvent =>
+            Number(combatEvent.x) === Number(visibleX) &&
+            Number(combatEvent.y) === Number(visibleY)
+    );
+
+}
+
+
+// ============================================================
 // CONTROLLO CASELLA ACCESSIBILE
 // ============================================================
 
@@ -2170,6 +2207,29 @@ function canMoveTo(
         !dungeonData ||
         !Array.isArray(
             dungeonData.cells
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // TOKEN EVENTO COMBAT
+    // --------------------------------------------------------
+    //
+    // La casella di un evento combat è occupata dal suo token.
+    // Questo controllo avviene PRIMA della lettura del JSON:
+    // anche se sotto al token c'è un pavimento percorribile,
+    // il PG non può entrare nella casella.
+    //
+    // --------------------------------------------------------
+
+    if (
+        isCombatEventCellOccupied(
+            visibleX,
+            visibleY
         )
     ) {
 
