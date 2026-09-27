@@ -550,13 +550,24 @@
             display:
                 grid;
 
+            /* Mantiene la colonna entro l'altezza della viewport:
+               Turn Order e Chat non possono più allungare la pagina. */
+            height:
+                calc(100vh - 105px);
+
+            max-height:
+                calc(100vh - 105px);
+
+            min-height:
+                0;
+
             grid-template-rows:
                 minmax(
-                    220px,
+                    0,
                     .78fr
                 )
                 minmax(
-                    260px,
+                    0,
                     1.22fr
                 );
 
@@ -565,6 +576,9 @@
 
             min-width:
                 0;
+
+            overflow:
+                hidden;
 
         }
 
@@ -579,11 +593,17 @@
             min-height:
                 0;
 
+            height:
+                100%;
+
             display:
                 flex;
 
             flex-direction:
                 column;
+
+            overflow:
+                hidden;
 
         }
 
@@ -599,6 +619,19 @@
 
             overflow-y:
                 auto;
+
+            overflow-x:
+                hidden;
+
+            box-sizing:
+                border-box;
+
+            scrollbar-width:
+                thin;
+
+            scrollbar-color:
+                #725633
+                #100d0a;
 
         }
 
@@ -2282,8 +2315,20 @@
                 order:
                     3;
 
+                height:
+                    auto;
+
+                max-height:
+                    none;
+
+                overflow:
+                    visible;
+
                 grid-template-rows:
-                    auto
+                    minmax(
+                        220px,
+                        42vh
+                    )
                     minmax(
                         280px,
                         auto
