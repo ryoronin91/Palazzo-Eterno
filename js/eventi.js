@@ -55,6 +55,14 @@ const DUNGEON_COMBAT_EVENTS = [
     },
 
     {
+        id: "BOSS1",
+        x: 19,
+        y: 20,
+        encounter_id: "combat_boss",
+        token: "immagini/nemici/goblin_boss.png"
+    },
+
+    {
         id: "PVP1",
         x: 1,
         y: 14,
