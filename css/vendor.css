@@ -1171,3 +1171,116 @@ input {
     }
 
 }
+/* ============================================================
+   SCROLL MERCE VENDOR
+============================================================ */
+
+.vendor-stock {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding:
+        0
+        18px
+        18px;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        var(--gold-dark)
+        transparent;
+}
+
+
+.vendor-stock::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.vendor-stock::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+.vendor-stock::-webkit-scrollbar-thumb {
+    background: var(--gold-dark);
+
+    border-radius: 99px;
+}
+
+
+.vendor-stock::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+}
+
+
+
+/* ============================================================
+   DIVISORI CATEGORIE NEGOZIO
+============================================================ */
+
+.vendor-category-divider {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin:
+        12px
+        0
+        5px;
+
+    height: 25px;
+
+    color: var(--gold);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 0.16em;
+
+    text-align: center;
+}
+
+
+.vendor-category-divider::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    top: 50%;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(198, 164, 92, 0.55),
+            transparent
+        );
+}
+
+
+.vendor-category-divider span {
+    position: relative;
+    z-index: 1;
+
+    padding:
+        0
+        10px;
+
+    background: var(--panel);
+
+    white-space: nowrap;
+}
+
+
+.vendor-category-divider:first-child {
+    margin-top: 2px;
+}

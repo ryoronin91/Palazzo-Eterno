@@ -481,73 +481,142 @@ function renderVendorItems() {
             );
 
 
-    container.innerHTML =
-        sortedItems
-            .map(
+    const groups = [
+        {
+            label: "OGGETTI BASE",
+            min: 0,
+            max: 99
+        },
+        {
+            label: "OGGETTI COMUNI",
+            min: 100,
+            max: 199
+        },
+        {
+            label: "OGGETTI RARI",
+            min: 200,
+            max: Infinity
+        }
+    ];
+
+
+    let html =
+        "";
+
+
+    for (
+        const group
+        of groups
+    ) {
+
+        const groupItems =
+            sortedItems.filter(
                 row => {
 
-                    const price =
-                        Math.max(
-                            0,
-                            Number(
-                                row.buy_price
-                            ) || 0
-                        );
+                    const minScore =
+                        Number(
+                            row.min_score
+                        ) || 0;
 
 
-                    return `
-                        <article
-                            class="vendor-stock-item"
-                            data-vendor-item-id="${escapeVendorHtml(
-                                row.id
-                            )}"
-                            data-item-id="${escapeVendorHtml(
-                                row.item.id
-                            )}"
-                            data-price="${price}"
-                            data-min-score="${Math.max(
-                                0,
-                                Number(
-                                    row.min_score
-                                ) || 0
-                            )}"
-                        >
-
-                            <div class="vendor-stock-name">
-                                ${escapeVendorHtml(
-                                    row.item.name ||
-                                    row.item.id
-                                )}
-                            </div>
-
-                            <div class="vendor-stock-price">
-                                ${price}
-                            </div>
-
-                            <button
-                                class="merchant-button vendor-buy-button"
-                                type="button"
-                                data-buy-item-id="${escapeVendorHtml(
-                                    row.item.id
-                                )}"
-                                data-buy-price="${price}"
-                            >
-                                COMPRA
-                            </button>
-
-                        </article>
-                    `;
+                    return (
+                        minScore >= group.min
+                        &&
+                        minScore <= group.max
+                    );
 
                 }
-            )
-            .join("");
+            );
+
+
+        if (
+            !groupItems.length
+        ) {
+
+            continue;
+
+        }
+
+
+        html += `
+            <div class="vendor-category-divider">
+                <span>
+                    ${group.label}
+                </span>
+            </div>
+        `;
+
+
+        html +=
+            groupItems
+                .map(
+                    row => {
+
+                        const price =
+                            Math.max(
+                                0,
+                                Number(
+                                    row.buy_price
+                                ) || 0
+                            );
+
+
+                        return `
+                            <article
+                                class="vendor-stock-item"
+                                data-vendor-item-id="${escapeVendorHtml(
+                                    row.id
+                                )}"
+                                data-item-id="${escapeVendorHtml(
+                                    row.item.id
+                                )}"
+                                data-price="${price}"
+                                data-min-score="${Math.max(
+                                    0,
+                                    Number(
+                                        row.min_score
+                                    ) || 0
+                                )}"
+                            >
+
+                                <div class="vendor-stock-name">
+                                    ${escapeVendorHtml(
+                                        row.item.name ||
+                                        row.item.id
+                                    )}
+                                </div>
+
+                                <div class="vendor-stock-price">
+                                    ${price}
+                                </div>
+
+                                <button
+                                    class="merchant-button vendor-buy-button"
+                                    type="button"
+                                    data-buy-item-id="${escapeVendorHtml(
+                                        row.item.id
+                                    )}"
+                                    data-buy-price="${price}"
+                                >
+                                    COMPRA
+                                </button>
+
+                            </article>
+                        `;
+
+                    }
+                )
+                .join("");
+
+    }
+
+
+    container.innerHTML =
+        html;
 
 }
 
 
-// ============================================================
-// ICONA OGGETTO
-// ============================================================
 
 function getVendorInventoryItemIcon(
     entry
