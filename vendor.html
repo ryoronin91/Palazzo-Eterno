@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Vendor</title>
-    <link rel="stylesheet" href="css/vendor.css?v=3">
+    <link rel="stylesheet" href="css/vendor.css?v=4">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js?v=11"></script>
@@ -69,6 +69,14 @@
             aria-label="Vendor"
         >
 
+            <button
+                id="vendor-exit-button"
+                class="vendor-exit-button"
+                type="button"
+            >
+                ← ESCI
+            </button>
+
             <img
                 src="immagini/vendor/vendor_base.png"
                 alt="Vendor"
@@ -96,6 +104,12 @@
                     </p>
 
                 </div>
+
+                <div
+                    id="vendor-secret-offer"
+                    class="vendor-secret-offer"
+                    hidden
+                ></div>
 
                 <form
                     id="vendor-ai-form"
@@ -202,7 +216,7 @@
     </main>
 
 
-    <script src="js/vendor.js?v=14"></script>
+    <script src="js/vendor.js?v=15"></script>
 
 </body>
 </html>

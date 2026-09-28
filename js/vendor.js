@@ -154,6 +154,8 @@ document.addEventListener(
 
             setupVendorAiChat();
 
+            setupVendorExitButton();
+
 
         } catch (error) {
 
@@ -711,6 +713,333 @@ function getVendorInventoryItemIcon(
 
 
 // ============================================================
+// ESCI DAL VENDOR
+// ============================================================
+
+function setupVendorExitButton() {
+
+    const button =
+        document.getElementById(
+            "vendor-exit-button"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            resetVendorVisitMemory();
+
+            window.location.href =
+                "dungeon.html";
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// OFFERTA SEGRETO
+// ============================================================
+
+function clearVendorSecretOffer() {
+
+    const container =
+        document.getElementById(
+            "vendor-secret-offer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        "";
+
+    container.hidden =
+        true;
+
+}
+
+
+function renderVendorSecretOffer(
+    offer
+) {
+
+    const container =
+        document.getElementById(
+            "vendor-secret-offer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !offer
+        ||
+        !offer.secret_id
+    ) {
+
+        clearVendorSecretOffer();
+
+        return;
+
+    }
+
+
+    const price =
+        Math.max(
+            0,
+            Number(
+                offer.price_gold
+            ) || 0
+        );
+
+
+    container.innerHTML = `
+        <div class="vendor-secret-offer-title">
+            AFFARE RISERVATO
+        </div>
+
+        <div class="vendor-secret-offer-name">
+            ${escapeVendorHtml(
+                offer.display_name ||
+                "Informazione"
+            )}
+        </div>
+
+        <button
+            class="vendor-secret-buy-button"
+            type="button"
+            data-secret-id="${escapeVendorHtml(
+                offer.secret_id
+            )}"
+        >
+            COMPRA · ${price} ORO
+        </button>
+    `;
+
+    container.hidden =
+        false;
+
+}
+
+
+// ============================================================
+// ACQUISTA SEGRETO
+// ============================================================
+
+async function buyVendorSecret(
+    button
+) {
+
+    if (
+        !button
+        ||
+        button.disabled
+    ) {
+
+        return;
+
+    }
+
+
+    const secretId =
+        String(
+            button.dataset.secretId ||
+            ""
+        )
+            .trim();
+
+
+    if (!secretId) {
+
+        return;
+
+    }
+
+
+    const originalText =
+        button.textContent;
+
+
+    try {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "...";
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "vendor_buy_secret",
+                {
+                    p_npc_id:
+                        NPC_ID,
+
+                    p_secret_id:
+                        secretId
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshVendorInventory();
+
+        clearVendorSecretOffer();
+
+
+        const secretName =
+            String(
+                data?.display_name ||
+                "informazione"
+            );
+
+
+        const secretValue =
+            String(
+                data?.secret_value ||
+                ""
+            );
+
+
+        const pricePaid =
+            Number(
+                data?.price_paid
+            ) || 0;
+
+
+        let reply;
+
+
+        if (
+            data?.already_owned
+        ) {
+
+            reply =
+                `Questa te l'avevo già venduta, campione. ${secretName}: ${secretValue}`;
+
+        } else {
+
+            reply =
+                `Affare fatto, campione. ${secretName}: ${secretValue}`;
+
+        }
+
+
+        setVendorDialogue(
+            reply
+        );
+
+
+        vendorVisitHistory.push(
+            {
+                role:
+                    "user",
+
+                content:
+                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato il segreto "${secretName}" pagando ${pricePaid} monete d'oro. Il segreto rivelato è: ${secretValue}`
+            },
+            {
+                role:
+                    "assistant",
+
+                content:
+                    reply
+            }
+        );
+
+
+        vendorVisitHistory =
+            vendorVisitHistory.slice(
+                -10
+            );
+
+
+        console.log(
+            "Segreto acquistato:",
+            data
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore acquisto segreto:",
+            error
+        );
+
+
+        setVendorDialogue(
+            error?.message ||
+            "Non posso concludere questo affare."
+        );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            originalText;
+
+    }
+
+}
+
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const secretButton =
+            event.target.closest(
+                ".vendor-secret-buy-button"
+            );
+
+
+        if (secretButton) {
+
+            buyVendorSecret(
+                secretButton
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
 // IA MANO DI SCIMMIA
 // Memoria valida soltanto durante questa visita/pagina.
 // ============================================================
@@ -850,6 +1179,8 @@ async function sendVendorAiMessage() {
         "";
 
 
+    clearVendorSecretOffer();
+
     setVendorDialogue(
         "Mano di Scimmia ti squadra per un momento..."
     );
@@ -976,6 +1307,11 @@ async function sendVendorAiMessage() {
 
         setVendorDialogue(
             reply
+        );
+
+        renderVendorSecretOffer(
+            data?.offer ||
+            null
         );
 
 

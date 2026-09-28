@@ -1469,3 +1469,267 @@ input {
     }
 
 }
+/* ============================================================
+   VENDOR V15 - ESCI + AFFARI RISERVATI
+   Aggiungere in fondo a css/vendor.css
+============================================================ */
+
+
+/* ------------------------------------------------------------
+   PULSANTE ESCI
+------------------------------------------------------------ */
+
+.vendor-exit-button {
+    position: absolute;
+
+    top: 14px;
+    left: 14px;
+
+    z-index: 6;
+
+    padding:
+        8px
+        12px;
+
+    border:
+        1px solid
+        var(--gold-dark);
+
+    border-radius:
+        2px;
+
+    color:
+        var(--ivory);
+
+    background:
+        rgba(8, 8, 10, 0.78);
+
+    font-family:
+        inherit;
+
+    font-size:
+        10px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.09em;
+
+    cursor:
+        pointer;
+
+    backdrop-filter:
+        blur(3px);
+
+    -webkit-backdrop-filter:
+        blur(3px);
+}
+
+
+.vendor-exit-button:hover {
+    border-color:
+        var(--gold);
+
+    color:
+        var(--gold-bright);
+
+    background:
+        rgba(20, 17, 12, 0.88);
+}
+
+
+/* ------------------------------------------------------------
+   AFFARE RISERVATO
+------------------------------------------------------------ */
+
+.vendor-secret-offer {
+    flex: 0 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    grid-template-areas:
+        "title button"
+        "name button";
+
+    align-items:
+        center;
+
+    gap:
+        2px
+        12px;
+
+    margin:
+        6px
+        0
+        4px;
+
+    padding:
+        9px
+        10px;
+
+    border:
+        1px solid
+        rgba(198, 164, 92, 0.55);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(198, 164, 92, 0.10),
+            rgba(5, 6, 8, 0.72)
+        );
+
+    box-shadow:
+        inset
+        0
+        0
+        16px
+        rgba(0, 0, 0, 0.28);
+}
+
+
+.vendor-secret-offer[hidden] {
+    display:
+        none !important;
+}
+
+
+.vendor-secret-offer-title {
+    grid-area:
+        title;
+
+    color:
+        var(--gold-bright);
+
+    font-size:
+        8px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.17em;
+}
+
+
+.vendor-secret-offer-name {
+    grid-area:
+        name;
+
+    margin-top:
+        3px;
+
+    color:
+        var(--ivory);
+
+    font-size:
+        12px;
+
+    overflow:
+        hidden;
+
+    white-space:
+        nowrap;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+.vendor-secret-buy-button {
+    grid-area:
+        button;
+
+    min-width:
+        116px;
+
+    padding:
+        8px
+        10px;
+
+    border:
+        1px solid
+        var(--gold-dark);
+
+    border-radius:
+        2px;
+
+    color:
+        var(--ivory);
+
+    background:
+        rgba(198, 164, 92, 0.08);
+
+    font-family:
+        inherit;
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.06em;
+
+    cursor:
+        pointer;
+}
+
+
+.vendor-secret-buy-button:hover:not(:disabled) {
+    border-color:
+        var(--gold);
+
+    color:
+        var(--gold-bright);
+
+    background:
+        rgba(198, 164, 92, 0.14);
+}
+
+
+.vendor-secret-buy-button:disabled {
+    opacity:
+        0.55;
+
+    cursor:
+        wait;
+}
+
+
+@media (max-width: 560px) {
+
+    .vendor-exit-button {
+        top:
+            8px;
+
+        left:
+            8px;
+    }
+
+
+    .vendor-secret-offer {
+        grid-template-columns:
+            1fr;
+
+        grid-template-areas:
+            "title"
+            "name"
+            "button";
+    }
+
+
+    .vendor-secret-buy-button {
+        width:
+            100%;
+
+        margin-top:
+            7px;
+    }
+
+}
