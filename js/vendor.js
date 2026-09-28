@@ -700,6 +700,364 @@ function getVendorInventoryItemIcon(
 
 
 // ============================================================
+// FEEDBACK DIALOGO VENDOR
+// ============================================================
+
+function setVendorDialogue(
+    message
+) {
+
+    const dialogue =
+        document.getElementById(
+            "vendor-dialogue-text"
+        );
+
+
+    if (dialogue) {
+
+        dialogue.textContent =
+            message;
+
+    }
+
+}
+
+
+// ============================================================
+// AGGIORNA INVENTARIO DOPO COMPRA / VENDI
+// ============================================================
+
+async function refreshVendorInventory() {
+
+    await loadVendorCharacterInventory();
+
+    updateVendorPlayerInventoryHeader();
+
+    renderVendorCharacterInventory();
+
+}
+
+
+// ============================================================
+// COMPRA
+// ============================================================
+
+async function buyVendorItem(
+    button
+) {
+
+    if (
+        !button
+        ||
+        button.disabled
+    ) {
+
+        return;
+
+    }
+
+
+    const itemId =
+        button.dataset.buyItemId;
+
+    const price =
+        Number(
+            button.dataset.buyPrice
+        ) || 0;
+
+
+    if (!itemId) {
+
+        return;
+
+    }
+
+
+    const originalText =
+        button.textContent;
+
+
+    try {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "...";
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "vendor_buy_item",
+                {
+                    p_vendor_id:
+                        VENDOR_ID,
+
+                    p_item_id:
+                        itemId
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshVendorInventory();
+
+
+        const item =
+            vendorItems.find(
+                row =>
+                    row.item_id ===
+                    itemId
+            );
+
+
+        const itemName =
+            item?.item?.name ||
+            itemId;
+
+
+        setVendorDialogue(
+            `Affare fatto. ${itemName} è tuo per ${price} monete d'oro.`
+        );
+
+
+        console.log(
+            "Acquisto completato:",
+            data
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore acquisto:",
+            error
+        );
+
+
+        setVendorDialogue(
+            error?.message ||
+            "Non posso concludere questo affare."
+        );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            originalText;
+
+    }
+
+}
+
+
+// ============================================================
+// VENDI
+// ============================================================
+
+async function sellVendorItem(
+    button
+) {
+
+    if (
+        !button
+        ||
+        button.disabled
+    ) {
+
+        return;
+
+    }
+
+
+    const row =
+        button.closest(
+            ".player-item"
+        );
+
+
+    const inventoryId =
+        row?.dataset
+            ?.inventoryId;
+
+
+    if (!inventoryId) {
+
+        return;
+
+    }
+
+
+    const itemId =
+        row?.dataset
+            ?.itemId;
+
+
+    const inventoryEntry =
+        characterInventory.find(
+            entry =>
+                String(
+                    entry.id
+                ) ===
+                String(
+                    inventoryId
+                )
+        );
+
+
+    const itemName =
+        inventoryEntry
+            ?.item
+            ?.name
+        ||
+        itemId
+        ||
+        "Oggetto";
+
+
+    const sellPrice =
+        Math.max(
+            0,
+            Number(
+                inventoryEntry
+                    ?.item
+                    ?.gold_value
+            ) || 0
+        );
+
+
+    const originalText =
+        button.textContent;
+
+
+    try {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "...";
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "vendor_sell_item",
+                {
+                    p_inventory_id:
+                        String(
+                            inventoryId
+                        )
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshVendorInventory();
+
+
+        setVendorDialogue(
+            `Prendo ${itemName}. Ti darò ${sellPrice} monete d'oro.`
+        );
+
+
+        console.log(
+            "Vendita completata:",
+            data
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore vendita:",
+            error
+        );
+
+
+        setVendorDialogue(
+            error?.message ||
+            "Non posso acquistare questo oggetto."
+        );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            originalText;
+
+    }
+
+}
+
+
+// ============================================================
+// CLICK PULSANTI DINAMICI
+// ============================================================
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const buyButton =
+            event.target.closest(
+                ".vendor-buy-button"
+            );
+
+
+        if (buyButton) {
+
+            buyVendorItem(
+                buyButton
+            );
+
+            return;
+
+        }
+
+
+        const sellButton =
+            event.target.closest(
+                ".player-item-sell-button"
+            );
+
+
+        if (sellButton) {
+
+            sellVendorItem(
+                sellButton
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
 // ESCAPE HTML
 // ============================================================
 
