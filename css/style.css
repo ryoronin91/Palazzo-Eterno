@@ -542,3 +542,99 @@ select option {
 
     text-align: center;
 }
+
+/* ==========================================
+   PROSSIMI UPGRADE
+   ========================================== */
+
+.upcoming-upgrades {
+    margin-top: 40px;
+    padding-top: 28px;
+
+    border-top: 1px solid #3d3428;
+
+    text-align: left;
+}
+
+.upcoming-upgrades h2 {
+    margin: 0 0 22px;
+
+    text-align: center;
+
+    color: #b18a4d;
+
+    font-size: 16px;
+    letter-spacing: 3px;
+}
+
+.upgrade-item {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 14px;
+
+    margin-bottom: 12px;
+    padding: 14px;
+
+    border: 1px solid #3d3428;
+    border-radius: 8px;
+
+    background: rgba(23, 20, 17, 0.75);
+
+    transition: 0.2s;
+}
+
+.upgrade-item:hover {
+    border-color: #66563c;
+    background: rgba(42, 36, 29, 0.85);
+}
+
+.upgrade-icon {
+    flex-shrink: 0;
+
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 20px;
+}
+
+.upgrade-item strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #d6c8b0;
+
+    font-size: 14px;
+}
+
+.home-card .upgrade-item p {
+    margin: 0;
+
+    color: #8f877b;
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+
+    .upcoming-upgrades {
+        margin-top: 30px;
+    }
+
+    .upgrade-item {
+        padding: 12px;
+    }
+
+    .upgrade-icon {
+        width: 28px;
+        height: 28px;
+
+        font-size: 18px;
+    }
+}
