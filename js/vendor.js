@@ -31,60 +31,6 @@ let characterInventory =
 
 
 // ============================================================
-// HEADER INVENTARIO PG
-// ============================================================
-
-function updateVendorPlayerInventoryHeader() {
-
-    const title =
-        document.getElementById(
-            "player-inventory-title"
-        );
-
-    const goldAmount =
-        document.getElementById(
-            "player-gold-amount"
-        );
-
-
-    if (title) {
-
-        const characterName =
-            String(
-                character?.nome ||
-                "PG"
-            )
-                .trim()
-                .toUpperCase();
-
-
-        title.textContent =
-            `INVENTARIO ${characterName}`;
-
-    }
-
-
-    if (goldAmount) {
-
-        const goldEntry =
-            characterInventory.find(
-                entry =>
-                    entry?.item?.id ===
-                        "moneta_oro"
-            );
-
-
-        goldAmount.textContent =
-            Number(
-                goldEntry?.quantity
-            ) || 0;
-
-    }
-
-}
-
-
-// ============================================================
 // AVVIO
 // ============================================================
 
@@ -97,8 +43,6 @@ document.addEventListener(
             await loadVendorCharacter();
 
             await loadVendorCharacterInventory();
-
-            updateVendorPlayerInventoryHeader();
 
             renderVendorCharacterInventory();
 
@@ -404,9 +348,6 @@ function renderVendorCharacterInventory() {
                 entry =>
                     entry?.item
                     &&
-                    entry.item.id !==
-                        "moneta_oro"
-                    &&
                     Number(
                         entry.quantity
                     ) > 0
@@ -450,8 +391,10 @@ function renderVendorCharacterInventory() {
                     const equipped =
                         entry.equipped_slot
                             ? `
-                                <div class="player-item-equipped">
-                                    Equipaggiato
+                                <div class="player-item-meta">
+                                    Equipaggiato: ${escapeVendorHtml(
+                                        entry.equipped_slot
+                                    )}
                                 </div>
                             `
                             : "";
@@ -467,14 +410,16 @@ function renderVendorCharacterInventory() {
                                 entry.item.id
                             )}"
                         >
-
-                            <div class="player-item-quantity">
-                                [${Number(
-                                    entry.quantity
-                                ) || 0}]
+                            <div
+                                class="player-item-icon"
+                                aria-hidden="true"
+                            >
+                                ${getVendorInventoryItemIcon(
+                                    entry
+                                )}
                             </div>
 
-                            <div>
+                            <div class="player-item-main">
 
                                 <div class="player-item-name">
                                     ${escapeVendorHtml(
@@ -487,15 +432,11 @@ function renderVendorCharacterInventory() {
 
                             </div>
 
-                            <button
-                                class="player-item-sell-button"
-                                type="button"
-                                data-sell-item-id="${escapeVendorHtml(
-                                    entry.item.id
-                                )}"
-                            >
-                                VENDI
-                            </button>
+                            <div class="player-item-quantity">
+                                ×${Number(
+                                    entry.quantity
+                                ) || 0}
+                            </div>
 
                         </article>
                     `;
