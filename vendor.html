@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Vendor</title>
-    <link rel="stylesheet" href="css/vendor.css?v=5">
+    <link rel="stylesheet" href="css/vendor.css?v=3">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js?v=11"></script>
@@ -80,17 +80,47 @@
             >
 
                 <div class="vendor-dialogue-name">
-                    VENDOR
+                    MANO DI SCIMMIA
                 </div>
 
                 <div class="dialogue-mini-divider"></div>
 
-                <p
-                    id="vendor-dialogue-text"
-                    class="vendor-dialogue-text"
+                <div class="vendor-dialogue-body">
+
+                    <p
+                        id="vendor-dialogue-text"
+                        class="vendor-dialogue-text"
+                        aria-live="polite"
+                    >
+                        Weilà campione! Ti interessa una mano di scimmia quasi nuova?
+                    </p>
+
+                </div>
+
+                <form
+                    id="vendor-ai-form"
+                    class="vendor-ai-form"
+                    autocomplete="off"
                 >
-                    Benvenuto, viaggiatore. Se hai oro, io ho merce.
-                </p>
+
+                    <input
+                        id="vendor-ai-input"
+                        class="vendor-ai-input"
+                        type="text"
+                        maxlength="500"
+                        placeholder="Parla con Mano di Scimmia..."
+                        aria-label="Parla con Mano di Scimmia"
+                    >
+
+                    <button
+                        id="vendor-ai-send"
+                        class="vendor-ai-send"
+                        type="submit"
+                    >
+                        PARLA
+                    </button>
+
+                </form>
 
             </div>
 
@@ -172,7 +202,7 @@
     </main>
 
 
-    <script src="js/vendor.js?v=7"></script>
+    <script src="js/vendor.js?v=14"></script>
 
 </body>
 </html>

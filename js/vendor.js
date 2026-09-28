@@ -33,7 +33,16 @@ let vendorItems =
     [];
 
 const VENDOR_ID =
-    "vendor_floor_1";
+    "vendor_manodiscimmia";
+
+const NPC_ID =
+    "npc_manodiscimmia";
+
+let vendorVisitHistory =
+    [];
+
+let vendorAiBusy =
+    false;
 
 
 // ============================================================
@@ -142,6 +151,8 @@ document.addEventListener(
             renderVendorCharacterInventory();
 
             renderVendorItems();
+
+            setupVendorAiChat();
 
 
         } catch (error) {
@@ -700,6 +711,335 @@ function getVendorInventoryItemIcon(
 
 
 // ============================================================
+// IA MANO DI SCIMMIA
+// Memoria valida soltanto durante questa visita/pagina.
+// ============================================================
+
+function setupVendorAiChat() {
+
+    const form =
+        document.getElementById(
+            "vendor-ai-form"
+        );
+
+    const input =
+        document.getElementById(
+            "vendor-ai-input"
+        );
+
+
+    if (
+        !form
+        ||
+        !input
+    ) {
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+            await sendVendorAiMessage();
+
+        }
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                input.value =
+                    "";
+
+                input.blur();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// INVIA MESSAGGIO ALLA EDGE FUNCTION
+// ============================================================
+
+async function sendVendorAiMessage() {
+
+    if (vendorAiBusy) {
+
+        return;
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "vendor-ai-input"
+        );
+
+    const button =
+        document.getElementById(
+            "vendor-ai-send"
+        );
+
+
+    if (
+        !input
+        ||
+        !button
+    ) {
+
+        return;
+
+    }
+
+
+    const message =
+        String(
+            input.value ||
+            ""
+        )
+            .trim()
+            .slice(
+                0,
+                500
+            );
+
+
+    if (!message) {
+
+        return;
+
+    }
+
+
+    const previousReply =
+        document.getElementById(
+            "vendor-dialogue-text"
+        )?.textContent
+        ||
+        "";
+
+
+    vendorAiBusy =
+        true;
+
+    input.disabled =
+        true;
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "...";
+
+    input.value =
+        "";
+
+
+    setVendorDialogue(
+        "Mano di Scimmia ti squadra per un momento..."
+    );
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.functions.invoke(
+                "vendor-ai",
+                {
+                    body: {
+                        npc_id:
+                            NPC_ID,
+
+                        message:
+                            message,
+
+                        history:
+                            vendorVisitHistory
+                    }
+                }
+            );
+
+
+        if (error) {
+
+            let detail =
+                error.message ||
+                "Errore nella chiamata alla funzione.";
+
+
+            // In alcune versioni di supabase-js il corpo della
+            // risposta della Edge Function è disponibile qui.
+            if (
+                error.context
+                &&
+                typeof error.context.json === "function"
+            ) {
+
+                try {
+
+                    const body =
+                        await error.context.json();
+
+
+                    if (
+                        body?.error
+                    ) {
+
+                        detail =
+                            body.error;
+
+                    }
+
+                } catch (_) {
+
+                    // Mantiene il messaggio originale.
+
+                }
+
+            }
+
+
+            throw new Error(
+                detail
+            );
+
+        }
+
+
+        const reply =
+            String(
+                data?.reply ||
+                ""
+            )
+                .trim();
+
+
+        if (!reply) {
+
+            throw new Error(
+                "Mano di Scimmia è rimasto insolitamente senza parole."
+            );
+
+        }
+
+
+        vendorVisitHistory.push(
+            {
+                role:
+                    "user",
+
+                content:
+                    message
+            },
+            {
+                role:
+                    "assistant",
+
+                content:
+                    reply
+            }
+        );
+
+
+        // Manteniamo soltanto gli ultimi 10 messaggi
+        // (5 scambi) della visita.
+        if (
+            vendorVisitHistory.length >
+            10
+        ) {
+
+            vendorVisitHistory =
+                vendorVisitHistory.slice(
+                    -10
+                );
+
+        }
+
+
+        setVendorDialogue(
+            reply
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore IA vendor:",
+            error
+        );
+
+
+        setVendorDialogue(
+            `Ugh... qualcosa nel portale non funziona. (${error.message || "errore sconosciuto"})`
+        );
+
+
+        // Se fallisce la richiesta non registriamo il messaggio
+        // nella memoria della visita.
+
+        if (
+            !previousReply
+        ) {
+
+            console.warn(
+                "Nessuna risposta precedente da ripristinare."
+            );
+
+        }
+
+
+    } finally {
+
+        vendorAiBusy =
+            false;
+
+        input.disabled =
+            false;
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "PARLA";
+
+        input.focus();
+
+    }
+
+}
+
+
+// ============================================================
+// RESET MEMORIA VISITA
+// ============================================================
+
+function resetVendorVisitMemory() {
+
+    vendorVisitHistory =
+        [];
+
+}
+
+
+// ============================================================
 // FEEDBACK DIALOGO VENDOR
 // ============================================================
 
@@ -825,9 +1165,26 @@ async function buyVendorItem(
             itemId;
 
 
+        const tradeReply =
+            `Affare fatto. ${itemName} è tuo per ${price} monete d'oro.`;
+
         setVendorDialogue(
-            `Affare fatto. ${itemName} è tuo per ${price} monete d'oro.`
+            tradeReply
         );
+
+        vendorVisitHistory.push(
+            {
+                role: "user",
+                content: `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato ${itemName} per ${price} monete d'oro.`
+            },
+            {
+                role: "assistant",
+                content: tradeReply
+            }
+        );
+
+        vendorVisitHistory =
+            vendorVisitHistory.slice(-10);
 
 
         console.log(
@@ -976,9 +1333,26 @@ async function sellVendorItem(
         await refreshVendorInventory();
 
 
+        const tradeReply =
+            `Prendo ${itemName}. Ti darò ${sellPrice} monete d'oro.`;
+
         setVendorDialogue(
-            `Prendo ${itemName}. Ti darò ${sellPrice} monete d'oro.`
+            tradeReply
         );
+
+        vendorVisitHistory.push(
+            {
+                role: "user",
+                content: `[EVENTO DI GIOCO CONFERMATO] Il PG ha venduto ${itemName} per ${sellPrice} monete d'oro.`
+            },
+            {
+                role: "assistant",
+                content: tradeReply
+            }
+        );
+
+        vendorVisitHistory =
+            vendorVisitHistory.slice(-10);
 
 
         console.log(
