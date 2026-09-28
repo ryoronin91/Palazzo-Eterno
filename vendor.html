@@ -9,7 +9,6 @@
         :root {
             --bg: #0d0d10;
             --panel: #17171c;
-            --panel-soft: #202027;
             --border: #3f3f49;
             --border-strong: #8d7650;
             --text: #f0eee7;
@@ -25,33 +24,33 @@
         html,
         body {
             margin: 0;
-            min-height: 100%;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+
             background: var(--bg);
             color: var(--text);
+
             font-family: Georgia, "Times New Roman", serif;
         }
 
         body {
-            min-height: 100vh;
-            padding: 14px;
+            padding: 8px;
         }
 
         .vendor-page {
-            width: min(1500px, 100%);
-            min-height: calc(100vh - 28px);
+            width: 100%;
+            height: calc(100vh - 16px);
             margin: 0 auto;
 
             display: grid;
+
             grid-template-columns:
-                minmax(190px, 0.9fr)
-                minmax(420px, 2.7fr)
-                minmax(190px, 0.9fr);
+                minmax(170px, 0.85fr)
+                minmax(360px, 2.5fr)
+                minmax(170px, 0.85fr);
 
-            grid-template-rows:
-                minmax(430px, 1fr)
-                minmax(120px, 0.28fr);
-
-            gap: 12px;
+            gap: 8px;
         }
 
         .vendor-panel {
@@ -67,23 +66,23 @@
                 var(--panel);
 
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 7px;
 
             box-shadow:
                 inset 0 0 0 1px rgba(255,255,255,0.025),
-                0 8px 22px rgba(0,0,0,0.24);
+                0 6px 18px rgba(0,0,0,0.24);
         }
 
         .panel-title {
             margin: 0;
-            padding: 12px 14px 10px;
+            padding: 9px 10px 8px;
 
             color: var(--gold);
             border-bottom: 1px solid var(--border);
 
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.07em;
             text-align: center;
         }
 
@@ -93,53 +92,106 @@
 
         .player-inventory {
             grid-column: 1;
-            grid-row: 1;
 
             display: flex;
             flex-direction: column;
+
+            min-height: 0;
         }
 
         .inventory-scroll {
             flex: 1;
+            min-height: 0;
+
             overflow-y: auto;
-            padding: 10px;
+
+            padding: 8px;
         }
 
         .inventory-empty {
             min-height: 100%;
+
             display: grid;
             place-items: center;
 
             color: var(--muted);
             text-align: center;
-            font-size: 14px;
-            line-height: 1.5;
+
+            font-size: 13px;
+            line-height: 1.4;
         }
 
         /* ====================================================
-           2 - IMMAGINE VENDOR
+           2 + 4 - VENDOR + DIALOGO SOVRAPPOSTO
         ==================================================== */
 
         .vendor-portrait {
             grid-column: 2;
-            grid-row: 1;
+
+            position: relative;
 
             display: flex;
             align-items: stretch;
             justify-content: center;
 
+            min-height: 0;
+
             background: #08080a;
+
             border-color: var(--border-strong);
         }
 
         .vendor-portrait img {
             display: block;
+
             width: 100%;
             height: 100%;
+
             object-fit: contain;
             object-position: center bottom;
+
             user-select: none;
             -webkit-user-drag: none;
+        }
+
+        .vendor-dialogue-overlay {
+            position: absolute;
+
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+
+            padding: 14px 16px;
+
+            background: rgba(10, 10, 14, 0.72);
+
+            border: 1px solid rgba(213, 181, 106, 0.75);
+            border-radius: 7px;
+
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+
+            box-shadow:
+                0 4px 18px rgba(0,0,0,0.38);
+        }
+
+        .vendor-dialogue-name {
+            margin-bottom: 6px;
+
+            color: var(--gold);
+
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .vendor-dialogue-text {
+            margin: 0;
+
+            color: var(--text);
+
+            font-size: 14px;
+            line-height: 1.45;
         }
 
         /* ====================================================
@@ -148,27 +200,42 @@
 
         .vendor-inventory {
             grid-column: 3;
-            grid-row: 1;
 
             display: flex;
             flex-direction: column;
+
+            min-height: 0;
         }
 
         .vendor-item {
             display: grid;
-            grid-template-columns: 46px 1fr;
-            gap: 10px;
+
+            grid-template-columns:
+                40px
+                1fr;
+
+            gap: 8px;
+
             align-items: center;
 
-            padding: 10px;
+            padding: 8px;
+
             border: 1px solid var(--border);
             border-radius: 6px;
+
             background: var(--slot);
+
+            margin-bottom: 8px;
+        }
+
+        .vendor-item:last-child {
+            margin-bottom: 0;
         }
 
         .vendor-item-icon {
-            width: 46px;
-            aspect-ratio: 1;
+            width: 40px;
+            height: 40px;
+
             display: grid;
             place-items: center;
 
@@ -176,70 +243,22 @@
             border-radius: 5px;
 
             font-family: Arial, sans-serif;
-            font-size: 24px;
+            font-size: 21px;
+
             background: #18181e;
         }
 
         .vendor-item-name {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .vendor-item-price {
             color: var(--gold);
-            font-size: 13px;
-        }
 
-        /* ====================================================
-           4 - DIALOGO VENDOR
-        ==================================================== */
-
-        .vendor-dialogue {
-            grid-column: 2;
-            grid-row: 2;
-
-            padding: 18px 22px;
-
-            display: flex;
-            align-items: center;
-
-            border-color: var(--border-strong);
-        }
-
-        .vendor-dialogue-content {
-            width: 100%;
-        }
-
-        .vendor-dialogue-name {
-            margin-bottom: 8px;
-
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 15px;
-            letter-spacing: 0.05em;
-        }
-
-        .vendor-dialogue-text {
-            margin: 0;
-            color: var(--text);
-            font-size: 16px;
-            line-height: 1.55;
-        }
-
-        /* ====================================================
-           SPAZI VUOTI IN BASSO A SINISTRA/DESTRA
-           come nello schema fornito
-        ==================================================== */
-
-        .vendor-bottom-left {
-            grid-column: 1;
-            grid-row: 2;
-        }
-
-        .vendor-bottom-right {
-            grid-column: 3;
-            grid-row: 2;
+            font-size: 12px;
         }
 
         /* ====================================================
@@ -247,20 +266,25 @@
         ==================================================== */
 
         @media (max-width: 900px) {
+
+            html,
             body {
-                padding: 8px;
+                overflow: auto;
+            }
+
+            body {
+                padding: 6px;
             }
 
             .vendor-page {
-                min-height: auto;
+                height: auto;
 
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns:
+                    1fr 1fr;
+
                 grid-template-rows:
-                    minmax(330px, 50vh)
-                    auto
-                    auto;
-
-                gap: 8px;
+                    minmax(360px, 55vh)
+                    260px;
             }
 
             .vendor-portrait {
@@ -271,40 +295,36 @@
             .player-inventory {
                 grid-column: 1;
                 grid-row: 2;
-                min-height: 260px;
             }
 
             .vendor-inventory {
                 grid-column: 2;
                 grid-row: 2;
-                min-height: 260px;
-            }
-
-            .vendor-dialogue {
-                grid-column: 1 / 3;
-                grid-row: 3;
-                min-height: 120px;
-            }
-
-            .vendor-bottom-left,
-            .vendor-bottom-right {
-                display: none;
             }
         }
 
         @media (max-width: 560px) {
+
             .vendor-page {
                 display: flex;
                 flex-direction: column;
             }
 
             .vendor-portrait {
-                min-height: 300px;
+                min-height: 380px;
             }
 
             .player-inventory,
             .vendor-inventory {
                 min-height: 210px;
+            }
+
+            .vendor-dialogue-overlay {
+                left: 8px;
+                right: 8px;
+                bottom: 8px;
+
+                padding: 12px;
             }
         }
     </style>
@@ -350,6 +370,23 @@
                 src="immagini/vendor/vendor_base.png"
                 alt="Vendor"
             >
+
+            <div
+                class="vendor-dialogue-overlay"
+                aria-label="Dialogo vendor"
+            >
+                <div class="vendor-dialogue-name">
+                    VENDOR
+                </div>
+
+                <p
+                    id="vendor-dialogue-text"
+                    class="vendor-dialogue-text"
+                >
+                    Benvenuto, viaggiatore. Dai un'occhiata alla mia merce.
+                </p>
+            </div>
+
         </section>
 
 
