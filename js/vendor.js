@@ -903,36 +903,6 @@ async function buyVendorSecret(
     }
 
 
-async function buyVendorSecret(
-    button
-) {
-
-    if (
-        !button
-        ||
-        button.disabled
-    ) {
-
-        return;
-
-    }
-
-
-    const secretId =
-        String(
-            button.dataset.secretId ||
-            ""
-        )
-            .trim();
-
-
-    if (!secretId) {
-
-        return;
-
-    }
-
-
     const paymentMethod =
         String(
             button.dataset.paymentMethod ||
