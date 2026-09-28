@@ -1896,6 +1896,35 @@ async function performMovement(
 
 
     // --------------------------------------------------------
+    // VARCO STANZA BOSS
+    // --------------------------------------------------------
+    //
+    // Il popup si apre SOLO quando il PG tenta realmente
+    // di entrare in una delle due celle protette.
+    //
+    // --------------------------------------------------------
+
+    if (
+        isBossRoomGateCell(
+            newX,
+            newY
+        )
+        &&
+        !hasBossRoomAccess()
+    ) {
+
+        setMessage(
+            "La porta è chiusa."
+        );
+
+        openBossRoomGatePrompt();
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
     // MURO
     // --------------------------------------------------------
 
@@ -2191,6 +2220,157 @@ function isBossRoomGateCell(
 function hasBossRoomAccess() {
 
     return bossRoomAccessUnlocked === true;
+
+}
+
+
+// ============================================================
+// POPUP VARCO STANZA BOSS
+// ============================================================
+
+function closeBossRoomGatePrompt() {
+
+    const overlay =
+        document.getElementById(
+            "boss-room-gate-overlay"
+        );
+
+    if (overlay) {
+        overlay.remove();
+    }
+
+    eventLocked =
+        false;
+
+}
+
+
+function openBossRoomGatePrompt() {
+
+    if (
+        hasBossRoomAccess() ||
+        document.getElementById(
+            "boss-room-gate-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+    overlay.id =
+        "boss-room-gate-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.className =
+        "combat-event-modal";
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            🔒
+        </div>
+
+        <h2>
+            PORTA CHIUSA
+        </h2>
+
+        <p>
+            La porta è chiusa.
+        </p>
+
+        <div class="combat-event-warning">
+            Sembra necessario un codice per poter accedere
+            a questa zona.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="boss-room-gate-close-button"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                INDIETRO
+            </button>
+
+            <button
+                id="boss-room-gate-code-button"
+                type="button"
+                class="combat-event-button combat-event-confirm"
+            >
+                INSERISCI CODICE
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    const closeButton =
+        document.getElementById(
+            "boss-room-gate-close-button"
+        );
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            closeBossRoomGatePrompt
+        );
+
+    }
+
+
+    const codeButton =
+        document.getElementById(
+            "boss-room-gate-code-button"
+        );
+
+    if (codeButton) {
+
+        codeButton.addEventListener(
+            "click",
+            () => {
+
+                // Nel prossimo passaggio collegheremo qui
+                // il campo password e la verifica su Supabase.
+                setMessage(
+                    "Inserimento codice: prossimo passaggio."
+                );
+
+            }
+        );
+
+    }
 
 }
 
