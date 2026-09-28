@@ -813,6 +813,11 @@ function renderVendorSecretOffer(
         );
 
 
+    const acceptsMonkeyHand =
+        offer.payment_item_id ===
+        "mano_scimmia";
+
+
     container.innerHTML = `
         <div class="vendor-secret-offer-title">
             AFFARE RISERVATO
@@ -825,15 +830,37 @@ function renderVendorSecretOffer(
             )}
         </div>
 
-        <button
-            class="vendor-secret-buy-button"
-            type="button"
-            data-secret-id="${escapeVendorHtml(
-                offer.secret_id
-            )}"
-        >
-            COMPRA · ${price} ORO
-        </button>
+        <div class="vendor-secret-payment-buttons">
+
+            <button
+                class="vendor-secret-buy-button"
+                type="button"
+                data-secret-id="${escapeVendorHtml(
+                    offer.secret_id
+                )}"
+                data-payment-method="gold"
+            >
+                COMPRA · ${price} ORO
+            </button>
+
+            ${
+                acceptsMonkeyHand
+                    ? `
+                        <button
+                            class="vendor-secret-buy-button vendor-secret-buy-item-button"
+                            type="button"
+                            data-secret-id="${escapeVendorHtml(
+                                offer.secret_id
+                            )}"
+                            data-payment-method="item"
+                        >
+                            PAGA · MANO DI SCIMMIA
+                        </button>
+                    `
+                    : ""
+            }
+
+        </div>
     `;
 
     container.hidden =
@@ -876,6 +903,43 @@ async function buyVendorSecret(
     }
 
 
+async function buyVendorSecret(
+    button
+) {
+
+    if (
+        !button
+        ||
+        button.disabled
+    ) {
+
+        return;
+
+    }
+
+
+    const secretId =
+        String(
+            button.dataset.secretId ||
+            ""
+        )
+            .trim();
+
+
+    if (!secretId) {
+
+        return;
+
+    }
+
+
+    const paymentMethod =
+        String(
+            button.dataset.paymentMethod ||
+            "gold"
+        );
+
+
     const originalText =
         button.textContent;
 
@@ -900,7 +964,10 @@ async function buyVendorSecret(
                         NPC_ID,
 
                     p_secret_id:
-                        secretId
+                        secretId,
+
+                    p_payment_method:
+                        paymentMethod
                 }
             );
 
@@ -966,7 +1033,9 @@ async function buyVendorSecret(
                     "user",
 
                 content:
-                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato il segreto "${secretName}" pagando ${pricePaid} monete d'oro. Il segreto rivelato è: ${secretValue}`
+                    data?.payment_method === "item"
+                        ? `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato il segreto "${secretName}" consegnando una mano di scimmia. Il segreto rivelato è: ${secretValue}`
+                        : `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato il segreto "${secretName}" pagando ${pricePaid} monete d'oro. Il segreto rivelato è: ${secretValue}`
             },
             {
                 role:

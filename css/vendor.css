@@ -1733,3 +1733,56 @@ input {
     }
 
 }
+/* ============================================================
+   VENDOR - PAGAMENTO SEGRETI CON MANO DI SCIMMIA
+   Aggiungere in fondo a css/vendor.css
+============================================================ */
+
+.vendor-secret-payment-buttons {
+    grid-area:
+        button;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        6px;
+}
+
+
+.vendor-secret-buy-item-button {
+    color:
+        var(--gold-bright);
+
+    border-color:
+        rgba(225, 194, 122, 0.55);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(198, 164, 92, 0.14),
+            rgba(198, 164, 92, 0.045)
+        );
+}
+
+
+.vendor-secret-buy-item-button:hover:not(:disabled) {
+    background:
+        rgba(198, 164, 92, 0.18);
+}
+
+
+@media (max-width: 560px) {
+
+    .vendor-secret-payment-buttons {
+        width:
+            100%;
+
+        margin-top:
+            7px;
+    }
+
+}
