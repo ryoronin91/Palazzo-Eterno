@@ -29,6 +29,12 @@ let character =
 let characterInventory =
     [];
 
+let vendorItems =
+    [];
+
+const VENDOR_ID =
+    "vendor_floor_1";
+
 
 // ============================================================
 // HEADER INVENTARIO PG
@@ -129,9 +135,13 @@ document.addEventListener(
 
             await loadVendorCharacterInventory();
 
+            await loadVendorItems();
+
             updateVendorPlayerInventoryHeader();
 
             renderVendorCharacterInventory();
+
+            renderVendorItems();
 
 
         } catch (error) {
@@ -199,7 +209,8 @@ async function loadVendorCharacter() {
             )
             .select(`
                 id,
-                nome
+                nome,
+                score
             `)
             .eq(
                 "user_id",
@@ -286,6 +297,250 @@ async function loadVendorCharacterInventory() {
 
     characterInventory =
         data || [];
+
+}
+
+
+// ============================================================
+// CARICA MERCE VENDOR IN BASE ALLO SCORE
+// ============================================================
+
+async function loadVendorItems() {
+
+    if (!character) {
+
+        vendorItems =
+            [];
+
+        return;
+
+    }
+
+
+    const characterScore =
+        Math.max(
+            0,
+            Number(
+                character.score
+            ) || 0
+        );
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "vendor_items"
+            )
+            .select(`
+                id,
+                vendor_id,
+                item_id,
+                buy_price,
+                min_score,
+                unlimited,
+
+                item:items (
+                    id,
+                    name,
+                    description,
+                    item_type,
+                    equip_slot,
+                    hand_rule,
+                    attack_bonus,
+                    defense_bonus,
+                    forza_bonus,
+                    resistenza_bonus,
+                    costituzione_bonus,
+                    intelligenza_bonus,
+                    destrezza_bonus,
+                    fortuna_bonus,
+                    heal_pf,
+                    heal_pm,
+                    gold_value
+                )
+            `)
+            .eq(
+                "vendor_id",
+                VENDOR_ID
+            )
+            .lte(
+                "min_score",
+                characterScore
+            )
+            .order(
+                "min_score",
+                {
+                    ascending: true
+                }
+            )
+            .order(
+                "buy_price",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    vendorItems =
+        (data || [])
+            .filter(
+                row =>
+                    row?.item
+            );
+
+}
+
+
+// ============================================================
+// RENDER MERCE VENDOR
+// ============================================================
+
+function renderVendorItems() {
+
+    const container =
+        document.querySelector(
+            ".vendor-stock"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !vendorItems.length
+    ) {
+
+        container.innerHTML = `
+            <div class="inventory-empty">
+                Nessuna merce disponibile.
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    const sortedItems =
+        [...vendorItems]
+            .sort(
+                (
+                    a,
+                    b
+                ) => {
+
+                    const scoreDifference =
+                        (
+                            Number(
+                                a.min_score
+                            ) || 0
+                        )
+                        -
+                        (
+                            Number(
+                                b.min_score
+                            ) || 0
+                        );
+
+
+                    if (
+                        scoreDifference !== 0
+                    ) {
+
+                        return scoreDifference;
+
+                    }
+
+
+                    return String(
+                        a.item?.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            b.item?.name ||
+                            ""
+                        ),
+                        "it"
+                    );
+
+                }
+            );
+
+
+    container.innerHTML =
+        sortedItems
+            .map(
+                row => {
+
+                    const price =
+                        Math.max(
+                            0,
+                            Number(
+                                row.buy_price
+                            ) || 0
+                        );
+
+
+                    return `
+                        <article
+                            class="vendor-stock-item"
+                            data-vendor-item-id="${escapeVendorHtml(
+                                row.id
+                            )}"
+                            data-item-id="${escapeVendorHtml(
+                                row.item.id
+                            )}"
+                            data-price="${price}"
+                            data-min-score="${Math.max(
+                                0,
+                                Number(
+                                    row.min_score
+                                ) || 0
+                            )}"
+                        >
+
+                            <div class="vendor-stock-name">
+                                ${escapeVendorHtml(
+                                    row.item.name ||
+                                    row.item.id
+                                )}
+                            </div>
+
+                            <div class="vendor-stock-price">
+                                ${price}
+                            </div>
+
+                            <button
+                                class="merchant-button vendor-buy-button"
+                                type="button"
+                                data-buy-item-id="${escapeVendorHtml(
+                                    row.item.id
+                                )}"
+                                data-buy-price="${price}"
+                            >
+                                COMPRA
+                            </button>
+
+                        </article>
+                    `;
+
+                }
+            )
+            .join("");
 
 }
 
