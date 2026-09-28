@@ -2693,9 +2693,203 @@ function renderBackpackItem(
     }
 
 
+    // ========================================================
+    // MANO DI SCIMMIA INCOMPLETA + DITO
+    // ========================================================
+
+    if (
+        item.id ===
+            "mano_scimmia_manca_dito"
+        &&
+        canCompleteMonkeyHand()
+    ) {
+
+        const combineActions =
+            document.createElement(
+                "div"
+            );
+
+
+        combineActions.className =
+            "backpack-actions";
+
+
+        const combineButton =
+            document.createElement(
+                "button"
+            );
+
+
+        combineButton.type =
+            "button";
+
+
+        combineButton.className =
+            "inventory-button";
+
+
+        combineButton.textContent =
+            "COMPLETA LA MANO";
+
+
+        combineButton.addEventListener(
+            "click",
+            () => {
+
+                completeMonkeyHand(
+                    combineButton
+                );
+
+            }
+        );
+
+
+        combineActions.appendChild(
+            combineButton
+        );
+
+
+        card.appendChild(
+            combineActions
+        );
+
+    }
+
+
     container.appendChild(
         card
     );
+
+}
+
+
+// ============================================================
+// COMBINA MANO DI SCIMMIA
+// ============================================================
+
+function canCompleteMonkeyHand() {
+
+    const hasFinger =
+        characterInventory.some(
+            entry =>
+                !entry.equipped_slot
+                &&
+                entry.item_id ===
+                    "dito_scimmia"
+                &&
+                (
+                    Number(
+                        entry.quantity
+                    ) || 0
+                ) >= 1
+        );
+
+
+    const hasIncompleteHand =
+        characterInventory.some(
+            entry =>
+                !entry.equipped_slot
+                &&
+                entry.item_id ===
+                    "mano_scimmia_manca_dito"
+                &&
+                (
+                    Number(
+                        entry.quantity
+                    ) || 0
+                ) >= 1
+        );
+
+
+    return (
+        hasFinger
+        &&
+        hasIncompleteHand
+    );
+
+}
+
+
+async function completeMonkeyHand(
+    button
+) {
+
+    if (
+        !button
+        ||
+        button.disabled
+    ) {
+
+        return;
+
+    }
+
+
+    const originalText =
+        button.textContent;
+
+
+    try {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "COMPLETAMENTO...";
+
+
+        showMessage(
+            "Stai completando la Mano di scimmia..."
+        );
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "combine_monkey_hand"
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshCharacterAndInventory();
+
+
+        showMessage(
+            data?.message ||
+            "Hai completato una Mano di scimmia."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore combinazione Mano di scimmia:",
+            error
+        );
+
+
+        showMessage(
+            cleanDatabaseError(
+                error.message
+            )
+        );
+
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            originalText;
+
+    }
 
 }
 
