@@ -1,557 +1,480 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palazzo Eterno - Vendor</title>
+// ============================================================
+// PALAZZO ETERNO
+// VENDOR.JS
+// ============================================================
 
-    <style>
-        :root {
-            --bg: #0d0d10;
-            --panel: #17171c;
-            --border: #3f3f49;
-            --border-strong: #8d7650;
-            --text: #f0eee7;
-            --muted: #b8b4aa;
-            --gold: #d5b56a;
-            --slot: #24242b;
+console.log(
+    "VENDOR.JS CARICATO"
+);
+
+
+// ============================================================
+// SUPABASE
+// ============================================================
+
+const db =
+    supabaseClient;
+
+
+// ============================================================
+// STATO
+// ============================================================
+
+let currentUser =
+    null;
+
+let character =
+    null;
+
+let characterInventory =
+    [];
+
+
+// ============================================================
+// AVVIO
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        try {
+
+            await loadVendorCharacter();
+
+            await loadVendorCharacterInventory();
+
+            renderVendorCharacterInventory();
+
+
+        } catch (error) {
+
+            console.error(
+                "Errore avvio vendor:",
+                error
+            );
+
+
+            renderVendorInventoryError(
+                error.message ||
+                "Impossibile caricare l'inventario."
+            );
+
         }
 
-        * {
-            box-sizing: border-box;
-        }
+    }
+);
 
-        html,
-        body {
-            margin: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
 
-            background: var(--bg);
-            color: var(--text);
+// ============================================================
+// CARICA PERSONAGGIO
+// ============================================================
 
-            font-family: Georgia, "Times New Roman", serif;
-        }
+async function loadVendorCharacter() {
 
-        body {
-            padding: 8px;
-        }
+    const {
+        data: {
+            user
+        },
+        error: authError
+    } =
+        await db.auth.getUser();
 
-        .vendor-page {
-            width: 100%;
-            height: calc(100vh - 16px);
-            margin: 0 auto;
 
-            display: grid;
+    if (authError) {
 
-            grid-template-columns:
-                minmax(170px, 0.85fr)
-                minmax(360px, 2.5fr)
-                minmax(170px, 0.85fr);
+        throw authError;
 
-            gap: 8px;
-        }
+    }
 
-        .vendor-panel {
-            position: relative;
-            overflow: hidden;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(255,255,255,0.02),
-                    rgba(0,0,0,0.10)
-                ),
-                var(--panel);
+    if (!user) {
 
-            border: 2px solid var(--border);
-            border-radius: 7px;
+        window.location.href =
+            "login.html";
 
-            box-shadow:
-                inset 0 0 0 1px rgba(255,255,255,0.025),
-                0 6px 18px rgba(0,0,0,0.24);
-        }
+        return;
 
-        .panel-title {
-            margin: 0;
-            padding: 9px 10px 8px;
+    }
 
-            color: var(--gold);
-            border-bottom: 1px solid var(--border);
 
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.07em;
-            text-align: center;
-        }
+    currentUser =
+        user;
 
-        /* ====================================================
-           1 - INVENTARIO PG
-        ==================================================== */
 
-        .player-inventory {
-            grid-column: 1;
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "characters"
+            )
+            .select(`
+                id,
+                nome
+            `)
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .maybeSingle();
 
-            display: flex;
-            flex-direction: column;
 
-            min-height: 0;
-        }
+    if (error) {
 
-        .inventory-scroll {
-            flex: 1;
-            min-height: 0;
+        throw error;
 
-            overflow-y: auto;
+    }
 
-            padding: 8px;
-        }
 
-        .inventory-empty {
-            min-height: 100%;
+    if (!data) {
 
-            display: grid;
-            place-items: center;
+        window.location.href =
+            "personaggio.html";
 
-            color: var(--muted);
-            text-align: center;
+        return;
 
-            font-size: 13px;
-            line-height: 1.4;
-        }
+    }
 
-        /* ====================================================
-           2 + 4 - VENDOR + DIALOGO SOVRAPPOSTO
-        ==================================================== */
 
-        .vendor-portrait {
-            grid-column: 2;
+    character =
+        data;
 
-            position: relative;
+}
 
-            display: flex;
-            align-items: stretch;
-            justify-content: center;
 
-            min-height: 0;
+// ============================================================
+// CARICA INVENTARIO REALE
+// ============================================================
 
-            background: #08080a;
+async function loadVendorCharacterInventory() {
 
-            border-color: var(--border-strong);
-        }
+    if (!character) {
 
-        .vendor-portrait img {
-            display: block;
+        characterInventory =
+            [];
 
-            width: 100%;
-            height: 100%;
+        return;
 
-            object-fit: contain;
-            object-position: center bottom;
+    }
 
-            user-select: none;
-            -webkit-user-drag: none;
-        }
 
-        .vendor-dialogue-overlay {
-            position: absolute;
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "character_inventory"
+            )
+            .select(`
+                id,
+                quantity,
+                equipped_slot,
 
-            left: 12px;
-            right: 12px;
-            bottom: 12px;
+                item:items (
+                    id,
+                    name,
+                    description,
+                    item_type,
+                    equip_slot,
+                    heal_pf,
+                    heal_pm,
+                    gold_value
+                )
+            `)
+            .eq(
+                "character_id",
+                character.id
+            );
 
-            min-height: 36%;
-            max-height: 40%;
 
-            padding: 18px 20px;
+    if (error) {
 
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
+        throw error;
 
-            background: rgba(10, 10, 14, 0.68);
+    }
 
-            border: 1px solid rgba(213, 181, 106, 0.78);
-            border-radius: 8px;
 
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+    characterInventory =
+        data || [];
 
-            box-shadow:
-                0 4px 20px rgba(0,0,0,0.42);
-        }
+}
 
-        .vendor-dialogue-name {
-            margin-bottom: 8px;
 
-            color: var(--gold);
+// ============================================================
+// ICONA OGGETTO
+// ============================================================
 
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
+function getVendorInventoryItemIcon(
+    entry
+) {
 
-        .vendor-dialogue-text {
-            margin: 0;
+    const item =
+        entry?.item || {};
 
-            color: var(--text);
+    const itemType =
+        String(
+            item.item_type ||
+            ""
+        ).toLowerCase();
 
-            font-size: 16px;
-            line-height: 1.55;
-        }
 
-        /* ====================================================
-           3 - INVENTARIO VENDOR
-        ==================================================== */
+    if (
+        Number(
+            item.heal_pf
+        ) > 0
+    ) {
 
-        .vendor-inventory {
-            grid-column: 3;
+        return "♥";
 
-            display: flex;
-            flex-direction: column;
+    }
 
-            min-height: 0;
-        }
 
-        .vendor-item {
-            display: grid;
+    if (
+        Number(
+            item.heal_pm
+        ) > 0
+    ) {
 
-            grid-template-columns:
-                40px
-                1fr;
+        return "✦";
 
-            gap: 8px;
+    }
 
-            align-items: center;
 
-            padding: 8px;
+    if (
+        itemType ===
+        "currency"
+    ) {
 
-            border: 1px solid var(--border);
-            border-radius: 6px;
+        return "●";
 
-            background: var(--slot);
+    }
 
-            margin-bottom: 8px;
-        }
 
-        .vendor-item:last-child {
-            margin-bottom: 0;
-        }
+    if (
+        itemType ===
+        "weapon"
+    ) {
 
-        .vendor-item-icon {
-            width: 40px;
-            height: 40px;
+        return "⚔";
 
-            display: grid;
-            place-items: center;
+    }
 
-            border: 1px solid #55545e;
-            border-radius: 5px;
 
-            font-family: Arial, sans-serif;
-            font-size: 21px;
+    if (
+        itemType ===
+        "armor"
+    ) {
 
-            background: #18181e;
-        }
+        return "◆";
 
-        .vendor-item-name {
-            margin-bottom: 4px;
+    }
 
-            font-weight: 700;
-            font-size: 13px;
-        }
 
-        .vendor-item-price {
-            color: var(--gold);
+    if (
+        itemType ===
+        "accessory"
+    ) {
 
-            font-size: 12px;
-        }
+        return "◇";
 
-        /* ====================================================
-           RESPONSIVE
-        ==================================================== */
+    }
 
-        @media (max-width: 900px) {
 
-            html,
-            body {
-                overflow: auto;
-            }
+    return "□";
 
-            body {
-                padding: 6px;
-            }
+}
 
-            .vendor-page {
-                height: auto;
 
-                grid-template-columns:
-                    1fr 1fr;
+// ============================================================
+// ESCAPE HTML
+// ============================================================
 
-                grid-template-rows:
-                    minmax(360px, 55vh)
-                    260px;
-            }
+function escapeVendorHtml(
+    value
+) {
 
-            .vendor-portrait {
-                grid-column: 1 / 3;
-                grid-row: 1;
-            }
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
-            .player-inventory {
-                grid-column: 1;
-                grid-row: 2;
-            }
+}
 
-            .vendor-inventory {
-                grid-column: 2;
-                grid-row: 2;
-            }
-        }
 
-        @media (max-width: 560px) {
+// ============================================================
+// RENDER INVENTARIO
+// ============================================================
 
-            .vendor-page {
-                display: flex;
-                flex-direction: column;
-            }
+function renderVendorCharacterInventory() {
 
-            .vendor-portrait {
-                min-height: 380px;
-            }
+    const container =
+        document.getElementById(
+            "player-inventory-list"
+        );
 
-            .player-inventory,
-            .vendor-inventory {
-                min-height: 210px;
-            }
 
-            .vendor-dialogue-overlay {
-                left: 8px;
-                right: 8px;
-                bottom: 8px;
+    if (!container) {
 
-                padding: 12px;
-            }
-        }
-    
-        /* ====================================================
-           INVENTARIO REALE DEL PG
-        ==================================================== */
+        return;
 
-        .player-item {
-            display: grid;
-            grid-template-columns: 38px 1fr auto;
-            gap: 8px;
-            align-items: center;
+    }
 
-            padding: 8px;
-            margin-bottom: 8px;
 
-            border: 1px solid var(--border);
-            border-radius: 6px;
+    const entries =
+        characterInventory
+            .filter(
+                entry =>
+                    entry?.item
+                    &&
+                    Number(
+                        entry.quantity
+                    ) > 0
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(
+                        a.item?.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            b.item?.name ||
+                            ""
+                        ),
+                        "it"
+                    )
+            );
 
-            background: var(--slot);
-        }
 
-        .player-item:last-child {
-            margin-bottom: 0;
-        }
+    if (!entries.length) {
 
-        .player-item-icon {
-            width: 38px;
-            height: 38px;
-
-            display: grid;
-            place-items: center;
-
-            border: 1px solid #55545e;
-            border-radius: 5px;
-
-            background: #18181e;
-
-            font-family: Arial, sans-serif;
-            font-size: 19px;
-        }
-
-        .player-item-main {
-            min-width: 0;
-        }
-
-        .player-item-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .player-item-meta {
-            margin-top: 3px;
-
-            color: var(--muted);
-
-            font-size: 11px;
-        }
-
-        .player-item-quantity {
-            min-width: 32px;
-
-            color: var(--gold);
-
-            font-size: 13px;
-            font-weight: 700;
-            text-align: right;
-        }
-
-        .player-inventory-status {
-            padding: 12px;
-
-            color: var(--muted);
-
-            font-size: 13px;
-            line-height: 1.4;
-            text-align: center;
-        }
-
-    </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=10"></script>
-
-</head>
-
-<body>
-
-    <main class="vendor-page">
-
-        <!-- ==================================================
-             1 - INVENTARIO PG
-        =================================================== -->
-
-        <section
-            class="vendor-panel player-inventory"
-            aria-label="Inventario personaggio"
-        >
-            <h2 class="panel-title">
-                INVENTARIO PG
-            </h2>
-
-            <div
-                id="player-inventory-list"
-                class="inventory-scroll"
-            >
-                <div class="player-inventory-status">
-                    Caricamento inventario...
-                </div>
+        container.innerHTML = `
+            <div class="inventory-empty">
+                Inventario vuoto.
             </div>
-        </section>
+        `;
+
+        return;
+
+    }
 
 
-        <!-- ==================================================
-             2 - IMMAGINE VENDOR
-        =================================================== -->
+    container.innerHTML =
+        entries
+            .map(
+                entry => {
 
-        <section
-            class="vendor-panel vendor-portrait"
-            aria-label="Vendor"
-        >
-            <img
-                src="immagini/vendor/vendor_base.png"
-                alt="Vendor"
-            >
-
-            <div
-                class="vendor-dialogue-overlay"
-                aria-label="Dialogo vendor"
-            >
-                <div class="vendor-dialogue-name">
-                    VENDOR
-                </div>
-
-                <p
-                    id="vendor-dialogue-text"
-                    class="vendor-dialogue-text"
-                >
-                    Benvenuto, viaggiatore. Dai un'occhiata alla mia merce.
-                </p>
-            </div>
-
-        </section>
+                    const equipped =
+                        entry.equipped_slot
+                            ? `
+                                <div class="player-item-meta">
+                                    Equipaggiato: ${escapeVendorHtml(
+                                        entry.equipped_slot
+                                    )}
+                                </div>
+                            `
+                            : "";
 
 
-        <!-- ==================================================
-             3 - INVENTARIO VENDOR
-        =================================================== -->
+                    return `
+                        <article
+                            class="player-item"
+                            data-inventory-id="${escapeVendorHtml(
+                                entry.id
+                            )}"
+                            data-item-id="${escapeVendorHtml(
+                                entry.item.id
+                            )}"
+                        >
+                            <div
+                                class="player-item-icon"
+                                aria-hidden="true"
+                            >
+                                ${getVendorInventoryItemIcon(
+                                    entry
+                                )}
+                            </div>
 
-        <section
-            class="vendor-panel vendor-inventory"
-            aria-label="Inventario vendor"
-        >
-            <h2 class="panel-title">
-                INVENTARIO VENDOR
-            </h2>
+                            <div class="player-item-main">
 
-            <div class="inventory-scroll">
+                                <div class="player-item-name">
+                                    ${escapeVendorHtml(
+                                        entry.item.name ||
+                                        entry.item.id
+                                    )}
+                                </div>
 
-                <article
-                    class="vendor-item"
-                    data-item-name="Pozione di Cura"
-                    data-price="5"
-                >
-                    <div
-                        class="vendor-item-icon"
-                        aria-hidden="true"
-                    >
-                        ♥
-                    </div>
+                                ${equipped}
 
-                    <div>
-                        <div class="vendor-item-name">
-                            Pozione di Cura
-                        </div>
+                            </div>
 
-                        <div class="vendor-item-price">
-                            5 monete d'oro
-                        </div>
-                    </div>
-                </article>
+                            <div class="player-item-quantity">
+                                ×${Number(
+                                    entry.quantity
+                                ) || 0}
+                            </div>
 
-                <article
-                    class="vendor-item"
-                    data-item-name="Pozione di Mana"
-                    data-price="5"
-                >
-                    <div
-                        class="vendor-item-icon"
-                        aria-hidden="true"
-                    >
-                        ✦
-                    </div>
+                        </article>
+                    `;
 
-                    <div>
-                        <div class="vendor-item-name">
-                            Pozione di Mana
-                        </div>
+                }
+            )
+            .join("");
 
-                        <div class="vendor-item-price">
-                            5 monete d'oro
-                        </div>
-                    </div>
-                </article>
-
-            </div>
-        </section>
+}
 
 
-        <!-- ==================================================
-             4 - FINESTRA DI DIALOGO
-        =================================================== -->
+// ============================================================
+// ERRORE INVENTARIO
+// ============================================================
 
-    </main>
+function renderVendorInventoryError(
+    message
+) {
 
-    <script src="js/vendor.js?v=1"></script>
+    const container =
+        document.getElementById(
+            "player-inventory-list"
+        );
 
-</body>
-</html>
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML = `
+        <div class="player-inventory-status">
+            ${escapeVendorHtml(
+                message
+            )}
+        </div>
+    `;
+
+}
