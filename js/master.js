@@ -2903,12 +2903,102 @@ const MASTER_COMBAT_EVENTS = [
     { id: "C2", x: 7,  y: 11, encounter_id: "combat_2" },
     { id: "C3", x: 13, y: 14, encounter_id: "combat_3" },
     { id: "C4", x: 19, y: 11, encounter_id: "combat_4" },
-    { id: "C5", x: 11, y: 20, encounter_id: "combat_5" }
+    { id: "C5", x: 11, y: 20, encounter_id: "combat_5" },
+    { id: "BOSS1", x: 19, y: 20, encounter_id: "combat_boss", type: "boss" }
+];
+
+const MASTER_SPECIAL_EVENTS = [
+    { id: "PVP1", x: 1, y: 14, type: "pvp", label: "PVP" },
+    { id: "VENDOR1", x: 2, y: 11, type: "vendor", label: "VENDOR" }
 ];
 
 const allMasterPlayers = new Map();
 const activeMasterCombats = new Map();
+const masterPlayerScores = new Map();
+const masterMonkeyFingerOwners = new Set();
 let masterDashboardRefreshTimer = null;
+
+async function loadMasterCharacterExtras(characterIds) {
+    const ids = Array.isArray(characterIds)
+        ? characterIds.filter(Boolean)
+        : [];
+
+    if (ids.length === 0) {
+        masterPlayerScores.clear();
+        masterMonkeyFingerOwners.clear();
+        return;
+    }
+
+    const [scoreResults, inventoryResult] = await Promise.all([
+        Promise.all(
+            ids.map(async characterId => {
+                try {
+                    const { data, error } = await db.rpc(
+                        "get_character_final_score",
+                        {
+                            p_character_id: characterId
+                        }
+                    );
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    return {
+                        characterId,
+                        score: Number(data) || 0
+                    };
+                } catch (error) {
+                    console.error(
+                        "Errore score Master per PG",
+                        characterId,
+                        error
+                    );
+
+                    return {
+                        characterId,
+                        score: masterPlayerScores.get(characterId) ?? 0
+                    };
+                }
+            })
+        ),
+
+        db
+            .from("character_inventory")
+            .select("character_id, item_id, quantity")
+            .in("character_id", ids)
+            .eq("item_id", "dito_scimmia")
+    ]);
+
+    scoreResults.forEach(entry => {
+        masterPlayerScores.set(
+            entry.characterId,
+            entry.score
+        );
+    });
+
+    if (inventoryResult.error) {
+        console.error(
+            "Errore controllo Dito di Scimmia Master:",
+            inventoryResult.error
+        );
+        return;
+    }
+
+    masterMonkeyFingerOwners.clear();
+
+    (inventoryResult.data || []).forEach(entry => {
+        if (
+            entry.character_id &&
+            (Number(entry.quantity) || 0) > 0
+        ) {
+            masterMonkeyFingerOwners.add(
+                entry.character_id
+            );
+        }
+    });
+}
+
 
 async function loadAllMasterCharacters() {
     const { data, error } = await db
@@ -2937,6 +3027,10 @@ async function loadAllMasterCharacters() {
         return;
     }
 
+    const characterIds = (data || []).map(characterData => characterData.id);
+
+    await loadMasterCharacterExtras(characterIds);
+
     const currentIds = new Set();
 
     (data || []).forEach(characterData => {
@@ -2963,6 +3057,8 @@ async function loadAllMasterCharacters() {
                 ? presence.current_hp
                 : characterData.current_hp,
             active_combat_id: presence?.active_combat_id || characterData.active_combat_id || null,
+            score: masterPlayerScores.get(characterData.id) ?? 0,
+            has_monkey_finger: masterMonkeyFingerOwners.has(characterData.id),
             online: onlinePlayers.has(characterData.id)
         });
     });
@@ -3311,6 +3407,10 @@ function updatePlayerList() {
         position.className = "master-player-position";
         position.textContent = `X ${Number(player.x) || 0} • Y ${Number(player.y) || 0}`;
 
+        const score = document.createElement("span");
+        score.className = "master-player-score";
+        score.textContent = `SCORE ${Number(player.score) || 0}`;
+
         const statusRow = document.createElement("div");
         statusRow.className = "master-player-status-row";
 
@@ -3326,7 +3426,14 @@ function updatePlayerList() {
             statusRow.appendChild(combatBadge);
         }
 
-        info.append(name, position, statusRow);
+        if (player.has_monkey_finger) {
+            const fingerBadge = document.createElement("span");
+            fingerBadge.className = "master-status-badge monkey-finger";
+            fingerBadge.textContent = "☝ DITO DI SCIMMIA";
+            statusRow.appendChild(fingerBadge);
+        }
+
+        info.append(name, position, score, statusRow);
 
         row.append(token, info);
 
@@ -3420,25 +3527,63 @@ function renderMasterEvents() {
 
     MASTER_COMBAT_EVENTS.forEach(combatEvent => {
         const marker = document.createElement("div");
-        marker.className = "master-event-marker is-combat";
+        const isBoss = combatEvent.type === "boss";
+
+        marker.className =
+            "master-event-marker is-combat" +
+            (isBoss ? " is-boss" : "");
+
         marker.dataset.eventId = combatEvent.id;
-        marker.dataset.eventType = "combat";
-        marker.textContent = "⚔";
+        marker.dataset.eventType = isBoss ? "boss" : "combat";
+        marker.textContent = isBoss ? "👹" : "⚔";
 
         const liveCombat = getActiveCombatForEncounter(combatEvent.encounter_id);
 
         if (liveCombat) {
             marker.classList.add("has-live-combat");
-            marker.title = `COMBATTIMENTO IN CORSO\n${combatEvent.id} · ${combatEvent.encounter_id}\nX ${combatEvent.x} • Y ${combatEvent.y}\nClicca per osservare`;
+            marker.title =
+                `${isBoss ? "BOSS IN CORSO" : "COMBATTIMENTO IN CORSO"}\n` +
+                `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
+                `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
+                "Clicca per osservare";
+
             marker.addEventListener("click", event => {
                 event.stopPropagation();
                 openMasterCombat(liveCombat.id);
             });
         } else {
-            marker.title = `EVENTO COMBAT\n${combatEvent.id} · ${combatEvent.encounter_id}\nX ${combatEvent.x} • Y ${combatEvent.y}`;
+            marker.title =
+                `${isBoss ? "GOBLIN BOSS" : "EVENTO COMBAT"}\n` +
+                `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
+                `X ${combatEvent.x} • Y ${combatEvent.y}`;
         }
 
         placeMarker(combatEvent.x, combatEvent.y, marker);
+    });
+
+    MASTER_SPECIAL_EVENTS.forEach(specialEvent => {
+        const marker = document.createElement("div");
+
+        marker.className =
+            `master-event-marker is-special is-${specialEvent.type}`;
+
+        marker.dataset.eventId = specialEvent.id;
+        marker.dataset.eventType = specialEvent.type;
+
+        marker.textContent =
+            specialEvent.type === "pvp"
+                ? "⚔"
+                : "🐒";
+
+        marker.title =
+            `${specialEvent.label}\n` +
+            `X ${specialEvent.x} • Y ${specialEvent.y}`;
+
+        placeMarker(
+            specialEvent.x,
+            specialEvent.y,
+            marker
+        );
     });
 }
 
@@ -3514,7 +3659,11 @@ async function openCharacterSheet(characterId) {
     fillCharacterSheet({
         ...data,
         online: !!cached?.online,
-        active_combat_id: cached?.active_combat_id || data.active_combat_id || null
+        active_combat_id: cached?.active_combat_id || data.active_combat_id || null,
+        score: cached?.score ?? masterPlayerScores.get(characterId) ?? 0,
+        has_monkey_finger:
+            cached?.has_monkey_finger ??
+            masterMonkeyFingerOwners.has(characterId)
     });
 
     modal.hidden = false;
@@ -3569,7 +3718,23 @@ function fillCharacterSheet(characterData) {
 
     setText("master-character-current-hp", `${currentHp} / ${life}`);
     setText("master-character-current-pm", `${currentPm} / ${mana}`);
+    setText("master-character-score", Number(characterData.score) || 0);
+    setText(
+        "master-character-monkey-finger",
+        characterData.has_monkey_finger ? "☝ SÌ" : "NO"
+    );
     setText("master-character-online-status", characterData.online ? "● ONLINE" : "○ OFFLINE");
+
+    const fingerBox = document
+        .getElementById("master-character-monkey-finger")
+        ?.closest(".master-runtime-box");
+
+    if (fingerBox) {
+        fingerBox.classList.toggle(
+            "has-monkey-finger",
+            !!characterData.has_monkey_finger
+        );
+    }
 
     setText(
         "master-character-position",
