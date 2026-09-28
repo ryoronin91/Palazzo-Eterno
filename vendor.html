@@ -161,26 +161,33 @@
             right: 12px;
             bottom: 12px;
 
-            padding: 14px 16px;
+            min-height: 42%;
+            max-height: 48%;
 
-            background: rgba(10, 10, 14, 0.72);
+            padding: 18px 20px;
 
-            border: 1px solid rgba(213, 181, 106, 0.75);
-            border-radius: 7px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
 
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
+            background: rgba(10, 10, 14, 0.68);
+
+            border: 1px solid rgba(213, 181, 106, 0.78);
+            border-radius: 8px;
+
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
 
             box-shadow:
-                0 4px 18px rgba(0,0,0,0.38);
+                0 4px 20px rgba(0,0,0,0.42);
         }
 
         .vendor-dialogue-name {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
 
             color: var(--gold);
 
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
             letter-spacing: 0.05em;
         }
@@ -190,8 +197,8 @@
 
             color: var(--text);
 
-            font-size: 14px;
-            line-height: 1.45;
+            font-size: 16px;
+            line-height: 1.55;
         }
 
         /* ====================================================
@@ -457,37 +464,6 @@
         <!-- ==================================================
              4 - FINESTRA DI DIALOGO
         =================================================== -->
-
-        <section
-            class="vendor-panel vendor-dialogue"
-            aria-label="Dialogo vendor"
-        >
-            <div class="vendor-dialogue-content">
-
-                <div class="vendor-dialogue-name">
-                    VENDOR
-                </div>
-
-                <p
-                    id="vendor-dialogue-text"
-                    class="vendor-dialogue-text"
-                >
-                    Benvenuto, viaggiatore. Dai un'occhiata alla mia merce.
-                </p>
-
-            </div>
-        </section>
-
-
-        <div
-            class="vendor-bottom-left"
-            aria-hidden="true"
-        ></div>
-
-        <div
-            class="vendor-bottom-right"
-            aria-hidden="true"
-        ></div>
 
     </main>
 
