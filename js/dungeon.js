@@ -29,6 +29,26 @@ const INITIAL_PLAYER_Y = 0;
 
 
 // ============================================================
+// CAMERA DUNGEON
+// ============================================================
+//
+// Il frame mostra 13x13 celle:
+// PG + 6 celle di raggio in ogni direzione.
+//
+// Le coordinate di gioco e multiplayer NON cambiano.
+// Si muove soltanto la visuale.
+//
+// ============================================================
+
+const CAMERA_RADIUS = 6;
+
+const CAMERA_VISIBLE_CELLS =
+    CAMERA_RADIUS * 2 + 1;
+
+const CAMERA_TRANSITION_MS = 170;
+
+
+// ============================================================
 // MULTIPLAYER
 // ============================================================
 
@@ -236,6 +256,13 @@ document.addEventListener(
             // ------------------------------------------------
 
             await initializePlayer();
+
+
+            // ------------------------------------------------
+            // CAMERA
+            // ------------------------------------------------
+
+            setupDungeonCamera();
 
 
             // ------------------------------------------------
@@ -1584,6 +1611,212 @@ async function enterVendor() {
 
 
 // ============================================================
+// CAMERA DUNGEON
+// ============================================================
+
+function setupDungeonCamera() {
+
+    updateDungeonCamera(
+        true
+    );
+
+}
+
+
+// ============================================================
+// AGGIORNA CAMERA
+// ============================================================
+
+function updateDungeonCamera(
+    instant = false
+) {
+
+    const frame =
+        document.querySelector(
+            ".dungeon-map-frame"
+        );
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !frame ||
+        !map ||
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    const frameRect =
+        frame.getBoundingClientRect();
+
+
+    const mapRect =
+        map.getBoundingClientRect();
+
+
+    if (
+        frameRect.width <= 0 ||
+        frameRect.height <= 0 ||
+        mapRect.width <= 0 ||
+        mapRect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        mapRect.width /
+        MAP_COLUMNS;
+
+
+    const cellHeight =
+        mapRect.height /
+        MAP_ROWS;
+
+
+    const playerCenterX =
+        (
+            Number(playerX) +
+            0.5
+        )
+        *
+        cellWidth;
+
+
+    const playerCenterY =
+        (
+            Number(playerY) +
+            0.5
+        )
+        *
+        cellHeight;
+
+
+    let cameraX =
+        playerCenterX -
+        frameRect.width / 2;
+
+
+    let cameraY =
+        playerCenterY -
+        frameRect.height / 2;
+
+
+    const maxCameraX =
+        Math.max(
+            0,
+            mapRect.width -
+            frameRect.width
+        );
+
+
+    const maxCameraY =
+        Math.max(
+            0,
+            mapRect.height -
+            frameRect.height
+        );
+
+
+    cameraX =
+        Math.max(
+            0,
+            Math.min(
+                cameraX,
+                maxCameraX
+            )
+        );
+
+
+    cameraY =
+        Math.max(
+            0,
+            Math.min(
+                cameraY,
+                maxCameraY
+            )
+        );
+
+
+    map.style.transition =
+        instant
+            ? "none"
+            : `transform ${CAMERA_TRANSITION_MS}ms ease-out`;
+
+
+    map.style.transform =
+        `translate(${-cameraX}px, ${-cameraY}px)`;
+
+
+    if (instant) {
+
+        requestAnimationFrame(
+            () => {
+
+                map.style.transition =
+                    `transform ${CAMERA_TRANSITION_MS}ms ease-out`;
+
+            }
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// LIMITI TEORICI DELLA CAMERA
+// ============================================================
+
+function getDungeonCameraBounds() {
+
+    return {
+
+        minX:
+            Math.max(
+                0,
+                Number(playerX) -
+                CAMERA_RADIUS
+            ),
+
+        maxX:
+            Math.min(
+                MAP_COLUMNS - 1,
+                Number(playerX) +
+                CAMERA_RADIUS
+            ),
+
+        minY:
+            Math.max(
+                0,
+                Number(playerY) -
+                CAMERA_RADIUS
+            ),
+
+        maxY:
+            Math.min(
+                MAP_ROWS - 1,
+                Number(playerY) +
+                CAMERA_RADIUS
+            )
+
+    };
+
+}
+
+
+// ============================================================
 // TOKEN PERSONALE
 // ============================================================
 
@@ -1837,7 +2070,13 @@ window.addEventListener(
     "resize",
     () => {
 
+        updateDungeonCamera(
+            true
+        );
+
         repositionAllTokens();
+
+        updateFogOfWar();
 
     }
 );
@@ -2307,6 +2546,9 @@ async function performMovement(
         playerY
     );
     
+    updateDungeonCamera();
+
+
     updateFogOfWar();
 
     let hasNearbyCombatEvent =
@@ -8345,7 +8587,13 @@ document.addEventListener(
         await refreshDungeonCharacter();
 
 
+        updateDungeonCamera(
+            true
+        );
+
         repositionAllTokens();
+
+        updateFogOfWar();
 
     }
 );
@@ -8362,7 +8610,13 @@ window.addEventListener(
         await refreshDungeonCharacter();
 
 
+        updateDungeonCamera(
+            true
+        );
+
         repositionAllTokens();
+
+        updateFogOfWar();
 
     }
 );

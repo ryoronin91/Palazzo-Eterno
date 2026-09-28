@@ -37,6 +37,33 @@
             letter-spacing: 0.04em;
             opacity: 0.8;
         }
+
+        /* =====================================================
+           CAMERA DUNGEON
+           Visuale: 13x13 celle = PG + raggio 6
+        ====================================================== */
+
+        .dungeon-map-frame {
+            position: relative !important;
+            overflow: hidden !important;
+            aspect-ratio: 1 / 1;
+        }
+
+        .dungeon-map {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 176.9230769231% !important;
+            height: 176.9230769231% !important;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+
+        .dungeon-map-image {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: fill;
+        }
     </style>
 
 
@@ -870,7 +897,7 @@
          SCRIPT
     ====================================================== -->
 
-    <script src="js/dungeon.js?v=26"></script>
+    <script src="js/dungeon.js?v=27"></script>
 
     <script src="js/eventi.js?v=7"></script>
 
