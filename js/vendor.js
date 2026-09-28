@@ -1,6 +1,6 @@
 // ============================================================
 // PALAZZO ETERNO
-// VENDOR.JS
+// VENDOR.JS - UI DARK FANTASY
 // ============================================================
 
 console.log(
@@ -96,6 +96,9 @@ function updateVendorPlayerInventoryHeader() {
                         ||
                         itemName ===
                             "moneta d'oro"
+                        ||
+                        itemName ===
+                            "monete d'oro"
                     );
 
                 }
@@ -471,6 +474,9 @@ function renderVendorCharacterInventory() {
                         ||
                         itemName ===
                             "moneta d'oro"
+                        ||
+                        itemName ===
+                            "monete d'oro"
                     );
 
                 }
