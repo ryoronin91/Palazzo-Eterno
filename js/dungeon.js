@@ -181,6 +181,13 @@ document.addEventListener(
 
 
             // ------------------------------------------------
+            // ACCESSO STANZA BOSS
+            // ------------------------------------------------
+
+            loadBossRoomAccess();
+
+
+            // ------------------------------------------------
             // CADUTI DEL PALAZZO
             // ------------------------------------------------
 
@@ -1201,6 +1208,43 @@ function setText(
 
 
 // ============================================================
+// COORDINATE PG
+// ============================================================
+
+function updatePlayerCoordinates(
+    x = playerX,
+    y = playerY
+) {
+
+    const element =
+        document.getElementById(
+            "dungeon-player-coordinates"
+        );
+
+    if (!element) {
+        return;
+    }
+
+    if (
+        x === null ||
+        x === undefined ||
+        y === null ||
+        y === undefined
+    ) {
+
+        element.textContent =
+            "Coordinate PG: X -- · Y --";
+
+        return;
+    }
+
+    element.textContent =
+        `Coordinate PG: X ${Number(x)} · Y ${Number(y)}`;
+
+}
+
+
+// ============================================================
 // POSIZIONE INIZIALE
 // ============================================================
 
@@ -1358,6 +1402,11 @@ function showToken(
 
     positionTokenElement(
         tokenElement,
+        x,
+        y
+    );
+
+    updatePlayerCoordinates(
         x,
         y
     );
@@ -2202,7 +2251,93 @@ const BOSS_ROOM_GATE_CELLS = [
     { x: 16, y: 17 }
 ];
 
+const BOSS_ROOM_ACCESS_CODE =
+    "CUORE";
+
+const BOSS_ROOM_ACCESS_STORAGE_PREFIX =
+    "palazzo_eterno_boss_room_access_";
+
 let bossRoomAccessUnlocked = false;
+
+
+function getBossRoomAccessStorageKey() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+        return null;
+    }
+
+    return (
+        BOSS_ROOM_ACCESS_STORAGE_PREFIX +
+        character.id
+    );
+
+}
+
+
+function loadBossRoomAccess() {
+
+    const storageKey =
+        getBossRoomAccessStorageKey();
+
+    if (!storageKey) {
+        bossRoomAccessUnlocked = false;
+        return;
+    }
+
+    try {
+        bossRoomAccessUnlocked =
+            localStorage.getItem(
+                storageKey
+            ) === "1";
+    } catch (error) {
+        console.warn(
+            "Impossibile leggere lo sblocco stanza Boss:",
+            error
+        );
+
+        bossRoomAccessUnlocked = false;
+    }
+
+}
+
+
+function saveBossRoomAccess() {
+
+    const storageKey =
+        getBossRoomAccessStorageKey();
+
+    if (!storageKey) {
+        return;
+    }
+
+    try {
+        localStorage.setItem(
+            storageKey,
+            "1"
+        );
+    } catch (error) {
+        console.warn(
+            "Impossibile salvare lo sblocco stanza Boss:",
+            error
+        );
+    }
+
+}
+
+
+function unlockBossRoomAccess() {
+
+    bossRoomAccessUnlocked = true;
+
+    saveBossRoomAccess();
+
+    updateFogOfWar();
+
+}
+
 
 function isBossRoomGateCell(
     x,
@@ -2304,6 +2439,25 @@ function openBossRoomGatePrompt() {
             a questa zona.
         </div>
 
+        <div
+            id="boss-room-gate-code-panel"
+            style="display:none; margin-top:16px;"
+        >
+            <input
+                id="boss-room-gate-code-input"
+                type="password"
+                maxlength="30"
+                autocomplete="off"
+                placeholder="Inserisci il codice"
+                style="width:100%; box-sizing:border-box; padding:10px 12px; text-align:center;"
+            >
+
+            <div
+                id="boss-room-gate-code-error"
+                style="min-height:22px; margin-top:8px; text-align:center;"
+            ></div>
+        </div>
+
         <div class="combat-event-buttons">
 
             <button
@@ -2355,17 +2509,110 @@ function openBossRoomGatePrompt() {
             "boss-room-gate-code-button"
         );
 
+    const codePanel =
+        document.getElementById(
+            "boss-room-gate-code-panel"
+        );
+
+    const codeInput =
+        document.getElementById(
+            "boss-room-gate-code-input"
+        );
+
+    const codeError =
+        document.getElementById(
+            "boss-room-gate-code-error"
+        );
+
+
+    function submitBossRoomCode() {
+
+        if (!codeInput) {
+            return;
+        }
+
+        const enteredCode =
+            String(
+                codeInput.value ||
+                ""
+            )
+                .trim()
+                .toUpperCase();
+
+
+        if (
+            enteredCode ===
+            BOSS_ROOM_ACCESS_CODE
+        ) {
+
+            unlockBossRoomAccess();
+
+            closeBossRoomGatePrompt();
+
+            setMessage(
+                "Codice corretto. I varchi della stanza del Boss sono sbloccati."
+            );
+
+            return;
+        }
+
+
+        if (codeError) {
+            codeError.textContent =
+                "Codice errato.";
+        }
+
+        codeInput.value =
+            "";
+
+        codeInput.focus();
+
+    }
+
+
     if (codeButton) {
 
         codeButton.addEventListener(
             "click",
             () => {
 
-                // Nel prossimo passaggio collegheremo qui
-                // il campo password e la verifica su Supabase.
-                setMessage(
-                    "Inserimento codice: prossimo passaggio."
-                );
+                if (
+                    codePanel &&
+                    codePanel.style.display ===
+                        "none"
+                ) {
+
+                    codePanel.style.display =
+                        "block";
+
+                    codeButton.textContent =
+                        "SBLOCCA";
+
+                    if (codeInput) {
+                        codeInput.focus();
+                    }
+
+                    return;
+                }
+
+                submitBossRoomCode();
+
+            }
+        );
+
+    }
+
+
+    if (codeInput) {
+
+        codeInput.addEventListener(
+            "keydown",
+            event => {
+
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitBossRoomCode();
+                }
 
             }
         );
