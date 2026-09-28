@@ -142,6 +142,20 @@ document.addEventListener(
 
             await loadVendorCharacter();
 
+
+            // ------------------------------------------------
+            // ROUTER STATO PG
+            // ------------------------------------------------
+
+            if (
+                await enforceVendorPageState()
+            ) {
+
+                return;
+
+            }
+
+
             await loadVendorCharacterInventory();
 
             await loadVendorItems();
@@ -223,7 +237,9 @@ async function loadVendorCharacter() {
             .select(`
                 id,
                 nome,
-                score
+                score,
+                active_combat_id,
+                current_location
             `)
             .eq(
                 "user_id",
@@ -253,6 +269,254 @@ async function loadVendorCharacter() {
         data;
 
 }
+
+
+// ============================================================
+// ROUTER STATO DEL PERSONAGGIO - VENDOR
+// ============================================================
+//
+// Priorità:
+// 1. active_combat_id  -> combat.html
+// 2. current_location vendor -> resta nel vendor
+// 3. qualsiasi altro stato -> dungeon.html
+//
+// Ritorna true quando è stato avviato un redirect.
+//
+// ============================================================
+
+async function enforceVendorPageState(
+    refreshFromDatabase = false
+) {
+
+    if (
+        refreshFromDatabase
+    ) {
+
+        const {
+            data: {
+                user
+            },
+            error: authError
+        } =
+            await db.auth.getUser();
+
+
+        if (
+            authError
+        ) {
+
+            console.error(
+                "Errore controllo stato vendor:",
+                authError
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !user
+        ) {
+
+            window.location.replace(
+                "login.html"
+            );
+
+            return true;
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .select(
+                    "id, nome, score, active_combat_id, current_location"
+                )
+                .eq(
+                    "user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Errore lettura stato PG vendor:",
+                error
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !data
+        ) {
+
+            window.location.replace(
+                "personaggio.html"
+            );
+
+            return true;
+
+        }
+
+
+        currentUser =
+            user;
+
+
+        character =
+            data;
+
+    }
+
+
+    if (
+        !character
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // COMBAT HA SEMPRE LA PRIORITÀ
+    // --------------------------------------------------------
+
+    if (
+        character.active_combat_id
+    ) {
+
+        if (
+            character.current_location !==
+            "combat"
+        ) {
+
+            const {
+                error
+            } =
+                await db
+                    .from(
+                        "characters"
+                    )
+                    .update({
+                        current_location:
+                            "combat"
+                    })
+                    .eq(
+                        "id",
+                        character.id
+                    );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Errore sincronizzazione stato combat dal vendor:",
+                    error
+                );
+
+            } else {
+
+                character.current_location =
+                    "combat";
+
+            }
+
+        }
+
+
+        window.location.replace(
+            "combat.html"
+        );
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // IL PG È REALMENTE NEL VENDOR
+    // --------------------------------------------------------
+
+    if (
+        character.current_location ===
+        "vendor"
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // QUALSIASI ALTRO STATO TORNA AL DUNGEON
+    // --------------------------------------------------------
+
+    window.location.replace(
+        "dungeon.html"
+    );
+
+    return true;
+
+}
+
+
+// ============================================================
+// RIENTRO DA CACHE DEL BROWSER
+// ============================================================
+//
+// Con Indietro/Avanti il browser può ripristinare vendor.html
+// dalla BFCache senza rieseguire DOMContentLoaded.
+// In quel caso rileggiamo lo stato reale da Supabase.
+//
+// ============================================================
+
+window.addEventListener(
+    "pageshow",
+    async event => {
+
+        if (
+            !event.persisted
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await enforceVendorPageState(
+                true
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Errore controllo stato vendor al ritorno pagina:",
+                error
+            );
+
+        }
+
+    }
+);
 
 
 // ============================================================
@@ -733,12 +997,98 @@ function setupVendorExitButton() {
 
     button.addEventListener(
         "click",
-        () => {
+        async () => {
 
-            resetVendorVisitMemory();
+            if (
+                button.disabled
+            ) {
 
-            window.location.href =
-                "dungeon.html";
+                return;
+
+            }
+
+
+            try {
+
+                button.disabled =
+                    true;
+
+
+                resetVendorVisitMemory();
+
+
+                if (
+                    !character ||
+                    !character.id
+                ) {
+
+                    window.location.replace(
+                        "dungeon.html"
+                    );
+
+                    return;
+
+                }
+
+
+                // --------------------------------------------
+                // REGISTRA USCITA DAL VENDOR
+                // --------------------------------------------
+
+                const {
+                    error
+                } =
+                    await db
+                        .from(
+                            "characters"
+                        )
+                        .update({
+                            current_location:
+                                "dungeon"
+                        })
+                        .eq(
+                            "id",
+                            character.id
+                        );
+
+
+                if (
+                    error
+                ) {
+
+                    throw error;
+
+                }
+
+
+                character.current_location =
+                    "dungeon";
+
+
+                // replace evita di lasciare nella cronologia
+                // una pagina vendor ormai non più valida.
+                window.location.replace(
+                    "dungeon.html"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Errore uscita vendor:",
+                    error
+                );
+
+
+                button.disabled =
+                    false;
+
+
+                setVendorDialogue(
+                    "Il portale fa i capricci. Riprova tra un attimo."
+                );
+
+            }
 
         }
     );

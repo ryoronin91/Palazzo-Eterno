@@ -244,7 +244,17 @@ document.addEventListener(
                 getCombatIdFromUrl();
 
 
+            // =================================================
+            // MASTER
+            // =================================================
+            //
+            // Il Master può osservare un combat specificato
+            // nell'URL senza avere un personaggio attivo.
+            //
+            // =================================================
+
             if (
+                masterObserverMode &&
                 !combatId
             ) {
 
@@ -260,6 +270,25 @@ document.addEventListener(
             // =================================================
 
             await loadCurrentCharacter();
+
+
+            // =================================================
+            // ROUTER STATO PG
+            // =================================================
+            //
+            // Per i giocatori è Supabase a decidere quale combat
+            // è quello corretto. L'URL del browser non è una
+            // fonte di verità.
+            //
+            // =================================================
+
+            if (
+                await enforceCombatPageState()
+            ) {
+
+                return;
+
+            }
 
 
             // =================================================
@@ -608,7 +637,8 @@ async function loadCurrentCharacter() {
                 notes,
                 dungeon_x,
                 dungeon_y,
-                active_combat_id
+                active_combat_id,
+                current_location
             `)
             .eq(
                 "user_id",
@@ -630,6 +660,267 @@ async function loadCurrentCharacter() {
         data;
 
 }
+
+
+// ============================================================
+// ROUTER STATO DEL PERSONAGGIO - COMBAT
+// ============================================================
+//
+// Per il Master non cambia nulla.
+//
+// Per un giocatore:
+// - active_combat_id è la fonte di verità;
+// - se l'URL non contiene il combat corretto, viene corretto;
+// - se non esiste più un combat attivo, si torna alla posizione
+//   logica registrata;
+// - current_location = "combat" viene sincronizzato in automatico.
+//
+// Ritorna true quando è stato avviato un redirect.
+//
+// ============================================================
+
+async function enforceCombatPageState(
+    refreshFromDatabase = false
+) {
+
+    if (
+        masterObserverMode
+    ) {
+
+        return false;
+
+    }
+
+
+    if (
+        refreshFromDatabase
+    ) {
+
+        await loadCurrentCharacter();
+
+    }
+
+
+    if (
+        !currentCharacter
+    ) {
+
+        window.location.replace(
+            "personaggio.html"
+        );
+
+        return true;
+
+    }
+
+
+    const activeCombatId =
+        currentCharacter.active_combat_id
+            ? String(
+                currentCharacter.active_combat_id
+            )
+            : "";
+
+
+    // --------------------------------------------------------
+    // NESSUN COMBAT ATTIVO
+    // --------------------------------------------------------
+
+    if (
+        !activeCombatId
+    ) {
+
+        // Se il vecchio stato "combat" è rimasto appeso,
+        // lo ripariamo prima di uscire.
+        if (
+            currentCharacter.current_location ===
+            "combat"
+        ) {
+
+            const {
+                error
+            } =
+                await db
+                    .from(
+                        "characters"
+                    )
+                    .update({
+                        current_location:
+                            "dungeon"
+                    })
+                    .eq(
+                        "id",
+                        currentCharacter.id
+                    );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Errore ripristino stato dungeon dal combat:",
+                    error
+                );
+
+            } else {
+
+                currentCharacter.current_location =
+                    "dungeon";
+
+            }
+
+        }
+
+
+        if (
+            currentCharacter.current_location ===
+            "vendor"
+        ) {
+
+            window.location.replace(
+                "vendor.html"
+            );
+
+        } else {
+
+            window.location.replace(
+                "dungeon.html"
+            );
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // SINCRONIZZA current_location
+    // --------------------------------------------------------
+
+    if (
+        currentCharacter.current_location !==
+        "combat"
+    ) {
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .update({
+                    current_location:
+                        "combat"
+                })
+                .eq(
+                    "id",
+                    currentCharacter.id
+                );
+
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Errore sincronizzazione current_location combat:",
+                error
+            );
+
+        } else {
+
+            currentCharacter.current_location =
+                "combat";
+
+        }
+
+    }
+
+
+    // --------------------------------------------------------
+    // URL CANONICO DEL COMBAT
+    // --------------------------------------------------------
+    //
+    // Questo risolve:
+    // - tasto Indietro;
+    // - URL senza combat_id;
+    // - vecchio combat_id nella cronologia;
+    // - link manuale a un altro combattimento.
+    //
+    // --------------------------------------------------------
+
+    if (
+        String(
+            combatId ||
+            ""
+        ) !==
+        activeCombatId
+    ) {
+
+        window.location.replace(
+            `combat.html?combat_id=${encodeURIComponent(
+                activeCombatId
+            )}`
+        );
+
+        return true;
+
+    }
+
+
+    combatId =
+        activeCombatId;
+
+
+    return false;
+
+}
+
+
+// ============================================================
+// RIENTRO DA CACHE DEL BROWSER
+// ============================================================
+//
+// Indietro/Avanti può ripristinare combat.html dalla BFCache
+// senza rieseguire DOMContentLoaded.
+//
+// ============================================================
+
+window.addEventListener(
+    "pageshow",
+    async event => {
+
+        if (
+            !event.persisted ||
+            masterObserverMode
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await enforceCombatPageState(
+                true
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Errore controllo stato combat al ritorno pagina:",
+                error
+            );
+
+        }
+
+    }
+);
 
 
 // ============================================================

@@ -217,6 +217,26 @@ document.addEventListener(
 
 
             // ------------------------------------------------
+            // ROUTER STATO PG
+            // ------------------------------------------------
+            //
+            // Supabase decide dove si trova realmente il PG.
+            // Se il browser apre una pagina non coerente
+            // (Indietro / Avanti / URL manuale / cache),
+            // lo rimandiamo alla pagina corretta.
+            //
+            // ------------------------------------------------
+
+            if (
+                await enforceDungeonPageState()
+            ) {
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
             // ACCESSO STANZA BOSS
             // ------------------------------------------------
 
@@ -567,6 +587,311 @@ async function loadDungeon() {
     );
 
 }
+
+
+// ============================================================
+// ROUTER STATO DEL PERSONAGGIO
+// ============================================================
+//
+// Ritorna true quando è stato avviato un redirect.
+//
+// Priorità:
+// 1. active_combat_id  -> combat.html
+// 2. current_location vendor -> vendor.html
+// 3. altrimenti dungeon
+//
+// Se current_location è rimasto "combat" ma active_combat_id
+// non esiste più, ripariamo automaticamente lo stato.
+//
+// ============================================================
+
+async function enforceDungeonPageState(
+    refreshFromDatabase = false
+) {
+
+    if (
+        refreshFromDatabase
+    ) {
+
+        const {
+            data: {
+                user
+            },
+            error: authError
+        } =
+            await db.auth.getUser();
+
+
+        if (
+            authError
+        ) {
+
+            console.error(
+                "Errore controllo stato pagina:",
+                authError
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !user
+        ) {
+
+            window.location.replace(
+                "login.html"
+            );
+
+            return true;
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .select(
+                    "id, active_combat_id, current_location"
+                )
+                .eq(
+                    "user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Errore lettura stato PG:",
+                error
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !data
+        ) {
+
+            window.location.replace(
+                "personaggio.html"
+            );
+
+            return true;
+
+        }
+
+
+        if (
+            character
+        ) {
+
+            character.active_combat_id =
+                data.active_combat_id;
+
+            character.current_location =
+                data.current_location;
+
+        } else {
+
+            character =
+                data;
+
+        }
+
+    }
+
+
+    if (
+        !character
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // COMBAT HA SEMPRE LA PRIORITÀ
+    // --------------------------------------------------------
+
+    if (
+        character.active_combat_id
+    ) {
+
+        if (
+            character.current_location !==
+            "combat"
+        ) {
+
+            try {
+
+                await db
+                    .from(
+                        "characters"
+                    )
+                    .update({
+                        current_location:
+                            "combat"
+                    })
+                    .eq(
+                        "id",
+                        character.id
+                    );
+
+            } catch (error) {
+
+                console.error(
+                    "Errore sincronizzazione stato combat:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        window.location.replace(
+            "combat.html"
+        );
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // VENDOR
+    // --------------------------------------------------------
+
+    if (
+        character.current_location ===
+        "vendor"
+    ) {
+
+        window.location.replace(
+            "vendor.html"
+        );
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // STATO COMBAT ORFANO
+    // --------------------------------------------------------
+    //
+    // Se non esiste più active_combat_id, "combat" non è
+    // uno stato valido. Lo riportiamo al dungeon.
+    //
+    // --------------------------------------------------------
+
+    if (
+        character.current_location ===
+        "combat"
+    ) {
+
+        try {
+
+            const {
+                error
+            } =
+                await db
+                    .from(
+                        "characters"
+                    )
+                    .update({
+                        current_location:
+                            "dungeon"
+                    })
+                    .eq(
+                        "id",
+                        character.id
+                    );
+
+
+            if (
+                error
+            ) {
+
+                throw error;
+
+            }
+
+
+            character.current_location =
+                "dungeon";
+
+        } catch (error) {
+
+            console.error(
+                "Errore ripristino stato dungeon:",
+                error
+            );
+
+        }
+
+    }
+
+
+    return false;
+
+}
+
+
+// ============================================================
+// RIENTRO DA CACHE DEL BROWSER
+// ============================================================
+//
+// Il tasto Indietro può ripristinare dungeon.html dalla BFCache
+// senza rieseguire DOMContentLoaded.
+// In quel caso controlliamo di nuovo Supabase.
+//
+// ============================================================
+
+window.addEventListener(
+    "pageshow",
+    async event => {
+
+        if (
+            !event.persisted
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await enforceDungeonPageState(
+                true
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Errore controllo stato al ritorno pagina:",
+                error
+            );
+
+        }
+
+    }
+);
 
 
 // ============================================================
@@ -1594,18 +1919,62 @@ async function enterVendor() {
 
         await savePositionBeforeExit();
 
+
+        // ----------------------------------------------------
+        // REGISTRA POSIZIONE LOGICA
+        // ----------------------------------------------------
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .update({
+                    current_location:
+                        "vendor"
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        character.current_location =
+            "vendor";
+
+
+        window.location.href =
+            VENDOR_PAGE;
+
+
     } catch (error) {
 
         console.error(
-            "Errore salvataggio posizione prima del vendor:",
+            "Errore ingresso vendor:",
             error
         );
 
+
+        eventLocked =
+            false;
+
+
+        setMessage(
+            "Non riesco ad aprire il negozio. Riprova."
+        );
+
     }
-
-
-    window.location.href =
-        VENDOR_PAGE;
 
 }
 
