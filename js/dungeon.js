@@ -75,6 +75,22 @@ let tokenElement = null;
 
 
 // ============================================================
+// VENDOR - MANO DI SCIMMIA
+// ============================================================
+
+const VENDOR_X = 2;
+const VENDOR_Y = 11;
+
+const VENDOR_TOKEN_IMAGE =
+    "immagini/eventi/vendor.png";
+
+const VENDOR_PAGE =
+    "vendor.html";
+
+let vendorTokenElement = null;
+
+
+// ============================================================
 // NUOVO SISTEMA MOVIMENTO
 // ============================================================
 //
@@ -220,6 +236,14 @@ document.addEventListener(
             // ------------------------------------------------
 
             await initializePlayer();
+
+
+            // ------------------------------------------------
+            // VENDOR
+            // ------------------------------------------------
+
+            setupVendorToken();
+
 
             // ------------------------------------------------------------
             // NEBBIA DI GUERRA
@@ -1332,6 +1356,234 @@ async function initializePlayer() {
 
 
 // ============================================================
+// TOKEN VENDOR - MANO DI SCIMMIA
+// ============================================================
+
+function setupVendorToken() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
+
+    if (!vendorTokenElement) {
+
+        vendorTokenElement =
+            document.createElement(
+                "div"
+            );
+
+
+        vendorTokenElement.className =
+            "dungeon-player-token dungeon-vendor-token";
+
+
+        vendorTokenElement.title =
+            "Mano di Scimmia";
+
+
+        vendorTokenElement.setAttribute(
+            "aria-label",
+            "Mano di Scimmia"
+        );
+
+
+        vendorTokenElement.style.cursor =
+            "pointer";
+
+
+        vendorTokenElement.style.zIndex =
+            "6";
+
+
+        vendorTokenElement.style.pointerEvents =
+            "auto";
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+
+        image.src =
+            VENDOR_TOKEN_IMAGE;
+
+
+        image.alt =
+            "Mano di Scimmia";
+
+
+        image.draggable =
+            false;
+
+
+        vendorTokenElement.appendChild(
+            image
+        );
+
+
+        vendorTokenElement.addEventListener(
+            "click",
+            async event => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                if (
+                    !isVendorAdjacentToPlayer()
+                ) {
+
+                    setMessage(
+                        "Avvicinati a Mano di Scimmia per commerciare."
+                    );
+
+                    return;
+
+                }
+
+
+                await enterVendor();
+
+            }
+        );
+
+
+        map.appendChild(
+            vendorTokenElement
+        );
+
+    }
+
+
+    positionTokenElement(
+        vendorTokenElement,
+        VENDOR_X,
+        VENDOR_Y
+    );
+
+
+    updateVendorTokenVisibility();
+
+}
+
+
+function isVendorCell(
+    x,
+    y
+) {
+
+    return (
+        Number(x) === VENDOR_X
+        &&
+        Number(y) === VENDOR_Y
+    );
+
+}
+
+
+function isVendorAdjacentToPlayer() {
+
+    if (
+        playerX === null ||
+        playerY === null
+    ) {
+
+        return false;
+
+    }
+
+
+    const distance =
+        Math.abs(
+            Number(playerX) -
+            VENDOR_X
+        )
+        +
+        Math.abs(
+            Number(playerY) -
+            VENDOR_Y
+        );
+
+
+    return distance === 1;
+
+}
+
+
+function updateVendorTokenVisibility() {
+
+    if (!vendorTokenElement) {
+
+        return;
+
+    }
+
+
+    vendorTokenElement.style.display =
+        isCellCurrentlyVisible(
+            VENDOR_X,
+            VENDOR_Y
+        )
+            ? "flex"
+            : "none";
+
+}
+
+
+async function enterVendor() {
+
+    if (eventLocked) {
+
+        return;
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    setMessage(
+        "Ti avvicini a Mano di Scimmia..."
+    );
+
+
+    try {
+
+        await flushPositionSave();
+
+        await savePositionBeforeExit();
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio posizione prima del vendor:",
+            error
+        );
+
+    }
+
+
+    window.location.href =
+        VENDOR_PAGE;
+
+}
+
+
+// ============================================================
 // TOKEN PERSONALE
 // ============================================================
 
@@ -1553,6 +1805,19 @@ function repositionAllTokens() {
 
         }
     );
+
+
+    if (vendorTokenElement) {
+
+        positionTokenElement(
+            vendorTokenElement,
+            VENDOR_X,
+            VENDOR_Y
+        );
+
+        updateVendorTokenVisibility();
+
+    }
 
 
     if (healModeActive) {
@@ -1938,6 +2203,29 @@ async function performMovement(
             "Non puoi andare oltre i confini del piano."
         );
 
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // VENDOR - MANO DI SCIMMIA
+    // --------------------------------------------------------
+    //
+    // La casella del vendor è occupata dal suo token.
+    // Tentare di entrarci apre direttamente il negozio.
+    //
+    // --------------------------------------------------------
+
+    if (
+        isVendorCell(
+            newX,
+            newY
+        )
+    ) {
+
+        await enterVendor();
 
         return false;
 
@@ -2805,6 +3093,22 @@ function canMoveTo(
         !dungeonData ||
         !Array.isArray(
             dungeonData.cells
+        )
+    ) {
+
+        return false;
+
+    }
+
+
+    // --------------------------------------------------------
+    // TOKEN VENDOR
+    // --------------------------------------------------------
+
+    if (
+        isVendorCell(
+            visibleX,
+            visibleY
         )
     ) {
 
@@ -6425,6 +6729,8 @@ function updateFogOfWar() {
     renderFogOfWar();
 
     updateRemoteTokensVisibility();
+
+    updateVendorTokenVisibility();
 
 
     if (discoveredSomething) {
