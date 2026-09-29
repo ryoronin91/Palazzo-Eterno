@@ -2919,3 +2919,44 @@ body {
     overflow-wrap: anywhere;
     word-break: break-word;
 }
+/* ============================================================
+   PALAZZO ETERNO - CHAT DUNGEON
+   Riempie tutto il pannello e usa scrollbar interna.
+============================================================ */
+
+.dungeon-chat-panel {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+.floor-chat-messages {
+    flex: 1 1 auto;
+
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.floor-chat-controls {
+    flex: 0 0 auto;
+}
+
+.floor-chat-message {
+    flex: 0 0 auto;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
