@@ -1768,64 +1768,6 @@ async function tryConsumeCombatTemporalCoin() {
     ]);
 
 
-    // Se la sconfitta era stata dichiarata durante il turno di
-    // un nemico, finish_enemy_turn non aveva potuto avanzare.
-    // Ora che la sessione è di nuovo active chiudiamo quel turno
-    // una sola volta e passiamo normalmente all'entità successiva.
-    const resumedTurnEntity =
-        getCurrentTurnEntity();
-
-
-    if (
-        combatSession?.status ===
-            "active"
-        &&
-        resumedTurnEntity
-        &&
-        resumedTurnEntity.entity_type ===
-            "enemy"
-    ) {
-
-        const {
-            error: finishTurnError
-        } =
-            await db.rpc(
-                "finish_enemy_turn",
-                {
-                    p_combat_id:
-                        combatId,
-
-                    p_enemy_entity_id:
-                        resumedTurnEntity.id,
-
-                    p_round_number:
-                        Number(
-                            combatSession.round_number
-                        )
-                }
-            );
-
-
-        if (
-            finishTurnError
-        ) {
-
-            throw finishTurnError;
-
-        }
-
-
-        await Promise.all([
-
-            loadCombatSession(),
-
-            loadCombatEntities()
-
-        ]);
-
-    }
-
-
     lastCombatEntitiesSnapshot =
         createCombatSnapshot();
 
@@ -1939,6 +1881,103 @@ async function checkMyCombatCharacterDeath() {
     return true;
 
 }
+
+// ============================================================
+// RIPARA TURNO COMBAT DOPO MONETA TEMPORALE / DEFEAT
+// ============================================================
+
+async function repairCombatTurnIfNeeded() {
+
+    if (
+        masterObserverMode ||
+        !combatId ||
+        !currentCharacter ||
+        !currentCharacter.id ||
+        !combatSession ||
+        combatSession.status !==
+            "active"
+    ) {
+
+        return false;
+
+    }
+
+
+    const currentEntity =
+        getCurrentTurnEntity();
+
+
+    if (
+        currentEntity
+        &&
+        currentEntity.status ===
+            "alive"
+        &&
+        Number(
+            currentEntity.current_hp
+        ) > 0
+    ) {
+
+        return false;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "repair_combat_turn_after_temporal_coin",
+            {
+                p_combat_id:
+                    combatId,
+
+                p_character_id:
+                    currentCharacter.id
+            }
+        );
+
+
+    if (
+        error
+    ) {
+
+        throw error;
+
+    }
+
+
+    if (
+        data?.repaired !==
+            true
+    ) {
+
+        return false;
+
+    }
+
+
+    await Promise.all([
+
+        loadCombatSession(),
+
+        loadCombatEntities()
+
+    ]);
+
+
+    lastCombatEntitiesSnapshot =
+        createCombatSnapshot();
+
+
+    renderCombat();
+
+
+    return true;
+
+}
+
 
 // ============================================================
 // ENTITÀ DEL TURNO CORRENTE
@@ -3063,6 +3102,20 @@ if (
 ) {
 
     return;
+
+}
+
+
+// ====================================================
+// RIPARA EVENTUALE TURNO PERSO DOPO MONETA TEMPORALE
+// ====================================================
+
+if (
+    combatSession?.status ===
+        "active"
+) {
+
+    await repairCombatTurnIfNeeded();
 
 }
 
