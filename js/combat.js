@@ -1,3 +1,99 @@
+
+// ============================================================
+// MUSICA DI SOTTOFONDO
+// ============================================================
+
+let pageBackgroundMusic = null;
+
+function startBackgroundMusic(
+    source
+) {
+
+    if (
+        pageBackgroundMusic ||
+        !source
+    ) {
+
+        return;
+
+    }
+
+
+    pageBackgroundMusic =
+        new Audio(
+            source
+        );
+
+
+    pageBackgroundMusic.loop =
+        true;
+
+    pageBackgroundMusic.volume =
+        0.35;
+
+    pageBackgroundMusic.preload =
+        "auto";
+
+
+    const tryPlay =
+        async () => {
+
+            if (
+                !pageBackgroundMusic
+            ) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await pageBackgroundMusic.play();
+
+            } catch (
+                error
+            ) {
+
+                // I browser possono bloccare l'autoplay finché
+                // il giocatore non interagisce con la pagina.
+
+            }
+
+        };
+
+
+    tryPlay();
+
+
+    const unlockAudio =
+        () => {
+
+            tryPlay();
+
+        };
+
+
+    document.addEventListener(
+        "pointerdown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+}
+
+
 // ============================================================
 // PALAZZO ETERNO
 // COMBAT.JS
@@ -274,6 +370,20 @@ document.addEventListener(
             // =================================================
 
             await loadCombatSession();
+
+
+            // =================================================
+            // MUSICA COMBAT
+            // =================================================
+
+            startBackgroundMusic(
+                combatSession?.encounter_id ===
+                    "combat_boss"
+
+                    ? "music/boss.mp3"
+
+                    : "music/combat.mp3"
+            );
 
 
             // =================================================

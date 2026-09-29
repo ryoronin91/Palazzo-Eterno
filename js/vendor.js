@@ -8,6 +8,102 @@ console.log(
 );
 
 
+
+// ============================================================
+// MUSICA DI SOTTOFONDO
+// ============================================================
+
+let pageBackgroundMusic = null;
+
+function startBackgroundMusic(
+    source
+) {
+
+    if (
+        pageBackgroundMusic ||
+        !source
+    ) {
+
+        return;
+
+    }
+
+
+    pageBackgroundMusic =
+        new Audio(
+            source
+        );
+
+
+    pageBackgroundMusic.loop =
+        true;
+
+    pageBackgroundMusic.volume =
+        0.35;
+
+    pageBackgroundMusic.preload =
+        "auto";
+
+
+    const tryPlay =
+        async () => {
+
+            if (
+                !pageBackgroundMusic
+            ) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await pageBackgroundMusic.play();
+
+            } catch (
+                error
+            ) {
+
+                // I browser possono bloccare l'autoplay finché
+                // il giocatore non interagisce con la pagina.
+
+            }
+
+        };
+
+
+    tryPlay();
+
+
+    const unlockAudio =
+        () => {
+
+            tryPlay();
+
+        };
+
+
+    document.addEventListener(
+        "pointerdown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+}
+
+
 // ============================================================
 // SUPABASE
 // ============================================================
@@ -137,6 +233,11 @@ function updateVendorPlayerInventoryHeader() {
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
+
+        startBackgroundMusic(
+            "music/vendor.mp3"
+        );
+
 
         try {
 
