@@ -154,6 +154,20 @@ let realtimeReady = false;
 
 
 // ============================================================
+// CHAT PERSISTENTE
+// ============================================================
+
+const DUNGEON_CHAT_FLOOR_ID =
+    "floor_1";
+
+const DUNGEON_CHAT_HISTORY_LIMIT =
+    100;
+
+const renderedFloorChatMessageIds =
+    new Set();
+
+
+// ============================================================
 // ALTRI GIOCATORI
 // ============================================================
 
@@ -262,6 +276,8 @@ document.addEventListener(
             // ------------------------------------------------
 
             setupFloorChat();
+
+            await loadFloorChatHistory();
 
 
             // ------------------------------------------------
@@ -8517,12 +8533,10 @@ function setupFloorChat() {
             "floor-chat-input"
         );
 
-
     const button =
         document.getElementById(
             "floor-chat-send"
         );
-
 
     if (
         !input ||
@@ -8531,18 +8545,14 @@ function setupFloorChat() {
         return;
     }
 
-
     button.addEventListener(
         "click",
         async () => {
-
             await sendFloorChatMessage(
                 input
             );
-
         }
     );
-
 
     input.addEventListener(
         "keydown",
@@ -8554,24 +8564,128 @@ function setupFloorChat() {
                 return;
             }
 
-
             if (
                 event.shiftKey
             ) {
                 return;
             }
 
-
             event.preventDefault();
-
 
             await sendFloorChatMessage(
                 input
             );
-
         }
     );
+}
 
+
+// ============================================================
+// CARICA STORICO CHAT
+// ============================================================
+
+async function loadFloorChatHistory() {
+
+    const container =
+        document.getElementById(
+            "floor-chat-messages"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .select(`
+                    id,
+                    character_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .eq(
+                    "floor_id",
+                    DUNGEON_CHAT_FLOOR_ID
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                )
+                .limit(
+                    DUNGEON_CHAT_HISTORY_LIMIT
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        renderedFloorChatMessageIds.clear();
+
+        container.innerHTML =
+            "";
+
+        const rows =
+            Array.isArray(data)
+                ? [...data].reverse()
+                : [];
+
+        if (
+            rows.length === 0
+        ) {
+
+            container.innerHTML =
+                `
+                    <div class="chat-placeholder">
+                        Nessun messaggio ancora.
+                    </div>
+                `;
+
+            return;
+        }
+
+        rows.forEach(
+            row => {
+
+                addFloorChatMessage({
+
+                    id:
+                        row.id,
+
+                    character_id:
+                        row.character_id,
+
+                    name:
+                        row.sender_name,
+
+                    text:
+                        row.message_text,
+
+                    timestamp:
+                        row.created_at
+
+                });
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento storico chat:",
+            error
+        );
+    }
 }
 
 
@@ -8585,87 +8699,138 @@ async function sendFloorChatMessage(
 
     if (
         !input ||
-        !character
+        !character ||
+        !currentUser
     ) {
         return;
     }
 
-
     const messageText =
         input.value.trim();
-
 
     if (!messageText) {
         return;
     }
 
-
-    const message = {
-
-        character_id:
-            character.id,
-
-        name:
-            character.nome ||
-            "Avventuriero",
-
-        text:
-            messageText,
-
-        timestamp:
-            new Date()
-                .toISOString()
-
-    };
-
-
-    // Mostra immediatamente a chi scrive.
-
-    addFloorChatMessage(
-        message
-    );
-
+    const originalValue =
+        input.value;
 
     input.value =
         "";
 
+    try {
 
-    // ========================================================
-    // BROADCAST
-    // ========================================================
+        const {
+            data: savedMessage,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .insert({
 
-    if (
-        dungeonChannel &&
-        realtimeReady
-    ) {
+                    floor_id:
+                        DUNGEON_CHAT_FLOOR_ID,
 
-        try {
+                    character_id:
+                        character.id,
 
-            await dungeonChannel.send({
+                    user_id:
+                        currentUser.id,
 
-                type:
-                    "broadcast",
+                    sender_name:
+                        character.nome ||
+                        "Avventuriero",
 
-                event:
-                    "floor-chat",
+                    message_text:
+                        messageText
 
-                payload:
-                    message
+                })
+                .select(`
+                    id,
+                    character_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .single();
 
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Errore invio chat:",
-                error
-            );
-
+        if (error) {
+            throw error;
         }
 
-    }
+        const message = {
 
+            id:
+                savedMessage.id,
+
+            character_id:
+                savedMessage.character_id,
+
+            name:
+                savedMessage.sender_name ||
+                character.nome ||
+                "Avventuriero",
+
+            text:
+                savedMessage.message_text ||
+                messageText,
+
+            timestamp:
+                savedMessage.created_at ||
+                new Date()
+                    .toISOString()
+
+        };
+
+        addFloorChatMessage(
+            message
+        );
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            try {
+
+                await dungeonChannel.send({
+
+                    type:
+                        "broadcast",
+
+                    event:
+                        "floor-chat",
+
+                    payload:
+                        message
+
+                });
+
+            } catch (broadcastError) {
+
+                console.error(
+                    "Errore broadcast chat:",
+                    broadcastError
+                );
+            }
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio chat:",
+            error
+        );
+
+        input.value =
+            originalValue;
+
+        setMessage(
+            "Non è stato possibile inviare il messaggio."
+        );
+    }
 }
 
 
@@ -8681,48 +8846,61 @@ function addFloorChatMessage(
         return;
     }
 
-
     const container =
         document.getElementById(
             "floor-chat-messages"
         );
 
-
     if (!container) {
         return;
     }
 
+    const messageId =
+        message.id
+            ? String(
+                message.id
+            )
+            : null;
 
-    // ========================================================
-    // PLACEHOLDER
-    // ========================================================
+    if (
+        messageId &&
+        renderedFloorChatMessageIds.has(
+            messageId
+        )
+    ) {
+        return;
+    }
+
+    if (messageId) {
+
+        renderedFloorChatMessageIds.add(
+            messageId
+        );
+    }
 
     const placeholder =
         container.querySelector(
             ".chat-placeholder"
         );
 
-
     if (placeholder) {
-
         placeholder.remove();
-
     }
-
-
-    // ========================================================
-    // MESSAGGIO
-    // ========================================================
 
     const row =
         document.createElement(
             "div"
         );
 
-
     row.className =
         "floor-chat-message";
 
+    if (
+        messageId
+    ) {
+        row.dataset.messageId =
+            messageId;
+    }
 
     if (
         character &&
@@ -8733,57 +8911,46 @@ function addFloorChatMessage(
         row.classList.add(
             "mine"
         );
-
     }
-
 
     const name =
         document.createElement(
             "strong"
         );
 
-
     name.className =
         "floor-chat-name";
-
 
     name.textContent =
         message.name ||
         "Avventuriero";
 
-
-    const text =
+    const textElement =
         document.createElement(
             "span"
         );
 
-
-    text.className =
+    textElement.className =
         "floor-chat-text";
 
-
-    text.textContent =
+    textElement.textContent =
         message.text ||
         "";
-
 
     row.append(
         name,
         document.createTextNode(
             ": "
         ),
-        text
+        textElement
     );
-
 
     container.appendChild(
         row
     );
 
-
     container.scrollTop =
         container.scrollHeight;
-
 }
 
 
