@@ -510,6 +510,9 @@ if (
             setupCombatActions();
 
 
+            setupCombatMobileMovement();
+
+
             setupVictoryExitButton();
 
 
@@ -3401,6 +3404,205 @@ window.moveCombatPlayer =
         }
 
     };
+
+
+// ============================================================
+// MOVIMENTO MOBILE / TOUCH
+// ============================================================
+//
+// Su telefono non esiste una tastiera fisica affidabile.
+// Un tap su una delle 8 caselle adiacenti al proprio PG
+// esegue quindi la stessa identica funzione usata da WASD.
+//
+// Il movimento viene ignorato quando è attiva una modalità
+// bersaglio, così attacchi e abilità continuano a funzionare
+// senza interferenze.
+// ============================================================
+
+function setupCombatMobileMovement() {
+
+    const map =
+        document.getElementById(
+            "combat-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
+
+    map.addEventListener(
+        "pointerup",
+        async event => {
+
+            // Mouse desktop: mantiene invariati i controlli esistenti.
+            if (
+                event.pointerType ===
+                    "mouse"
+            ) {
+
+                return;
+
+            }
+
+
+            // Se stiamo scegliendo un bersaglio, il tap appartiene
+            // al sistema di targeting e non al movimento.
+            if (
+                combatTargetMode
+            ) {
+
+                return;
+
+            }
+
+
+            // Il tap su una pedina viene gestito dal listener del token.
+            if (
+                event.target.closest(
+                    ".combat-token"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                combatMoveInProgress ||
+                masterObserverMode ||
+                !currentCharacter ||
+                !combatSession ||
+                combatSession.status !==
+                    "active" ||
+                !isMyTurn()
+            ) {
+
+                return;
+
+            }
+
+
+            const player =
+                getMyPlayerEntity();
+
+
+            if (!player) {
+
+                return;
+
+            }
+
+
+            const rect =
+                map.getBoundingClientRect();
+
+
+            if (
+                rect.width <= 0 ||
+                rect.height <= 0
+            ) {
+
+                return;
+
+            }
+
+
+            const cellWidth =
+                rect.width /
+                COMBAT_COLUMNS;
+
+
+            const cellHeight =
+                rect.height /
+                COMBAT_ROWS;
+
+
+            const targetX =
+                Math.floor(
+                    (
+                        event.clientX -
+                        rect.left
+                    ) /
+                    cellWidth
+                );
+
+
+            const targetY =
+                Math.floor(
+                    (
+                        event.clientY -
+                        rect.top
+                    ) /
+                    cellHeight
+                );
+
+
+            if (
+                targetX < 0 ||
+                targetX >= COMBAT_COLUMNS ||
+                targetY < 0 ||
+                targetY >= COMBAT_ROWS
+            ) {
+
+                return;
+
+            }
+
+
+            const playerX =
+                Number(
+                    player.x
+                );
+
+
+            const playerY =
+                Number(
+                    player.y
+                );
+
+
+            const dx =
+                targetX -
+                playerX;
+
+
+            const dy =
+                targetY -
+                playerY;
+
+
+            // Solo una delle 8 celle immediatamente adiacenti.
+            if (
+                Math.abs(dx) > 1 ||
+                Math.abs(dy) > 1 ||
+                (
+                    dx === 0 &&
+                    dy === 0
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            await window.moveCombatPlayer(
+                dx,
+                dy
+            );
+
+        }
+    );
+
+}
 
 
 // ============================================================
