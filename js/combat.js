@@ -1729,15 +1729,101 @@ async function tryConsumeCombatTemporalCoin() {
         ) || 0;
 
 
-    // Riallinea immediatamente il combat con lo stato appena
-    // ripristinato dalla RPC e con l'inventario dopo il consumo.
+    // Se il colpo letale aveva già portato la sessione in
+    // "defeat", la Moneta Temporale deve riaprire il combat.
+    // La RPC server verifica che il PG sia davvero tornato vivo.
+    const {
+        error: resumeError
+    } =
+        await db.rpc(
+            "resume_combat_after_temporal_coin",
+            {
+                p_combat_id:
+                    combatId,
+
+                p_character_id:
+                    currentCharacter.id
+            }
+        );
+
+
+    if (
+        resumeError
+    ) {
+
+        throw resumeError;
+
+    }
+
+
+    // Ricarica sessione, entità e inventario dopo il ripristino.
     await Promise.all([
+
+        loadCombatSession(),
 
         loadCombatEntities(),
 
         loadCharacterInventory()
 
     ]);
+
+
+    // Se la sconfitta era stata dichiarata durante il turno di
+    // un nemico, finish_enemy_turn non aveva potuto avanzare.
+    // Ora che la sessione è di nuovo active chiudiamo quel turno
+    // una sola volta e passiamo normalmente all'entità successiva.
+    const resumedTurnEntity =
+        getCurrentTurnEntity();
+
+
+    if (
+        combatSession?.status ===
+            "active"
+        &&
+        resumedTurnEntity
+        &&
+        resumedTurnEntity.entity_type ===
+            "enemy"
+    ) {
+
+        const {
+            error: finishTurnError
+        } =
+            await db.rpc(
+                "finish_enemy_turn",
+                {
+                    p_combat_id:
+                        combatId,
+
+                    p_enemy_entity_id:
+                        resumedTurnEntity.id,
+
+                    p_round_number:
+                        Number(
+                            combatSession.round_number
+                        )
+                }
+            );
+
+
+        if (
+            finishTurnError
+        ) {
+
+            throw finishTurnError;
+
+        }
+
+
+        await Promise.all([
+
+            loadCombatSession(),
+
+            loadCombatEntities()
+
+        ]);
+
+    }
 
 
     lastCombatEntitiesSnapshot =
