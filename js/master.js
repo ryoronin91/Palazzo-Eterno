@@ -190,7 +190,8 @@ document.addEventListener(
             await Promise.all([
                 loadMasterTrapStates(),
                 loadAllMasterCharacters(),
-                loadActiveMasterCombats()
+                loadActiveMasterCombats(),
+                loadMasterBossPassword()
             ]);
 
             renderMasterEvents();
@@ -3256,7 +3257,150 @@ async function loadAllMasterCharacters() {
     renderAllTokens();
     updatePlayerList();
     updateOnlineCounter();
+    renderMasterMonkeyFingerStatus();
 }
+
+
+// ============================================================
+// BOX PASSWORD BOSS
+// ============================================================
+
+async function loadMasterBossPassword() {
+    const passwordElement =
+        document.getElementById("master-boss-password");
+
+    const expiryElement =
+        document.getElementById("master-boss-password-expiry");
+
+    if (!passwordElement) {
+        return;
+    }
+
+    try {
+        const { data, error } = await db
+            .from("dungeon_boss_gate_password")
+            .select("password_text, cycle_started_at, cycle_expires_at")
+            .eq("id", "boss_room_1")
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data?.password_text) {
+            passwordElement.textContent = "NON DISPONIBILE";
+
+            if (expiryElement) {
+                expiryElement.textContent =
+                    "Nessuna password attiva trovata.";
+            }
+
+            return;
+        }
+
+        passwordElement.textContent =
+            String(data.password_text);
+
+        if (expiryElement) {
+            const expiresAt =
+                data.cycle_expires_at
+                    ? new Date(data.cycle_expires_at)
+                    : null;
+
+            expiryElement.textContent =
+                expiresAt &&
+                !Number.isNaN(expiresAt.getTime())
+                    ? "Valida fino alle " +
+                      expiresAt.toLocaleTimeString(
+                          "it-IT",
+                          {
+                              hour: "2-digit",
+                              minute: "2-digit"
+                          }
+                      )
+                    : "Password del ciclo attuale";
+        }
+
+    } catch (error) {
+        console.error(
+            "Errore caricamento password Boss Master:",
+            error
+        );
+
+        passwordElement.textContent = "ERRORE";
+
+        if (expiryElement) {
+            expiryElement.textContent =
+                "Impossibile leggere la password attuale.";
+        }
+    }
+}
+
+
+// ============================================================
+// BOX DITO DI SCIMMIA
+// ============================================================
+
+function renderMasterMonkeyFingerStatus() {
+    const statusElement =
+        document.getElementById(
+            "master-monkey-finger-status"
+        );
+
+    const ownerElement =
+        document.getElementById(
+            "master-monkey-finger-owner"
+        );
+
+    const panel =
+        document.querySelector(
+            ".master-monkey-finger-panel"
+        );
+
+    if (!statusElement) {
+        return;
+    }
+
+    const owners =
+        Array.from(masterMonkeyFingerOwners)
+            .map(characterId => {
+                const player =
+                    allMasterPlayers.get(characterId);
+
+                return player?.nome || null;
+            })
+            .filter(Boolean);
+
+    const available =
+        owners.length === 0;
+
+    statusElement.textContent =
+        available
+            ? "DISPONIBILE"
+            : "IN POSSESSO";
+
+    if (ownerElement) {
+        ownerElement.textContent =
+            available
+                ? "Nessun PG lo possiede."
+                : owners.length === 1
+                    ? `In mano a: ${owners[0]}`
+                    : `In mano a: ${owners.join(", ")}`;
+    }
+
+    if (panel) {
+        panel.classList.toggle(
+            "is-available",
+            available
+        );
+
+        panel.classList.toggle(
+            "is-owned",
+            !available
+        );
+    }
+}
+
 
 async function loadActiveMasterCombats() {
     const { data, error } = await db
@@ -3293,7 +3437,8 @@ function startMasterDashboardRefresh() {
     masterDashboardRefreshTimer = setInterval(async () => {
         await Promise.all([
             loadAllMasterCharacters(),
-            loadActiveMasterCombats()
+            loadActiveMasterCombats(),
+            loadMasterBossPassword()
         ]);
     }, 4000);
 }

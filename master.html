@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=5"
+        href="css/master.css?v=6"
     >
 <style>
 
@@ -191,28 +191,17 @@
     <main class="master-page">
 
 
+
         <!-- ==================================================
-             HEADER
+             HEADER COMPATTO
         =================================================== -->
 
         <header class="master-header">
 
-            <div>
-
-                <span class="master-label">
-                    MODALITÀ MASTER
-                </span>
-
-                <h1>
-                    PALAZZO ETERNO
-                </h1>
-
-                <p>
-                    Visuale completa del piano
-                </p>
-
+            <div class="master-header-title">
+                <span class="master-label">MODALITÀ MASTER</span>
+                <h1>PALAZZO ETERNO - PIANO 1</h1>
             </div>
-
 
             <div class="master-header-actions">
 
@@ -222,7 +211,6 @@
                 >
                     TORNA ALLA SCHEDA
                 </a>
-
 
                 <button
                     id="logout-button"
@@ -237,112 +225,27 @@
         </header>
 
 
-
         <!-- ==================================================
-             AREA PRINCIPALE
+             DASHBOARD MASTER
+             1 Chat
+             2 Personaggi
+             3 Mappa
+             4 Password Boss
+             5 Dito di Scimmia
+             6 Combattimenti
         =================================================== -->
 
         <section class="master-layout">
 
+            <!-- COLONNA SINISTRA -->
+            <div class="master-left-column">
 
-            <!-- ==================================================
-                 COLONNA SINISTRA
-            =================================================== -->
-
-            <div class="master-sidebar">
-
-
-                <!-- ==================================================
-                     GIOCATORI DEL PIANO
-                =================================================== -->
-
-                <aside class="master-players-panel">
-
-                    <div class="master-panel-header">
-
-                        <span class="panel-label">
-                            PRESENZE
-                        </span>
-
-                        <h2>
-                            GIOCATORI ONLINE
-                        </h2>
-
-                        <div
-                            id="master-online-count"
-                            class="master-online-count"
-                        >
-                            Connessione...
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        id="master-player-list"
-                        class="master-player-list"
-                    >
-
-                        <div class="master-player-empty">
-                            Nessun personaggio presente nel piano.
-                        </div>
-
-                    </div>
-
-                </aside>
-
-                <!-- ==================================================
-                     COMBATTIMENTI ATTIVI
-                =================================================== -->
-
-                <aside class="master-combats-panel">
-
-                    <div class="master-panel-header">
-
-                        <span class="panel-label">
-                            CONTROLLO
-                        </span>
-
-                        <h2>
-                            COMBATTIMENTI
-                        </h2>
-
-                        <div
-                            id="master-combat-count"
-                            class="master-online-count"
-                        >
-                            Nessun combattimento attivo
-                        </div>
-
-                    </div>
-
-                    <div
-                        id="master-combat-list"
-                        class="master-combat-list"
-                    >
-                        <div class="master-player-empty">
-                            Nessun combattimento in corso.
-                        </div>
-                    </div>
-
-                </aside>
-
-
-                <!-- ==================================================
-                     CHAT DEL PIANO
-                =================================================== -->
-
-                <aside class="master-chat-panel">
+                <!-- 1 - CHAT -->
+                <aside class="master-chat-panel master-dashboard-panel">
 
                     <div class="master-chat-header">
-
-                        <span class="panel-label">
-                            COMUNICAZIONI
-                        </span>
-
-                        <h2>
-                            CHAT DEL PIANO
-                        </h2>
+                        <span class="panel-label">COMUNICAZIONI</span>
+                        <h2>CHAT</h2>
 
                         <div
                             id="master-chat-status"
@@ -350,21 +253,16 @@
                         >
                             Connessione...
                         </div>
-
                     </div>
-
 
                     <div
                         id="master-chat-messages"
                         class="master-chat-messages"
                     >
-
                         <div class="master-chat-empty">
                             Nessun messaggio ancora.
                         </div>
-
                     </div>
-
 
                     <form
                         id="master-chat-form"
@@ -378,7 +276,6 @@
                             MESSAGGIO
                         </label>
 
-
                         <textarea
                             id="master-chat-input"
                             class="master-chat-input"
@@ -387,14 +284,12 @@
                             disabled
                         ></textarea>
 
-
                         <div class="master-chat-actions">
 
                             <div
                                 id="master-chat-feedback"
                                 class="master-chat-feedback"
                             ></div>
-
 
                             <button
                                 id="master-chat-send"
@@ -412,17 +307,42 @@
                 </aside>
 
 
+                <!-- 2 - PERSONAGGI -->
+                <aside class="master-players-panel master-dashboard-panel">
+
+                    <div class="master-panel-header">
+                        <span class="panel-label">PRESENZE</span>
+                        <h2>PERSONAGGI</h2>
+
+                        <div
+                            id="master-online-count"
+                            class="master-online-count"
+                        >
+                            Connessione...
+                        </div>
+                    </div>
+
+                    <div
+                        id="master-player-list"
+                        class="master-player-list"
+                    >
+                        <div class="master-player-empty">
+                            Nessun personaggio presente nel piano.
+                        </div>
+                    </div>
+
+                </aside>
+
             </div>
 
 
-
-            <!-- ==================================================
-                 MAPPA
-            =================================================== -->
-
+            <!-- 3 - MAPPA -->
             <div class="master-map-column">
 
-                <div class="master-map-legend" aria-label="Legenda mappa Master">
+                <div
+                    class="master-map-legend"
+                    aria-label="Legenda mappa Master"
+                >
                     <span><b class="legend-dot is-online"></b> PG online</span>
                     <span><b class="legend-dot is-offline"></b> PG offline</span>
                     <span><b class="legend-symbol combat">⚔</b> Combat</span>
@@ -446,7 +366,6 @@
 
                 </div>
 
-
                 <div
                     id="master-message"
                     class="master-message"
@@ -457,8 +376,74 @@
             </div>
 
 
-        </section>
+            <!-- COLONNA DESTRA -->
+            <div class="master-right-column">
 
+                <!-- 4 - PASSWORD BOSS -->
+                <aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
+
+                    <div class="master-panel-header compact">
+                        <span class="panel-label">ACCESSO BOSS</span>
+                        <h2>PASSWORD ATTUALE</h2>
+                    </div>
+
+                    <div class="master-special-value">
+                        <strong id="master-boss-password">...</strong>
+                        <span id="master-boss-password-expiry">
+                            Caricamento...
+                        </span>
+                    </div>
+
+                </aside>
+
+
+                <!-- 5 - DITO DI SCIMMIA -->
+                <aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
+
+                    <div class="master-panel-header compact">
+                        <span class="panel-label">OGGETTO SPECIALE</span>
+                        <h2>DITO DI SCIMMIA</h2>
+                    </div>
+
+                    <div class="master-special-value">
+                        <strong id="master-monkey-finger-status">
+                            Caricamento...
+                        </strong>
+                        <span id="master-monkey-finger-owner"></span>
+                    </div>
+
+                </aside>
+
+
+                <!-- 6 - COMBATTIMENTI -->
+                <aside class="master-combats-panel master-dashboard-panel">
+
+                    <div class="master-panel-header">
+                        <span class="panel-label">CONTROLLO</span>
+                        <h2>COMBATTIMENTI IN CORSO</h2>
+
+                        <div
+                            id="master-combat-count"
+                            class="master-online-count"
+                        >
+                            Nessun combattimento attivo
+                        </div>
+                    </div>
+
+                    <div
+                        id="master-combat-list"
+                        class="master-combat-list"
+                    >
+                        <div class="master-player-empty">
+                            Nessun combattimento in corso.
+                        </div>
+                    </div>
+
+                </aside>
+
+            </div>
+
+        </section>
 
 
         <!-- ==================================================
@@ -708,7 +693,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=7"></script>
+    <script src="js/master.js?v=8"></script>
 
 
 </body>
