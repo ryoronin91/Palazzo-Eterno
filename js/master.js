@@ -139,6 +139,20 @@ let realtimeReady =
     false;
 
 
+// ============================================================
+// CHAT PERSISTENTE
+// ============================================================
+
+const MASTER_CHAT_FLOOR_ID =
+    "floor_1";
+
+const MASTER_CHAT_HISTORY_LIMIT =
+    100;
+
+const renderedMasterChatMessageIds =
+    new Set();
+
+
 // character_id -> dati giocatore
 
 const onlinePlayers =
@@ -168,6 +182,8 @@ document.addEventListener(
             setupLogout();
 
             setupMasterChat();
+
+            await loadMasterChatHistory();
 
             setupMap();
 
@@ -1114,24 +1130,11 @@ async function setupRealtime() {
             }
 
 
-            // Se per qualche motivo Supabase rimanda
-            // il nostro messaggio allo stesso client,
-            // non lo duplichiamo.
-
-            if (
-                data.master_user_id &&
-                data.master_user_id ===
-                currentUser.id
-            ) {
-
-                return;
-
-            }
-
-
             appendMasterChatMessage(
                 data,
-                false
+                data.name === "MASTER" ||
+                data.nome === "MASTER" ||
+                data.sender_name === "MASTER"
             );
 
         }
@@ -1912,6 +1915,142 @@ function setupMasterChat() {
 
 
 // ============================================================
+// CARICA STORICO CHAT MASTER
+// ============================================================
+
+async function loadMasterChatHistory() {
+
+    const container =
+        document.getElementById(
+            "master-chat-messages"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .select(`
+                    id,
+                    character_id,
+                    user_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .eq(
+                    "floor_id",
+                    MASTER_CHAT_FLOOR_ID
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                )
+                .limit(
+                    MASTER_CHAT_HISTORY_LIMIT
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderedMasterChatMessageIds.clear();
+
+        container.innerHTML =
+            "";
+
+
+        const rows =
+            Array.isArray(data)
+                ? [...data].reverse()
+                : [];
+
+
+        if (
+            rows.length === 0
+        ) {
+
+            container.innerHTML =
+                `
+                    <div class="master-chat-empty">
+                        Nessun messaggio ancora.
+                    </div>
+                `;
+
+            return;
+
+        }
+
+
+        rows.forEach(
+            row => {
+
+                appendMasterChatMessage(
+                    {
+                        id:
+                            row.id,
+
+                        character_id:
+                            row.character_id,
+
+                        master_user_id:
+                            row.character_id === null
+                                ? row.user_id
+                                : null,
+
+                        name:
+                            row.sender_name,
+
+                        text:
+                            row.message_text,
+
+                        timestamp:
+                            row.created_at,
+
+                        sent_at:
+                            row.created_at
+                    },
+                    row.sender_name ===
+                        "MASTER"
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento storico chat Master:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
 // STATO CHAT
 // ============================================================
 
@@ -1989,7 +2128,10 @@ async function sendMasterChatMessage() {
         );
 
 
-    if (!input) {
+    if (
+        !input ||
+        !currentUser
+    ) {
 
         return;
 
@@ -2026,35 +2168,8 @@ async function sendMasterChatMessage() {
     }
 
 
-    const payload = {
-
-        message_id:
-            `master-${Date.now()}`,
-
-        character_id:
-            null,
-
-        master_user_id:
-            currentUser.id,
-
-        nome:
-            "MASTER",
-
-        text,
-
-        sent_at:
-            new Date()
-                .toISOString()
-
-    };
-
-
-    // Mostra subito il messaggio al Master.
-
-    appendMasterChatMessage(
-        payload,
-        true
-    );
+    const originalValue =
+        input.value;
 
 
     input.value =
@@ -2069,29 +2184,134 @@ async function sendMasterChatMessage() {
     }
 
 
-    const result =
-        await dungeonChannel.send({
+    try {
 
-            type:
-                "broadcast",
+        const {
+            data: savedMessage,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .insert({
 
-            event:
-                "floor-chat",
+                    floor_id:
+                        MASTER_CHAT_FLOOR_ID,
 
-            payload
+                    character_id:
+                        null,
 
-        });
+                    user_id:
+                        currentUser.id,
+
+                    sender_name:
+                        "MASTER",
+
+                    message_text:
+                        text
+
+                })
+                .select(`
+                    id,
+                    character_id,
+                    user_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .single();
 
 
-    if (
-        result !== "ok" &&
-        result !== undefined
-    ) {
+        if (error) {
 
-        console.warn(
-            "Invio chat Master:",
-            result
+            throw error;
+
+        }
+
+
+        const payload = {
+
+            id:
+                savedMessage.id,
+
+            character_id:
+                null,
+
+            master_user_id:
+                savedMessage.user_id ||
+                currentUser.id,
+
+            name:
+                "MASTER",
+
+            nome:
+                "MASTER",
+
+            text:
+                savedMessage.message_text ||
+                text,
+
+            timestamp:
+                savedMessage.created_at,
+
+            sent_at:
+                savedMessage.created_at
+
+        };
+
+
+        appendMasterChatMessage(
+            payload,
+            true
         );
+
+
+        const result =
+            await dungeonChannel.send({
+
+                type:
+                    "broadcast",
+
+                event:
+                    "floor-chat",
+
+                payload
+
+            });
+
+
+        if (
+            result !== "ok" &&
+            result !== undefined
+        ) {
+
+            console.warn(
+                "Invio chat Master:",
+                result
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio chat Master:",
+            error
+        );
+
+
+        input.value =
+            originalValue;
+
+
+        if (feedback) {
+
+            feedback.textContent =
+                "Messaggio non inviato.";
+
+        }
 
     }
 
@@ -2123,6 +2343,33 @@ function appendMasterChatMessage(
     }
 
 
+    const messageId =
+        data.id ||
+        data.message_id ||
+        null;
+
+
+    if (
+        messageId &&
+        renderedMasterChatMessageIds.has(
+            String(messageId)
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (messageId) {
+
+        renderedMasterChatMessageIds.add(
+            String(messageId)
+        );
+
+    }
+
+
     const empty =
         container.querySelector(
             ".master-chat-empty"
@@ -2142,15 +2389,30 @@ function appendMasterChatMessage(
         );
 
 
+    const authorName =
+        data.name ||
+        data.nome ||
+        data.sender_name ||
+        "Giocatore";
+
+
     message.className =
         "master-chat-message" +
         (
             isMaster ||
-            data.nome ===
+            authorName ===
             "MASTER"
                 ? " is-master"
                 : ""
         );
+
+
+    if (messageId) {
+
+        message.dataset.messageId =
+            String(messageId);
+
+    }
 
 
     const meta =
@@ -2170,9 +2432,7 @@ function appendMasterChatMessage(
 
 
     author.textContent =
-        data.nome ||
-        data.name ||
-        "Giocatore";
+        authorName;
 
 
     const time =
@@ -2183,7 +2443,9 @@ function appendMasterChatMessage(
 
     time.textContent =
         formatChatTime(
-            data.sent_at
+            data.sent_at ||
+            data.timestamp ||
+            data.created_at
         );
 
 
@@ -2210,6 +2472,7 @@ function appendMasterChatMessage(
     body.textContent =
         String(
             data.text ||
+            data.message_text ||
             ""
         );
 
@@ -2237,10 +2500,28 @@ function appendMasterChatMessage(
 
     if (
         messages.length >
-        100
+        MASTER_CHAT_HISTORY_LIMIT
     ) {
 
-        messages[0].remove();
+        const first =
+            messages[0];
+
+
+        const firstId =
+            first?.dataset
+                ?.messageId;
+
+
+        if (firstId) {
+
+            renderedMasterChatMessageIds.delete(
+                firstId
+            );
+
+        }
+
+
+        first?.remove();
 
     }
 
@@ -2903,102 +3184,12 @@ const MASTER_COMBAT_EVENTS = [
     { id: "C2", x: 7,  y: 11, encounter_id: "combat_2" },
     { id: "C3", x: 13, y: 14, encounter_id: "combat_3" },
     { id: "C4", x: 19, y: 11, encounter_id: "combat_4" },
-    { id: "C5", x: 11, y: 20, encounter_id: "combat_5" },
-    { id: "BOSS1", x: 19, y: 20, encounter_id: "combat_boss", type: "boss" }
-];
-
-const MASTER_SPECIAL_EVENTS = [
-    { id: "PVP1", x: 1, y: 14, type: "pvp", label: "PVP" },
-    { id: "VENDOR1", x: 2, y: 11, type: "vendor", label: "VENDOR" }
+    { id: "C5", x: 11, y: 20, encounter_id: "combat_5" }
 ];
 
 const allMasterPlayers = new Map();
 const activeMasterCombats = new Map();
-const masterPlayerScores = new Map();
-const masterMonkeyFingerOwners = new Set();
 let masterDashboardRefreshTimer = null;
-
-async function loadMasterCharacterExtras(characterIds) {
-    const ids = Array.isArray(characterIds)
-        ? characterIds.filter(Boolean)
-        : [];
-
-    if (ids.length === 0) {
-        masterPlayerScores.clear();
-        masterMonkeyFingerOwners.clear();
-        return;
-    }
-
-    const [scoreResults, inventoryResult] = await Promise.all([
-        Promise.all(
-            ids.map(async characterId => {
-                try {
-                    const { data, error } = await db.rpc(
-                        "get_character_final_score",
-                        {
-                            p_character_id: characterId
-                        }
-                    );
-
-                    if (error) {
-                        throw error;
-                    }
-
-                    return {
-                        characterId,
-                        score: Number(data) || 0
-                    };
-                } catch (error) {
-                    console.error(
-                        "Errore score Master per PG",
-                        characterId,
-                        error
-                    );
-
-                    return {
-                        characterId,
-                        score: masterPlayerScores.get(characterId) ?? 0
-                    };
-                }
-            })
-        ),
-
-        db
-            .from("character_inventory")
-            .select("character_id, item_id, quantity")
-            .in("character_id", ids)
-            .eq("item_id", "dito_scimmia")
-    ]);
-
-    scoreResults.forEach(entry => {
-        masterPlayerScores.set(
-            entry.characterId,
-            entry.score
-        );
-    });
-
-    if (inventoryResult.error) {
-        console.error(
-            "Errore controllo Dito di Scimmia Master:",
-            inventoryResult.error
-        );
-        return;
-    }
-
-    masterMonkeyFingerOwners.clear();
-
-    (inventoryResult.data || []).forEach(entry => {
-        if (
-            entry.character_id &&
-            (Number(entry.quantity) || 0) > 0
-        ) {
-            masterMonkeyFingerOwners.add(
-                entry.character_id
-            );
-        }
-    });
-}
-
 
 async function loadAllMasterCharacters() {
     const { data, error } = await db
@@ -3027,10 +3218,6 @@ async function loadAllMasterCharacters() {
         return;
     }
 
-    const characterIds = (data || []).map(characterData => characterData.id);
-
-    await loadMasterCharacterExtras(characterIds);
-
     const currentIds = new Set();
 
     (data || []).forEach(characterData => {
@@ -3057,8 +3244,6 @@ async function loadAllMasterCharacters() {
                 ? presence.current_hp
                 : characterData.current_hp,
             active_combat_id: presence?.active_combat_id || characterData.active_combat_id || null,
-            score: masterPlayerScores.get(characterData.id) ?? 0,
-            has_monkey_finger: masterMonkeyFingerOwners.has(characterData.id),
             online: onlinePlayers.has(characterData.id)
         });
     });
@@ -3407,10 +3592,6 @@ function updatePlayerList() {
         position.className = "master-player-position";
         position.textContent = `X ${Number(player.x) || 0} • Y ${Number(player.y) || 0}`;
 
-        const score = document.createElement("span");
-        score.className = "master-player-score";
-        score.textContent = `SCORE ${Number(player.score) || 0}`;
-
         const statusRow = document.createElement("div");
         statusRow.className = "master-player-status-row";
 
@@ -3426,14 +3607,7 @@ function updatePlayerList() {
             statusRow.appendChild(combatBadge);
         }
 
-        if (player.has_monkey_finger) {
-            const fingerBadge = document.createElement("span");
-            fingerBadge.className = "master-status-badge monkey-finger";
-            fingerBadge.textContent = "☝ DITO DI SCIMMIA";
-            statusRow.appendChild(fingerBadge);
-        }
-
-        info.append(name, position, score, statusRow);
+        info.append(name, position, statusRow);
 
         row.append(token, info);
 
@@ -3527,63 +3701,25 @@ function renderMasterEvents() {
 
     MASTER_COMBAT_EVENTS.forEach(combatEvent => {
         const marker = document.createElement("div");
-        const isBoss = combatEvent.type === "boss";
-
-        marker.className =
-            "master-event-marker is-combat" +
-            (isBoss ? " is-boss" : "");
-
+        marker.className = "master-event-marker is-combat";
         marker.dataset.eventId = combatEvent.id;
-        marker.dataset.eventType = isBoss ? "boss" : "combat";
-        marker.textContent = isBoss ? "👹" : "⚔";
+        marker.dataset.eventType = "combat";
+        marker.textContent = "⚔";
 
         const liveCombat = getActiveCombatForEncounter(combatEvent.encounter_id);
 
         if (liveCombat) {
             marker.classList.add("has-live-combat");
-            marker.title =
-                `${isBoss ? "BOSS IN CORSO" : "COMBATTIMENTO IN CORSO"}\n` +
-                `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
-                `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
-                "Clicca per osservare";
-
+            marker.title = `COMBATTIMENTO IN CORSO\n${combatEvent.id} · ${combatEvent.encounter_id}\nX ${combatEvent.x} • Y ${combatEvent.y}\nClicca per osservare`;
             marker.addEventListener("click", event => {
                 event.stopPropagation();
                 openMasterCombat(liveCombat.id);
             });
         } else {
-            marker.title =
-                `${isBoss ? "GOBLIN BOSS" : "EVENTO COMBAT"}\n` +
-                `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
-                `X ${combatEvent.x} • Y ${combatEvent.y}`;
+            marker.title = `EVENTO COMBAT\n${combatEvent.id} · ${combatEvent.encounter_id}\nX ${combatEvent.x} • Y ${combatEvent.y}`;
         }
 
         placeMarker(combatEvent.x, combatEvent.y, marker);
-    });
-
-    MASTER_SPECIAL_EVENTS.forEach(specialEvent => {
-        const marker = document.createElement("div");
-
-        marker.className =
-            `master-event-marker is-special is-${specialEvent.type}`;
-
-        marker.dataset.eventId = specialEvent.id;
-        marker.dataset.eventType = specialEvent.type;
-
-        marker.textContent =
-            specialEvent.type === "pvp"
-                ? "⚔"
-                : "🐒";
-
-        marker.title =
-            `${specialEvent.label}\n` +
-            `X ${specialEvent.x} • Y ${specialEvent.y}`;
-
-        placeMarker(
-            specialEvent.x,
-            specialEvent.y,
-            marker
-        );
     });
 }
 
@@ -3659,11 +3795,7 @@ async function openCharacterSheet(characterId) {
     fillCharacterSheet({
         ...data,
         online: !!cached?.online,
-        active_combat_id: cached?.active_combat_id || data.active_combat_id || null,
-        score: cached?.score ?? masterPlayerScores.get(characterId) ?? 0,
-        has_monkey_finger:
-            cached?.has_monkey_finger ??
-            masterMonkeyFingerOwners.has(characterId)
+        active_combat_id: cached?.active_combat_id || data.active_combat_id || null
     });
 
     modal.hidden = false;
@@ -3718,23 +3850,7 @@ function fillCharacterSheet(characterData) {
 
     setText("master-character-current-hp", `${currentHp} / ${life}`);
     setText("master-character-current-pm", `${currentPm} / ${mana}`);
-    setText("master-character-score", Number(characterData.score) || 0);
-    setText(
-        "master-character-monkey-finger",
-        characterData.has_monkey_finger ? "☝ SÌ" : "NO"
-    );
     setText("master-character-online-status", characterData.online ? "● ONLINE" : "○ OFFLINE");
-
-    const fingerBox = document
-        .getElementById("master-character-monkey-finger")
-        ?.closest(".master-runtime-box");
-
-    if (fingerBox) {
-        fingerBox.classList.toggle(
-            "has-monkey-finger",
-            !!characterData.has_monkey_finger
-        );
-    }
 
     setText(
         "master-character-position",
