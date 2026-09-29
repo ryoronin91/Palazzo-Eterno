@@ -1954,3 +1954,94 @@ body {
     }
 
 }
+
+
+/* ============================================================
+   CADUTI DEL PALAZZO - STEMMI BOSS
+   ============================================================ */
+
+.sheet-leaderboard-identity {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
+}
+
+.sheet-leaderboard-identity .sheet-leaderboard-name {
+    min-width: 0;
+
+    flex: 0 1 auto;
+}
+
+.sheet-leaderboard-badges {
+    flex: 0 0 auto;
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.sheet-leaderboard-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    flex: 0 0 20px;
+}
+
+.sheet-leaderboard-badge {
+    width: 20px;
+    height: 20px;
+
+    object-fit: contain;
+
+    vertical-align: middle;
+
+    filter:
+        drop-shadow(
+            0 1px 2px
+            rgba(0, 0, 0, 0.75)
+        );
+}
+
+.sheet-leaderboard-badge-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+    line-height: 1;
+
+    color: #d8b777;
+}
+
+@media (max-width: 700px) {
+
+    .sheet-leaderboard-identity {
+        gap: 3px;
+    }
+
+    .sheet-leaderboard-badges {
+        gap: 2px;
+    }
+
+    .sheet-leaderboard-badge-wrap,
+    .sheet-leaderboard-badge {
+        width: 17px;
+        height: 17px;
+
+        flex-basis: 17px;
+    }
+
+    .sheet-leaderboard-badge-fallback {
+        font-size: 12px;
+    }
+}

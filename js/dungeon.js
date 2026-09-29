@@ -742,7 +742,7 @@ async function loadDungeonLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_dead_characters_leaderboard",
+                "get_dead_characters_leaderboard_with_badges",
                 {
                     p_limit:
                         20
@@ -844,6 +844,85 @@ function renderDungeonLeaderboard(
                         );
 
 
+                    const badges =
+                        Array.isArray(
+                            row.boss_badges
+                        )
+                            ? row.boss_badges
+                            : [];
+
+
+                    const badgesHtml =
+                        badges
+                            .map(
+                                badge => {
+
+                                    const badgeName =
+                                        escapeDungeonLeaderboardHtml(
+                                            badge?.badge_name ||
+                                            badge?.display_name ||
+                                            "Boss sconfitto"
+                                        );
+
+                                    const iconPath =
+                                        escapeDungeonLeaderboardHtml(
+                                            badge?.icon_path ||
+                                            ""
+                                        );
+
+                                    const floorNumber =
+                                        Number(
+                                            badge?.floor_number
+                                        ) || 0;
+
+                                    const title =
+                                        floorNumber > 0
+                                            ? `${badgeName} · Piano ${floorNumber}`
+                                            : badgeName;
+
+
+                                    if (!iconPath) {
+
+                                        return `
+                                            <span
+                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
+                                                title="${title}"
+                                                aria-label="${title}"
+                                            >
+                                                🛡
+                                            </span>
+                                        `;
+
+                                    }
+
+
+                                    return `
+                                        <span
+                                            class="dungeon-leaderboard-badge-wrap"
+                                            title="${title}"
+                                        >
+                                            <img
+                                                class="dungeon-leaderboard-badge"
+                                                src="${iconPath}"
+                                                alt="${badgeName}"
+                                                loading="lazy"
+                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                                            >
+                                            <span
+                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
+                                                aria-hidden="true"
+                                                style="display:none"
+                                            >
+                                                🛡
+                                            </span>
+                                        </span>
+                                    `;
+
+                                }
+                            )
+                            .join("");
+
+
                     return `
                         <div class="dungeon-leaderboard-row">
 
@@ -851,11 +930,25 @@ function renderDungeonLeaderboard(
                                 #${position}
                             </div>
 
-                            <div
-                                class="dungeon-leaderboard-name"
-                                title="${name}"
-                            >
-                                ${name}
+                            <div class="dungeon-leaderboard-identity">
+
+                                <div
+                                    class="dungeon-leaderboard-name"
+                                    title="${name}"
+                                >
+                                    ${name}
+                                </div>
+
+                                ${
+                                    badgesHtml
+                                        ? `
+                                            <div class="dungeon-leaderboard-badges">
+                                                ${badgesHtml}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+
                             </div>
 
                             <div class="dungeon-leaderboard-score">

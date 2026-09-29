@@ -572,7 +572,7 @@ async function loadSheetLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_dead_characters_leaderboard",
+                "get_dead_characters_leaderboard_with_badges",
                 {
                     p_limit:
                         20
@@ -674,6 +674,85 @@ function renderSheetLeaderboard(
                         );
 
 
+                    const badges =
+                        Array.isArray(
+                            row.boss_badges
+                        )
+                            ? row.boss_badges
+                            : [];
+
+
+                    const badgesHtml =
+                        badges
+                            .map(
+                                badge => {
+
+                                    const badgeName =
+                                        escapeSheetLeaderboardHtml(
+                                            badge?.badge_name ||
+                                            badge?.display_name ||
+                                            "Boss sconfitto"
+                                        );
+
+                                    const iconPath =
+                                        escapeSheetLeaderboardHtml(
+                                            badge?.icon_path ||
+                                            ""
+                                        );
+
+                                    const floorNumber =
+                                        Number(
+                                            badge?.floor_number
+                                        ) || 0;
+
+                                    const title =
+                                        floorNumber > 0
+                                            ? `${badgeName} · Piano ${floorNumber}`
+                                            : badgeName;
+
+
+                                    if (!iconPath) {
+
+                                        return `
+                                            <span
+                                                class="sheet-leaderboard-badge sheet-leaderboard-badge-fallback"
+                                                title="${title}"
+                                                aria-label="${title}"
+                                            >
+                                                🛡
+                                            </span>
+                                        `;
+
+                                    }
+
+
+                                    return `
+                                        <span
+                                            class="sheet-leaderboard-badge-wrap"
+                                            title="${title}"
+                                        >
+                                            <img
+                                                class="sheet-leaderboard-badge"
+                                                src="${iconPath}"
+                                                alt="${badgeName}"
+                                                loading="lazy"
+                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                                            >
+                                            <span
+                                                class="sheet-leaderboard-badge sheet-leaderboard-badge-fallback"
+                                                aria-hidden="true"
+                                                style="display:none"
+                                            >
+                                                🛡
+                                            </span>
+                                        </span>
+                                    `;
+
+                                }
+                            )
+                            .join("");
+
+
                     return `
                         <div class="sheet-leaderboard-row">
 
@@ -681,11 +760,25 @@ function renderSheetLeaderboard(
                                 #${position}
                             </div>
 
-                            <div
-                                class="sheet-leaderboard-name"
-                                title="${name}"
-                            >
-                                ${name}
+                            <div class="sheet-leaderboard-identity">
+
+                                <div
+                                    class="sheet-leaderboard-name"
+                                    title="${name}"
+                                >
+                                    ${name}
+                                </div>
+
+                                ${
+                                    badgesHtml
+                                        ? `
+                                            <div class="sheet-leaderboard-badges">
+                                                ${badgesHtml}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+
                             </div>
 
                             <div class="sheet-leaderboard-score">
