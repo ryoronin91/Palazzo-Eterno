@@ -772,12 +772,79 @@ function setupVendorExitButton() {
 
     button.addEventListener(
         "click",
-        () => {
+        async () => {
 
-            resetVendorVisitMemory();
+            if (
+                !character ||
+                !character.id
+            ) {
 
-            window.location.href =
-                "dungeon.html";
+                window.location.href =
+                    "dungeon.html";
+
+                return;
+
+            }
+
+
+            button.disabled =
+                true;
+
+
+            try {
+
+                const {
+                    error
+                } =
+                    await db
+                        .from(
+                            "characters"
+                        )
+                        .update({
+                            current_location:
+                                "dungeon"
+                        })
+                        .eq(
+                            "id",
+                            character.id
+                        );
+
+
+                if (
+                    error
+                ) {
+
+                    throw error;
+
+                }
+
+
+                resetVendorVisitMemory();
+
+
+                window.location.href =
+                    "dungeon.html";
+
+
+            } catch (
+                error
+            ) {
+
+                console.error(
+                    "Errore uscita dal vendor:",
+                    error
+                );
+
+
+                setVendorDialogue(
+                    "Non riesco a lasciarti andare. Riprova."
+                );
+
+
+                button.disabled =
+                    false;
+
+            }
 
         }
     );
