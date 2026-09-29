@@ -1,0 +1,2458 @@
+PALAZZO ETERNO — STATO COMPLETO CONSOLIDATO
+Documento master di avanzamento lavori
+Data di consolidamento: 29/09/2026
+
+Fonti consolidate, in ordine di priorità temporale:
+1. chat4.txt
+2. chat3.txt
+3. chat2.txt
+4. chat1.txt
+
+Regola applicata:
+- in caso di conflitto prevale sempre la versione più recente;
+- le versioni vecchie sono riportate solo quando servono a spiegare l’evoluzione;
+- “ONLINE / TESTATO” significa che nei riepiloghi è presente una conferma esplicita dell’utente o una descrizione del sistema come già funzionante;
+- “PREPARATO / NON ANCORA CONFERMATO” significa che codice/SQL/file sono stati prodotti ma non è riportato un test finale;
+- “STATO DEPLOY NON CONFERMATO” significa che non è possibile stabilire dai quattro documenti se il file sia già stato pubblicato sul repository attivo;
+- quando una funzione è solo progettata, viene marcata “NON IMPLEMENTATA” o “PREPARATA”.
+
+======================================================================
+1. PANORAMICA GENERALE DEL PROGETTO
+======================================================================
+
+Palazzo Eterno è un GDR web multiplayer con frontend HTML/CSS/JavaScript e backend Supabase/PostgreSQL.
+
+Tecnologie e servizi documentati:
+- HTML / CSS / JavaScript;
+- GitHub Pages per l’hosting pubblico;
+- Supabase Auth;
+- Supabase Database/PostgreSQL;
+- Supabase Realtime/Presence;
+- RPC PostgreSQL per la logica server-authoritative;
+- Supabase Edge Functions;
+- OpenAI API per l’NPC Mano di Scimmia;
+- Resend solo come architettura proposta per una futura email legata alla morte con Testa del Boss.
+
+URL pubblico documentato:
+https://ryoronin91.github.io/Palazzo-Eterno/index.html
+
+Pagine principali note:
+- index.html
+- login.html
+- registrazione.html
+- personaggio.html
+- scheda.html
+- dungeon.html
+- combat.html
+- pvp.html
+- vendor.html
+- morte.html
+- master.html
+- riepilogo.html
+
+File JavaScript principali:
+- config.js
+- personaggio.js
+- scheda.js
+- dungeon.js
+- eventi.js
+- combat.js
+- combat-ai.js
+- combat-actions.js
+- combat-ui.js
+- combat-loot.js
+- combat-log.js
+- combat-chat.js
+- vendor.js
+- master.js
+- pvp.js
+
+Stato complessivo:
+- il Piano 1 è sostanzialmente completo;
+- movimento, trappole, PvP, combat PvE, boss, morte, score, loot, leaderboard, Presence, vendor e IA NPC risultano già costruiti;
+- il progetto è ormai abbastanza complesso da richiedere una documentazione architetturale stabile;
+- la direzione decisa a fine chat4 è passare alla progettazione del Piano 2, lasciando il Piano 1 aperto solo a bugfix, merge e rifiniture.
+
+======================================================================
+2. ARCHITETTURA ATTUALE
+======================================================================
+
+2.1 Frontend HTML
+-----------------
+index.html
+- home del progetto;
+- contiene la sezione “I PROSSIMI UPGRADE”;
+- patch più recente preparata: badge verde “ORA DISPONIBILI” sulle Pergamene abilità e sulle soundtrack.
+
+login.html
+- autenticazione;
+- contiene anch’essa “I PROSSIMI UPGRADE”;
+- patch più recente preparata: badge verde “ORA DISPONIBILI” sulle Pergamene abilità.
+
+personaggio.html
+- creazione PG in 3 step:
+  1. Personaggio
+  2. Abilità
+  3. Equipaggiamento
+- versione più recente preparata in chat4:
+  personaggio_corretto_token_1_20_moneta_alert.html
+
+scheda.html
+- scheda PG;
+- inventario;
+- equipaggiamento;
+- abilità;
+- note;
+- leaderboard;
+- combinazione Mano di Scimmia;
+- apprendimento Pergamene abilità tramite relativo JS.
+
+dungeon.html
+- Piano 1;
+- mappa, nebbia, movimento, eventi, chat, leaderboard, Presence;
+- routing server-authoritative tramite characters.current_location e active_combat_id;
+- vendor fisico in mappa;
+- boss e porte segrete.
+
+combat.html
+- combat PvE;
+- combat_id passato via query string;
+- modalità Master via ?mode=master;
+- overlay vittoria;
+- loot;
+- moduli JS separati.
+
+pvp.html
+- arena PvP separata dal combat PvE.
+
+vendor.html
+- Mano di Scimmia;
+- inventario PG + ritratto + inventario vendor + dialogo IA;
+- acquisti, vendite, segreti, offerte.
+
+morte.html
+- schermata morte definitiva del PG;
+- score finale e classifica.
+
+master.html
+- visuale Master del dungeon e sistemi di controllo/osservazione.
+
+2.2 JavaScript
+--------------
+dungeon.js
+- caricamento mappa;
+- movimento;
+- nebbia;
+- Presence;
+- routing;
+- vendor;
+- eventi;
+- porte Boss;
+- Moneta Temporale nel dungeon;
+- musica predisposta nella versione chat4.
+
+eventi.js
+- eventi C1–C5;
+- PvP;
+- scale;
+- Dito di Scimmia;
+- Boss;
+- popup Boss.
+
+combat.js
+- stato sessione;
+- caricamento entità;
+- turno;
+- death flow;
+- routing;
+- Moneta Temporale;
+- musica nella versione preparata più recente.
+
+combat-ai.js
+- IA nemici;
+- Goblin;
+- Sciamano;
+- Sputafuoco;
+- Boss Goblin;
+- fine turno automatica nemico.
+
+combat-actions.js
+- azioni giocatore, attacco, abilità/oggetti.
+
+combat-ui.js
+- render interfaccia;
+- turn order;
+- pannelli.
+
+combat-loot.js
+- loot vittoria;
+- uscita vittoria;
+- draft;
+- distribuzioni.
+
+combat-log.js
+- registro combat.
+
+combat-chat.js
+- chat combat.
+
+vendor.js
+- catalogo;
+- inventario PG;
+- acquisti/vendite;
+- chat IA;
+- segreti;
+- uscita;
+- musica nella versione predisposta.
+
+personaggio.js
+- creazione;
+- point buy;
+- scelta abilità;
+- scelta equipaggiamento;
+- inventario iniziale;
+- Moneta Temporale iniziale nella versione chat4.
+
+scheda.js
+- caricamento personaggio;
+- inventario;
+- equipaggiamento;
+- abilità;
+- uso oggetti;
+- note;
+- leaderboard;
+- combinazione Mano di Scimmia;
+- apprendimento Pergamene nella patch successiva.
+
+2.3 Supabase / PostgreSQL
+-------------------------
+Supabase è la fonte di verità per:
+- autenticazione;
+- personaggio;
+- posizione dungeon;
+- stato pagina;
+- active_combat_id;
+- inventario;
+- abilità;
+- combat;
+- loot;
+- score;
+- morte;
+- vendor;
+- segreti;
+- cooldown;
+- porte Boss;
+- trappole;
+- leaderboard.
+
+La logica critica viene spostata il più possibile lato RPC/DB.
+
+2.4 Realtime / Presence
+-----------------------
+Presence e realtime sono già usati nel dungeon e nel combat.
+La chat del dungeon risulta funzionante.
+Non è riportato nei quattro file il nome esatto del canale Realtime: NON INVENTARE.
+
+2.5 Edge Functions
+------------------
+Attiva/importante:
+- vendor-ai
+
+Preparata ma non dichiarata operativa:
+- boss-head-death-email
+
+2.6 Stato personaggio e routing
+-------------------------------
+Fonte di verità:
+- characters.current_location
+- characters.active_combat_id
+
+Priorità definitiva:
+1. active_combat_id != NULL → combat
+2. altrimenti current_location = vendor → vendor
+3. altrimenti → dungeon
+
+URL canonico combat:
+combat.html?combat_id=<UUID>
+
+Master observer:
+?mode=master
+Il router personale non deve impedirgli di aprire combat arbitrari.
+
+======================================================================
+3. CRONOLOGIA DELLO SVILUPPO
+======================================================================
+
+Fase 1 — Score, vittoria e loot
+-------------------------------
+Nel primo riepilogo sono stati introdotti:
+- characters.score;
+- killed_by_character_id e score_awarded in combat_entities;
+- assegnazione score tramite combat_basic_attack e combat_fire_bolt;
+- score nascosto al giocatore durante il piano;
+- vittoria automatica quando non restano nemici vivi;
+- overlay VITTORIA;
+- pulsante ESCI;
+- persistenza PF/PM tra combattimenti tramite fix di sync_combat_player_stats;
+- combat_loot;
+- generate_combat_loot;
+- get_combat_loot;
+- distribuzione oro server-side.
+
+In chat1 il draft oggetti era ancora da completare; nei riepiloghi successivi è descritto come sistema ormai presente:
+- scelta a turni;
+- priorità score più basso;
+- 30 secondi;
+- riepilogo assegnazioni.
+
+Fase 2 — Espansione Piano 1 e Boss
+----------------------------------
+Sono stati consolidati:
+- nuova stanza/area segreta;
+- scale speciali X19 Y22 +100;
+- trappole;
+- leaderboard;
+- PvP;
+- Dito di Scimmia;
+- Boss Goblin;
+- IA Boss;
+- popup dedicato;
+- layout turn order scrollabile.
+
+Il Boss è stato inserito:
+- in enemies;
+- in monster_types;
+- come encounter combat_boss;
+- nel dungeon a X19 Y20.
+
+Fase 3 — Vendor / Mano di Scimmia e routing
+-------------------------------------------
+È stato costruito il vendor:
+- Mano di Scimmia;
+- catalogo score-based;
+- acquisti e vendite;
+- segreti;
+- acquisto segreti via oro o Mano di Scimmia;
+- IA OpenAI;
+- memoria solo per la visita corrente;
+- token vendor nel dungeon X2 Y11;
+- camera 13×13;
+- routing server-authoritative.
+
+È stato introdotto characters.current_location.
+
+Sono stati inoltre preparati:
+- email morte con testa_boss;
+- token 11–20;
+- diagramma architetturale futuro.
+
+Fase 4 — Password dinamica, Moneta Temporale, Pergamene, musica
+---------------------------------------------------------------
+La vecchia password fissa “CUORE” è stata superata.
+Stato finale:
+- password dinamica;
+- ciclo inizialmente 12h;
+- poi portato a 8h;
+- integrazione Mano di Scimmia con password del ciclo corrente.
+
+È stata introdotta la Moneta Temporale:
+- salvataggio automatico da morte per danno;
+- max 3;
+- PF/PM pieni;
+- 1 moneta a ogni nuovo PG;
+- bug complesso con defeat/turno nel combat, ancora da ritestare dopo l’ultima patch.
+
+Sono state introdotte le Pergamene abilità:
+- grants_ability_id;
+- apprendono abilità;
+- categoria vendor dedicata;
+- prezzo 100;
+- min_score 300.
+
+Infine sono state predisposte musiche per:
+- dungeon;
+- combat;
+- boss;
+- vendor.
+
+======================================================================
+4. STATO ATTUALE ONLINE
+======================================================================
+
+Legenda:
+- ONLINE / TESTATO
+- PREPARATO / NON ANCORA CONFERMATO
+- DA VERIFICARE
+- NON IMPLEMENTATO
+
+ONLINE / TESTATO
+----------------
+- Movimento dungeon.
+- Trappole a coordinate.
+- Cooldown trappole 15 minuti.
+- PvP arena.
+- Aggro.
+- Pathfinding Goblin.
+- Morte definitiva PG.
+- Score.
+- Leaderboard Caduti del Palazzo.
+- Loot generale.
+- Presence.
+- Boss Goblin: ingresso e combat generale.
+- Boss cooldown 1 ora.
+- Boss loot finale.
+- Vendor buy/sell.
+- Mano di Scimmia IA dopo configurazione OpenAI.
+- Combinazione mano_scimmia.
+- Procedura manuale per sbloccare PG da combat tramite active_combat_id/current_location.
+- Password dinamica versione precedente a 12h risultava testata.
+- Vendor loop corretto come logica; la fix specifica aggiorna current_location prima del redirect.
+
+PREPARATO / NON ANCORA CONFERMATO
+---------------------------------
+- Password Boss a ciclo 8 ore: SQL preparato, test completo non riportato.
+- Fix finale Moneta Temporale “Turno non disponibile”.
+- Musica dungeon/combat/boss/vendor.
+- Badge “ORA DISPONIBILI” su index/login.
+- personaggio.html finale con Moneta Temporale + token 1–20 + alert.
+- merge definitivo vendor con tutte le patch recenti.
+- email morte con Testa del Boss.
+- routing end-to-end completo: in chat3 codice preparato e node --check OK, ma mancava test browser completo.
+
+DA VERIFICARE
+-------------
+- uscita vittoria combat con il routing attuale, soprattutto combat-loot.js / combat-victory-exit;
+- Moneta Temporale dopo morte in combat:
+  sessione active + turno valido + possibilità di agire;
+- vendor finale che includa contemporaneamente:
+  pergamene + fix uscita + password dinamica + musica;
+- musica in browser;
+- deploy index/login aggiornati;
+- deploy personaggio.html aggiornato;
+- ciclo password 8h;
+- disponibilità Moneta Temporale nel vendor a 100 oro: proposta, non confermata;
+- struttura/statistiche complete dei nemici speciali se serve intervenire: in chat3 era ancora suggerito controllare public.enemies.
+
+NON IMPLEMENTATO / SOLO IDEA
+----------------------------
+- Piano 2.
+- Evento narrativo extra del Piano 1.
+- Ulteriore oggetto unico oltre al Dito di Scimmia.
+- Incontro raro aggiuntivo.
+- Email Master con Testa del Boss non dichiarata operativa.
+
+======================================================================
+5. DUNGEON
+======================================================================
+
+Dimensioni:
+- MAP_COLUMNS = 23
+- MAP_ROWS = 23
+
+Coordinate eventi PvE:
+- C1: X12 Y4 → combat_1
+- C2: X7 Y11 → combat_2
+- C3: X13 Y14 → combat_3
+- C4: X19 Y11 → combat_4
+- C5: X11 Y20 → combat_5
+
+PvP:
+- PVP1: X1 Y14
+- token: immagini/eventi/token_pvp.png
+
+Trappole:
+- Lama: X11 Y11, difesa DES
+- Acido: X9 Y15, difesa RES
+- formula: tiro = 1d10 - LCK
+- se tiro > difesa: danno = tiro - difesa
+- lookup per coordinate, NON per riferimento oggetto cella
+- cooldown globale 15 minuti
+- RPC: try_trigger_trap(p_trap_id, p_character_id)
+- tabella: dungeon_trap_states
+- campo: disabled_until
+Stato: ONLINE / TESTATO
+
+Dito di Scimmia:
+- dead_end: X15 Y22
+- type: monkey_finger
+- RPC: claim_monkey_finger
+- oggetto unico del livello
+
+Scale:
+- X11 Y17 → +50 score
+- X19 Y22 → +100 score
+La scala protetta dal Boss è intenzionalmente più premiata.
+
+Boss:
+- X19 Y20
+- encounter_id: combat_boss
+- token: immagini/nemici/goblin_boss.png
+
+Porte Boss:
+- X19 Y16
+- X16 Y17
+- bloccano movimento e visuale
+- accesso individuale per PG
+
+Vendor:
+- X2 Y11
+- token/immagine evento documentata in chat3:
+  immagini/eventi/vendor.png
+- immagine vendor pagina:
+  immagini/vendor/vendor_base.png
+
+Camera:
+- CAMERA_RADIUS = 6
+- CAMERA_VISIBLE_CELLS = 13
+- CAMERA_TRANSITION_MS = 170
+- camera grafica 13×13 centrata sul PG
+- coordinate di gioco reali non cambiano
+
+Posizione PG:
+- characters.dungeon_x
+- characters.dungeon_y
+
+Regole collisioni:
+- token combat bloccano;
+- token PG non bloccano;
+- vendor occupa la propria cella;
+- porte Boss chiuse bloccano anche la visibilità.
+
+======================================================================
+6. COMBAT
+======================================================================
+
+Architettura modulare:
+- combat.js
+- combat-ai.js
+- combat-actions.js
+- combat-ui.js
+- combat-loot.js
+- combat-log.js
+- combat-chat.js
+
+Versioni moduli documentate in chat3 prima delle patch chat4:
+- combat-log v53
+- combat-chat v1
+- combat-ai v65
+- combat-actions v59
+- combat-ui v57
+- combat-loot v54
+- combat.js v63
+Le patch chat4 producono nuove copie di combat.js, quindi il numero v63 non basta più a rappresentare la versione finale locale.
+
+Ordine turni:
+1. initiative DESC
+2. player prima di enemy a parità
+3. id ASC come tie-break stabile
+
+Goblin base:
+- HP 10
+- PM 3
+- ATT 5
+- DIF 7
+- MOV 6
+- Critico 1.70
+- Score 11
+- INT 1
+- LV 1
+- targeting dinamico:
+  100–70% HP → PG più vicino
+  69–40% → PG con più HP
+  39–1% → PG con meno HP
+  pareggi casuali
+- diagonale consentita
+- raggiunge la più vicina casella libera adiacente
+- una sola azione per turno
+- IA termina il turno automaticamente
+
+Goblin Sciamano:
+- PF 10
+- PM 10
+- ATT 5
+- DIF 7
+- MOV 6
+- Critico 1.70
+- Score 14
+- INT 4
+- LV 1
+- Cura
+
+Goblin Sputafuoco:
+- PF 10
+- PM 5
+- ATT 5
+- DIF 7
+- MOV 6
+- Critico 1.70
+- Score 14
+- INT 2
+- LV 1
+- Dardo di Fuoco
+
+RPC nemici note:
+- run_enemy_melee_attack_turn
+- run_goblin_sputafuoco_movement_turn
+- run_goblin_sputafuoco_attack_turn
+- run_goblin_sciamano_turn
+- run_goblin_attack_turn
+- run_goblin_movement_turn
+- finish_enemy_turn
+- next_combat_turn
+- apply_current_enemy_aggro
+
+Abilità:
+Cura
+- presente;
+- utilizzabile anche nel dungeon.
+
+Giorno Paga
+- utility
+- 3 PM
+- max level 6
+- raddoppia l’oro del prossimo incontro;
+- personale;
+- non cumulabile;
+- nuovo lancio sostituisce il precedente;
+- buff visibile;
+- consumato al prossimo incontro;
+- loggato.
+
+Aggro
+- LV1 su Goblin;
+- vale solo sul prossimo turno del bersaglio;
+- se più PG applicano Aggro prevale la più recente.
+
+PF/PM tra combat:
+- fix di sync_combat_player_stats;
+- usa characters.current_hp/current_pm e non i valori pieni della nuova entità;
+- TESTATO.
+
+Vittoria:
+- server-side;
+- quando non rimangono enemy alive con current_hp > 0:
+  combat_sessions.status = victory
+  current_turn_entity_id = NULL
+- overlay VITTORIA nel client;
+- renderCombatVictory() chiamata dopo loadCombatSession().
+
+Sconfitta:
+- close_combat_if_no_alive_players()
+- se sessione active e non ci sono più player alive con PF > 0:
+  status = defeat
+  current_turn_entity_id = NULL
+- trigger su combat_entities dopo update current_hp/status o delete
+- TESTATO.
+
+Morte PG:
+1. ferma loop
+2. chiude chat
+3. untrack Presence
+4. calcola score finale
+5. registra dead_characters
+6. elimina characters
+7. redirect morte.html?nome=...&score=...
+
+Loot:
+- oro automatico;
+- oggetti via draft;
+- priorità score più basso;
+- 30 secondi per scelta;
+- al termine mostra assegnazioni per PG.
+
+Tabelle/RPC loot introdotte:
+- combat_loot
+- combat_sessions.loot_generated
+- combat_sessions.gold_distributed
+- generate_combat_loot(p_combat_id)
+- get_combat_loot(p_combat_id)
+- distribute_combat_gold(p_combat_id)
+
+Regole distribuzione oro:
+- partecipano solo PG vivi;
+- score crescente;
+- parità: created_at DESC;
+- ulteriore tie-break: id ASC;
+- score non mostrato al browser.
+
+======================================================================
+7. BOSS DEL PIANO 1
+======================================================================
+
+ID:
+- enemy / monster_type: goblin_boss
+- encounter: combat_boss
+
+Posizione:
+- X19 Y20
+
+Token:
+- immagini/nemici/goblin_boss.png
+
+Statistiche:
+- PF 50
+- PM 20
+- ATT 7
+- DIF 8
+- MOV 6
+- Critico 1.7
+- INT 7
+- Score 50
+- LV 1
+- initiative 2 in monster_types
+
+Presenza DB:
+- inserito in enemies;
+- inserito in monster_types.
+
+RPC:
+- run_goblin_boss_turn(p_combat_id uuid)
+
+Comportamento:
+1. evoca ogni turno un nemico casuale tra:
+   - goblin
+   - goblin_sciamano
+   - goblin_sputafuoco
+2. se mancano almeno 5 PF e ha PM:
+   - Cura su se stesso
+3. altrimenti, se ha PM:
+   - Dardo di Fuoco contro PG vivo più lontano
+   - movimento normale se necessario
+4. se PM insufficienti:
+   - PG più vicino
+   - due attacchi base consecutivi
+
+Gli add:
+- entrano nel normale turn order;
+- possono agire già nello stesso round;
+- hanno il proprio loot.
+
+Fine turno:
+- run_goblin_boss_turn non avanza direttamente;
+- combat-ai.js usa finish_enemy_turn.
+
+Cooldown:
+- globale 1 ora
+- parte solo dopo victory
+- NON dopo defeat
+- durante cooldown:
+  token Boss sparisce;
+  cella torna percorribile;
+  Boss ricompare allo scadere
+
+Backend:
+- dungeon_boss_states
+- boss_id = goblin_boss
+- get_goblin_boss_state()
+- start_goblin_boss_cooldown()
+- enter_dungeon_combat_checked
+
+Loot definitivo:
+- 50 monete d’oro
+- testa_boss al 100%
+- descrizione:
+  “La sanguinante testa del capo dei goblin. Eww!”
+- gold_value = 50
+- score_value = 50
+- 2 accessori casuali distinti al 100%
+
+Popup Boss:
+Titolo:
+GOBLIN BOSS
+
+Messaggio:
+“Davanti a te si erge il Goblin Boss, a guardia delle scale.”
+
+Avviso:
+“Questo sarà uno scontro difficile:
+sarebbe meglio affrontarlo in gruppo.
+
+In compenso, i premi saranno alti
+e le scale protette dal Boss
+sembrano decisamente migliori
+di quelle lasciate incustodite.”
+
+Pulsante:
+AFFRONTA IL BOSS
+
+======================================================================
+8. PASSWORD DINAMICA BOSS
+======================================================================
+
+La password fissa “CUORE” documentata in chat3 è SUPERATA.
+
+Stato finale:
+- password dinamica;
+- 49 combinazioni;
+- ciclo legato a Europe/Rome;
+- ciclo finale previsto: 8 ore;
+- reset alle 00:00, 08:00, 16:00.
+
+Parole sinistra:
+- forza
+- resistenza
+- grazia
+- astuzia
+- saggezza
+- splendore
+- cuore
+
+Parole destra:
+- del toro
+- dell'orso
+- del gatto
+- della volpe
+- del gufo
+- dell'aquila
+- del drago
+
+Tabella:
+public.dungeon_boss_gate_password
+Campi:
+- id
+- password_text
+- cycle_started_at
+- cycle_expires_at
+- updated_at
+Row:
+- boss_room_1
+
+Accessi:
+public.dungeon_boss_gate_access
+Campi:
+- character_id
+- password_cycle_started_at
+- unlocked_at
+
+Funzioni:
+- public._ensure_boss_gate_password()
+- public.get_boss_gate_access_state(p_character_id uuid)
+- public.try_boss_gate_password(p_character_id uuid, p_password text)
+
+Porte:
+- X19 Y16
+- X16 Y17
+
+Password errata:
+- 7 danni esatti
+
+Password corretta:
+- sblocca entrambe per quel PG e per il ciclo corrente.
+
+Cambio ciclo:
+- invalida accesso precedente.
+
+Sicurezza:
+- password non deve essere hardcoded nel JS player;
+- viene gestita backend;
+- Mano di Scimmia la risolve server-side.
+
+Ciclo 8h:
+- modifica preparata in chat4;
+- non è riportato un test completo dopo il passaggio 12h → 8h;
+- stato: PREPARATO / DA VERIFICARE.
+
+Query amministrativa:
+select
+    password_text,
+    cycle_started_at,
+    cycle_expires_at
+from public.dungeon_boss_gate_password
+where id = 'boss_room_1';
+
+Riallineamento:
+select *
+from public._ensure_boss_gate_password();
+
+======================================================================
+9. VENDOR / MANO DI SCIMMIA
+======================================================================
+
+NPC:
+- Nome: Mano di Scimmia
+- Titolo: Il Venditore
+- NPC ID: npc_manodiscimmia
+- Vendor ID: vendor_manodiscimmia
+- posizione: X2 Y11
+- immagine: immagini/vendor/vendor_base.png
+- decorazione citata: immagini/vendor/mano_scimmia_oro.png
+
+Personalità:
+- goblin maschio;
+- circa 32 anni apparenti;
+- basso;
+- pelle grigia;
+- grandi orecchie;
+- occhi gialli;
+- intelligente;
+- avido;
+- sarcastico;
+- ossessionato da denaro e mani di scimmia.
+
+Tono:
+- informale;
+- frasi brevi;
+- “campione”;
+- “bella lì”;
+- sarcastico;
+- non deve sembrare un assistente AI;
+- non eccessivamente criptico.
+
+Saluto di riferimento:
+“Weilà campione! Ti interessa una mano di scimmia quasi nuova?”
+
+Conoscenze:
+può conoscere:
+- nome
+- score
+- oro
+- inventario
+- equipaggiamento
+- PF/PM
+- statistiche
+- piano
+- boss sconfitti
+- oggetti
+- eventi completati
+- classifica Caduti completa
+
+Non deve mostrare direttamente il numero dello score.
+
+Background:
+- assoldato da un “mandante” misterioso;
+- non conosce davvero il mandante;
+- usa portali;
+- può andarsene ma non vuole;
+- conosce 21 piani;
+- il piano attuale è un piano di prova esterno ai 21;
+- sa che ogni piano ha un boss nascosto;
+- sa che scendere le scale del test uccide i PG;
+- crede che l’ultimo piano abbia ricchezze infinite, ma può essere falso.
+
+Fasce conoscenza:
+- 0–99: comuni
+- 100–199: comuni + uncommon
+- 200+: anche rare
+
+Uncommon:
+- esistono 2 trappole;
+- scale Boss migliori.
+
+Rare:
+- unico dito di scimmia nel livello;
+- completa la mano.
+
+Segreti:
+- secret_boss_door_code
+- secret_boss_door_location
+
+Sistema statico “CUORE” è superato dal placeholder dinamico.
+
+Catalogo dinamico:
+- secret_boss_door_code.secret_value =
+  __DYNAMIC_BOSS_GATE_PASSWORD__
+
+Prezzo:
+- 500 oro
+oppure
+- 1 mano_scimmia
+
+Requisito codice:
+- score >150 / min_score 151
+
+Ubicazione:
+- X19 Y16 e X16 Y17
+- dipende dal codice.
+
+Tabelle:
+- npc_secret_catalog
+- character_npc_secrets
+
+Campi extra segreti:
+- payment_item_id
+- payment_item_quantity
+- purchased_cycle_started_at (aggiunto per password dinamica)
+
+RPC:
+vendor_buy_secret(
+    p_npc_id TEXT,
+    p_secret_id TEXT,
+    p_payment_method TEXT DEFAULT 'gold'
+)
+
+Metodi:
+- gold
+- item
+
+Bug quantità 0:
+character_inventory impone quantity > 0.
+Quando il saldo arriva a 0:
+- DELETE riga
+- NON UPDATE quantity=0
+
+Questa regola vale per:
+- vendor_buy_secret
+- vendor_buy_item
+e in generale per consumi completi di stack.
+
+Catalogo storico documentato:
+Score 0:
+- pozione_mana 5
+- pozione_vita 5
+- mano_scimmia_manca_dito 100
+
+Score 100:
+- armatura_leggera 10
+- armatura_media 10
+- armatura_pesante 10
+- ascia_bipenne 12
+- pugnale 6
+- scudo 6
+- spada_corta 6
+- spada_lunga 10
+
+Score 200:
+- ali_da_scarpe 20
+- bracciali_borchiati 20
+- cintura_campione 20
+- dadi_truccati 20
+- dieta_sana 20
+- sfera_cristallo 20
+
+Categorie finali:
+- OGGETTI BASE: 0–99
+- OGGETTI COMUNI: 100–199
+- OGGETTI RARI: 200+
+- PERGAMENE ABILITÀ: 300+, con grants_ability_id
+
+RPC acquisto/vendita:
+- vendor_buy_item(p_vendor_id, p_item_id)
+- vendor_sell_item(p_inventory_id)
+
+IA:
+Edge Function:
+- vendor-ai
+Modello documentato in chat3:
+- gpt-5.6-luna
+Impostazioni indicative:
+- reasoning basso
+- output 220–260 token circa
+
+Memoria:
+- solo visita corrente;
+- ultimi ~10 messaggi;
+- resetVendorVisitMemory() all’uscita.
+
+======================================================================
+10. PERGAMENE ABILITÀ
+======================================================================
+
+Stato: IMPLEMENTATE a livello di schema/logica; deploy finale delle patch UI non confermato.
+
+Problema iniziale:
+- tentativo item_type = ability_scroll
+- fallito per check constraint items_item_type_check
+
+Soluzione finale:
+- item_type = special
+- identificazione tramite items.grants_ability_id
+
+Colonna:
+public.items.grants_ability_id text nullable
+
+FK:
+grants_ability_id → public.abilities(id)
+ON DELETE SET NULL
+
+Naming:
+- id = pergamena_<ability_id>
+- name = Pergamena di <nome abilità>
+
+Descrizione:
+pergamena magica che permette di apprendere l’abilità collegata.
+
+Valori:
+- gold_value = 50
+- score_value = 50
+- stackable = true
+- max_stack preparato = 99
+
+Vendor:
+- vendor_id = vendor_manodiscimmia
+- buy_price = 100
+- min_score = 300
+- unlimited = true
+
+RPC:
+public.learn_ability_from_scroll(p_inventory_id uuid)
+
+Comportamento:
+- verifica proprietario;
+- verifica grants_ability_id;
+- verifica abilità;
+- se già conosciuta:
+  errore “Conosci già questa abilità.”
+  NON consuma pergamena;
+- altrimenti:
+  insert character_abilities level 1;
+  consuma esattamente 1 pergamena.
+
+Scheda:
+- pulsante APPRENDI;
+- riconosce la pergamena tramite grants_ability_id;
+- refresh inventario e abilità dopo uso.
+
+Bug corretto:
+- mancava divisore “PERGAMENE ABILITÀ” perché SELECT vendor non includeva grants_ability_id.
+- fix: includerlo nella SELECT e usare filtro dedicato.
+
+Home/Login:
+- badge verde “ORA DISPONIBILI” preparato.
+
+======================================================================
+11. MONETA TEMPORALE
+======================================================================
+
+ID:
+moneta_temporale
+
+Tipo:
+special
+
+Descrizione funzionale:
+quando il possessore dovrebbe morire per un danno, la moneta si consuma e riavvolge il tempo riportandolo al massimo dei PF e PM.
+
+Regole definitive:
+- trigger solo su morte da danno;
+- NON per scale;
+- NON per morte narrativa;
+- NON per morte speciale;
+- consumo automatico;
+- esattamente 1 moneta;
+- PF al massimo;
+- PM al massimo;
+- massimo 3 possedute.
+
+Creazione personaggio:
+- ogni nuovo PG riceve 1 Moneta Temporale;
+- in aggiunta ai 3 oggetti selezionati;
+- in aggiunta a pozione mana, pozione vita e 10 oro.
+
+Trigger DB:
+- enforce_temporal_coin_limit()
+- limite totale 3
+
+RPC:
+- try_consume_temporal_coin(p_character_id uuid, p_combat_id uuid default null)
+
+In dungeon:
+- collegata solo ai punti di danno letale;
+- NON dentro handleCharacterDeath(), proprio per non salvare dalle scale/narrativa.
+
+In combat:
+problema incontrato:
+1. colpo letale impostava combat in defeat;
+2. Moneta riportava PG vivo;
+3. combat restava defeat.
+
+Prima fix:
+- resume_combat_after_temporal_coin(...)
+
+Problema successivo:
+- combat active ma “Turno non disponibile”.
+
+Ultima soluzione preparata:
+- lato client repairCombatTurnIfNeeded()
+- RPC:
+  repair_combat_turn_after_temporal_coin(
+      p_combat_id uuid,
+      p_character_id uuid
+  )
+- se turno nullo/non valido:
+  assegna turno al PG salvato;
+  turn_started_at = now();
+  round_number almeno 1;
+  action_used=false;
+  item_used=false
+- rimosso finish_enemy_turn manuale post-resurrezione per evitare race condition.
+
+File finali della patch:
+- fix_moneta_temporale_turno_perso.sql
+- combat_moneta_temporale_fix_turno.js
+- combat_moneta_temporale_fix_turno.txt
+
+Validazione:
+- node --check OK
+
+Stato reale:
+- PREPARATO / NON ANCORA CONFERMATO IN GIOCO.
+È il principale bug tecnico ancora da ritestare.
+
+Vendor:
+- prezzo 100 oro era stato proposto;
+- esecuzione finale NON CONFERMATA.
+
+======================================================================
+12. CREAZIONE PERSONAGGIO
+======================================================================
+
+Step:
+1. PERSONAGGIO
+2. ABILITÀ
+3. EQUIPAGGIAMENTO
+
+Attributi:
+- forza
+- resistenza
+- costituzione
+- intelligenza
+- destrezza
+- fortuna
+
+Punti:
+- 10
+- min 1
+- max 30
+
+Abilità iniziali:
+- 3 abilità
+
+Equipaggiamento iniziale:
+- 3 oggetti
+- duplicati consentiti
+- NON equipaggiati automaticamente
+
+Kit automatico finale:
+- 1 Pozione cura mana
+- 1 Pozione cura vita
+- 1 Moneta Temporale
+- 10 Monete d’oro
+
+Token:
+- token_1.png … token_20.png
+Percorso:
+- immagini/token/
+
+L’HTML utilizza pulsanti .token-option;
+il JS rileva automaticamente i nuovi token.
+
+Alert finale Step 3:
+“ATTENZIONE: gli oggetti scelti vengono aggiunti allo zaino, ma non vengono equipaggiati automaticamente. Potrai equipaggiarli dalla scheda del personaggio.”
+
+File HTML più recente:
+- personaggio_corretto_token_1_20_moneta_alert.html
+
+JS di riferimento:
+- personaggio_moneta_temporale.js
+
+Cache bust:
+- js/personaggio.js?v=3
+
+Stato:
+- PREPARATO / STATO DEPLOY NON CONFERMATO.
+
+======================================================================
+13. SCHEDA PERSONAGGIO
+======================================================================
+
+Funzioni documentate:
+- mostra dati PG;
+- calcola bonus equipaggiamento;
+- mostra inventario;
+- mostra zaino;
+- equipaggia;
+- rimuove equipaggiamento;
+- usa consumabili;
+- mostra abilità;
+- note;
+- leaderboard;
+- combinazione Mano di Scimmia;
+- apprendimento Pergamene abilità.
+
+Slot equipaggiamento noti:
+- armor
+- hand
+- accessory ×3
+
+Combinazione Mano di Scimmia:
+ingredienti:
+- dito_scimmia
+- mano_scimmia_manca_dito
+
+risultato:
+- mano_scimmia
+
+RPC:
+public.combine_monkey_hand()
+
+Caratteristiche:
+- SECURITY DEFINER;
+- auth.uid();
+- ingredienti non equipaggiati;
+- row lock;
+- DELETE se quantità 1;
+- decremento se >1;
+- crea/incrementa mano_scimmia.
+
+Frontend:
+- pulsante COMPLETA LA MANO
+- scheda v7 nel riepilogo chat3
+
+Stato:
+- TESTATO.
+
+Pergamene:
+- patch successiva aggiunge APPRENDI;
+- RPC learn_ability_from_scroll;
+- stato deploy finale non confermato.
+
+======================================================================
+14. SCORE E LEADERBOARD
+======================================================================
+
+Principio:
+- score completamente nascosto durante il piano;
+- mostrato alla morte;
+- mostrato quando il PG scende verso il livello successivo;
+- utilizzabile server-side per loot e vendor.
+
+characters:
+- score integer default 0
+
+combat_entities:
+- killed_by_character_id
+- score_awarded
+
+Attacchi:
+- combat_basic_attack
+- combat_fire_bolt
+assegnano score del nemico al killer una volta sola.
+
+Score nemici noti:
+- Goblin = 11
+- Goblin Sciamano = 14
+- Goblin Sputafuoco = 14
+- Goblin Boss = 50
+
+Eventi:
+- trappola scattata +10
+- sopravvivenza trappola +10
+- scale X11 Y17 +50
+- scale X19 Y22 +100
+- testa_boss +50
+
+Item score documentati:
+- ali_da_scarpe 10
+- armatura_leggera 5
+- armatura_media 5
+- armatura_pesante 5
+- ascia_bipenne 6
+- bracciali_borchiati 10
+- cintura_campione 10
+- dadi_truccati 10
+- dieta_sana 10
+- dito_scimmia 100
+- lingua_bruciata 5
+- mano_scimmia 500
+- mano_scimmia_manca_dito 1
+- moneta_oro 1
+- orecchio_goblin 2
+- pietra_goblin 5
+- pozione_mana 5
+- pozione_vita 5
+Lista dichiarata non completa.
+
+Score finale:
+- get_character_final_score
+
+Leaderboard:
+tabella:
+- dead_characters
+
+RPC:
+- get_dead_characters_leaderboard
+- get_dead_character_rank
+
+Visibilità:
+- dungeon: top 20
+- scheda: top 20
+- morte: posizione + leaderboard
+
+======================================================================
+15. DATABASE SUPABASE
+======================================================================
+
+15.1 Tabelle conosciute
+-----------------------
+
+characters
+Scopo:
+- PG persistente
+Campi noti:
+- id
+- user_id
+- nome
+- token
+- attributi
+- current_hp
+- current_pm
+- livello
+- notes
+- score
+- dungeon_x
+- dungeon_y
+- active_combat_id
+- current_location
+
+character_inventory
+- id
+- character_id
+- item_id
+- quantity
+- equipped_slot
+- created_at
+- updated_at
+Vincolo importante:
+- quantity > 0
+
+character_abilities
+- character_id
+- ability_id
+- level
+
+abilities
+- id
+- name
+- description
+- ability_type
+- pm_cost
+- max_level
+
+items
+Campi noti:
+- id
+- name
+- description
+- item_type
+- equip_slot
+- hand_rule
+- stackable
+- max_stack
+- bonus vari
+- heal_pf
+- heal_pm
+- gold_value
+- unique_world
+- vendor_unlimited
+- recipe_only
+- grants_ability_id
+- created_at
+
+item_scores
+- item_id
+- score_value
+
+enemies
+- definizione nemici
+- Goblin Boss inserito qui
+
+monster_types
+Campi noti:
+- id
+- display_name
+- max_hp
+- attack
+- defense
+- movement
+- initiative
+- ai_type
+- token
+- created_at
+- updated_at
+
+combat_sessions
+Campi noti:
+- id
+- encounter_id
+- status
+- round_number
+- current_turn_entity_id
+- turn_started_at
+- turn_duration_seconds
+- loot_generated
+- gold_distributed
+
+combat_entities
+Campi noti:
+- id
+- combat_id
+- entity_type
+- character_id
+- monster_type
+- enemy_id
+- display_name
+- initiative
+- x
+- y
+- current_hp
+- max_hp
+- current_pm
+- max_pm
+- movement_remaining
+- action_used
+- item_used
+- status
+- killed_by_character_id
+- score_awarded
+
+combat_effects
+- effetti/buff combat
+
+combat_encounters
+- definizione encounter
+
+combat_encounter_enemies
+- presente ma documentata vuota in chat2
+
+combat_encounter_enemy_rules
+- regole spawn encounter
+
+combat_enemies
+- presente ma documentata vuota in chat2
+
+combat_enemy_turn_state
+- stato turno nemico
+
+enemy_abilities
+- abilità nemici
+
+enemy_loot
+Campi:
+- id
+- enemy_id
+- item_id
+- drop_chance
+- min_quantity
+- max_quantity
+- created_at
+
+combat_loot
+Campi:
+- id
+- combat_id
+- source_entity_id
+- item_id
+- quantity
+- claimed_by_character_id
+- claimed_at
+- created_at
+
+dead_characters
+- archivio morti / leaderboard
+
+vendor_items
+Campi:
+- id
+- vendor_id
+- item_id
+- buy_price
+- min_score
+- unlimited
+- created_at
+Vincolo:
+- UNIQUE(vendor_id,item_id)
+
+npc_ai_profiles
+- profilo IA Mano di Scimmia
+
+npc_secret_catalog
+Campi:
+- secret_id
+- npc_id
+- display_name
+- secret_value
+- price_gold
+- min_score
+- prerequisite_secret_id
+- active
+- payment_item_id
+- payment_item_quantity
+- created_at
+- updated_at
+
+character_npc_secrets
+- character_id
+- secret_id
+- acquired_at
+- purchased_cycle_started_at
+PK storica:
+- (character_id, secret_id)
+
+dungeon_boss_states
+- boss_id
+- cooldown_until
+- updated_at
+
+dungeon_trap_states
+- stato cooldown trappole
+- disabled_until
+
+dungeon_boss_gate_password
+- id
+- password_text
+- cycle_started_at
+- cycle_expires_at
+- updated_at
+
+dungeon_boss_gate_access
+- character_id
+- password_cycle_started_at
+- unlocked_at
+
+pvp_sessions
+- sessioni arena PvP
+
+pvp_entities
+- entità arena PvP
+
+Tabella proposta ma non dichiarata operativa:
+boss_head_death_alerts
+
+15.2 RPC / FUNCTIONS
+--------------------
+
+Combat / generale:
+- combat_basic_attack
+- combat_fire_bolt
+- sync_combat_player_stats
+- join_combat_player
+- generate_combat_enemies
+- initialize_combat_turns
+- next_combat_turn
+- advance_combat_if_timeout
+- get_my_pending_effects
+- finish_enemy_turn
+
+IA:
+- run_enemy_melee_attack_turn
+- run_goblin_sputafuoco_movement_turn
+- run_goblin_sputafuoco_attack_turn
+- run_goblin_sciamano_turn
+- run_goblin_attack_turn
+- run_goblin_movement_turn
+- apply_current_enemy_aggro
+- run_goblin_boss_turn
+
+Entrata combat:
+- enter_dungeon_combat
+- join_combat_encounter
+- enter_dungeon_combat_checked
+
+Loot:
+- generate_combat_loot
+- get_combat_loot
+- distribute_combat_gold
+
+Score / morte:
+- get_character_final_score
+- get_dead_characters_leaderboard
+- get_dead_character_rank
+- close_combat_if_no_alive_players
+
+Boss:
+- get_goblin_boss_state
+- start_goblin_boss_cooldown
+
+Trappole:
+- try_trigger_trap
+
+Dito di Scimmia:
+- claim_monkey_finger
+
+Vendor:
+- vendor_buy_item
+- vendor_sell_item
+- vendor_buy_secret
+- combine_monkey_hand
+
+Password Boss:
+- _ensure_boss_gate_password
+- get_boss_gate_access_state
+- try_boss_gate_password
+
+Moneta Temporale:
+- try_consume_temporal_coin
+- resume_combat_after_temporal_coin
+- repair_combat_turn_after_temporal_coin
+
+Pergamene:
+- learn_ability_from_scroll
+
+PvP:
+- get_or_create_pvp_session
+- join_pvp_session
+- start_pvp_session
+- pvp_advance_turn_internal
+- pvp_pass_turn
+- pvp_move
+- pvp_resolve_defeat_internal
+- pvp_basic_attack
+- pvp_cancel_if_alone
+
+Funzione preparata per email:
+- capture_boss_head_death_alert
+
+15.3 Trigger
+------------
+Confermati/documentati:
+- trigger su combat_entities per close_combat_if_no_alive_players
+  dopo update current_hp/status o delete
+- trigger limite Moneta Temporale tramite enforce_temporal_coin_limit()
+
+Preparato/non confermato:
+- BEFORE DELETE ON characters per capture_boss_head_death_alert
+
+15.4 Edge Functions
+-------------------
+vendor-ai
+- attiva/importante;
+- IA Mano di Scimmia.
+
+boss-head-death-email
+- PREPARATA;
+- non dichiarata operativa.
+
+======================================================================
+16. STATO E ROUTING PERSONAGGIO
+======================================================================
+
+Colonna introdotta:
+characters.current_location TEXT NOT NULL DEFAULT 'dungeon'
+
+Valori consentiti:
+- dungeon
+- vendor
+- combat
+
+Constraint:
+characters_current_location_check
+
+Priorità:
+1. active_combat_id → combat
+2. current_location=vendor → vendor
+3. altrimenti dungeon
+
+Dungeon router:
+- redirect al combat corretto con query string;
+- redirect vendor;
+- ripara current_location='combat' orfano;
+- gestisce pageshow/BFCache.
+
+Vendor router:
+- active_combat_id → combat
+- current_location=vendor → resta
+- altro → dungeon
+
+Uscita vendor finale:
+- reset memoria
+- current_location=dungeon
+- redirect/replace dungeon
+
+Combat router:
+- active_combat_id fonte di verità;
+- corregge URL vecchio/sbagliato;
+- aggiunge combat_id se manca;
+- se active_combat_id nullo ritorna dungeon/vendor;
+- ripara combat orfano;
+- Master observer escluso dal router personale.
+
+Problema ancora da verificare:
+- uscita dopo vittoria;
+- possibile punto da controllare: combat-loot.js e combat-victory-exit.
+
+Recovery manuale PG bloccato:
+query usata con successo per “Blefario Bregovich”:
+
+update public.characters
+set
+    active_combat_id = null,
+    current_location = 'dungeon'
+where lower(nome) = lower('Blefario Bregovich');
+
+Verifica:
+select
+    id,
+    nome,
+    active_combat_id,
+    current_location
+from public.characters
+where lower(nome) = lower('Blefario Bregovich');
+
+======================================================================
+17. MUSICA
+======================================================================
+
+Struttura prevista:
+music/
+  dungeon.mp3
+  combat.mp3
+  boss.mp3
+  vendor.mp3
+
+Associazioni:
+- dungeon → music/dungeon.mp3
+- combat normale → music/combat.mp3
+- combat_boss → music/boss.mp3
+- vendor → music/vendor.mp3
+
+Logica preparata:
+- new Audio(source)
+- loop = true
+- volume = 0.35
+- preload = auto
+- tentativo autoplay;
+- fallback alla prima interazione pointerdown/keydown.
+
+File preparati:
+- dungeon_con_musica.js / .txt
+- combat_con_musica.js / .txt
+- vendor_con_musica.js / .txt
+
+Validazione:
+- node --check OK
+
+Stato:
+- PREPARATA / STATO DEPLOY NON CONFERMATO
+- nessun test browser finale riportato.
+
+======================================================================
+18. FILE ATTUALI DEL PROGETTO
+======================================================================
+
+FILE LOGICO | VERSIONE/NOME PIÙ RECENTE | STATO | NOTE
+----------------------------------------------------------------------
+dungeon.js
+| dungeon_con_musica.js
+| PREPARATO / DA VERIFICARE
+| generato da dungeon_moneta_temporale.js; verificare che contenga anche tutte le modifiche v29/router/camera prima del deploy. MERGE/CONTROLLO NECESSARIO.
+
+dungeon.html
+| base chat3: dungeon v29 / dungeon_v29_state_router.html
+| PREPARATO / routing non testato end-to-end
+| eventuale HTML successivo non documentato in chat4.
+
+eventi.js
+| eventi_boss_popup.js era finale chat2
+| TESTATO per popup Boss
+| poi sistemi dungeon successivi possono averlo incorporato.
+
+combat.js
+| combat_con_musica.js
+| PREPARATO / NON TESTATO IN BROWSER
+| deriva da combat_moneta_temporale_fix_turno.js; include musica e ultima patch Moneta Temporale. Deve essere verificato col router v63 e con gli altri moduli.
+
+combat-ai.js
+| combat-ai v65 / combat-ai_boss.js confluito
+| TESTATO a livello generale Boss
+| evitare regressioni.
+
+combat-actions.js
+| v59 documentata
+| STABILE secondo chat3
+| nessuna patch successiva documentata nei quattro file.
+
+combat-ui.js
+| v57 documentata
+| STABILE
+| turn order già corretto in precedenza.
+
+combat-loot.js
+| v54 documentata
+| DA VERIFICARE per uscita vittoria
+| punto critico con nuovo routing.
+
+combat-log.js
+| v53
+| STABILE
+
+combat-chat.js
+| v1
+| STABILE
+
+vendor.js
+| vendor_con_musica.js
+| MERGE NECESSARIO / DA VERIFICARE
+| deve contenere contemporaneamente: v19 router, password dinamica, pergamene/grants_ability_id, fix uscita, musica.
+
+vendor.html
+| vendor v19 / vendor_v19_state_router.html
+| PREPARATO
+| integrare cache-bust verso JS finale.
+
+vendor.css
+| vendor.css di chat3
+| STABILE
+| già conteneva layout/chat/uscita/affari riservati.
+
+personaggio.html
+| personaggio_corretto_token_1_20_moneta_alert.html
+| PREPARATO / DEPLOY NON CONFERMATO
+| token 1–20 + Moneta + alert.
+
+personaggio.js
+| personaggio_moneta_temporale.js
+| PREPARATO
+| node --check OK; cache v3.
+
+scheda.js
+| scheda_pergamene_abilita_corretto.js
+| PREPARATO / MERGE DA CONTROLLARE
+| deve preservare scheda v7 + combinazione Mano.
+
+index.html
+| index_pergamene_disponibili.html
+| PREPARATO / DEPLOY NON CONFERMATO
+| badge “ORA DISPONIBILI”.
+
+login.html
+| login_pergamene_disponibili.html
+| PREPARATO / DEPLOY NON CONFERMATO
+| badge “ORA DISPONIBILI”.
+
+SQL Pergamene
+| pergamene_abilita_corretto.sql
+| PREPARATO/IMPLEMENTATO lato schema secondo chat4
+| item_type special.
+
+SQL Moneta Temporal turn fix
+| fix_moneta_temporale_turno_perso.sql
+| PREPARATO / DA RITESTARE
+| versione più recente.
+
+Edge Function vendor
+| index_vendor_ai_password_dinamica.ts
+| PREPARATA / integrazione dinamica
+| vendor-ai già funzionava prima.
+
+======================================================================
+19. FILE SUPERATI
+======================================================================
+
+Da NON usare come basi definitive se esiste la versione successiva:
+
+Combat:
+- combat_moneta_temporale_fix_defeat.js
+- fix_moneta_temporale_combat_defeat.sql
+- fix_moneta_temporale_turno_non_disponibile.sql
+Sono superati da:
+- combat_moneta_temporale_fix_turno.js
+- fix_moneta_temporale_turno_perso.sql
+e poi da:
+- combat_con_musica.js, come copia più recente locale.
+
+Vendor:
+- vendor v16 originale con “Unexpected end of input”
+- vendor_v16_CORRETTO è a sua volta superato da versioni successive
+- vendor v19 è base routing, ma le patch chat4 richiedono un merge finale
+
+Dungeon:
+- v26 vendor
+- v27 camera
+sono superati dalla v29 routing e dalle patch successive.
+Attenzione però: dungeon_con_musica.js va verificato contro la base effettivamente deployata per non perdere funzionalità.
+
+Password:
+- sistema statico CUORE è superato dalla password dinamica.
+
+Creazione:
+- personaggio v3 token 1–20 è superato come HTML dalla versione chat4:
+  personaggio_corretto_token_1_20_moneta_alert.html
+
+======================================================================
+20. BUG RISOLTI
+======================================================================
+
+Score doppio
+- prevenzione con score_awarded.
+
+PF/PM resettati tra combat
+- causa: nuova entità combat nasceva piena;
+- fix sync_combat_player_stats usa characters.current_hp/current_pm;
+- TESTATO.
+
+Overlay vittoria non appariva
+- causa: render chiamato solo su cambio entità;
+- fix renderCombatVictory() subito dopo loadCombatSession();
+- TESTATO.
+
+Trappole non scattavano
+- causa: lookup errato rispetto al JSON numerico;
+- fix per coordinate;
+- TESTATO.
+
+Muro/passaggio stanza segreta
+- problema apparente legato al caricamento;
+- non modificare se non ricompare.
+
+Sessioni combat zombie
+- close_combat_if_no_alive_players();
+- TESTATO.
+
+Vendor quantità oro a zero
+- causa: constraint quantity > 0;
+- fix DELETE riga invece di quantity=0.
+
+Vendor v16 syntax error
+- “Unexpected end of input”;
+- corretto e poi superato.
+
+Redirect combat senza ID
+- vecchio redirect combat.html;
+- fix combat.html?combat_id=<active_combat_id>.
+
+Vendor loop
+- causa current_location restava vendor;
+- fix update a dungeon prima del redirect.
+
+Pergamene senza divisore
+- causa SELECT senza grants_ability_id;
+- fix campo aggiunto e filtro dedicato.
+
+Pagina personaggio vecchia
+- mancavano token 11–20 e avviso equipaggiamento;
+- HTML ricostruito.
+
+Moneta Temporale defeat
+- fix resume_combat_after_temporal_coin.
+
+Moneta Temporale turno non disponibile
+- due tentativi intermedi superati;
+- ultima patch: repairCombatTurnIfNeeded + repair_combat_turn_after_temporal_coin;
+- NON ANCORA CONFERMATA.
+
+======================================================================
+21. BUG ANCORA APERTI / DA VERIFICARE
+======================================================================
+
+1. Moneta Temporale in combat
+- è il principale test aperto;
+- verificare che dopo morte:
+  moneta consumata,
+  PF/PM max,
+  entità alive,
+  sessione active,
+  current_turn_entity_id valido,
+  azioni disponibili,
+  combat prosegue.
+
+2. Uscita vittoria combat
+- testare con routing attuale;
+- se loop, ispezionare combat-loot.js / combat-victory-exit.
+
+3. Merge vendor finale
+- rischio regressioni tra:
+  v19 router,
+  password dinamica,
+  pergamene,
+  fix uscita,
+  musica.
+
+4. Dungeon finale
+- confrontare dungeon_con_musica.js con la versione realmente deployata v29+patch successive.
+
+5. Password 8h
+- verificare cambio ciclo reale;
+- invalidazione accesso;
+- nuovo codice Mano di Scimmia.
+
+6. Musica
+- test browser/autoplay.
+
+7. Deploy:
+- index/login badge;
+- personaggio finale.
+
+8. Email Testa Boss
+- non operativa finché non vengono completati DB webhook/Edge Function/Resend.
+
+======================================================================
+22. CONVENZIONI TECNICHE DEFINITIVE
+======================================================================
+
+Boss:
+- ID: goblin_boss
+- encounter: combat_boss
+- X19 Y20
+- token: immagini/nemici/goblin_boss.png
+
+Vendor:
+- NPC: npc_manodiscimmia
+- vendor: vendor_manodiscimmia
+- X2 Y11
+- pagina: vendor.html
+- immagine: immagini/vendor/vendor_base.png
+
+Porte Boss:
+- X19 Y16
+- X16 Y17
+
+Scale:
+- X11 Y17 +50
+- X19 Y22 +100
+
+PvP:
+- PVP1
+- X1 Y14
+
+Dito Scimmia:
+- X15 Y22
+- dito_scimmia
+
+Oggetti chiave:
+- moneta_oro
+- moneta_temporale
+- dito_scimmia
+- mano_scimmia_manca_dito
+- mano_scimmia
+- testa_boss
+
+Segreti:
+- secret_boss_door_code
+- secret_boss_door_location
+
+Password:
+- row id boss_room_1
+- timezone Europe/Rome
+- ciclo finale 8h previsto
+- placeholder vendor:
+  __DYNAMIC_BOSS_GATE_PASSWORD__
+
+Musica:
+- music/dungeon.mp3
+- music/combat.mp3
+- music/boss.mp3
+- music/vendor.mp3
+
+Token PG:
+- immagini/token/token_1.png ... token_20.png
+
+Cache:
+- dopo modifica JS/CSS:
+  1. sostituire file
+  2. aumentare ?v=
+  3. commit/deploy
+  4. Ctrl+F5
+
+Quantità inventario:
+- non salvare quantity=0;
+- eliminare la riga.
+
+======================================================================
+23. REGOLE DI GIOCO DEFINITIVE
+======================================================================
+
+Movimento
+- token combat bloccano;
+- token PG non bloccano;
+- vendor blocca la sua cella;
+- porte Boss chiuse bloccano movimento e visuale.
+
+Trappole
+- Lama DES;
+- Acido RES;
+- 1d10-LCK;
+- cooldown 15 min;
+- score +10 trigger, +10 sopravvivenza.
+
+PvP
+- arena separata;
+- nessun mostro;
+- vincitore ottiene score ed equipaggiamento dello sconfitto;
+- lobby timeout 1 minuto.
+
+Score
+- nascosto nel piano;
+- visibile a morte/scale;
+- server-side per loot/vendor.
+
+Loot
+- oro automatico;
+- oggetti draft;
+- PG score più basso prima;
+- 30s per scelta.
+
+Giorno Paga
+- raddoppia oro prossimo incontro;
+- personale;
+- non cumulabile.
+
+Aggro
+- prossimo turno Goblin;
+- più recente prevale.
+
+Morte
+- elimina definitivamente il PG;
+- archivia dead_characters;
+- redirect morte.html.
+
+Moneta Temporale
+- solo danni letali;
+- non scale/narrativa;
+- max 3;
+- consuma 1;
+- PF/PM max;
+- nuovo PG ne riceve 1.
+
+Boss
+- cooldown 1h solo victory;
+- evoca;
+- cura;
+- Dardo;
+- doppio attacco senza PM;
+- loot elevato.
+
+Password
+- dinamica;
+- personale;
+- ciclo 8h previsto;
+- 7 danni errore.
+
+Vendor
+- acquisto/vendita server-side;
+- score non mostrato;
+- segreti pagabili oro o mano;
+- password dinamica ricomprabile a ogni ciclo.
+
+Pergamene
+- special + grants_ability_id;
+- vendor score 300;
+- prezzo 100;
+- abilità già conosciuta non consuma.
+
+Equipaggiamento iniziale
+- 3 oggetti;
+- duplicati ammessi;
+- non auto-equipaggiati.
+
+======================================================================
+24. PRIMO LIVELLO — STATO DI COMPLETAMENTO
+======================================================================
+
+COMPLETO / STABILE
+------------------
+- mappa base;
+- movimento;
+- nebbia;
+- Presence;
+- chat;
+- C1–C5;
+- trappole;
+- PvP;
+- Dito di Scimmia;
+- scale;
+- score;
+- morte;
+- leaderboard;
+- inventario;
+- equipaggiamento;
+- loot;
+- Boss;
+- cooldown Boss;
+- loot Boss;
+- vendor;
+- IA Mano di Scimmia;
+- segreti;
+- routing a livello di progetto, con test end-to-end ancora da chiudere.
+
+RIFINITURE
+----------
+- musica;
+- badge home/login;
+- personaggio HTML finale;
+- merge vendor;
+- documentazione architetturale.
+
+BUGFIX DA CHIUDERE
+------------------
+- Moneta Temporale in combat;
+- uscita vittoria con routing;
+- ciclo password 8h.
+
+AGGIUNTE OPZIONALI, NON IMPLEMENTATE
+------------------------------------
+- 1 evento narrativo non-combat;
+- 1 oggetto unico extra;
+- 1 incontro raro speciale.
+
+Decisione finale:
+non sovraccaricare il Piano 1.
+
+======================================================================
+25. PASSAGGIO AL SECONDO LIVELLO
+======================================================================
+
+Decisione:
+- il Piano 1 è abbastanza completo;
+- iniziare Piano 2;
+- sul Piano 1 intervenire solo per bugfix/rifiniture.
+
+Filosofia suggerita:
+- Piano 1 = imparare il Palazzo
+- Piano 2 = iniziare a prendere decisioni vere
+
+IDEA / NON IMPLEMENTATA:
+- meccanica centrale specifica del Piano 2;
+- porte/interruttori;
+- aree cooperative;
+- percorsi alternativi rischio/ricompensa;
+- nuovo NPC;
+- 2–3 nuovi nemici;
+- miniboss;
+- boss non Goblin;
+- mappa che richiede più decisioni.
+
+======================================================================
+26. PROSSIMI PASSI OPERATIVI
+======================================================================
+
+PRIORITÀ 1 — Chiudere bug critico Moneta Temporale
+1. usare l’ultima SQL:
+   fix_moneta_temporale_turno_perso.sql
+2. usare il combat JS più recente compatibile;
+3. fare test con PG solo:
+   - danno letale;
+   - moneta consumata;
+   - PF/PM max;
+   - status alive;
+   - combat active;
+   - turno valido;
+   - azioni possibili;
+   - vittoria successiva normale.
+
+PRIORITÀ 2 — Consolidare i file finali
+1. confrontare dungeon_con_musica.js con dungeon v29 realmente deployato;
+2. creare UN SOLO vendor.js definitivo con:
+   - v19 routing
+   - password dinamica
+   - pergamene
+   - fix uscita
+   - musica
+3. verificare scheda.js:
+   - Mano di Scimmia
+   - Pergamene
+4. verificare combat.js:
+   - routing v63
+   - Moneta ultima patch
+   - musica
+
+PRIORITÀ 3 — Test routing end-to-end
+- dungeon → vendor
+- Back
+- ESCI vendor
+- dungeon → combat
+- Back
+- refresh
+- URL manuale dungeon
+- URL vecchio combat
+- vittoria
+- ESCI
+- sconfitta
+- morte
+
+PRIORITÀ 4 — Test password 8h
+- controllare fascia corrente;
+- password aggiornata;
+- accesso vecchio invalidato;
+- Mano di Scimmia vende codice corrente;
+- porte tornano bloccate al cambio ciclo.
+
+PRIORITÀ 5 — Deploy UI e musica
+- personaggio finale;
+- index/login badge;
+- cartella music;
+- test autoplay.
+
+PRIORITÀ 6 — Documentazione
+- produrre schema architetturale:
+  pagine → JS → tabelle → RPC → trigger → Edge Functions → realtime.
+
+PRIORITÀ 7 — Piano 2
+- definire tema;
+- mappa;
+- meccanica centrale;
+- nemici;
+- NPC;
+- miniboss;
+- boss;
+- ricompense;
+- collegamento dalle scale del Piano 1.
+
+======================================================================
+STATO ATTUALE DEL PROGETTO IN 30 RIGHE
+======================================================================
+
+01. Palazzo Eterno è online su GitHub Pages con backend Supabase.
+02. Il Piano 1 è sostanzialmente completo.
+03. Il dungeon usa una mappa 23×23.
+04. Il movimento e la nebbia di guerra funzionano.
+05. Presence e chat sono presenti.
+06. C1–C5 sono incontri PvE.
+07. L’arena PvP a X1 Y14 è funzionante.
+08. Le trappole Lama e Acido sono funzionanti con cooldown 15 minuti.
+09. Il Dito di Scimmia è nascosto a X15 Y22.
+10. Le scale X11 Y17 danno +50 score.
+11. Le scale X19 Y22 danno +100 score.
+12. Il Boss Goblin è a X19 Y20.
+13. L’encounter Boss è combat_boss.
+14. Il Boss ha 50 PF e IA dedicata con evocazioni, cura, Dardo e doppio attacco.
+15. Il Boss ha cooldown globale di 1 ora dopo victory.
+16. Il loot Boss include 50 oro, testa_boss e 2 accessori.
+17. Mano di Scimmia è il vendor a X2 Y11.
+18. Il vendor usa acquisti/vendite server-side e IA OpenAI.
+19. Le porte Boss sono X19 Y16 e X16 Y17.
+20. La vecchia password fissa è stata sostituita da password dinamica.
+21. Il ciclo finale previsto della password è 8 ore Europe/Rome, ma va ritestato.
+22. Le Pergamene abilità sono implementate con grants_ability_id.
+23. La Moneta Temporale salva dalle morti per danno e ogni nuovo PG ne riceve una.
+24. Il fix finale della Moneta Temporale in combat è ancora da confermare.
+25. I token personaggio previsti sono 1–20.
+26. L’equipaggiamento iniziale non viene equipaggiato automaticamente.
+27. Il routing usa current_location e active_combat_id.
+28. La musica è predisposta per dungeon, combat, boss e vendor, ma non ancora confermata in browser.
+29. Restano merge/test tecnici da chiudere sul Piano 1.
+30. La prossima grande fase è la progettazione del Piano 2.
+
+======================================================================
+DA DOVE RIPARTIRE NELLA PROSSIMA CHAT
+======================================================================
+
+1. Non ricostruire da zero il Piano 1.
+2. Considerare stabili e da non toccare senza necessità:
+   - trappole
+   - PvP
+   - Aggro
+   - pathfinding
+   - morte
+   - score
+   - loot
+   - leaderboard
+   - Presence
+3. Prima prova: Moneta Temporale in combat con l’ultima patch.
+4. Seconda prova: uscita da victory con routing attuale.
+5. Consolidare vendor.js in un unico file definitivo.
+6. Controllare che dungeon musicale mantenga camera/router/Moneta.
+7. Testare password dinamica su ciclo 8h.
+8. Verificare deploy personaggio/index/login/musica.
+9. Solo dopo questi controlli bloccare il Piano 1 come baseline stabile.
+10. Iniziare Piano 2 partendo da:
+    - tema
+    - meccanica centrale
+    - mappa
+    - nuovi nemici
+    - NPC
+    - miniboss
+    - boss
+    - ricompense
+    - accesso dalle scale.
+
+FINE DOCUMENTO CONSOLIDATO
