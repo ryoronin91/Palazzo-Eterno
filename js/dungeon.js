@@ -254,7 +254,7 @@ document.addEventListener(
             // ACCESSO STANZA BOSS
             // ------------------------------------------------
 
-            loadBossRoomAccess();
+            await loadBossRoomAccess();
 
 
             // ------------------------------------------------
@@ -3160,11 +3160,17 @@ function wait(
 // VARCHI STANZA BOSS
 // ============================================================
 //
-// I due ingressi alla zona del Boss condividono lo stesso
-// permesso. Per ora l'accesso parte chiuso; nel passaggio
-// successivo questo stato verrà caricato da Supabase e
-// sbloccato tramite il popup con codice.
+// I due ingressi condividono lo stesso permesso.
 //
+// La password NON esiste più nel JavaScript.
+// Viene verificata esclusivamente da Supabase.
+//
+// Cicli password:
+// - 00:00 -> 12:00
+// - 12:00 -> 00:00
+// fuso Europe/Rome.
+//
+// Lo sblocco vale soltanto per il ciclo corrente.
 // ============================================================
 
 const BOSS_ROOM_GATE_CELLS = [
@@ -3172,93 +3178,115 @@ const BOSS_ROOM_GATE_CELLS = [
     { x: 16, y: 17 }
 ];
 
-const BOSS_ROOM_ACCESS_CODE =
-    "CUORE";
+let bossRoomAccessUnlocked =
+    false;
 
-const BOSS_ROOM_ACCESS_STORAGE_PREFIX =
-    "palazzo_eterno_boss_room_access_";
-
-let bossRoomAccessUnlocked = false;
+let bossRoomAccessExpiresAt =
+    null;
 
 
-function getBossRoomAccessStorageKey() {
+// ============================================================
+// CARICA STATO ACCESSO DAL DATABASE
+// ============================================================
+
+async function loadBossRoomAccess() {
+
+    bossRoomAccessUnlocked =
+        false;
+
+    bossRoomAccessExpiresAt =
+        null;
+
 
     if (
         !character ||
         !character.id
     ) {
-        return null;
-    }
-
-    return (
-        BOSS_ROOM_ACCESS_STORAGE_PREFIX +
-        character.id
-    );
-
-}
-
-
-function loadBossRoomAccess() {
-
-    const storageKey =
-        getBossRoomAccessStorageKey();
-
-    if (!storageKey) {
-        bossRoomAccessUnlocked = false;
         return;
     }
 
+
     try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_boss_gate_access_state",
+                {
+                    p_character_id:
+                        character.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
         bossRoomAccessUnlocked =
-            localStorage.getItem(
-                storageKey
-            ) === "1";
+            data?.unlocked ===
+            true;
+
+
+        bossRoomAccessExpiresAt =
+            data?.cycle_expires_at
+                ? String(
+                    data.cycle_expires_at
+                )
+                : null;
+
+
     } catch (error) {
-        console.warn(
-            "Impossibile leggere lo sblocco stanza Boss:",
+
+        console.error(
+            "Errore caricamento accesso stanza Boss:",
             error
         );
 
-        bossRoomAccessUnlocked = false;
+
+        bossRoomAccessUnlocked =
+            false;
+
+        bossRoomAccessExpiresAt =
+            null;
+
     }
 
 }
 
 
-function saveBossRoomAccess() {
+// ============================================================
+// REGISTRA ACCESSO LOCALE DEL CICLO CORRENTE
+// ============================================================
 
-    const storageKey =
-        getBossRoomAccessStorageKey();
+function unlockBossRoomAccess(
+    cycleExpiresAt
+) {
 
-    if (!storageKey) {
-        return;
-    }
+    bossRoomAccessUnlocked =
+        true;
 
-    try {
-        localStorage.setItem(
-            storageKey,
-            "1"
-        );
-    } catch (error) {
-        console.warn(
-            "Impossibile salvare lo sblocco stanza Boss:",
-            error
-        );
-    }
+    bossRoomAccessExpiresAt =
+        cycleExpiresAt
+            ? String(
+                cycleExpiresAt
+            )
+            : null;
 
-}
-
-
-function unlockBossRoomAccess() {
-
-    bossRoomAccessUnlocked = true;
-
-    saveBossRoomAccess();
 
     updateFogOfWar();
 
 }
 
+
+// ============================================================
+// CELLA VARCO
+// ============================================================
 
 function isBossRoomGateCell(
     x,
@@ -3273,9 +3301,68 @@ function isBossRoomGateCell(
 
 }
 
+
+// ============================================================
+// ACCESSO ATTUALE
+// ============================================================
+//
+// Anche se la pagina resta aperta oltre le 12:00 / 00:00,
+// l'accesso decade immediatamente quando scade il ciclo.
+//
+// ============================================================
+
 function hasBossRoomAccess() {
 
-    return bossRoomAccessUnlocked === true;
+    if (
+        bossRoomAccessUnlocked !==
+        true
+    ) {
+
+        return false;
+
+    }
+
+
+    if (
+        !bossRoomAccessExpiresAt
+    ) {
+
+        bossRoomAccessUnlocked =
+            false;
+
+        return false;
+
+    }
+
+
+    const expiresAt =
+        new Date(
+            bossRoomAccessExpiresAt
+        )
+            .getTime();
+
+
+    if (
+        !Number.isFinite(
+            expiresAt
+        )
+        ||
+        Date.now() >=
+            expiresAt
+    ) {
+
+        bossRoomAccessUnlocked =
+            false;
+
+        bossRoomAccessExpiresAt =
+            null;
+
+        return false;
+
+    }
+
+
+    return true;
 
 }
 
@@ -3291,15 +3378,23 @@ function closeBossRoomGatePrompt() {
             "boss-room-gate-overlay"
         );
 
+
     if (overlay) {
+
         overlay.remove();
+
     }
+
 
     eventLocked =
         false;
 
 }
 
+
+// ============================================================
+// APRE POPUP VARCO
+// ============================================================
 
 function openBossRoomGatePrompt() {
 
@@ -3327,6 +3422,7 @@ function openBossRoomGatePrompt() {
             "div"
         );
 
+
     overlay.id =
         "boss-room-gate-overlay";
 
@@ -3339,8 +3435,10 @@ function openBossRoomGatePrompt() {
             "div"
         );
 
+
     modal.className =
         "combat-event-modal";
+
 
     modal.innerHTML = `
         <div class="combat-event-icon">
@@ -3356,7 +3454,7 @@ function openBossRoomGatePrompt() {
         </p>
 
         <div class="combat-event-warning">
-            Sembra necessario un codice per poter accedere
+            Sembra necessaria una parola d'ordine per poter accedere
             a questa zona.
         </div>
 
@@ -3366,10 +3464,10 @@ function openBossRoomGatePrompt() {
         >
             <input
                 id="boss-room-gate-code-input"
-                type="password"
-                maxlength="30"
+                type="text"
+                maxlength="40"
                 autocomplete="off"
-                placeholder="Inserisci il codice"
+                placeholder="Inserisci la parola d'ordine"
                 style="width:100%; box-sizing:border-box; padding:10px 12px; text-align:center;"
             >
 
@@ -3405,6 +3503,7 @@ function openBossRoomGatePrompt() {
         modal
     );
 
+
     document.body.appendChild(
         overlay
     );
@@ -3414,6 +3513,303 @@ function openBossRoomGatePrompt() {
         document.getElementById(
             "boss-room-gate-close-button"
         );
+
+
+    const codeButton =
+        document.getElementById(
+            "boss-room-gate-code-button"
+        );
+
+
+    const codePanel =
+        document.getElementById(
+            "boss-room-gate-code-panel"
+        );
+
+
+    const codeInput =
+        document.getElementById(
+            "boss-room-gate-code-input"
+        );
+
+
+    const codeError =
+        document.getElementById(
+            "boss-room-gate-code-error"
+        );
+
+
+    let submitting =
+        false;
+
+
+    // ========================================================
+    // VERIFICA PASSWORD VIA SUPABASE
+    // ========================================================
+
+    async function submitBossRoomCode() {
+
+        if (
+            !codeInput ||
+            !character ||
+            !character.id ||
+            submitting
+        ) {
+
+            return;
+
+        }
+
+
+        const enteredCode =
+            String(
+                codeInput.value ||
+                ""
+            )
+                .trim();
+
+
+        if (!enteredCode) {
+
+            if (codeError) {
+
+                codeError.textContent =
+                    "Inserisci la parola d'ordine.";
+
+            }
+
+            return;
+
+        }
+
+
+        submitting =
+            true;
+
+
+        if (codeButton) {
+
+            codeButton.disabled =
+                true;
+
+            codeButton.textContent =
+                "VERIFICA...";
+
+        }
+
+
+        if (codeInput) {
+
+            codeInput.disabled =
+                true;
+
+        }
+
+
+        if (codeError) {
+
+            codeError.textContent =
+                "";
+
+        }
+
+
+        try {
+
+            const {
+                data,
+                error
+            } =
+                await db.rpc(
+                    "try_boss_gate_password",
+                    {
+                        p_character_id:
+                            character.id,
+
+                        p_password:
+                            enteredCode
+                    }
+                );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            // ====================================================
+            // PASSWORD CORRETTA
+            // ====================================================
+
+            if (
+                data?.correct ===
+                true
+            ) {
+
+                unlockBossRoomAccess(
+                    data.cycle_expires_at
+                );
+
+
+                closeBossRoomGatePrompt();
+
+
+                setMessage(
+                    "Parola d'ordine corretta. I varchi della stanza del Boss sono sbloccati."
+                );
+
+
+                return;
+
+            }
+
+
+            // ====================================================
+            // PASSWORD ERRATA: 7 DANNI
+            // ====================================================
+
+            const newHealth =
+                Math.max(
+                    0,
+                    Number(
+                        data?.current_hp
+                    ) || 0
+                );
+
+
+            character.current_hp =
+                newHealth;
+
+
+            updateCharacterPanel();
+
+
+            try {
+
+                await updateMyPresence();
+
+            } catch (presenceError) {
+
+                console.warn(
+                    "Errore aggiornamento Presence dopo danno porta Boss:",
+                    presenceError
+                );
+
+            }
+
+
+            setMessage(
+                "Parola d'ordine errata: subisci 7 PF di danno."
+            );
+
+
+            if (
+                data?.dead ===
+                true ||
+                newHealth <= 0
+            ) {
+
+                if (codeError) {
+
+                    codeError.textContent =
+                        "Parola d'ordine errata. Subisci 7 danni. I tuoi PF scendono a 0.";
+
+                }
+
+
+                // Il danno è già stato salvato dalla RPC.
+                // Usiamo la normale gestione morte del dungeon.
+                setTimeout(
+                    async () => {
+
+                        closeBossRoomGatePrompt();
+
+                        await handleCharacterDeath();
+
+                    },
+                    500
+                );
+
+
+                return;
+
+            }
+
+
+            if (codeError) {
+
+                codeError.textContent =
+                    `Parola d'ordine errata. Subisci 7 danni. PF rimasti: ${newHealth}.`;
+
+            }
+
+
+            codeInput.value =
+                "";
+
+            codeInput.disabled =
+                false;
+
+            codeInput.focus();
+
+
+        } catch (error) {
+
+            console.error(
+                "Errore verifica parola d'ordine Boss:",
+                error
+            );
+
+
+            if (codeError) {
+
+                codeError.textContent =
+                    "Errore durante la verifica. Riprova.";
+
+            }
+
+
+            if (codeInput) {
+
+                codeInput.disabled =
+                    false;
+
+                codeInput.focus();
+
+            }
+
+
+        } finally {
+
+            submitting =
+                false;
+
+
+            if (
+                codeButton &&
+                document.body.contains(
+                    codeButton
+                )
+            ) {
+
+                codeButton.disabled =
+                    false;
+
+                codeButton.textContent =
+                    "SBLOCCA";
+
+            }
+
+        }
+
+    }
+
+
+    // ========================================================
+    // INDIETRO
+    // ========================================================
 
     if (closeButton) {
 
@@ -3425,77 +3821,15 @@ function openBossRoomGatePrompt() {
     }
 
 
-    const codeButton =
-        document.getElementById(
-            "boss-room-gate-code-button"
-        );
-
-    const codePanel =
-        document.getElementById(
-            "boss-room-gate-code-panel"
-        );
-
-    const codeInput =
-        document.getElementById(
-            "boss-room-gate-code-input"
-        );
-
-    const codeError =
-        document.getElementById(
-            "boss-room-gate-code-error"
-        );
-
-
-    function submitBossRoomCode() {
-
-        if (!codeInput) {
-            return;
-        }
-
-        const enteredCode =
-            String(
-                codeInput.value ||
-                ""
-            )
-                .trim()
-                .toUpperCase();
-
-
-        if (
-            enteredCode ===
-            BOSS_ROOM_ACCESS_CODE
-        ) {
-
-            unlockBossRoomAccess();
-
-            closeBossRoomGatePrompt();
-
-            setMessage(
-                "Codice corretto. I varchi della stanza del Boss sono sbloccati."
-            );
-
-            return;
-        }
-
-
-        if (codeError) {
-            codeError.textContent =
-                "Codice errato.";
-        }
-
-        codeInput.value =
-            "";
-
-        codeInput.focus();
-
-    }
-
+    // ========================================================
+    // PULSANTE CODICE
+    // ========================================================
 
     if (codeButton) {
 
         codeButton.addEventListener(
             "click",
-            () => {
+            async () => {
 
                 if (
                     codePanel &&
@@ -3509,14 +3843,20 @@ function openBossRoomGatePrompt() {
                     codeButton.textContent =
                         "SBLOCCA";
 
+
                     if (codeInput) {
+
                         codeInput.focus();
+
                     }
 
+
                     return;
+
                 }
 
-                submitBossRoomCode();
+
+                await submitBossRoomCode();
 
             }
         );
@@ -3524,15 +3864,25 @@ function openBossRoomGatePrompt() {
     }
 
 
+    // ========================================================
+    // INVIO CON ENTER
+    // ========================================================
+
     if (codeInput) {
 
         codeInput.addEventListener(
             "keydown",
-            event => {
+            async event => {
 
-                if (event.key === "Enter") {
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
                     event.preventDefault();
-                    submitBossRoomCode();
+
+                    await submitBossRoomCode();
+
                 }
 
             }
