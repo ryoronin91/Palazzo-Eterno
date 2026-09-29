@@ -279,6 +279,10 @@ document.addEventListener(
 
             await loadFloorChatHistory();
 
+            requestAnimationFrame(
+                syncDungeonChatHeightWithMap
+            );
+
 
             // ------------------------------------------------
             // MAPPA
@@ -2462,6 +2466,8 @@ window.addEventListener(
         repositionAllTokens();
 
         updateFogOfWar();
+
+        syncDungeonChatHeightWithMap();
 
     }
 );
@@ -8523,6 +8529,97 @@ function setupNotes() {
 
 
 // ============================================================
+// ALTEZZA CHAT = ALTEZZA MAPPA
+// ============================================================
+
+function syncDungeonChatHeightWithMap() {
+
+    const chatPanel =
+        document.querySelector(
+            ".dungeon-chat-panel"
+        );
+
+    const mapFrame =
+        document.querySelector(
+            ".dungeon-map-frame"
+        );
+
+    const messages =
+        document.getElementById(
+            "floor-chat-messages"
+        );
+
+    const controls =
+        document.querySelector(
+            ".floor-chat-controls"
+        );
+
+    if (
+        !chatPanel ||
+        !mapFrame ||
+        !messages
+    ) {
+        return;
+    }
+
+    const mapHeight =
+        mapFrame.getBoundingClientRect()
+            .height;
+
+    if (
+        !Number.isFinite(mapHeight) ||
+        mapHeight <= 0
+    ) {
+        return;
+    }
+
+    chatPanel.style.height =
+        `${mapHeight}px`;
+
+    chatPanel.style.maxHeight =
+        `${mapHeight}px`;
+
+    chatPanel.style.minHeight =
+        `${mapHeight}px`;
+
+    chatPanel.style.display =
+        "flex";
+
+    chatPanel.style.flexDirection =
+        "column";
+
+    chatPanel.style.overflow =
+        "hidden";
+
+    messages.style.flex =
+        "1 1 auto";
+
+    messages.style.minHeight =
+        "0";
+
+    messages.style.height =
+        "auto";
+
+    messages.style.maxHeight =
+        "none";
+
+    messages.style.overflowY =
+        "auto";
+
+    messages.style.overflowX =
+        "hidden";
+
+    if (controls) {
+
+        controls.style.flex =
+            "0 0 auto";
+
+    }
+
+}
+
+
+// ============================================================
 // CHAT
 // ============================================================
 
@@ -8658,24 +8755,27 @@ async function loadFloorChatHistory() {
         rows.forEach(
             row => {
 
-                addFloorChatMessage({
+                addFloorChatMessage(
+                    {
 
-                    id:
-                        row.id,
+                        id:
+                            row.id,
 
-                    character_id:
-                        row.character_id,
+                        character_id:
+                            row.character_id,
 
-                    name:
-                        row.sender_name,
+                        name:
+                            row.sender_name,
 
-                    text:
-                        row.message_text,
+                        text:
+                            row.message_text,
 
-                    timestamp:
-                        row.created_at
+                        timestamp:
+                            row.created_at
 
-                });
+                    },
+                    true
+                );
             }
         );
 
@@ -8839,7 +8939,8 @@ async function sendFloorChatMessage(
 // ============================================================
 
 function addFloorChatMessage(
-    message
+    message,
+    fromHistory = false
 ) {
 
     if (!message) {
@@ -8945,12 +9046,25 @@ function addFloorChatMessage(
         textElement
     );
 
-    container.appendChild(
-        row
-    );
+    if (fromHistory) {
+
+        // Lo storico è già ordinato:
+        // più recente -> più vecchio.
+        container.appendChild(
+            row
+        );
+
+    } else {
+
+        // I nuovi messaggi entrano sempre in cima.
+        container.prepend(
+            row
+        );
+
+    }
 
     container.scrollTop =
-        container.scrollHeight;
+        0;
 }
 
 
