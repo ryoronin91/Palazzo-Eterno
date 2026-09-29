@@ -244,17 +244,7 @@ document.addEventListener(
                 getCombatIdFromUrl();
 
 
-            // =================================================
-            // MASTER
-            // =================================================
-            //
-            // Il Master può osservare un combat specificato
-            // nell'URL senza avere un personaggio attivo.
-            //
-            // =================================================
-
             if (
-                masterObserverMode &&
                 !combatId
             ) {
 
@@ -270,25 +260,6 @@ document.addEventListener(
             // =================================================
 
             await loadCurrentCharacter();
-
-
-            // =================================================
-            // ROUTER STATO PG
-            // =================================================
-            //
-            // Per i giocatori è Supabase a decidere quale combat
-            // è quello corretto. L'URL del browser non è una
-            // fonte di verità.
-            //
-            // =================================================
-
-            if (
-                await enforceCombatPageState()
-            ) {
-
-                return;
-
-            }
 
 
             // =================================================
@@ -637,8 +608,7 @@ async function loadCurrentCharacter() {
                 notes,
                 dungeon_x,
                 dungeon_y,
-                active_combat_id,
-                current_location
+                active_combat_id
             `)
             .eq(
                 "user_id",
@@ -660,267 +630,6 @@ async function loadCurrentCharacter() {
         data;
 
 }
-
-
-// ============================================================
-// ROUTER STATO DEL PERSONAGGIO - COMBAT
-// ============================================================
-//
-// Per il Master non cambia nulla.
-//
-// Per un giocatore:
-// - active_combat_id è la fonte di verità;
-// - se l'URL non contiene il combat corretto, viene corretto;
-// - se non esiste più un combat attivo, si torna alla posizione
-//   logica registrata;
-// - current_location = "combat" viene sincronizzato in automatico.
-//
-// Ritorna true quando è stato avviato un redirect.
-//
-// ============================================================
-
-async function enforceCombatPageState(
-    refreshFromDatabase = false
-) {
-
-    if (
-        masterObserverMode
-    ) {
-
-        return false;
-
-    }
-
-
-    if (
-        refreshFromDatabase
-    ) {
-
-        await loadCurrentCharacter();
-
-    }
-
-
-    if (
-        !currentCharacter
-    ) {
-
-        window.location.replace(
-            "personaggio.html"
-        );
-
-        return true;
-
-    }
-
-
-    const activeCombatId =
-        currentCharacter.active_combat_id
-            ? String(
-                currentCharacter.active_combat_id
-            )
-            : "";
-
-
-    // --------------------------------------------------------
-    // NESSUN COMBAT ATTIVO
-    // --------------------------------------------------------
-
-    if (
-        !activeCombatId
-    ) {
-
-        // Se il vecchio stato "combat" è rimasto appeso,
-        // lo ripariamo prima di uscire.
-        if (
-            currentCharacter.current_location ===
-            "combat"
-        ) {
-
-            const {
-                error
-            } =
-                await db
-                    .from(
-                        "characters"
-                    )
-                    .update({
-                        current_location:
-                            "dungeon"
-                    })
-                    .eq(
-                        "id",
-                        currentCharacter.id
-                    );
-
-
-            if (
-                error
-            ) {
-
-                console.error(
-                    "Errore ripristino stato dungeon dal combat:",
-                    error
-                );
-
-            } else {
-
-                currentCharacter.current_location =
-                    "dungeon";
-
-            }
-
-        }
-
-
-        if (
-            currentCharacter.current_location ===
-            "vendor"
-        ) {
-
-            window.location.replace(
-                "vendor.html"
-            );
-
-        } else {
-
-            window.location.replace(
-                "dungeon.html"
-            );
-
-        }
-
-
-        return true;
-
-    }
-
-
-    // --------------------------------------------------------
-    // SINCRONIZZA current_location
-    // --------------------------------------------------------
-
-    if (
-        currentCharacter.current_location !==
-        "combat"
-    ) {
-
-        const {
-            error
-        } =
-            await db
-                .from(
-                    "characters"
-                )
-                .update({
-                    current_location:
-                        "combat"
-                })
-                .eq(
-                    "id",
-                    currentCharacter.id
-                );
-
-
-        if (
-            error
-        ) {
-
-            console.error(
-                "Errore sincronizzazione current_location combat:",
-                error
-            );
-
-        } else {
-
-            currentCharacter.current_location =
-                "combat";
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------
-    // URL CANONICO DEL COMBAT
-    // --------------------------------------------------------
-    //
-    // Questo risolve:
-    // - tasto Indietro;
-    // - URL senza combat_id;
-    // - vecchio combat_id nella cronologia;
-    // - link manuale a un altro combattimento.
-    //
-    // --------------------------------------------------------
-
-    if (
-        String(
-            combatId ||
-            ""
-        ) !==
-        activeCombatId
-    ) {
-
-        window.location.replace(
-            `combat.html?combat_id=${encodeURIComponent(
-                activeCombatId
-            )}`
-        );
-
-        return true;
-
-    }
-
-
-    combatId =
-        activeCombatId;
-
-
-    return false;
-
-}
-
-
-// ============================================================
-// RIENTRO DA CACHE DEL BROWSER
-// ============================================================
-//
-// Indietro/Avanti può ripristinare combat.html dalla BFCache
-// senza rieseguire DOMContentLoaded.
-//
-// ============================================================
-
-window.addEventListener(
-    "pageshow",
-    async event => {
-
-        if (
-            !event.persisted ||
-            masterObserverMode
-        ) {
-
-            return;
-
-        }
-
-
-        try {
-
-            await enforceCombatPageState(
-                true
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Errore controllo stato combat al ritorno pagina:",
-                error
-            );
-
-        }
-
-    }
-);
 
 
 // ============================================================
@@ -1288,8 +997,7 @@ async function loadCharacterPendingEffects() {
         data,
         error
     } =
-        await db.rpc(
-            "get_my_pending_effects"
+        await db.rpc("get_my_pending_effects"
         );
 
 
@@ -1960,6 +1668,98 @@ function createCombatEffectsSnapshot() {
 }
 
 // ============================================================
+// MONETA TEMPORALE - SALVATAGGIO DA DANNO LETALE IN COMBAT
+// ============================================================
+//
+// Il combat genera morte attraverso PF <= 0 / status non alive.
+// Prima di avviare la procedura definitiva chiediamo al server
+// se il PG possiede una Moneta Temporale.
+// ============================================================
+
+async function tryConsumeCombatTemporalCoin() {
+
+    if (
+        masterObserverMode ||
+        !currentCharacter ||
+        !currentCharacter.id ||
+        !combatId
+    ) {
+        return false;
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "try_consume_temporal_coin",
+            {
+                p_character_id:
+                    currentCharacter.id,
+
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    if (
+        !data ||
+        data.activated !== true
+    ) {
+        return false;
+    }
+
+
+    currentCharacter.current_hp =
+        Number(
+            data.current_hp
+        ) || 0;
+
+
+    currentCharacter.current_pm =
+        Number(
+            data.current_pm
+        ) || 0;
+
+
+    // Riallinea immediatamente il combat con lo stato appena
+    // ripristinato dalla RPC e con l'inventario dopo il consumo.
+    await Promise.all([
+
+        loadCombatEntities(),
+
+        loadCharacterInventory()
+
+    ]);
+
+
+    lastCombatEntitiesSnapshot =
+        createCombatSnapshot();
+
+
+    setCombatStatus(
+        "La Moneta Temporale si frantuma: torni al massimo di PF e PM."
+    );
+
+
+    renderCombat();
+
+    updateActionButtons();
+
+
+    return true;
+
+}
+
+
+// ============================================================
 // CONTROLLO MORTE DEL MIO PERSONAGGIO
 // ============================================================
 
@@ -2012,6 +1812,36 @@ async function checkMyCombatCharacterDeath() {
         !isDead
     ) {
 
+        return false;
+
+    }
+
+
+    try {
+
+        const temporalCoinActivated =
+            await tryConsumeCombatTemporalCoin();
+
+
+        if (temporalCoinActivated) {
+
+            return false;
+
+        }
+
+    } catch (temporalCoinError) {
+
+        console.error(
+            "Errore attivazione Moneta Temporale in combat:",
+            temporalCoinError
+        );
+
+        setCombatStatus(
+            "Errore durante il controllo della Moneta Temporale."
+        );
+
+        // Non cancelliamo il PG se il controllo salvavita non ha
+        // potuto concludersi. Il loop riproverà al refresh seguente.
         return false;
 
     }
@@ -2287,9 +2117,7 @@ if (
 
     if (
         combatTargetMode
-    ) {
-
-        cancelCombatTargeting();
+    ) {cancelCombatTargeting();
 
     }
 
@@ -3287,10 +3115,7 @@ window.moveCombatPlayer =
 
                 throw error;
 
-            }
-
-
-            if (
+            }if (
                 !data
             ) {
 

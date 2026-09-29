@@ -3726,6 +3726,40 @@ function openBossRoomGatePrompt() {
 
                         closeBossRoomGatePrompt();
 
+                        try {
+
+                            const temporalCoinActivated =
+                                await tryConsumeTemporalCoinAfterDamage();
+
+
+                            if (temporalCoinActivated) {
+
+                                eventLocked =
+                                    false;
+
+                                return;
+
+                            }
+
+                        } catch (temporalCoinError) {
+
+                            console.error(
+                                "Errore attivazione Moneta Temporale dopo danno porta Boss:",
+                                temporalCoinError
+                            );
+
+                            setMessage(
+                                "Errore durante il controllo della Moneta Temporale."
+                            );
+
+                            eventLocked =
+                                false;
+
+                            return;
+
+                        }
+
+
                         await handleCharacterDeath();
 
                     },
@@ -7351,6 +7385,40 @@ function openTrapResultPrompt(
                     }
 
 
+                    try {
+
+                        const temporalCoinActivated =
+                            await tryConsumeTemporalCoinAfterDamage();
+
+
+                        if (temporalCoinActivated) {
+
+                            eventLocked =
+                                false;
+
+                            return;
+
+                        }
+
+                    } catch (temporalCoinError) {
+
+                        console.error(
+                            "Errore attivazione Moneta Temporale dopo trappola:",
+                            temporalCoinError
+                        );
+
+                        setMessage(
+                            "Errore durante il controllo della Moneta Temporale."
+                        );
+
+                        eventLocked =
+                            false;
+
+                        return;
+
+                    }
+
+
                     await handleCharacterDeath();
 
                     return;
@@ -7400,6 +7468,95 @@ function escapeTrapHtml(
             "'",
             "&#039;"
         );
+
+}
+
+
+// ============================================================
+// MONETA TEMPORALE - SALVATAGGIO DA DANNO LETALE
+// ============================================================
+//
+// Questa funzione viene chiamata SOLO nei flussi di danno letale.
+// Le morti narrative/speciali (es. scale) non passano da qui.
+//
+// Ritorna true se una Moneta Temporale è stata consumata e il PG
+// è stato ripristinato a PF/PM massimi.
+// ============================================================
+
+async function tryConsumeTemporalCoinAfterDamage() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+        return false;
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "try_consume_temporal_coin",
+            {
+                p_character_id:
+                    character.id,
+
+                p_combat_id:
+                    null
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    if (
+        !data ||
+        data.activated !== true
+    ) {
+        return false;
+    }
+
+
+    character.current_hp =
+        Number(
+            data.current_hp
+        ) || 0;
+
+
+    character.current_pm =
+        Number(
+            data.current_pm
+        ) || 0;
+
+
+    // La moneta è stata rimossa dal DB: riallineiamo inventario,
+    // bonus, pannello e Presence.
+    await loadCharacterEquipment();
+
+    updateCharacterPanel();
+
+
+    try {
+        await updateMyPresence();
+    } catch (presenceError) {
+        console.warn(
+            "Errore Presence dopo Moneta Temporale:",
+            presenceError
+        );
+    }
+
+
+    setMessage(
+        "La Moneta Temporale si frantuma: il tempo si riavvolge e torni al massimo di PF e PM."
+    );
+
+
+    return true;
 
 }
 
