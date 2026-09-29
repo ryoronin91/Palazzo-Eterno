@@ -14,6 +14,12 @@ console.log("DUNGEON.JS - NUOVA INTERFACCIA CARICATA");
 
 let pageBackgroundMusic = null;
 
+const DUNGEON_MUSIC_VOLUME_KEY =
+    "palazzo-eterno-dungeon-volume";
+
+let dungeonMusicVolume =
+    loadDungeonMusicVolume();
+
 function startBackgroundMusic(
     source
 ) {
@@ -38,7 +44,7 @@ function startBackgroundMusic(
         true;
 
     pageBackgroundMusic.volume =
-        0.35;
+        dungeonMusicVolume;
 
     pageBackgroundMusic.preload =
         "auto";
@@ -100,6 +106,241 @@ function startBackgroundMusic(
         }
     );
 
+}
+
+
+// ============================================================
+// VOLUME MUSICA
+// ============================================================
+
+function loadDungeonMusicVolume() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                DUNGEON_MUSIC_VOLUME_KEY
+            );
+
+        if (
+            saved === null ||
+            saved === ""
+        ) {
+
+            return 0.35;
+        }
+
+        const value =
+            Number(saved);
+
+        if (
+            !Number.isFinite(value)
+        ) {
+
+            return 0.35;
+        }
+
+        return Math.max(
+            0,
+            Math.min(
+                1,
+                value
+            )
+        );
+
+    } catch (error) {
+
+        return 0.35;
+    }
+}
+
+
+function saveDungeonMusicVolume(
+    value
+) {
+
+    try {
+
+        localStorage.setItem(
+            DUNGEON_MUSIC_VOLUME_KEY,
+            String(value)
+        );
+
+    } catch (error) {
+        // localStorage può essere disabilitato.
+    }
+}
+
+
+function getDungeonVolumeIcon(
+    volume
+) {
+
+    if (volume <= 0) {
+        return "🔇";
+    }
+
+    if (volume < 0.5) {
+        return "🔉";
+    }
+
+    return "🔊";
+}
+
+
+function updateDungeonVolumeUI() {
+
+    const button =
+        document.getElementById(
+            "dungeon-volume-button"
+        );
+
+    const slider =
+        document.getElementById(
+            "dungeon-volume-slider"
+        );
+
+    const value =
+        document.getElementById(
+            "dungeon-volume-value"
+        );
+
+    const percentage =
+        Math.round(
+            dungeonMusicVolume *
+            100
+        );
+
+    if (button) {
+
+        button.textContent =
+            getDungeonVolumeIcon(
+                dungeonMusicVolume
+            );
+
+        button.title =
+            `Volume musica: ${percentage}%`;
+    }
+
+    if (slider) {
+
+        slider.value =
+            String(percentage);
+    }
+
+    if (value) {
+
+        value.textContent =
+            `${percentage}%`;
+    }
+}
+
+
+function setupDungeonVolumeControl() {
+
+    const control =
+        document.querySelector(
+            ".dungeon-volume-control"
+        );
+
+    const button =
+        document.getElementById(
+            "dungeon-volume-button"
+        );
+
+    const popover =
+        document.getElementById(
+            "dungeon-volume-popover"
+        );
+
+    const slider =
+        document.getElementById(
+            "dungeon-volume-slider"
+        );
+
+    if (
+        !control ||
+        !button ||
+        !popover ||
+        !slider
+    ) {
+
+        return;
+    }
+
+    updateDungeonVolumeUI();
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const willOpen =
+                popover.hidden === true;
+
+            popover.hidden =
+                !willOpen;
+
+            button.setAttribute(
+                "aria-expanded",
+                willOpen
+                    ? "true"
+                    : "false"
+            );
+        }
+    );
+
+    slider.addEventListener(
+        "input",
+        () => {
+
+            dungeonMusicVolume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        Number(slider.value) / 100
+                    )
+                );
+
+            if (pageBackgroundMusic) {
+
+                pageBackgroundMusic.volume =
+                    dungeonMusicVolume;
+            }
+
+            saveDungeonMusicVolume(
+                dungeonMusicVolume
+            );
+
+            updateDungeonVolumeUI();
+        }
+    );
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                control.contains(
+                    event.target
+                )
+            ) {
+
+                return;
+            }
+
+            popover.hidden =
+                true;
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+    );
 }
 
 
@@ -315,6 +556,9 @@ document.addEventListener(
         startBackgroundMusic(
             "music/dungeon.mp3"
         );
+
+
+        setupDungeonVolumeControl();
 
 
         try {
@@ -4848,6 +5092,259 @@ in_combat:
 
 
 // ============================================================
+// PANNELLO PERSONAGGI ONLINE
+// ============================================================
+
+function renderDungeonOnlinePlayers() {
+
+    const container =
+        document.getElementById(
+            "dungeon-online-list"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    if (
+        !dungeonChannel ||
+        !character
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Connessione...
+                </div>
+            `;
+
+        return;
+    }
+
+    const state =
+        dungeonChannel.presenceState();
+
+    const playersById =
+        new Map();
+
+    Object.values(state).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    if (
+                        !presence ||
+                        !presence.character_id
+                    ) {
+
+                        return;
+                    }
+
+                    const old =
+                        playersById.get(
+                            presence.character_id
+                        );
+
+                    if (
+                        !old ||
+                        String(
+                            presence.online_at ||
+                            ""
+                        ) >=
+                        String(
+                            old.online_at ||
+                            ""
+                        )
+                    ) {
+
+                        playersById.set(
+                            presence.character_id,
+                            presence
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+    if (
+        character.id &&
+        !playersById.has(
+            character.id
+        )
+    ) {
+
+        playersById.set(
+            character.id,
+            getMyPresenceData()
+        );
+    }
+
+    const players =
+        Array.from(
+            playersById.values()
+        )
+            .sort(
+                (
+                    a,
+                    b
+                ) => {
+
+                    const aIsMe =
+                        a.character_id ===
+                            character.id;
+
+                    const bIsMe =
+                        b.character_id ===
+                            character.id;
+
+                    if (aIsMe !== bIsMe) {
+
+                        return aIsMe
+                            ? -1
+                            : 1;
+                    }
+
+                    return String(
+                        a.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            b.name ||
+                            ""
+                        ),
+                        "it"
+                    );
+                }
+            );
+
+    if (
+        players.length === 0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Nessun personaggio online.
+                </div>
+            `;
+
+        return;
+    }
+
+    container.replaceChildren();
+
+    players.forEach(
+        player => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "dungeon-online-row";
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+            image.className =
+                "dungeon-online-token";
+
+            image.src =
+                "immagini/token/" +
+                (
+                    player.token ||
+                    "token_1.png"
+                );
+
+            image.alt =
+                player.name ||
+                "Personaggio";
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+            info.className =
+                "dungeon-online-info";
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+            name.className =
+                "dungeon-online-name";
+
+            const isMe =
+                player.character_id ===
+                    character.id;
+
+            name.textContent =
+                `${
+                    player.name ||
+                    "Avventuriero"
+                }${
+                    isMe
+                        ? " (tu)"
+                        : ""
+                }`;
+
+            const status =
+                document.createElement(
+                    "div"
+                );
+
+            const inCombat =
+                player.in_combat === true ||
+                !!player.active_combat_id;
+
+            status.className =
+                "dungeon-online-status" +
+                (
+                    inCombat
+                        ? " in-combat"
+                        : ""
+                );
+
+            status.textContent =
+                inCombat
+                    ? "⚔ In combattimento"
+                    : "Nel dungeon";
+
+            const dot =
+                document.createElement(
+                    "span"
+                );
+
+            dot.className =
+                "dungeon-online-dot";
+
+            info.append(
+                name,
+                status
+            );
+
+            row.append(
+                image,
+                info,
+                dot
+            );
+
+            container.appendChild(
+                row
+            );
+        }
+    );
+}
+
+
+// ============================================================
 // SINCRONIZZA GIOCATORI ONLINE
 // ============================================================
 
@@ -4955,6 +5452,8 @@ function syncOnlinePlayers() {
 renderFogOfWar();
 
 updateRemoteTokensVisibility();
+
+renderDungeonOnlinePlayers();
     
 }
 
@@ -5058,6 +5557,8 @@ function updateRemotePlayer(
     );
     
 updateRemoteTokensVisibility();
+
+    renderDungeonOnlinePlayers();
 
     if (healModeActive) {
 
@@ -9142,6 +9643,11 @@ function setupNotes() {
 
 function syncDungeonChatHeightWithMap() {
 
+    const socialColumn =
+        document.querySelector(
+            ".dungeon-social-column"
+        );
+
     const chatPanel =
         document.querySelector(
             ".dungeon-chat-panel"
@@ -9163,32 +9669,68 @@ function syncDungeonChatHeightWithMap() {
         );
 
     if (
+        !socialColumn ||
         !chatPanel ||
         !mapFrame ||
         !messages
     ) {
+
+        return;
+    }
+
+    if (
+        window.innerWidth <=
+        1050
+    ) {
+
+        socialColumn.style.height =
+            "";
+
+        socialColumn.style.maxHeight =
+            "";
+
+        chatPanel.style.height =
+            "";
+
+        chatPanel.style.maxHeight =
+            "";
+
+        chatPanel.style.minHeight =
+            "";
+
         return;
     }
 
     const mapHeight =
-        mapFrame.getBoundingClientRect()
+        mapFrame
+            .getBoundingClientRect()
             .height;
 
     if (
         !Number.isFinite(mapHeight) ||
         mapHeight <= 0
     ) {
+
         return;
     }
 
-    chatPanel.style.height =
+    socialColumn.style.height =
         `${mapHeight}px`;
 
-    chatPanel.style.maxHeight =
+    socialColumn.style.maxHeight =
         `${mapHeight}px`;
+
+    chatPanel.style.flex =
+        "1 1 auto";
+
+    chatPanel.style.height =
+        "auto";
 
     chatPanel.style.minHeight =
-        `${mapHeight}px`;
+        "0";
+
+    chatPanel.style.maxHeight =
+        "none";
 
     chatPanel.style.display =
         "flex";
@@ -9221,9 +9763,7 @@ function syncDungeonChatHeightWithMap() {
 
         controls.style.flex =
             "0 0 auto";
-
     }
-
 }
 
 

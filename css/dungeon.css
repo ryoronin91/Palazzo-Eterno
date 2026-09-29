@@ -2960,3 +2960,367 @@ body {
     overflow-wrap: anywhere;
     word-break: break-word;
 }
+
+
+/* ============================================================
+   PALAZZO ETERNO - REVISIONE DESKTOP / ONLINE / VOLUME / SFONDO
+   ============================================================ */
+
+html,
+body {
+    background-color: #100e0c;
+    background-image:
+        linear-gradient(rgba(9, 7, 5, 0.58), rgba(9, 7, 5, 0.72)),
+        url("../immagini/bg.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.dungeon-volume-control {
+    position: relative;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dungeon-volume-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 34px;
+    padding: 0;
+    border: 3px solid #73572f;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #352819, #241b12);
+    color: #eeddb8;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dungeon-volume-button:hover {
+    border-color: #aa8248;
+    background: linear-gradient(180deg, #45341f, #2d2115);
+}
+
+.dungeon-volume-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 180px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 2px solid #66563c;
+    border-radius: 6px;
+    background: #171411;
+    box-shadow: 0 8px 24px rgba(0,0,0,.55);
+}
+
+.dungeon-volume-popover[hidden] {
+    display: none;
+}
+
+.dungeon-volume-slider {
+    width: 100%;
+    accent-color: #b18a4d;
+    cursor: pointer;
+}
+
+.dungeon-volume-value {
+    display: block;
+    margin-top: 4px;
+    color: #d6c8b0;
+    font-size: 10px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.dungeon-social-column {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dungeon-online-panel {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-height: 185px;
+    overflow: hidden;
+}
+
+.dungeon-online-list {
+    max-height: 132px;
+    padding: 6px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.dungeon-online-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 4px 3px;
+    border-bottom: 1px solid rgba(177, 138, 77, 0.18);
+}
+
+.dungeon-online-row:last-child {
+    border-bottom: 0;
+}
+
+.dungeon-online-token {
+    display: block;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #0f0d0b;
+    box-shadow: 0 0 0 1px #66563c;
+}
+
+.dungeon-online-info {
+    min-width: 0;
+}
+
+.dungeon-online-name {
+    overflow: hidden;
+    color: #f0e4ce;
+    font-size: 10px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dungeon-online-status {
+    margin-top: 2px;
+    color: #8f887d;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.dungeon-online-status.in-combat {
+    color: #d3b372;
+}
+
+.dungeon-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #69a66f;
+    box-shadow: 0 0 5px rgba(105, 166, 111, 0.65);
+}
+
+.dungeon-online-empty {
+    padding: 12px 6px;
+    color: #777066;
+    font-size: 10px;
+    font-style: italic;
+    text-align: center;
+}
+
+.dungeon-online-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+.dungeon-online-list::-webkit-scrollbar-thumb {
+    background: #66563c;
+}
+
+.dungeon-online-list::-webkit-scrollbar-track {
+    background: #12100d;
+}
+
+@media (min-width: 1251px) {
+    .dungeon-page {
+        padding: 16px 20px 20px;
+    }
+
+    .dungeon-header,
+    .dungeon-layout {
+        max-width: 1720px;
+    }
+
+    .dungeon-header {
+        grid-template-columns: 140px 44px auto 1fr;
+        gap: 12px;
+    }
+
+    .dungeon-layout {
+        grid-template-columns:
+            380px
+            minmax(575px, 805px)
+            minmax(485px, 1fr);
+        gap: 14px;
+    }
+
+    .dungeon-panel-title {
+        font-size: 19px;
+    }
+
+    .dungeon-title-block h1 {
+        font-size: 25px;
+    }
+
+    .dungeon-floor-title {
+        font-size: 19px;
+    }
+
+    .dungeon-message {
+        font-size: 14px;
+    }
+
+    .dungeon-character-name {
+        font-size: 18px;
+    }
+
+    .quick-section-title,
+    .dungeon-actions-title {
+        font-size: 14px;
+    }
+
+    .quick-stat {
+        min-height: 57px;
+    }
+
+    .quick-stat-value {
+        font-size: 15px;
+    }
+
+    .dungeon-action-card {
+        min-height: 58px;
+    }
+
+    .action-card-content strong {
+        font-size: 12px;
+    }
+
+    .action-card-content small {
+        font-size: 11px;
+    }
+
+    .floor-chat-message {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 1250px) {
+    .dungeon-header {
+        grid-template-columns: 110px 42px auto 1fr;
+    }
+
+    .dungeon-social-column {
+        gap: 8px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 150px;
+    }
+
+    .dungeon-online-list {
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 1050px) {
+    .dungeon-header {
+        grid-template-columns: 110px 42px 1fr;
+    }
+
+    .dungeon-message {
+        grid-column: 1 / -1;
+    }
+
+    .dungeon-social-column {
+        height: 280px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 105px;
+    }
+
+    .dungeon-online-list {
+        max-height: 60px;
+    }
+
+    .dungeon-chat-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+    }
+}
+
+@media (max-width: 760px) {
+    html,
+    body {
+        background-attachment: scroll;
+    }
+
+    .dungeon-header {
+        grid-template-columns: 68px 38px 1fr;
+    }
+
+    .dungeon-volume-button {
+        width: 36px;
+        height: 31px;
+        border-width: 2px;
+        font-size: 14px;
+    }
+
+    .dungeon-volume-popover {
+        width: 150px;
+    }
+
+    .dungeon-social-column {
+        height: 300px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 108px;
+    }
+
+    .dungeon-online-list {
+        max-height: 66px;
+        padding: 4px;
+    }
+
+    .dungeon-online-row {
+        grid-template-columns: 23px minmax(0, 1fr);
+        min-height: 28px;
+        gap: 4px;
+    }
+
+    .dungeon-online-token {
+        width: 23px;
+        height: 23px;
+    }
+
+    .dungeon-online-dot {
+        display: none;
+    }
+
+    .dungeon-online-name {
+        font-size: 9px;
+    }
+
+    .dungeon-online-status {
+        font-size: 7px;
+    }
+
+    .dungeon-chat-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        margin-top: 0;
+    }
+}
+

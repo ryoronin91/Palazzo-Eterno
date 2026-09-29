@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/dungeon.css?v=22"
+        href="css/dungeon.css?v=23"
     >
 
     <style>
@@ -103,6 +103,46 @@
             </a>
 
 
+            <div class="dungeon-volume-control">
+
+                <button
+                    id="dungeon-volume-button"
+                    class="dungeon-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="dungeon-volume-popover"
+                    class="dungeon-volume-popover"
+                    hidden
+                >
+                    <input
+                        id="dungeon-volume-slider"
+                        class="dungeon-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="dungeon-volume-value"
+                        class="dungeon-volume-value"
+                    >
+                        35%
+                    </span>
+                </div>
+
+            </div>
+
+
             <div class="dungeon-title-block">
 
                 <h1>
@@ -165,57 +205,85 @@
                 </section>
 
 
-                <section class="dungeon-panel dungeon-chat-panel">
+                <!-- =============================================
+                     ONLINE + CHAT
+                ============================================== -->
+
+                <div class="dungeon-social-column">
 
 
-                    <div class="dungeon-panel-title">
+                    <section class="dungeon-panel dungeon-online-panel">
 
-                        CHAT
+                        <div class="dungeon-panel-title">
+                            PERSONAGGI ONLINE
+                        </div>
 
-                    </div>
+                        <div
+                            id="dungeon-online-list"
+                            class="dungeon-online-list"
+                        >
+                            <div class="dungeon-online-empty">
+                                Connessione...
+                            </div>
+                        </div>
+
+                    </section>
 
 
-                    <div
-                        id="floor-chat-messages"
-                        class="floor-chat-messages"
-                    >
+                    <section class="dungeon-panel dungeon-chat-panel">
 
-                        <div class="chat-placeholder">
 
-                            Nessun messaggio.
+                        <div class="dungeon-panel-title">
+
+                            CHAT
 
                         </div>
 
-                    </div>
 
-
-                    <div class="floor-chat-controls">
-
-
-                        <input
-                            id="floor-chat-input"
-                            class="floor-chat-input"
-                            type="text"
-                            maxlength="300"
-                            autocomplete="off"
-                            placeholder="Scrivi..."
+                        <div
+                            id="floor-chat-messages"
+                            class="floor-chat-messages"
                         >
 
+                            <div class="chat-placeholder">
 
-                        <button
-                            id="floor-chat-send"
-                            class="floor-chat-send"
-                            type="button"
-                            aria-label="Invia messaggio"
-                        >
-                            ➤
-                        </button>
+                                Nessun messaggio.
+
+                            </div>
+
+                        </div>
 
 
-                    </div>
+                        <div class="floor-chat-controls">
 
 
-                </section>
+                            <input
+                                id="floor-chat-input"
+                                class="floor-chat-input"
+                                type="text"
+                                maxlength="300"
+                                autocomplete="off"
+                                placeholder="Scrivi..."
+                            >
+
+
+                            <button
+                                id="floor-chat-send"
+                                class="floor-chat-send"
+                                type="button"
+                                aria-label="Invia messaggio"
+                            >
+                                ➤
+                            </button>
+
+
+                        </div>
+
+
+                    </section>
+
+
+                </div>
 
 
             </aside>
@@ -897,7 +965,7 @@
          SCRIPT
     ====================================================== -->
 
-    <script src="js/dungeon.js?v=35"></script>
+    <script src="js/dungeon.js?v=36"></script>
 
     <script src="js/eventi.js?v=7"></script>
 
