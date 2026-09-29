@@ -2891,3 +2891,31 @@ body {
     pointer-events:
         none;
 }
+/* ============================================================
+   CHAT - ALTEZZA FISSA + SCROLL
+============================================================ */
+
+.dungeon-chat-panel {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.floor-chat-messages {
+    height: 320px;
+    max-height: 320px;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+
+    box-sizing: border-box;
+}
+
+.floor-chat-message {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}

@@ -8638,7 +8638,7 @@ async function loadFloorChatHistory() {
 
         const rows =
             Array.isArray(data)
-                ? [...data].reverse()
+                ? [...data]
                 : [];
 
         if (

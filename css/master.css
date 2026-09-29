@@ -1336,3 +1336,43 @@
 .master-runtime-box.master-runtime-finger.has-monkey-finger strong {
     color: #ffd977;
 }
+/* ============================================================
+   CHAT MASTER - ALTEZZA FISSA + SCROLL
+============================================================ */
+
+.master-chat-panel {
+    height: 430px;
+    max-height: 430px;
+
+    min-height: 0;
+
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.master-chat-messages {
+    flex: 1 1 auto;
+
+    min-height: 0;
+    max-height: 100%;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+}
+
+.master-chat-message {
+    flex: 0 0 auto;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.master-chat-form {
+    flex: 0 0 auto;
+}

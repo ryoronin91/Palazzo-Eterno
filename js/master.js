@@ -1982,7 +1982,7 @@ async function loadMasterChatHistory() {
 
         const rows =
             Array.isArray(data)
-                ? [...data].reverse()
+                ? [...data]
                 : [];
 
 
@@ -2487,7 +2487,7 @@ function appendMasterChatMessage(
     );
 
 
-    container.appendChild(
+    container.prepend(
         message
     );
 
@@ -2503,31 +2503,33 @@ function appendMasterChatMessage(
         MASTER_CHAT_HISTORY_LIMIT
     ) {
 
-        const first =
-            messages[0];
+        const last =
+            messages[
+                messages.length - 1
+            ];
 
 
-        const firstId =
-            first?.dataset
+        const lastId =
+            last?.dataset
                 ?.messageId;
 
 
-        if (firstId) {
+        if (lastId) {
 
             renderedMasterChatMessageIds.delete(
-                firstId
+                lastId
             );
 
         }
 
 
-        first?.remove();
+        last?.remove();
 
     }
 
 
     container.scrollTop =
-        container.scrollHeight;
+        0;
 
 }
 
