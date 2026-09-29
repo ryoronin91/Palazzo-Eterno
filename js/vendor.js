@@ -373,7 +373,8 @@ async function loadVendorItems() {
                     fortuna_bonus,
                     heal_pf,
                     heal_pm,
-                    gold_value
+                    gold_value,
+                    grants_ability_id
                 )
             `)
             .eq(
