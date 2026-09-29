@@ -995,10 +995,7 @@ function createAbilityCard(
 
     return card;
 
-}
-
-
-// ============================================================
+}// ============================================================
 // INVENTARIO
 // ============================================================
 
@@ -1996,10 +1993,7 @@ function renderEquipmentSlot(
 
 
     const item =
-        entry.item;
-
-
-    const name =
+        entry.item;const name =
         document.createElement(
             "div"
         );
@@ -2534,7 +2528,10 @@ function renderBackpackItem(
 
     if (
         item.item_type ===
-        "consumable"
+            "consumable"
+        ||
+        item.item_type ===
+            "ability_scroll"
     ) {
 
         const actions =
@@ -2561,13 +2558,33 @@ function renderBackpackItem(
             "inventory-button";
 
 
+        const isAbilityScroll =
+            item.item_type ===
+                "ability_scroll";
+
+
         useButton.textContent =
-            "USA";
+            isAbilityScroll
+                ? "APPRENDI"
+                : "USA";
 
 
         useButton.addEventListener(
             "click",
             () => {
+
+                if (
+                    isAbilityScroll
+                ) {
+
+                    learnAbilityFromScroll(
+                        entry.id
+                    );
+
+                    return;
+
+                }
+
 
                 useInventoryItem(
                     entry.id
@@ -2997,253 +3014,10 @@ function getCompatibleSlots(
                 label: "Mano 2"
             }
 
-        ];
-
-    }
+        ];}
 
 
     return [];
-
-}
-
-
-// ============================================================
-// MASSIMI PF / PM ATTUALI
-// ============================================================
-
-function getCurrentMaxResources() {
-
-    const costituzione =
-        getEffectiveAttribute(
-            "costituzione"
-        );
-
-
-    const intelligenza =
-        getEffectiveAttribute(
-            "intelligenza"
-        );
-
-
-    return {
-
-        maxPF:
-            Math.ceil(
-                5 *
-                (
-                    costituzione /
-                    2
-                )
-            ),
-
-        maxPM:
-            Math.ceil(
-                5 *
-                (
-                    intelligenza /
-                    2
-                )
-            )
-
-    };
-
-}
-
-
-// ============================================================
-// RIDIMENSIONA PF / PM DOPO CAMBIO DEL MASSIMO
-//
-// Mantiene la stessa percentuale della risorsa.
-// Quando il massimo aumenta arrotonda per difetto;
-// quando diminuisce arrotonda per eccesso.
-// In questo modo equip/unequip non genera cure infinite.
-// ============================================================
-
-function scaleResourceAfterMaxChange(
-    currentValue,
-    oldMax,
-    newMax,
-    keepAlive = false
-) {
-
-    oldMax =
-        Math.max(
-            1,
-            Number(oldMax) || 1
-        );
-
-
-    newMax =
-        Math.max(
-            1,
-            Number(newMax) || 1
-        );
-
-
-    let current =
-        Number(
-            currentValue
-        );
-
-
-    if (!Number.isFinite(current)) {
-
-        current =
-            oldMax;
-
-    }
-
-
-    current =
-        Math.max(
-            0,
-            Math.min(
-                current,
-                oldMax
-            )
-        );
-
-
-    if (
-        oldMax ===
-        newMax
-    ) {
-
-        return Math.min(
-            current,
-            newMax
-        );
-
-    }
-
-
-    const proportionalValue =
-        current *
-        newMax /
-        oldMax;
-
-
-    let newCurrent;
-
-
-    if (
-        newMax >
-        oldMax
-    ) {
-
-        newCurrent =
-            Math.floor(
-                proportionalValue
-            );
-
-    } else {
-
-        newCurrent =
-            Math.ceil(
-                proportionalValue
-            );
-
-    }
-
-
-    newCurrent =
-        Math.max(
-            0,
-            Math.min(
-                newCurrent,
-                newMax
-            )
-        );
-
-
-    if (
-        keepAlive &&
-        current > 0 &&
-        newCurrent <= 0
-    ) {
-
-        newCurrent =
-            1;
-
-    }
-
-
-    return newCurrent;
-
-}
-
-
-// ============================================================
-// SINCRONIZZA PF / PM DOPO CAMBIO EQUIPAGGIAMENTO
-// ============================================================
-
-async function syncResourcesAfterEquipmentChange(
-    oldResources,
-    oldCurrentPF,
-    oldCurrentPM
-) {
-
-    const newResources =
-        getCurrentMaxResources();
-
-
-    const newCurrentPF =
-        scaleResourceAfterMaxChange(
-            oldCurrentPF,
-            oldResources.maxPF,
-            newResources.maxPF,
-            true
-        );
-
-
-    const newCurrentPM =
-        scaleResourceAfterMaxChange(
-            oldCurrentPM,
-            oldResources.maxPM,
-            newResources.maxPM,
-            false
-        );
-
-
-    const {
-        error
-    } =
-        await db
-            .from(
-                "characters"
-            )
-            .update({
-
-                current_hp:
-                    newCurrentPF,
-
-                current_pm:
-                    newCurrentPM,
-
-                updated_at:
-                    new Date()
-                        .toISOString()
-
-            })
-            .eq(
-                "id",
-                character.id
-            );
-
-
-    if (error) {
-
-        throw error;
-
-    }
-
-
-    character.current_hp =
-        newCurrentPF;
-
-
-    character.current_pm =
-        newCurrentPM;
 
 }
 
@@ -3262,32 +3036,6 @@ async function equipItem(
         showMessage(
             "Equipaggiamento..."
         );
-
-
-        const oldResources =
-            getCurrentMaxResources();
-
-
-        const oldCurrentPF =
-            character.current_hp === null ||
-            character.current_hp === undefined
-
-                ? oldResources.maxPF
-
-                : Number(
-                    character.current_hp
-                );
-
-
-        const oldCurrentPM =
-            character.current_pm === null ||
-            character.current_pm === undefined
-
-                ? oldResources.maxPM
-
-                : Number(
-                    character.current_pm
-                );
 
 
         const {
@@ -3314,24 +3062,7 @@ async function equipItem(
         }
 
 
-        // Ricarica l'inventario e ricalcola i bonus
-        // del nuovo equipaggiamento.
-        await loadInventory();
-
-
-        await syncResourcesAfterEquipmentChange(
-            oldResources,
-            oldCurrentPF,
-            oldCurrentPM
-        );
-
-
-        await loadCharacter();
-
-
-        displayCharacter();
-
-        displayInventory();
+        await refreshCharacterAndInventory();
 
 
         showMessage(
@@ -3373,32 +3104,6 @@ async function unequipItem(
         );
 
 
-        const oldResources =
-            getCurrentMaxResources();
-
-
-        const oldCurrentPF =
-            character.current_hp === null ||
-            character.current_hp === undefined
-
-                ? oldResources.maxPF
-
-                : Number(
-                    character.current_hp
-                );
-
-
-        const oldCurrentPM =
-            character.current_pm === null ||
-            character.current_pm === undefined
-
-                ? oldResources.maxPM
-
-                : Number(
-                    character.current_pm
-                );
-
-
         const {
             error
         } =
@@ -3420,24 +3125,7 @@ async function unequipItem(
         }
 
 
-        // Ricarica l'inventario e ricalcola i bonus
-        // dopo la rimozione dell'oggetto.
-        await loadInventory();
-
-
-        await syncResourcesAfterEquipmentChange(
-            oldResources,
-            oldCurrentPF,
-            oldCurrentPM
-        );
-
-
-        await loadCharacter();
-
-
-        displayCharacter();
-
-        displayInventory();
+        await refreshCharacterAndInventory();
 
 
         showMessage(
@@ -3449,6 +3137,78 @@ async function unequipItem(
 
         console.error(
             "Errore rimozione equipaggiamento:",
+            error
+        );
+
+
+        showMessage(
+            cleanDatabaseError(
+                error.message
+            )
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// APPRENDE ABILITÀ DA PERGAMENA
+// ============================================================
+
+async function learnAbilityFromScroll(
+    inventoryId
+) {
+
+    try {
+
+        showMessage(
+            "Stai studiando la pergamena..."
+        );
+
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "learn_ability_from_scroll",
+                {
+
+                    p_inventory_id:
+                        inventoryId
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await refreshCharacterAndInventory();
+
+
+        await loadAbilities();
+
+        displayAbilities();
+
+
+        showMessage(
+            `${
+                data?.ability_name ||
+                "Abilità"
+            } appresa!`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore apprendimento pergamena:",
             error
         );
 
