@@ -29,6 +29,407 @@ console.log("SCHEDA.JS CARICATO");
 
 
 // ============================================================
+// MUSICA DI SOTTOFONDO
+// ============================================================
+
+let sheetBackgroundMusic = null;
+
+const PALAZZO_MUSIC_VOLUME_KEY =
+    "palazzo-eterno-dungeon-volume";
+
+let sheetMusicVolume =
+    loadSheetMusicVolume();
+
+
+function loadSheetMusicVolume() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                PALAZZO_MUSIC_VOLUME_KEY
+            );
+
+
+        if (
+            saved === null ||
+            saved === ""
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        const value =
+            Number(
+                saved
+            );
+
+
+        if (
+            !Number.isFinite(
+                value
+            )
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        return Math.max(
+            0,
+            Math.min(
+                1,
+                value
+            )
+        );
+
+
+    } catch (error) {
+
+        return 0.35;
+
+    }
+
+}
+
+
+function saveSheetMusicVolume(
+    value
+) {
+
+    try {
+
+        localStorage.setItem(
+            PALAZZO_MUSIC_VOLUME_KEY,
+            String(
+                value
+            )
+        );
+
+
+    } catch (error) {
+
+        // localStorage potrebbe essere disabilitato.
+
+    }
+
+}
+
+
+function getSheetVolumeIcon(
+    volume
+) {
+
+    if (
+        volume <= 0
+    ) {
+
+        return "🔇";
+
+    }
+
+
+    if (
+        volume < 0.5
+    ) {
+
+        return "🔉";
+
+    }
+
+
+    return "🔊";
+
+}
+
+
+function updateSheetVolumeUI() {
+
+    const button =
+        document.getElementById(
+            "sheet-volume-button"
+        );
+
+
+    const slider =
+        document.getElementById(
+            "sheet-volume-slider"
+        );
+
+
+    const value =
+        document.getElementById(
+            "sheet-volume-value"
+        );
+
+
+    const percentage =
+        Math.round(
+            sheetMusicVolume *
+            100
+        );
+
+
+    if (button) {
+
+        button.textContent =
+            getSheetVolumeIcon(
+                sheetMusicVolume
+            );
+
+
+        button.title =
+            `Volume musica: ${percentage}%`;
+
+    }
+
+
+    if (slider) {
+
+        slider.value =
+            String(
+                percentage
+            );
+
+    }
+
+
+    if (value) {
+
+        value.textContent =
+            `${percentage}%`;
+
+    }
+
+}
+
+
+function startSheetBackgroundMusic() {
+
+    if (
+        sheetBackgroundMusic
+    ) {
+
+        return;
+
+    }
+
+
+    sheetBackgroundMusic =
+        new Audio(
+            "music/dungeon.mp3"
+        );
+
+
+    sheetBackgroundMusic.loop =
+        true;
+
+
+    sheetBackgroundMusic.volume =
+        sheetMusicVolume;
+
+
+    sheetBackgroundMusic.preload =
+        "auto";
+
+
+    const tryPlay =
+        async () => {
+
+            if (
+                !sheetBackgroundMusic
+            ) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await sheetBackgroundMusic.play();
+
+            } catch (error) {
+
+                // Autoplay eventualmente sbloccato
+                // alla prima interazione dell'utente.
+
+            }
+
+        };
+
+
+    tryPlay();
+
+
+    const unlockAudio =
+        () => {
+
+            tryPlay();
+
+        };
+
+
+    document.addEventListener(
+        "pointerdown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        unlockAudio,
+        {
+            once: true
+        }
+    );
+
+}
+
+
+function setupSheetVolumeControl() {
+
+    const control =
+        document.querySelector(
+            ".sheet-volume-control"
+        );
+
+
+    const button =
+        document.getElementById(
+            "sheet-volume-button"
+        );
+
+
+    const popover =
+        document.getElementById(
+            "sheet-volume-popover"
+        );
+
+
+    const slider =
+        document.getElementById(
+            "sheet-volume-slider"
+        );
+
+
+    if (
+        !control ||
+        !button ||
+        !popover ||
+        !slider
+    ) {
+
+        return;
+
+    }
+
+
+    updateSheetVolumeUI();
+
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+
+            const willOpen =
+                popover.hidden === true;
+
+
+            popover.hidden =
+                !willOpen;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                willOpen
+                    ? "true"
+                    : "false"
+            );
+
+        }
+    );
+
+
+    slider.addEventListener(
+        "input",
+        () => {
+
+            sheetMusicVolume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        Number(
+                            slider.value
+                        ) /
+                        100
+                    )
+                );
+
+
+            if (
+                sheetBackgroundMusic
+            ) {
+
+                sheetBackgroundMusic.volume =
+                    sheetMusicVolume;
+
+            }
+
+
+            saveSheetMusicVolume(
+                sheetMusicVolume
+            );
+
+
+            updateSheetVolumeUI();
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                control.contains(
+                    event.target
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            popover.hidden =
+                true;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
 // SUPABASE
 // ============================================================
 
@@ -86,6 +487,11 @@ document.addEventListener(
         console.log(
             "Pagina scheda pronta."
         );
+
+
+        startSheetBackgroundMusic();
+
+        setupSheetVolumeControl();
 
 
         try {
