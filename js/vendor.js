@@ -292,7 +292,8 @@ async function loadVendorCharacterInventory() {
                     equip_slot,
                     heal_pf,
                     heal_pm,
-                    gold_value
+                    gold_value,
+                    grants_ability_id
                 )
             `)
             .eq(
@@ -499,25 +500,25 @@ function renderVendorItems() {
             label: "OGGETTI BASE",
             min: 0,
             max: 99,
-            excludeItemType: "ability_scroll"
+            excludeAbilityScroll: true
         },
         {
             label: "OGGETTI COMUNI",
             min: 100,
             max: 199,
-            excludeItemType: "ability_scroll"
+            excludeAbilityScroll: true
         },
         {
             label: "OGGETTI RARI",
             min: 200,
             max: Infinity,
-            excludeItemType: "ability_scroll"
+            excludeAbilityScroll: true
         },
         {
             label: "PERGAMENE ABILITÀ",
             min: 300,
             max: Infinity,
-            itemType: "ability_scroll"
+            abilityScrollOnly: true
         }
     ];
 
@@ -541,18 +542,16 @@ function renderVendorItems() {
                         ) || 0;
 
 
-                    const itemType =
-                        String(
-                            row.item?.item_type ||
-                            ""
-                        ).toLowerCase();
+                    const isAbilityScroll =
+                        Boolean(
+                            row.item?.grants_ability_id
+                        );
 
 
                     if (
-                        group.itemType
+                        group.abilityScrollOnly
                         &&
-                        itemType !==
-                            group.itemType
+                        !isAbilityScroll
                     ) {
 
                         return false;
@@ -561,10 +560,9 @@ function renderVendorItems() {
 
 
                     if (
-                        group.excludeItemType
+                        group.excludeAbilityScroll
                         &&
-                        itemType ===
-                            group.excludeItemType
+                        isAbilityScroll
                     ) {
 
                         return false;

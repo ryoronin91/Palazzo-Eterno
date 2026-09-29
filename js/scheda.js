@@ -1046,6 +1046,7 @@ async function loadInventory() {
                     heal_pf,
                     heal_pm,
                     gold_value,
+                    grants_ability_id,
                     unique_world,
                     vendor_unlimited,
                     recipe_only
@@ -2530,8 +2531,9 @@ function renderBackpackItem(
         item.item_type ===
             "consumable"
         ||
-        item.item_type ===
-            "ability_scroll"
+        Boolean(
+            item.grants_ability_id
+        )
     ) {
 
         const actions =
@@ -2559,8 +2561,9 @@ function renderBackpackItem(
 
 
         const isAbilityScroll =
-            item.item_type ===
-                "ability_scroll";
+            Boolean(
+                item.grants_ability_id
+            );
 
 
         useButton.textContent =
