@@ -997,10 +997,7 @@ document.addEventListener(
 
             return true;
 
-        }
-
-
-        // ====================================================
+        }// ====================================================
         // VALIDAZIONE STEP 2
         // ====================================================
 
@@ -1997,8 +1994,7 @@ document.addEventListener(
                         );
 
 
-                    if (
-                        categoryItems.length === 0
+                    if (categoryItems.length === 0
                     ) {
 
                         return;
@@ -2217,6 +2213,22 @@ document.addEventListener(
 
                     item_id:
                         "pozione_vita",
+
+                    quantity:
+                        1,
+
+                    equipped_slot:
+                        null
+
+                },
+
+                {
+
+                    character_id:
+                        characterId,
+
+                    item_id:
+                        "moneta_temporale",
 
                     quantity:
                         1,
