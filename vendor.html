@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Vendor</title>
-    <link rel="stylesheet" href="css/vendor.css?v=5">
+    <link rel="stylesheet" href="css/vendor.css?v=6">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js?v=11"></script>
@@ -76,6 +76,48 @@
             >
                 ← ESCI
             </button>
+
+
+            <div class="vendor-volume-control">
+
+                <button
+                    id="vendor-volume-button"
+                    class="vendor-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="vendor-volume-popover"
+                    class="vendor-volume-popover"
+                    hidden
+                >
+
+                    <input
+                        id="vendor-volume-slider"
+                        class="vendor-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="vendor-volume-value"
+                        class="vendor-volume-value"
+                    >
+                        35%
+                    </span>
+
+                </div>
+
+            </div>
 
             <img
                 src="immagini/vendor/vendor_base.png"
@@ -216,7 +258,7 @@
     </main>
 
 
-    <script src="js/vendor.js?v=23"></script>
+    <script src="js/vendor.js?v=24"></script>
 
 </body>
 </html>

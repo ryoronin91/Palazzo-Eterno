@@ -15,6 +15,12 @@ console.log(
 
 let pageBackgroundMusic = null;
 
+const PALAZZO_MUSIC_VOLUME_KEY =
+    "palazzo-eterno-dungeon-volume";
+
+let vendorMusicVolume =
+    loadVendorMusicVolume();
+
 function startBackgroundMusic(
     source
 ) {
@@ -39,7 +45,7 @@ function startBackgroundMusic(
         true;
 
     pageBackgroundMusic.volume =
-        0.35;
+        vendorMusicVolume;
 
     pageBackgroundMusic.preload =
         "auto";
@@ -98,6 +104,313 @@ function startBackgroundMusic(
         unlockAudio,
         {
             once: true
+        }
+    );
+
+}
+
+
+// ============================================================
+// VOLUME MUSICA
+// ============================================================
+
+function loadVendorMusicVolume() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                PALAZZO_MUSIC_VOLUME_KEY
+            );
+
+
+        if (
+            saved === null ||
+            saved === ""
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        const value =
+            Number(
+                saved
+            );
+
+
+        if (
+            !Number.isFinite(
+                value
+            )
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        return Math.max(
+            0,
+            Math.min(
+                1,
+                value
+            )
+        );
+
+
+    } catch (error) {
+
+        return 0.35;
+
+    }
+
+}
+
+
+function saveVendorMusicVolume(
+    value
+) {
+
+    try {
+
+        localStorage.setItem(
+            PALAZZO_MUSIC_VOLUME_KEY,
+            String(
+                value
+            )
+        );
+
+
+    } catch (error) {
+
+        // localStorage può essere disabilitato.
+
+    }
+
+}
+
+
+function getVendorVolumeIcon(
+    volume
+) {
+
+    if (
+        volume <= 0
+    ) {
+
+        return "🔇";
+
+    }
+
+
+    if (
+        volume < 0.5
+    ) {
+
+        return "🔉";
+
+    }
+
+
+    return "🔊";
+
+}
+
+
+function updateVendorVolumeUI() {
+
+    const button =
+        document.getElementById(
+            "vendor-volume-button"
+        );
+
+
+    const slider =
+        document.getElementById(
+            "vendor-volume-slider"
+        );
+
+
+    const value =
+        document.getElementById(
+            "vendor-volume-value"
+        );
+
+
+    const percentage =
+        Math.round(
+            vendorMusicVolume *
+            100
+        );
+
+
+    if (button) {
+
+        button.textContent =
+            getVendorVolumeIcon(
+                vendorMusicVolume
+            );
+
+
+        button.title =
+            `Volume musica: ${percentage}%`;
+
+    }
+
+
+    if (slider) {
+
+        slider.value =
+            String(
+                percentage
+            );
+
+    }
+
+
+    if (value) {
+
+        value.textContent =
+            `${percentage}%`;
+
+    }
+
+}
+
+
+function setupVendorVolumeControl() {
+
+    const control =
+        document.querySelector(
+            ".vendor-volume-control"
+        );
+
+
+    const button =
+        document.getElementById(
+            "vendor-volume-button"
+        );
+
+
+    const popover =
+        document.getElementById(
+            "vendor-volume-popover"
+        );
+
+
+    const slider =
+        document.getElementById(
+            "vendor-volume-slider"
+        );
+
+
+    if (
+        !control ||
+        !button ||
+        !popover ||
+        !slider
+    ) {
+
+        return;
+
+    }
+
+
+    updateVendorVolumeUI();
+
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+
+            const willOpen =
+                popover.hidden ===
+                true;
+
+
+            popover.hidden =
+                !willOpen;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                willOpen
+                    ? "true"
+                    : "false"
+            );
+
+        }
+    );
+
+
+    slider.addEventListener(
+        "input",
+        () => {
+
+            vendorMusicVolume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        Number(
+                            slider.value
+                        ) /
+                        100
+                    )
+                );
+
+
+            if (
+                pageBackgroundMusic
+            ) {
+
+                pageBackgroundMusic.volume =
+                    vendorMusicVolume;
+
+            }
+
+
+            saveVendorMusicVolume(
+                vendorMusicVolume
+            );
+
+
+            updateVendorVolumeUI();
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                control.contains(
+                    event.target
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            popover.hidden =
+                true;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
         }
     );
 
@@ -237,6 +550,9 @@ document.addEventListener(
         startBackgroundMusic(
             "music/vendor.mp3"
         );
+
+
+        setupVendorVolumeControl();
 
 
         try {
