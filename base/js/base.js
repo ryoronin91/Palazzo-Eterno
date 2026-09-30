@@ -1102,6 +1102,13 @@ function moveBasePlayer(dx, dy) {
         checkNearbyBaseCombatEvents();
     }
 
+    if (
+        typeof checkBaseTeleportEvent ===
+        "function"
+    ) {
+        checkBaseTeleportEvent();
+    }
+
     setMessage(
         `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
     );

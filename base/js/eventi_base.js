@@ -128,6 +128,36 @@ let nearbyBaseCombatKey =
 
 
 // ============================================================
+// TELETRASPORTO VERSO PIANO 1
+// ============================================================
+//
+// Le quattro caselle formano l'area di teletrasporto della Base.
+// Entrando in una di esse viene chiesta conferma prima di
+// trasferire il PG all'ingresso del Piano 1.
+// ============================================================
+
+const BASE_TELEPORT_CELLS =
+    new Set([
+        "3,10",
+        "3,11",
+        "4,10",
+        "4,11"
+    ]);
+
+const DUNGEON_FLOOR_1_START_X =
+    9;
+
+const DUNGEON_FLOOR_1_START_Y =
+    0;
+
+let baseTeleportPromptOpen =
+    false;
+
+let baseTeleportZoneActive =
+    false;
+
+
+// ============================================================
 // AVVIO
 // ============================================================
 
@@ -1643,6 +1673,359 @@ function closeBaseCombatPrompt() {
 
     pendingBaseCombatEvent =
         null;
+
+}
+
+
+// ============================================================
+// CONTROLLO AREA TELETRASPORTO
+// ============================================================
+
+function checkBaseTeleportEvent() {
+
+    if (
+        basePlayerX === null ||
+        basePlayerY === null
+    ) {
+
+        return false;
+
+    }
+
+
+    const key =
+        `${Number(basePlayerX)},${Number(basePlayerY)}`;
+
+
+    const insideTeleportZone =
+        BASE_TELEPORT_CELLS.has(
+            key
+        );
+
+
+    if (!insideTeleportZone) {
+
+        baseTeleportZoneActive =
+            false;
+
+        return false;
+
+    }
+
+
+    // Evita di riaprire il popup a ogni evento mentre il PG
+    // rimane fermo nella stessa area.
+    if (
+        baseTeleportPromptOpen ||
+        baseTeleportZoneActive
+    ) {
+
+        return true;
+
+    }
+
+
+    baseTeleportZoneActive =
+        true;
+
+
+    openBaseTeleportPrompt();
+
+
+    return true;
+
+}
+
+
+// ============================================================
+// POPUP TELETRASPORTO
+// ============================================================
+
+function openBaseTeleportPrompt() {
+
+    if (
+        baseTeleportPromptOpen ||
+        document.getElementById(
+            "base-teleport-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    baseTeleportPromptOpen =
+        true;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "base-teleport-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ✦
+        </div>
+
+        <h2>
+            TELETRASPORTO
+        </h2>
+
+        <p>
+            Il portale conduce all'ingresso del Piano 1 del Palazzo.
+        </p>
+
+        <div class="combat-event-warning">
+            Vuoi lasciare il Livello Base ed entrare nel dungeon?
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="base-teleport-enter"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                ENTRA NEL DUNGEON
+            </button>
+
+            <button
+                id="base-teleport-cancel"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                RIMANI NELLA BASE
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "base-teleport-cancel"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                closeBaseTeleportPrompt();
+
+                setMessage(
+                    "Decidi di rimanere nel Livello Base."
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "base-teleport-enter"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await teleportBasePlayerToDungeon();
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// ESEGUE TELETRASPORTO AL PIANO 1
+// ============================================================
+
+async function teleportBasePlayerToDungeon() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "base-teleport-enter"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "TELETRASPORTO...";
+
+    }
+
+
+    try {
+
+        // Salviamo prima la posizione corrente nella Base,
+        // così un eventuale ritorno futuro riparte da qui.
+        if (
+            typeof flushBasePositionSave ===
+            "function"
+        ) {
+
+            await flushBasePositionSave();
+
+        }
+
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    dungeon_x:
+                        DUNGEON_FLOOR_1_START_X,
+
+                    dungeon_y:
+                        DUNGEON_FLOOR_1_START_Y,
+
+                    current_location:
+                        "dungeon"
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character.dungeon_x =
+            DUNGEON_FLOOR_1_START_X;
+
+        character.dungeon_y =
+            DUNGEON_FLOOR_1_START_Y;
+
+        character.current_location =
+            "dungeon";
+
+
+        if (
+            baseChannel
+        ) {
+
+            try {
+
+                await baseChannel.untrack();
+
+            } catch (presenceError) {
+
+                console.warn(
+                    "Errore uscita Presence Base:",
+                    presenceError
+                );
+
+            }
+
+        }
+
+
+        window.location.href =
+            "../dungeon.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore teletrasporto verso il Piano 1:",
+            error
+        );
+
+
+        setMessage(
+            error?.message ||
+            "Il teletrasporto non ha funzionato."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "ENTRA NEL DUNGEON";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CHIUDE POPUP TELETRASPORTO
+// ============================================================
+
+function closeBaseTeleportPrompt() {
+
+    const overlay =
+        document.getElementById(
+            "base-teleport-overlay"
+        );
+
+
+    if (overlay) {
+
+        overlay.remove();
+
+    }
+
+
+    baseTeleportPromptOpen =
+        false;
 
 }
 
