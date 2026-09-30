@@ -432,19 +432,28 @@ let tokenElement = null;
 
 
 // ============================================================
-// VENDOR - MANO DI SCIMMIA
+// CARTELLO - MANO DI SCIMMIA
+// ============================================================
+//
+// Mano di Scimmia non si trova più sul Piano 1.
+// Al suo posto, in X2 Y11, c'è un cartello di legno
+// che avvisa i giocatori che ora si è trasferito
+// al livello successivo.
+//
+// Il cartello occupa la casella ed è leggibile sia
+// cliccandolo da adiacenti sia tentando di entrarci.
 // ============================================================
 
-const VENDOR_X = 2;
-const VENDOR_Y = 11;
+const MONKEY_SIGN_X = 2;
+const MONKEY_SIGN_Y = 11;
 
-const VENDOR_TOKEN_IMAGE =
-    "immagini/eventi/vendor.png";
+const MONKEY_SIGN_TITLE =
+    "Cartello di legno";
 
-const VENDOR_PAGE =
-    "vendor.html";
+const MONKEY_SIGN_MESSAGE =
+    "Ciao campione! Qui era troppo pericoloso per me restare, mi trovi al piano successivo. Ah tranquillo, le scale ora sono sicure... quasi tutte..";
 
-let vendorTokenElement = null;
+let monkeySignElement = null;
 
 
 // ============================================================
@@ -654,7 +663,7 @@ document.addEventListener(
             // VENDOR
             // ------------------------------------------------
 
-            setupVendorToken();
+            setupMonkeySignToken();
 
 
             // ------------------------------------------------------------
@@ -2166,10 +2175,10 @@ async function initializePlayer() {
 
 
 // ============================================================
-// TOKEN VENDOR - MANO DI SCIMMIA
+// CARTELLO - MANO DI SCIMMIA
 // ============================================================
 
-function setupVendorToken() {
+function setupMonkeySignToken() {
 
     const map =
         document.getElementById(
@@ -2184,77 +2193,207 @@ function setupVendorToken() {
     }
 
 
-    if (!vendorTokenElement) {
+    if (!monkeySignElement) {
 
-        vendorTokenElement =
+        monkeySignElement =
             document.createElement(
                 "div"
             );
 
 
-        vendorTokenElement.className =
-            "dungeon-player-token dungeon-vendor-token";
+        monkeySignElement.className =
+            "dungeon-player-token dungeon-monkey-sign-token";
 
 
-        vendorTokenElement.title =
-            "Mano di Scimmia";
+        monkeySignElement.title =
+            MONKEY_SIGN_TITLE;
 
 
-        vendorTokenElement.setAttribute(
+        monkeySignElement.setAttribute(
             "aria-label",
-            "Mano di Scimmia"
+            MONKEY_SIGN_TITLE
         );
 
 
-        vendorTokenElement.style.cursor =
+        monkeySignElement.style.cursor =
             "pointer";
 
-
-        vendorTokenElement.style.zIndex =
+        monkeySignElement.style.zIndex =
             "6";
 
-
-        vendorTokenElement.style.pointerEvents =
+        monkeySignElement.style.pointerEvents =
             "auto";
 
+        monkeySignElement.style.display =
+            "flex";
 
-        const image =
+        monkeySignElement.style.alignItems =
+            "center";
+
+        monkeySignElement.style.justifyContent =
+            "center";
+
+        monkeySignElement.style.background =
+            "transparent";
+
+        monkeySignElement.style.border =
+            "none";
+
+        monkeySignElement.style.boxShadow =
+            "none";
+
+        monkeySignElement.style.overflow =
+            "visible";
+
+
+        const signWrapper =
             document.createElement(
-                "img"
+                "div"
             );
 
+        signWrapper.style.position =
+            "relative";
 
-        image.src =
-            VENDOR_TOKEN_IMAGE;
+        signWrapper.style.width =
+            "100%";
 
-
-        image.alt =
-            "Mano di Scimmia";
-
-
-        image.draggable =
-            false;
+        signWrapper.style.height =
+            "100%";
 
 
-        vendorTokenElement.appendChild(
-            image
+        const signBoard =
+            document.createElement(
+                "div"
+            );
+
+        signBoard.style.position =
+            "absolute";
+
+        signBoard.style.left =
+            "8%";
+
+        signBoard.style.right =
+            "8%";
+
+        signBoard.style.top =
+            "10%";
+
+        signBoard.style.height =
+            "54%";
+
+        signBoard.style.display =
+            "flex";
+
+        signBoard.style.alignItems =
+            "center";
+
+        signBoard.style.justifyContent =
+            "center";
+
+        signBoard.style.padding =
+            "2px";
+
+        signBoard.style.border =
+            "2px solid #4d2c12";
+
+        signBoard.style.borderRadius =
+            "8px";
+
+        signBoard.style.background =
+            "linear-gradient(180deg, #b67a3c 0%, #8a5826 60%, #6c431d 100%)";
+
+        signBoard.style.boxShadow =
+            "0 1px 3px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 232, 187, 0.25)";
+
+
+        const signText =
+            document.createElement(
+                "div"
+            );
+
+        signText.textContent =
+            "AVVISO";
+
+        signText.style.color =
+            "#f7e4b5";
+
+        signText.style.fontSize =
+            "8px";
+
+        signText.style.fontWeight =
+            "800";
+
+        signText.style.letterSpacing =
+            "0.06em";
+
+        signText.style.textShadow =
+            "0 1px 1px rgba(0, 0, 0, 0.6)";
+
+        signText.style.lineHeight =
+            "1";
+
+
+        const signPost =
+            document.createElement(
+                "div"
+            );
+
+        signPost.style.position =
+            "absolute";
+
+        signPost.style.left =
+            "45%";
+
+        signPost.style.width =
+            "10%";
+
+        signPost.style.bottom =
+            "3%";
+
+        signPost.style.height =
+            "34%";
+
+        signPost.style.borderRadius =
+            "3px";
+
+        signPost.style.background =
+            "linear-gradient(180deg, #6a4320 0%, #4a2d13 100%)";
+
+        signPost.style.boxShadow =
+            "0 1px 2px rgba(0, 0, 0, 0.35)";
+
+
+        signBoard.appendChild(
+            signText
+        );
+
+        signWrapper.appendChild(
+            signBoard
+        );
+
+        signWrapper.appendChild(
+            signPost
+        );
+
+        monkeySignElement.appendChild(
+            signWrapper
         );
 
 
-        vendorTokenElement.addEventListener(
+        monkeySignElement.addEventListener(
             "click",
-            async event => {
+            event => {
 
                 event.preventDefault();
                 event.stopPropagation();
 
 
                 if (
-                    !isVendorAdjacentToPlayer()
+                    !isMonkeySignAdjacentToPlayer()
                 ) {
 
                     setMessage(
-                        "Avvicinati a Mano di Scimmia per commerciare."
+                        "Avvicinati al cartello per leggerlo."
                     );
 
                     return;
@@ -2262,46 +2401,46 @@ function setupVendorToken() {
                 }
 
 
-                await enterVendor();
+                openMonkeySignPrompt();
 
             }
         );
 
 
         map.appendChild(
-            vendorTokenElement
+            monkeySignElement
         );
 
     }
 
 
     positionTokenElement(
-        vendorTokenElement,
-        VENDOR_X,
-        VENDOR_Y
+        monkeySignElement,
+        MONKEY_SIGN_X,
+        MONKEY_SIGN_Y
     );
 
 
-    updateVendorTokenVisibility();
+    updateMonkeySignVisibility();
 
 }
 
 
-function isVendorCell(
+function isMonkeySignCell(
     x,
     y
 ) {
 
     return (
-        Number(x) === VENDOR_X
+        Number(x) === MONKEY_SIGN_X
         &&
-        Number(y) === VENDOR_Y
+        Number(y) === MONKEY_SIGN_Y
     );
 
 }
 
 
-function isVendorAdjacentToPlayer() {
+function isMonkeySignAdjacentToPlayer() {
 
     if (
         playerX === null ||
@@ -2316,12 +2455,12 @@ function isVendorAdjacentToPlayer() {
     const distance =
         Math.abs(
             Number(playerX) -
-            VENDOR_X
+            MONKEY_SIGN_X
         )
         +
         Math.abs(
             Number(playerY) -
-            VENDOR_Y
+            MONKEY_SIGN_Y
         );
 
 
@@ -2330,19 +2469,19 @@ function isVendorAdjacentToPlayer() {
 }
 
 
-function updateVendorTokenVisibility() {
+function updateMonkeySignVisibility() {
 
-    if (!vendorTokenElement) {
+    if (!monkeySignElement) {
 
         return;
 
     }
 
 
-    vendorTokenElement.style.display =
+    monkeySignElement.style.display =
         isCellCurrentlyVisible(
-            VENDOR_X,
-            VENDOR_Y
+            MONKEY_SIGN_X,
+            MONKEY_SIGN_Y
         )
             ? "flex"
             : "none";
@@ -2350,7 +2489,7 @@ function updateVendorTokenVisibility() {
 }
 
 
-async function enterVendor() {
+function openMonkeySignPrompt() {
 
     if (eventLocked) {
 
@@ -2367,73 +2506,31 @@ async function enterVendor() {
 
 
     setMessage(
-        "Ti avvicini a Mano di Scimmia..."
+        "Leggi il cartello di legno."
     );
 
 
-    try {
+    if (
+        typeof openSimpleDungeonEventPrompt ===
+        "function"
+    ) {
 
-        await flushPositionSave();
-
-        await savePositionBeforeExit();
-
-
-        // ----------------------------------------------------
-        // REGISTRA POSIZIONE LOGICA
-        // ----------------------------------------------------
-
-        const {
-            error
-        } =
-            await db
-                .from(
-                    "characters"
-                )
-                .update({
-                    current_location:
-                        "vendor"
-                })
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (
-            error
-        ) {
-
-            throw error;
-
-        }
-
-
-        character.current_location =
-            "vendor";
-
-
-        window.location.href =
-            VENDOR_PAGE;
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore ingresso vendor:",
-            error
+        openSimpleDungeonEventPrompt(
+            MONKEY_SIGN_TITLE,
+            MONKEY_SIGN_MESSAGE
         );
 
-
-        eventLocked =
-            false;
-
-
-        setMessage(
-            "Non riesco ad aprire il negozio. Riprova."
-        );
+        return;
 
     }
 
+
+    alert(
+        `${MONKEY_SIGN_TITLE}\n\n${MONKEY_SIGN_MESSAGE}`
+    );
+
+    eventLocked =
+        false;
 }
 
 
@@ -2867,15 +2964,15 @@ function repositionAllTokens() {
     );
 
 
-    if (vendorTokenElement) {
+    if (monkeySignElement) {
 
         positionTokenElement(
-            vendorTokenElement,
-            VENDOR_X,
-            VENDOR_Y
+            monkeySignElement,
+            MONKEY_SIGN_X,
+            MONKEY_SIGN_Y
         );
 
-        updateVendorTokenVisibility();
+        updateMonkeySignVisibility();
 
     }
 
@@ -3278,22 +3375,22 @@ async function performMovement(
 
 
     // --------------------------------------------------------
-    // VENDOR - MANO DI SCIMMIA
+    // CARTELLO - MANO DI SCIMMIA
     // --------------------------------------------------------
     //
-    // La casella del vendor è occupata dal suo token.
-    // Tentare di entrarci apre direttamente il negozio.
+    // La casella X2 Y11 è occupata dal cartello.
+    // Tentare di entrarci mostra direttamente il messaggio.
     //
     // --------------------------------------------------------
 
     if (
-        isVendorCell(
+        isMonkeySignCell(
             newX,
             newY
         )
     ) {
 
-        await enterVendor();
+        openMonkeySignPrompt();
 
         return false;
 
@@ -4557,11 +4654,11 @@ function canMoveTo(
 
 
     // --------------------------------------------------------
-    // TOKEN VENDOR
+    // CARTELLO - MANO DI SCIMMIA
     // --------------------------------------------------------
 
     if (
-        isVendorCell(
+        isMonkeySignCell(
             visibleX,
             visibleY
         )
@@ -8565,7 +8662,7 @@ function updateFogOfWar() {
 
     updateRemoteTokensVisibility();
 
-    updateVendorTokenVisibility();
+    updateMonkeySignVisibility();
 
 
     if (discoveredSomething) {
