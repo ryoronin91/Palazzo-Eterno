@@ -1050,7 +1050,7 @@ function moveBasePlayer(dx, dy) {
         isBaseFilterBlocked()
     ) {
         setMessage(
-            "Il cancello è chiuso."
+            "Il cancello è chiuso. Si aprirà quando non ci saranno nemici nelle vicinanze."
         );
 
         return false;
