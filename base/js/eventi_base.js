@@ -144,6 +144,20 @@ const BASE_TELEPORT_CELLS =
         "4,11"
     ]);
 
+// Scale che collegano direttamente la Base
+// con le scale X11 Y17 del Piano 1.
+const BASE_DUNGEON_STAIRS_X =
+    11;
+
+const BASE_DUNGEON_STAIRS_Y =
+    3;
+
+const DUNGEON_STAIRS_RETURN_X =
+    11;
+
+const DUNGEON_STAIRS_RETURN_Y =
+    17;
+
 const DUNGEON_FLOOR_1_START_X =
     9;
 
@@ -1693,6 +1707,42 @@ function checkBaseTeleportEvent() {
     }
 
 
+    // --------------------------------------------------------
+    // SCALE X11 Y3 -> DUNGEON X11 Y17
+    // --------------------------------------------------------
+
+    const onDungeonStairs =
+        Number(basePlayerX) ===
+            BASE_DUNGEON_STAIRS_X
+        &&
+        Number(basePlayerY) ===
+            BASE_DUNGEON_STAIRS_Y;
+
+
+    if (onDungeonStairs) {
+
+        if (
+            !baseTeleportPromptOpen &&
+            !baseTeleportZoneActive
+        ) {
+
+            baseTeleportZoneActive =
+                true;
+
+            openDungeonStairsFromBasePrompt();
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
+    // PORTALE BASE -> INGRESSO STANDARD DEL PIANO 1
+    // --------------------------------------------------------
+
     const key =
         `${Number(basePlayerX)},${Number(basePlayerY)}`;
 
@@ -1713,8 +1763,6 @@ function checkBaseTeleportEvent() {
     }
 
 
-    // Evita di riaprire il popup a ogni evento mentre il PG
-    // rimane fermo nella stessa area.
     if (
         baseTeleportPromptOpen ||
         baseTeleportZoneActive
@@ -1733,6 +1781,301 @@ function checkBaseTeleportEvent() {
 
 
     return true;
+
+}
+
+
+
+// ============================================================
+// POPUP SCALE BASE -> PIANO 1
+// ============================================================
+
+function openDungeonStairsFromBasePrompt() {
+
+    if (
+        baseTeleportPromptOpen ||
+        document.getElementById(
+            "base-dungeon-stairs-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    baseTeleportPromptOpen =
+        true;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "base-dungeon-stairs-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ▼
+        </div>
+
+        <h2>
+            SCALE
+        </h2>
+
+        <p>
+            Queste scale conducono al Piano 1 del Palazzo.
+        </p>
+
+        <div class="combat-event-warning">
+            Scendendo raggiungerai la stessa scala
+            del dungeon, alla casella
+            <strong>X11 Y17</strong>.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="base-dungeon-stairs-descend"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                RAGGIUNGI IL PIANO 1
+            </button>
+
+            <button
+                id="base-dungeon-stairs-cancel"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                RIMANI NELLA BASE
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "base-dungeon-stairs-cancel"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                closeDungeonStairsFromBasePrompt();
+
+                setMessage(
+                    "Decidi di rimanere nel Livello Base."
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "base-dungeon-stairs-descend"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await descendFromBaseToDungeonStairs();
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// SCENDE DALLA BASE ALLE SCALE X11 Y17 DEL DUNGEON
+// ============================================================
+
+async function descendFromBaseToDungeonStairs() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "base-dungeon-stairs-descend"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "DISCESA...";
+
+    }
+
+
+    try {
+
+        // Conserva la posizione della Base.
+        if (
+            typeof flushBasePositionSave ===
+            "function"
+        ) {
+
+            await flushBasePositionSave();
+
+        }
+
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    dungeon_x:
+                        DUNGEON_STAIRS_RETURN_X,
+
+                    dungeon_y:
+                        DUNGEON_STAIRS_RETURN_Y,
+
+                    current_location:
+                        "dungeon"
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character.dungeon_x =
+            DUNGEON_STAIRS_RETURN_X;
+
+        character.dungeon_y =
+            DUNGEON_STAIRS_RETURN_Y;
+
+        character.current_location =
+            "dungeon";
+
+
+        if (
+            baseChannel
+        ) {
+
+            try {
+
+                await baseChannel.untrack();
+
+            } catch (presenceError) {
+
+                console.warn(
+                    "Errore uscita Presence Base:",
+                    presenceError
+                );
+
+            }
+
+        }
+
+
+        window.location.href =
+            "../dungeon.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore discesa al Piano 1:",
+            error
+        );
+
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile raggiungere il Piano 1."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "RAGGIUNGI IL PIANO 1";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CHIUDE POPUP SCALE BASE
+// ============================================================
+
+function closeDungeonStairsFromBasePrompt() {
+
+    const overlay =
+        document.getElementById(
+            "base-dungeon-stairs-overlay"
+        );
+
+
+    if (overlay) {
+
+        overlay.remove();
+
+    }
+
+
+    baseTeleportPromptOpen =
+        false;
 
 }
 
