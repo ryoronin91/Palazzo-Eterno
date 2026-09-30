@@ -158,6 +158,22 @@ const DUNGEON_STAIRS_RETURN_X =
 const DUNGEON_STAIRS_RETURN_Y =
     17;
 
+
+// Secondo collegamento scale:
+// Base X18 Y8 <-> Dungeon X19 Y22
+
+const BASE_SECRET_STAIRS_X =
+    18;
+
+const BASE_SECRET_STAIRS_Y =
+    8;
+
+const DUNGEON_SECRET_STAIRS_X =
+    19;
+
+const DUNGEON_SECRET_STAIRS_Y =
+    22;
+
 const DUNGEON_FLOOR_1_START_X =
     9;
 
@@ -1740,6 +1756,38 @@ function checkBaseTeleportEvent() {
 
 
     // --------------------------------------------------------
+    // SCALE X18 Y8 -> DUNGEON X19 Y22
+    // --------------------------------------------------------
+
+    const onSecretDungeonStairs =
+        Number(basePlayerX) ===
+            BASE_SECRET_STAIRS_X
+        &&
+        Number(basePlayerY) ===
+            BASE_SECRET_STAIRS_Y;
+
+
+    if (onSecretDungeonStairs) {
+
+        if (
+            !baseTeleportPromptOpen &&
+            !baseTeleportZoneActive
+        ) {
+
+            baseTeleportZoneActive =
+                true;
+
+            openSecretDungeonStairsFromBasePrompt();
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // --------------------------------------------------------
     // PORTALE BASE -> INGRESSO STANDARD DEL PIANO 1
     // --------------------------------------------------------
 
@@ -2064,6 +2112,299 @@ function closeDungeonStairsFromBasePrompt() {
     const overlay =
         document.getElementById(
             "base-dungeon-stairs-overlay"
+        );
+
+
+    if (overlay) {
+
+        overlay.remove();
+
+    }
+
+
+    baseTeleportPromptOpen =
+        false;
+
+}
+
+
+// ============================================================
+// POPUP SCALE BASE X18 Y8 -> DUNGEON X19 Y22
+// ============================================================
+
+function openSecretDungeonStairsFromBasePrompt() {
+
+    if (
+        baseTeleportPromptOpen ||
+        document.getElementById(
+            "base-secret-dungeon-stairs-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    baseTeleportPromptOpen =
+        true;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "base-secret-dungeon-stairs-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ▼
+        </div>
+
+        <h2>
+            SCALE
+        </h2>
+
+        <p>
+            Queste scale conducono al Piano 1 del Palazzo.
+        </p>
+
+        <div class="combat-event-warning">
+            Scendendo raggiungerai la stessa scala
+            del dungeon, alla casella
+            <strong>X19 Y22</strong>.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="base-secret-dungeon-stairs-descend"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                RAGGIUNGI IL PIANO 1
+            </button>
+
+            <button
+                id="base-secret-dungeon-stairs-cancel"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                RIMANI NELLA BASE
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "base-secret-dungeon-stairs-cancel"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                closeSecretDungeonStairsFromBasePrompt();
+
+                setMessage(
+                    "Decidi di rimanere nel Livello Base."
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "base-secret-dungeon-stairs-descend"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await descendFromBaseToSecretDungeonStairs();
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// SCENDE DALLA BASE A X19 Y22 DEL DUNGEON
+// ============================================================
+
+async function descendFromBaseToSecretDungeonStairs() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "base-secret-dungeon-stairs-descend"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "DISCESA...";
+
+    }
+
+
+    try {
+
+        if (
+            typeof flushBasePositionSave ===
+            "function"
+        ) {
+
+            await flushBasePositionSave();
+
+        }
+
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    dungeon_x:
+                        DUNGEON_SECRET_STAIRS_X,
+
+                    dungeon_y:
+                        DUNGEON_SECRET_STAIRS_Y,
+
+                    current_location:
+                        "dungeon"
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character.dungeon_x =
+            DUNGEON_SECRET_STAIRS_X;
+
+        character.dungeon_y =
+            DUNGEON_SECRET_STAIRS_Y;
+
+        character.current_location =
+            "dungeon";
+
+
+        if (
+            baseChannel
+        ) {
+
+            try {
+
+                await baseChannel.untrack();
+
+            } catch (presenceError) {
+
+                console.warn(
+                    "Errore uscita Presence Base:",
+                    presenceError
+                );
+
+            }
+
+        }
+
+
+        window.location.href =
+            "../dungeon.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore discesa a X19 Y22 del Piano 1:",
+            error
+        );
+
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile raggiungere il Piano 1."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "RAGGIUNGI IL PIANO 1";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CHIUDE POPUP SCALE SEGRETE BASE
+// ============================================================
+
+function closeSecretDungeonStairsFromBasePrompt() {
+
+    const overlay =
+        document.getElementById(
+            "base-secret-dungeon-stairs-overlay"
         );
 
 
