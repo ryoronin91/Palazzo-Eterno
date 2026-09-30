@@ -495,7 +495,7 @@ let basePlayerToken = null;
 const BASE_STATIC_DECORATIONS = [
     {
         id: "tappeto_locanda",
-        imageSrc: "immagini/tappetoX.png",
+        imageSrc: "immagini/tappetoX.png?v=9",
         alt: "Tappeto della locanda",
         x: 12,
         y: 20,
