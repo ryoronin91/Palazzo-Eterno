@@ -17,6 +17,8 @@ const BASE_MAP_ROWS = 36;
 
 let currentUser = null;
 let character = null;
+let baseData = null;
+let baseWalkableCells = new Set();
 let equipmentBonuses = {
     attack_bonus: 0,
     defense_bonus: 0,
@@ -66,6 +68,21 @@ async function loadBaseMapDefinition() {
     }
 
     const data = await response.json();
+
+    baseData = data;
+
+    baseWalkableCells =
+        new Set(
+            (
+                Array.isArray(data?.walkable_cells)
+                    ? data.walkable_cells
+                    : []
+            )
+                .map(
+                    cell =>
+                        `${Number(cell.x)},${Number(cell.y)}`
+                )
+        );
 
     const columns =
         Number(data?.grid?.columns) ||
@@ -348,8 +365,8 @@ function setMessage(text, error = false) {
 // La mappa Base usa una griglia 27 x 36.
 // ============================================================
 
-const BASE_INITIAL_PLAYER_X = 13;
-const BASE_INITIAL_PLAYER_Y = 31;
+const BASE_INITIAL_PLAYER_X = 12;
+const BASE_INITIAL_PLAYER_Y = 19;
 
 let basePlayerX = BASE_INITIAL_PLAYER_X;
 let basePlayerY = BASE_INITIAL_PLAYER_Y;
@@ -617,6 +634,24 @@ function setupBaseMovement() {
 
 
 // ============================================================
+// COLLISIONI LIVELLO BASE
+// ============================================================
+
+function isBaseCellWalkable(x, y) {
+    if (
+        !baseData ||
+        !(baseWalkableCells instanceof Set)
+    ) {
+        return false;
+    }
+
+    return baseWalkableCells.has(
+        `${Number(x)},${Number(y)}`
+    );
+}
+
+
+// ============================================================
 // ESEGUE UN PASSO
 // ============================================================
 
@@ -627,10 +662,6 @@ function moveBasePlayer(dx, dy) {
     const newY =
         basePlayerY + dy;
 
-    // Per questo primissimo test controlliamo solo i confini.
-    // Pareti e celle percorribili verranno collegate al JSON
-    // nel passaggio successivo.
-
     if (
         newX < 0 ||
         newY < 0 ||
@@ -639,6 +670,19 @@ function moveBasePlayer(dx, dy) {
     ) {
         setMessage(
             "Non puoi andare oltre i confini del Livello Base."
+        );
+
+        return false;
+    }
+
+    if (
+        !isBaseCellWalkable(
+            newX,
+            newY
+        )
+    ) {
+        setMessage(
+            "Il passaggio è bloccato."
         );
 
         return false;
