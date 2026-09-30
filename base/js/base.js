@@ -28,6 +28,20 @@ let baseWalkableCells = new Set();
 
 
 // ============================================================
+// VENDOR - MANO DI SCIMMIA
+// ============================================================
+
+const BASE_VENDOR_X = 22;
+const BASE_VENDOR_Y = 13;
+
+const BASE_VENDOR_PAGE =
+    "../vendor.html";
+
+let baseVendorEntering =
+    false;
+
+
+// ============================================================
 // DATABASE / REALTIME LIVELLO BASE
 // ============================================================
 
@@ -532,6 +546,16 @@ const BASE_STATIC_DECORATIONS = [
         width: 2,
         height: 3,
         zIndex: 6
+    },
+    {
+        id: "mano_di_scimmia",
+        imageSrc: "../immagini/eventi/vendor.png",
+        alt: "Mano di Scimmia",
+        x: 22,
+        y: 13,
+        width: 1,
+        height: 1,
+        zIndex: 12
     }
 ];
 
@@ -804,7 +828,14 @@ function renderBaseStaticDecorations() {
                     "absolute";
 
                 element.style.pointerEvents =
-                    "none";
+                    decoration.id === "mano_di_scimmia"
+                        ? "auto"
+                        : "none";
+
+                element.style.cursor =
+                    decoration.id === "mano_di_scimmia"
+                        ? "pointer"
+                        : "default";
 
                 element.style.objectFit =
                     "contain";
@@ -814,6 +845,34 @@ function renderBaseStaticDecorations() {
 
                 element.style.userSelect =
                     "none";
+
+                if (
+                    decoration.id ===
+                    "mano_di_scimmia"
+                ) {
+                    element.title =
+                        "Mano di Scimmia";
+
+                    element.addEventListener(
+                        "click",
+                        async event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            if (
+                                !isBaseVendorAdjacentToPlayer()
+                            ) {
+                                setMessage(
+                                    "Avvicinati a Mano di Scimmia per commerciare."
+                                );
+
+                                return;
+                            }
+
+                            await enterBaseVendor();
+                        }
+                    );
+                }
 
                 map.appendChild(element);
 
@@ -890,6 +949,153 @@ function positionBaseStaticDecorations() {
                 );
         }
     );
+}
+
+
+// ============================================================
+// VENDOR - MANO DI SCIMMIA
+// ============================================================
+
+function isBaseVendorCell(
+    x,
+    y
+) {
+    return (
+        Number(x) ===
+            BASE_VENDOR_X
+        &&
+        Number(y) ===
+            BASE_VENDOR_Y
+    );
+}
+
+
+function isBaseVendorAdjacentToPlayer() {
+    if (
+        basePlayerX === null ||
+        basePlayerY === null
+    ) {
+        return false;
+    }
+
+    const distance =
+        Math.abs(
+            Number(basePlayerX) -
+            BASE_VENDOR_X
+        )
+        +
+        Math.abs(
+            Number(basePlayerY) -
+            BASE_VENDOR_Y
+        );
+
+    return distance === 1;
+}
+
+
+async function enterBaseVendor() {
+    if (
+        baseVendorEntering ||
+        !character
+    ) {
+        return;
+    }
+
+    if (
+        !isBaseVendorAdjacentToPlayer()
+    ) {
+        setMessage(
+            "Avvicinati a Mano di Scimmia per commerciare."
+        );
+
+        return;
+    }
+
+    baseVendorEntering =
+        true;
+
+    setMessage(
+        "Ti avvicini a Mano di Scimmia..."
+    );
+
+    try {
+        // Salva immediatamente la posizione attuale della Base.
+        if (basePositionSaveTimer) {
+            clearTimeout(
+                basePositionSaveTimer
+            );
+
+            basePositionSaveTimer =
+                null;
+        }
+
+        basePositionSavePending =
+            false;
+
+        await flushBasePositionSave();
+
+        // Ricorda al negozio da dove siamo arrivati.
+        try {
+            sessionStorage.setItem(
+                "palazzo_eterno_vendor_return",
+                "base"
+            );
+        } catch (storageError) {
+            console.warn(
+                "Impossibile salvare origine vendor:",
+                storageError
+            );
+        }
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+                    base_x:
+                        Number(basePlayerX),
+
+                    base_y:
+                        Number(basePlayerY),
+
+                    current_location:
+                        "vendor"
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        character.base_x =
+            Number(basePlayerX);
+
+        character.base_y =
+            Number(basePlayerY);
+
+        character.current_location =
+            "vendor";
+
+        window.location.href =
+            BASE_VENDOR_PAGE;
+
+    } catch (error) {
+        console.error(
+            "Errore ingresso vendor dalla Base:",
+            error
+        );
+
+        baseVendorEntering =
+            false;
+
+        setMessage(
+            "Non riesco ad aprire il negozio. Riprova."
+        );
+    }
 }
 
 
@@ -1248,6 +1454,25 @@ function moveBasePlayer(dx, dy) {
         setMessage(
             "Non puoi andare oltre i confini del Livello Base."
         );
+
+        return false;
+    }
+
+    // ========================================================
+    // VENDOR - MANO DI SCIMMIA
+    // ========================================================
+    //
+    // La sua casella è occupata. Se il PG prova a entrarci
+    // da una casella adiacente, si apre direttamente il negozio.
+    // ========================================================
+
+    if (
+        isBaseVendorCell(
+            newX,
+            newY
+        )
+    ) {
+        enterBaseVendor();
 
         return false;
     }
