@@ -1096,11 +1096,32 @@ function setupVictoryExitButton() {
 
 
             // ====================================================
-            // TORNA NEL DUNGEON
+            // TORNA ALL'AREA DI PROVENIENZA
+            // ====================================================
+            //
+            // I due combattimenti del Livello Base usano lo stesso
+            // motore combat del dungeon, ma al termine devono
+            // riportare il PG alla Base.
+            //
+            // Tutti gli altri encounter mantengono il comportamento
+            // precedente e tornano a dungeon.html.
             // ====================================================
 
+            const baseCombatEncounterIds =
+                new Set([
+                    "base_combat_left",
+                    "base_combat_right"
+                ]);
+
+            const returnPage =
+                baseCombatEncounterIds.has(
+                    combatSession?.encounter_id
+                )
+                    ? "base/base.html"
+                    : "dungeon.html";
+
             window.location.href =
-                "dungeon.html";
+                returnPage;
 
         }
     );
