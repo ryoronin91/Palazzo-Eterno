@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/base.css?v=3"
+        href="css/base.css?v=4"
     >
 
     <style>
@@ -317,7 +317,7 @@
                         <img
                             id="dungeon-map-image"
                             class="dungeon-map-image"
-                            src="immagini/base_map.png?v=2"
+                            src="immagini/base_map.png?v=1"
                             alt="Mappa del Livello Base"
                             draggable="false"
                         >
@@ -967,12 +967,91 @@
 
 
 
+
+    <!-- =====================================================
+         BACHECA DELLA BASE
+    ====================================================== -->
+
+    <div
+        id="base-noticeboard-modal"
+        class="base-noticeboard-modal"
+        hidden
+    >
+        <section
+            class="base-noticeboard-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="base-noticeboard-title"
+        >
+
+            <button
+                id="base-noticeboard-close"
+                class="base-noticeboard-close"
+                type="button"
+                aria-label="Chiudi bacheca"
+            >
+                ×
+            </button>
+
+            <div class="base-noticeboard-header">
+                <div class="base-noticeboard-kicker">
+                    PALAZZO ETERNO
+                </div>
+
+                <h2 id="base-noticeboard-title">
+                    BACHECA DELLA BASE
+                </h2>
+            </div>
+
+            <nav
+                class="base-noticeboard-tabs"
+                aria-label="Sezioni bacheca"
+            >
+                <button
+                    class="base-noticeboard-tab active"
+                    type="button"
+                    data-base-noticeboard-tab="novita"
+                >
+                    NOVITÀ
+                </button>
+
+                <button
+                    class="base-noticeboard-tab"
+                    type="button"
+                    data-base-noticeboard-tab="upgrade"
+                >
+                    PROSSIMI UPGRADE
+                </button>
+
+                <button
+                    class="base-noticeboard-tab"
+                    type="button"
+                    data-base-noticeboard-tab="avvisi"
+                >
+                    AVVISI
+                </button>
+            </nav>
+
+            <div class="base-noticeboard-content">
+                <h3 id="base-noticeboard-content-title">
+                    COSA C'È DI NUOVO
+                </h3>
+
+                <ul
+                    id="base-noticeboard-content-list"
+                    class="base-noticeboard-content-list"
+                ></ul>
+            </div>
+
+        </section>
+    </div>
+
+
     <!-- =====================================================
          SCRIPT
     ====================================================== -->
 
-    <script src="js/base.js?v=20"></script>
-    <script src="js/eventi_base.js?v=9"></script>
+    <script src="js/base.js?v=7"></script>
 
 </body>
 

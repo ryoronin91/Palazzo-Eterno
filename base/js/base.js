@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await initializeBasePlayer();
 
         setupBaseCamera();
+        setupBaseNoticeboard();
         setupBaseMovement();
 
         // ----------------------------------------------------
@@ -490,6 +491,57 @@ let basePlayerToken = null;
 
 
 // ============================================================
+// BACHECA DELLA BASE
+// ============================================================
+//
+// La grafica della bacheca è già incorporata direttamente
+// nell'immagine della mappa. Qui gestiamo soltanto:
+// - celle occupate;
+// - apertura del popup;
+// - contenuti e tab.
+//
+// ============================================================
+
+const BASE_NOTICEBOARD_CELLS =
+    new Set([
+        "14,10",
+        "15,10"
+    ]);
+
+const BASE_NOTICEBOARD_CONTENT = {
+    novita: {
+        title: "COSA C'È DI NUOVO",
+        items: [
+            "Il Livello Base è ora accessibile dal dungeon.",
+            "Mano di Scimmia si è trasferito alla Base.",
+            "Sono iniziati i lavori per i nuovi servizi della Base."
+        ]
+    },
+
+    upgrade: {
+        title: "PROSSIMI UPGRADE",
+        items: [
+            "Sistema di costruzione e potenziamento dei servizi.",
+            "Addestratore per la crescita dei personaggi.",
+            "Runografo e nuove funzioni legate alle rune.",
+            "Bacheca con annunci, missioni e informazioni."
+        ]
+    },
+
+    avvisi: {
+        title: "AVVISI",
+        items: [
+            "La Base è ancora in fase di ampliamento.",
+            "Nuovi contenuti verranno aggiunti progressivamente."
+        ]
+    }
+};
+
+let baseNoticeboardActiveTab =
+    "novita";
+
+
+// ============================================================
 // ARREDI STATICI LIVELLO BASE
 // ============================================================
 //
@@ -566,6 +618,16 @@ const BASE_STATIC_DECORATIONS = [
         width: 4,
         height: 6,
         zIndex: 7
+    },
+    {
+        id: "bacheca_base",
+        imageSrc: "immagini/bacheca.png",
+        alt: "Bacheca della Base",
+        x: 14,
+        y: 10,
+        width: 2,
+        height: 1,
+        zIndex: 10
     }
 ];
 
@@ -884,6 +946,34 @@ function renderBaseStaticDecorations() {
                     );
                 }
 
+                if (
+                    decoration.id ===
+                    "bacheca_base"
+                ) {
+                    element.title =
+                        "Bacheca della Base";
+
+                    element.addEventListener(
+                        "click",
+                        event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            if (
+                                !isBaseNoticeboardAdjacentToPlayer()
+                            ) {
+                                setMessage(
+                                    "Avvicinati alla bacheca per leggerla."
+                                );
+
+                                return;
+                            }
+
+                            openBaseNoticeboard();
+                        }
+                    );
+                }
+
                 map.appendChild(element);
 
                 baseStaticDecorationElements.set(
@@ -1106,6 +1196,269 @@ async function enterBaseVendor() {
             "Non riesco ad aprire il negozio. Riprova."
         );
     }
+}
+
+
+// ============================================================
+// BACHECA - INTERAZIONE
+// ============================================================
+
+function isBaseNoticeboardCell(
+    x,
+    y
+) {
+    return BASE_NOTICEBOARD_CELLS.has(
+        `${Number(x)},${Number(y)}`
+    );
+}
+
+
+function isBaseNoticeboardAdjacentToPlayer() {
+    if (
+        basePlayerX === null ||
+        basePlayerY === null
+    ) {
+        return false;
+    }
+
+    for (
+        const cellKey
+        of BASE_NOTICEBOARD_CELLS
+    ) {
+        const [
+            cellX,
+            cellY
+        ] =
+            cellKey
+                .split(",")
+                .map(Number);
+
+        const distance =
+            Math.abs(
+                Number(basePlayerX) -
+                cellX
+            )
+            +
+            Math.abs(
+                Number(basePlayerY) -
+                cellY
+            );
+
+        if (
+            distance === 1
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+function setupBaseNoticeboard() {
+    const modal =
+        document.getElementById(
+            "base-noticeboard-modal"
+        );
+
+    const closeButton =
+        document.getElementById(
+            "base-noticeboard-close"
+        );
+
+    const tabs =
+        document.querySelectorAll(
+            "[data-base-noticeboard-tab]"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    if (closeButton) {
+        closeButton.addEventListener(
+            "click",
+            closeBaseNoticeboard
+        );
+    }
+
+    tabs.forEach(
+        tab => {
+            tab.addEventListener(
+                "click",
+                () => {
+                    const tabId =
+                        tab.dataset
+                            .baseNoticeboardTab;
+
+                    if (
+                        BASE_NOTICEBOARD_CONTENT[
+                            tabId
+                        ]
+                    ) {
+                        baseNoticeboardActiveTab =
+                            tabId;
+
+                        renderBaseNoticeboard();
+                    }
+                }
+            );
+        }
+    );
+
+    modal.addEventListener(
+        "click",
+        event => {
+            if (
+                event.target ===
+                modal
+            ) {
+                closeBaseNoticeboard();
+            }
+        }
+    );
+
+    document.addEventListener(
+        "keydown",
+        event => {
+            if (
+                event.key ===
+                "Escape"
+                &&
+                !modal.hidden
+            ) {
+                closeBaseNoticeboard();
+            }
+        }
+    );
+
+    renderBaseNoticeboard();
+}
+
+
+function openBaseNoticeboard() {
+    const modal =
+        document.getElementById(
+            "base-noticeboard-modal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    renderBaseNoticeboard();
+
+    modal.hidden =
+        false;
+
+    document.body.classList.add(
+        "base-noticeboard-open"
+    );
+}
+
+
+function closeBaseNoticeboard() {
+    const modal =
+        document.getElementById(
+            "base-noticeboard-modal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.hidden =
+        true;
+
+    document.body.classList.remove(
+        "base-noticeboard-open"
+    );
+}
+
+
+function renderBaseNoticeboard() {
+    const content =
+        BASE_NOTICEBOARD_CONTENT[
+            baseNoticeboardActiveTab
+        ];
+
+    if (!content) {
+        return;
+    }
+
+    const title =
+        document.getElementById(
+            "base-noticeboard-content-title"
+        );
+
+    const list =
+        document.getElementById(
+            "base-noticeboard-content-list"
+        );
+
+    if (title) {
+        title.textContent =
+            content.title;
+    }
+
+    if (list) {
+        list.innerHTML =
+            content.items
+                .map(
+                    item => `
+                        <li>
+                            ${escapeBaseNoticeboardHtml(
+                                item
+                            )}
+                        </li>
+                    `
+                )
+                .join("");
+    }
+
+    document
+        .querySelectorAll(
+            "[data-base-noticeboard-tab]"
+        )
+        .forEach(
+            tab => {
+                tab.classList.toggle(
+                    "active",
+                    tab.dataset
+                        .baseNoticeboardTab ===
+                        baseNoticeboardActiveTab
+                );
+            }
+        );
+}
+
+
+function escapeBaseNoticeboardHtml(
+    value
+) {
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 }
 
 
@@ -1464,6 +1817,25 @@ function moveBasePlayer(dx, dy) {
         setMessage(
             "Non puoi andare oltre i confini del Livello Base."
         );
+
+        return false;
+    }
+
+    // ========================================================
+    // BACHECA DELLA BASE
+    // ========================================================
+    //
+    // Le caselle X14 Y10 e X15 Y10 sono occupate dalla bacheca.
+    // Tentare di entrarci da una casella adiacente apre il popup.
+    // ========================================================
+
+    if (
+        isBaseNoticeboardCell(
+            newX,
+            newY
+        )
+    ) {
+        openBaseNoticeboard();
 
         return false;
     }
