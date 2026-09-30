@@ -1171,6 +1171,16 @@ function getVendorInventoryItemIcon(
 // ============================================================
 // ESCI DAL VENDOR
 // ============================================================
+//
+// Il vendor può essere raggiunto sia dal Piano 1 sia dalla Base.
+// All'ingresso dalla Base, base.js salva:
+//
+// sessionStorage["palazzo_eterno_vendor_return"] = "base"
+//
+// Se il valore è "base", ESCI riporta il PG al Livello Base.
+// In tutti gli altri casi mantiene il comportamento storico e
+// riporta il PG al Piano 1.
+// ============================================================
 
 function setupVendorExitButton() {
 
@@ -1191,13 +1201,62 @@ function setupVendorExitButton() {
         "click",
         async () => {
 
+            let returnLocation =
+                "dungeon";
+
+            let returnPage =
+                "dungeon.html";
+
+
+            try {
+
+                const storedReturn =
+                    sessionStorage.getItem(
+                        "palazzo_eterno_vendor_return"
+                    );
+
+
+                if (
+                    storedReturn ===
+                    "base"
+                ) {
+
+                    returnLocation =
+                        "base";
+
+                    returnPage =
+                        "base/base.html";
+
+                }
+
+            } catch (storageError) {
+
+                console.warn(
+                    "Impossibile leggere origine vendor:",
+                    storageError
+                );
+
+            }
+
+
             if (
                 !character ||
                 !character.id
             ) {
 
+                try {
+
+                    sessionStorage.removeItem(
+                        "palazzo_eterno_vendor_return"
+                    );
+
+                } catch (_) {
+                    // Ignora errori sessionStorage.
+                }
+
+
                 window.location.href =
-                    "dungeon.html";
+                    returnPage;
 
                 return;
 
@@ -1219,7 +1278,7 @@ function setupVendorExitButton() {
                         )
                         .update({
                             current_location:
-                                "dungeon"
+                                returnLocation
                         })
                         .eq(
                             "id",
@@ -1239,8 +1298,19 @@ function setupVendorExitButton() {
                 resetVendorVisitMemory();
 
 
+                try {
+
+                    sessionStorage.removeItem(
+                        "palazzo_eterno_vendor_return"
+                    );
+
+                } catch (_) {
+                    // Ignora errori sessionStorage.
+                }
+
+
                 window.location.href =
-                    "dungeon.html";
+                    returnPage;
 
 
             } catch (
