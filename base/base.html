@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/base.css?v=2"
+        href="css/base.css?v=3"
     >
 
     <style>
@@ -39,25 +39,25 @@
         }
 
         /* =====================================================
-           LIVELLO BASE
-           Mappa originale: 27 colonne x 36 righe
-           Per ora viene mostrata integralmente.
+           CAMERA LIVELLO BASE
+           Visuale: 13x13 celle = PG + raggio 6
+           Mappa completa: 27 colonne x 36 righe
         ====================================================== */
 
         .dungeon-map-frame {
             position: relative !important;
             overflow: hidden !important;
-            aspect-ratio: 27 / 36;
-            max-height: 78vh;
-            margin: 0 auto;
+            aspect-ratio: 1 / 1;
         }
 
         .dungeon-map {
             position: absolute !important;
-            inset: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            transform: none !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 207.6923076923% !important;
+            height: 276.9230769231% !important;
+            transform-origin: 0 0;
+            will-change: transform;
         }
 
         .dungeon-map-image {
@@ -971,7 +971,7 @@
          SCRIPT
     ====================================================== -->
 
-    <script src="js/base.js?v=3"></script>
+    <script src="js/base.js?v=5"></script>
 
 </body>
 

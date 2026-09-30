@@ -15,6 +15,12 @@ const db = supabaseClient;
 const BASE_MAP_COLUMNS = 27;
 const BASE_MAP_ROWS = 36;
 
+const BASE_CAMERA_RADIUS = 6;
+const BASE_CAMERA_VISIBLE_CELLS =
+    BASE_CAMERA_RADIUS * 2 + 1;
+
+const BASE_CAMERA_TRANSITION_MS = 170;
+
 let currentUser = null;
 let character = null;
 let baseData = null;
@@ -43,6 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateCharacterPanel();
 
         initializeBasePlayer();
+        setupBaseCamera();
         setupBaseMovement();
 
         setMessage(
@@ -628,8 +635,141 @@ function setupBaseMovement() {
 
     window.addEventListener(
         "resize",
-        positionBasePlayerToken
+        () => {
+            updateBaseCamera(true);
+            positionBasePlayerToken();
+        }
     );
+}
+
+
+// ============================================================
+// CAMERA LIVELLO BASE
+// ============================================================
+//
+// Come nel dungeon principale:
+// visuale di 13 x 13 caselle, cioè PG + 6 celle per lato.
+// La mappa completa continua ad avere coordinate 27 x 36.
+// ============================================================
+
+function setupBaseCamera() {
+    updateBaseCamera(true);
+}
+
+
+function updateBaseCamera(instant = false) {
+    const frame =
+        document.querySelector(
+            ".dungeon-map-frame"
+        );
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+    if (
+        !frame ||
+        !map ||
+        basePlayerX === null ||
+        basePlayerY === null
+    ) {
+        return;
+    }
+
+    const frameRect =
+        frame.getBoundingClientRect();
+
+    const mapRect =
+        map.getBoundingClientRect();
+
+    if (
+        frameRect.width <= 0 ||
+        frameRect.height <= 0 ||
+        mapRect.width <= 0 ||
+        mapRect.height <= 0
+    ) {
+        return;
+    }
+
+    const cellWidth =
+        mapRect.width /
+        BASE_MAP_COLUMNS;
+
+    const cellHeight =
+        mapRect.height /
+        BASE_MAP_ROWS;
+
+    const playerCenterX =
+        (
+            Number(basePlayerX) +
+            0.5
+        ) *
+        cellWidth;
+
+    const playerCenterY =
+        (
+            Number(basePlayerY) +
+            0.5
+        ) *
+        cellHeight;
+
+    let cameraX =
+        playerCenterX -
+        frameRect.width / 2;
+
+    let cameraY =
+        playerCenterY -
+        frameRect.height / 2;
+
+    const maxCameraX =
+        Math.max(
+            0,
+            mapRect.width -
+            frameRect.width
+        );
+
+    const maxCameraY =
+        Math.max(
+            0,
+            mapRect.height -
+            frameRect.height
+        );
+
+    cameraX =
+        Math.max(
+            0,
+            Math.min(
+                cameraX,
+                maxCameraX
+            )
+        );
+
+    cameraY =
+        Math.max(
+            0,
+            Math.min(
+                cameraY,
+                maxCameraY
+            )
+        );
+
+    map.style.transition =
+        instant
+            ? "none"
+            : `transform ${BASE_CAMERA_TRANSITION_MS}ms ease-out`;
+
+    map.style.transform =
+        `translate(${-cameraX}px, ${-cameraY}px)`;
+
+    if (instant) {
+        requestAnimationFrame(
+            () => {
+                map.style.transition =
+                    `transform ${BASE_CAMERA_TRANSITION_MS}ms ease-out`;
+            }
+        );
+    }
 }
 
 
@@ -693,6 +833,7 @@ function moveBasePlayer(dx, dy) {
 
     positionBasePlayerToken();
     updateBaseCoordinates();
+    updateBaseCamera();
 
     setMessage(
         `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`

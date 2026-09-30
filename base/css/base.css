@@ -3419,36 +3419,29 @@ body {
 
 /* ============================================================
    PALAZZO ETERNO - LIVELLO BASE
-   OVERRIDE MAPPA 27 x 36
+   CAMERA 13 x 13 SU MAPPA 27 x 36
    ============================================================ */
 
 .dungeon-map-column {
-    align-items: center;
+    align-items: stretch;
 }
 
 .dungeon-map-frame {
-    width: min(100%, 610px);
-    aspect-ratio: 27 / 36;
+    width: 100%;
+    aspect-ratio: 1 / 1;
 }
 
 .dungeon-map {
-    aspect-ratio: 27 / 36;
+    aspect-ratio: auto;
 }
 
 .dungeon-map-image {
     object-fit: fill;
 }
 
-@media (max-width: 1050px) {
-    .dungeon-map-frame {
-        width: min(100%, 560px);
-    }
-}
-
 @media (max-width: 760px) {
     .dungeon-map-frame {
         width: 100%;
-        max-height: none;
     }
 }
 
