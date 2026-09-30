@@ -476,6 +476,40 @@ let basePlayerToken = null;
 
 
 // ============================================================
+// ARREDI STATICI LIVELLO BASE
+// ============================================================
+//
+// Gli arredi vengono posizionati come overlay assoluti
+// direttamente sulla griglia della mappa.
+//
+// Questo primo elemento è il tappeto della locanda:
+//
+// X12 Y20
+// X13 Y20
+// X14 Y20
+// X12 Y21
+// X13 Y21
+// X14 Y21
+// ============================================================
+
+const BASE_STATIC_DECORATIONS = [
+    {
+        id: "tappeto_locanda",
+        imageSrc: "immagini/tappetoX.png",
+        alt: "Tappeto della locanda",
+        x: 12,
+        y: 20,
+        width: 3,
+        height: 2,
+        zIndex: 6
+    }
+];
+
+const baseStaticDecorationElements =
+    new Map();
+
+
+// ============================================================
 // CREA E POSIZIONA IL TOKEN
 // ============================================================
 
@@ -601,6 +635,7 @@ async function initializeBasePlayer() {
         map.appendChild(basePlayerToken);
     }
 
+    renderBaseStaticDecorations();
     positionBasePlayerToken();
     updateBaseCoordinates();
 }
@@ -671,6 +706,9 @@ function positionBasePlayerToken() {
             cellHeight -
             tokenSize / 2
         }px`;
+
+    basePlayerToken.style.zIndex =
+        "20";
 }
 
 
@@ -690,6 +728,138 @@ function updateBaseCoordinates() {
 
     element.textContent =
         `Coordinate PG: X ${basePlayerX} · Y ${basePlayerY}`;
+}
+
+
+// ============================================================
+// CREA GLI ARREDI STATICI DELLA BASE
+// ============================================================
+
+function renderBaseStaticDecorations() {
+    const map =
+        document.getElementById("dungeon-map");
+
+    if (!map) {
+        return;
+    }
+
+    BASE_STATIC_DECORATIONS.forEach(
+        decoration => {
+
+            let element =
+                baseStaticDecorationElements.get(
+                    decoration.id
+                );
+
+            if (!element) {
+                element =
+                    document.createElement("img");
+
+                element.className =
+                    "base-static-decoration";
+
+                element.dataset.decorationId =
+                    decoration.id;
+
+                element.src =
+                    decoration.imageSrc;
+
+                element.alt =
+                    decoration.alt || "";
+
+                element.draggable =
+                    false;
+
+                element.style.position =
+                    "absolute";
+
+                element.style.pointerEvents =
+                    "none";
+
+                element.style.objectFit =
+                    "contain";
+
+                element.style.display =
+                    "block";
+
+                element.style.userSelect =
+                    "none";
+
+                map.appendChild(element);
+
+                baseStaticDecorationElements.set(
+                    decoration.id,
+                    element
+                );
+            }
+
+        }
+    );
+
+    positionBaseStaticDecorations();
+}
+
+
+// ============================================================
+// POSIZIONA GLI ARREDI STATICI SULLA GRIGLIA
+// ============================================================
+
+function positionBaseStaticDecorations() {
+    const map =
+        document.getElementById("dungeon-map");
+
+    if (!map) {
+        return;
+    }
+
+    const rect =
+        map.getBoundingClientRect();
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+    BASE_STATIC_DECORATIONS.forEach(
+        decoration => {
+
+            const element =
+                baseStaticDecorationElements.get(
+                    decoration.id
+                );
+
+            if (!element) {
+                return;
+            }
+
+            element.style.left =
+                `${decoration.x * cellWidth}px`;
+
+            element.style.top =
+                `${decoration.y * cellHeight}px`;
+
+            element.style.width =
+                `${decoration.width * cellWidth}px`;
+
+            element.style.height =
+                `${decoration.height * cellHeight}px`;
+
+            element.style.zIndex =
+                String(
+                    decoration.zIndex ?? 6
+                );
+        }
+    );
 }
 
 
@@ -814,6 +984,7 @@ function setupBaseMovement() {
         "resize",
         () => {
             updateBaseCamera(true);
+            positionBaseStaticDecorations();
             positionBasePlayerToken();
         }
     );
