@@ -522,16 +522,13 @@ const BASE_NOTICEBOARD_CONTENT = {
         title: "PROSSIMI UPGRADE",
         items: [
             "Sistema di costruzione e potenziamento dei servizi.",
-            "Addestratore per la crescita dei personaggi.",
-            "Runografo e nuove funzioni legate alle rune.",
-            "Bacheca con annunci, missioni e informazioni."
+            "Scambio tra giocatori."
         ]
     },
 
     avvisi: {
         title: "AVVISI",
         items: [
-            "La Base è ancora in fase di ampliamento.",
             "Nuovi contenuti verranno aggiunti progressivamente."
         ]
     }
@@ -618,16 +615,6 @@ const BASE_STATIC_DECORATIONS = [
         width: 4,
         height: 6,
         zIndex: 7
-    },
-    {
-        id: "bacheca_base",
-        imageSrc: "immagini/bacheca.png",
-        alt: "Bacheca della Base",
-        x: 14,
-        y: 10,
-        width: 2,
-        height: 1,
-        zIndex: 10
     }
 ];
 
@@ -946,33 +933,7 @@ function renderBaseStaticDecorations() {
                     );
                 }
 
-                if (
-                    decoration.id ===
-                    "bacheca_base"
-                ) {
-                    element.title =
-                        "Bacheca della Base";
 
-                    element.addEventListener(
-                        "click",
-                        event => {
-                            event.preventDefault();
-                            event.stopPropagation();
-
-                            if (
-                                !isBaseNoticeboardAdjacentToPlayer()
-                            ) {
-                                setMessage(
-                                    "Avvicinati alla bacheca per leggerla."
-                                );
-
-                                return;
-                            }
-
-                            openBaseNoticeboard();
-                        }
-                    );
-                }
 
                 map.appendChild(element);
 
