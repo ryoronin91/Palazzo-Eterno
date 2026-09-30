@@ -103,8 +103,11 @@ const baseCombatTokens =
 let baseGateElement =
     null;
 
+let baseOneWayGateElement =
+    null;
+
 const BASE_GATE_OPEN_IMAGE =
-    "immagini/gateo.png?v=2";
+    "immagini/gateo.png";
 
 const BASE_GATE_CLOSED_IMAGE =
     "immagini/gatec.png";
@@ -136,6 +139,7 @@ document.addEventListener(
 
         renderBaseCombatEvents();
         renderBaseGate();
+        renderBaseOneWayGate();
 
         window.addEventListener(
             "resize",
@@ -143,6 +147,7 @@ document.addEventListener(
 
                 repositionBaseCombatEvents();
                 positionBaseGate();
+                positionBaseOneWayGate();
 
             }
         );
@@ -517,6 +522,198 @@ function positionBaseGate() {
 
 
     baseGateElement.style.pointerEvents =
+        "none";
+
+}
+
+
+// ============================================================
+// CANCELLO A SENSO UNICO X18 Y9
+//
+// È sempre visualizzato come chiuso sul bordo inferiore della
+// casella X18 Y9.
+//
+// Da X18 Y10 verso X18 Y9 il passaggio è bloccato.
+// Da X18 Y9 verso X18 Y10 il passaggio resta consentito.
+// ============================================================
+
+function renderBaseOneWayGate() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
+
+    if (!baseOneWayGateElement) {
+
+        baseOneWayGateElement =
+            document.createElement(
+                "div"
+            );
+
+
+        baseOneWayGateElement.className =
+            "base-gate-token base-one-way-gate-token";
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+
+        image.src =
+            BASE_GATE_CLOSED_IMAGE;
+
+        image.alt =
+            "Cancello attraversabile solo dall'altro lato";
+
+        image.draggable =
+            false;
+
+        image.style.width =
+            "100%";
+
+        image.style.height =
+            "100%";
+
+        image.style.objectFit =
+            "contain";
+
+        image.style.display =
+            "block";
+
+
+        baseOneWayGateElement.appendChild(
+            image
+        );
+
+
+        map.appendChild(
+            baseOneWayGateElement
+        );
+
+    }
+
+
+    positionBaseOneWayGate();
+
+}
+
+
+// ============================================================
+// POSIZIONA CANCELLO A SENSO UNICO
+//
+// Sul bordo inferiore della casella X18 Y9.
+// ============================================================
+
+function positionBaseOneWayGate() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !map ||
+        !baseOneWayGateElement
+    ) {
+
+        return;
+
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+
+    const gateWidth =
+        cellWidth *
+        1.20;
+
+
+    const gateHeight =
+        cellHeight *
+        0.90;
+
+
+    const cellCenterX =
+        (
+            18 +
+            0.5
+        ) *
+        cellWidth;
+
+
+    const lowerEdgeY =
+        (
+            9 +
+            1
+        ) *
+        cellHeight;
+
+
+    baseOneWayGateElement.style.position =
+        "absolute";
+
+
+    baseOneWayGateElement.style.width =
+        `${gateWidth}px`;
+
+
+    baseOneWayGateElement.style.height =
+        `${gateHeight}px`;
+
+
+    baseOneWayGateElement.style.left =
+        `${
+            cellCenterX -
+            gateWidth / 2
+        }px`;
+
+
+    baseOneWayGateElement.style.top =
+        `${
+            lowerEdgeY -
+            gateHeight / 2
+        }px`;
+
+
+    baseOneWayGateElement.style.zIndex =
+        "18";
+
+
+    baseOneWayGateElement.style.pointerEvents =
         "none";
 
 }

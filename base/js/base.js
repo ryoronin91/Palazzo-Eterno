@@ -941,9 +941,7 @@ const BASE_BLOCKED_EDGES_BIDIRECTIONAL =
 
 
 const BASE_BLOCKED_EDGES_ONE_WAY =
-    new Set([
-        "18,10|18,9"
-    ]);
+    new Set();
 
 
 function isBasePassageBlocked(
@@ -1007,6 +1005,24 @@ function moveBasePlayer(dx, dy) {
         return false;
     }
 
+    // ========================================================
+    // CANCELLO A SENSO UNICO X18 Y10 -> X18 Y9
+    // ========================================================
+
+    if (
+        basePlayerX === 18 &&
+        basePlayerY === 10 &&
+        newX === 18 &&
+        newY === 9
+    ) {
+        setMessage(
+            "Questo cancello si può attraversare solo dall'altro lato"
+        );
+
+        return false;
+    }
+
+
     if (
         isBasePassageBlocked(
             basePlayerX,
@@ -1050,7 +1066,7 @@ function moveBasePlayer(dx, dy) {
         isBaseFilterBlocked()
     ) {
         setMessage(
-            "Il cancello è chiuso. Si aprirà quando non ci saranno nemici nelle vicinanze."
+            "Il cancello è chiuso. Si aprirà quando non ci saranno nemici nelle vicinanze"
         );
 
         return false;
