@@ -835,6 +835,13 @@ function moveBasePlayer(dx, dy) {
     updateBaseCoordinates();
     updateBaseCamera();
 
+    if (
+        typeof checkNearbyBaseCombatEvents ===
+        "function"
+    ) {
+        checkNearbyBaseCombatEvents();
+    }
+
     setMessage(
         `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
     );
