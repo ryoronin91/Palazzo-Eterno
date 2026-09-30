@@ -25,6 +25,31 @@ let currentUser = null;
 let character = null;
 let baseData = null;
 let baseWalkableCells = new Set();
+
+
+// ============================================================
+// DATABASE / REALTIME LIVELLO BASE
+// ============================================================
+
+let basePositionSaveTimer = null;
+let basePositionSaveRunning = false;
+let basePositionSavePending = false;
+
+let baseChannel = null;
+let baseRealtimeReady = false;
+
+const BASE_CHANNEL_NAME =
+    "palazzo-eterno-base";
+
+const BASE_CHAT_FLOOR_ID =
+    "base";
+
+const BASE_CHAT_HISTORY_LIMIT =
+    100;
+
+const renderedBaseChatMessageIds =
+    new Set();
+
 let equipmentBonuses = {
     attack_bonus: 0,
     defense_bonus: 0,
@@ -48,12 +73,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         updateCharacterPanel();
 
-        initializeBasePlayer();
+        // ----------------------------------------------------
+        // CADUTI DEL PALAZZO
+        // ----------------------------------------------------
+
+        await loadBaseLeaderboard();
+
+        // ----------------------------------------------------
+        // CHAT
+        // ----------------------------------------------------
+
+        setupBaseChat();
+        await loadBaseChatHistory();
+
+        // ----------------------------------------------------
+        // POSIZIONE PERSISTENTE
+        // ----------------------------------------------------
+
+        await initializeBasePlayer();
+
         setupBaseCamera();
         setupBaseMovement();
 
+        // ----------------------------------------------------
+        // PERSONAGGI ONLINE / REALTIME
+        // ----------------------------------------------------
+
+        await setupBaseRealtime();
+
         setMessage(
-            "Livello Base caricato. Prova a muovere il PG di qualche casella con WASD o le frecce."
+            "Livello Base caricato."
         );
     } catch (error) {
         console.error("Errore avvio Livello Base:", error);
@@ -384,7 +433,7 @@ let basePlayerToken = null;
 // CREA E POSIZIONA IL TOKEN
 // ============================================================
 
-function initializeBasePlayer() {
+async function initializeBasePlayer() {
     const map =
         document.getElementById("dungeon-map");
 
@@ -394,6 +443,87 @@ function initializeBasePlayer() {
     ) {
         return;
     }
+
+
+    // --------------------------------------------------------
+    // POSIZIONE SALVATA NEL DATABASE
+    // --------------------------------------------------------
+
+    const storedX =
+        Number(character.base_x);
+
+    const storedY =
+        Number(character.base_y);
+
+    const storedPositionValid =
+        Number.isInteger(storedX) &&
+        Number.isInteger(storedY) &&
+        storedX >= 0 &&
+        storedY >= 0 &&
+        storedX < BASE_MAP_COLUMNS &&
+        storedY < BASE_MAP_ROWS &&
+        isBaseCellWalkable(
+            storedX,
+            storedY
+        );
+
+
+    if (storedPositionValid) {
+
+        basePlayerX =
+            storedX;
+
+        basePlayerY =
+            storedY;
+
+    } else {
+
+        basePlayerX =
+            BASE_INITIAL_PLAYER_X;
+
+        basePlayerY =
+            BASE_INITIAL_PLAYER_Y;
+
+
+        character.base_x =
+            basePlayerX;
+
+        character.base_y =
+            basePlayerY;
+
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    base_x:
+                        basePlayerX,
+
+                    base_y:
+                        basePlayerY
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+    }
+
+
+    // --------------------------------------------------------
+    // TOKEN DEL PERSONAGGIO
+    // --------------------------------------------------------
 
     if (!basePlayerToken) {
         basePlayerToken =
@@ -428,6 +558,7 @@ function initializeBasePlayer() {
     positionBasePlayerToken();
     updateBaseCoordinates();
 }
+
 
 
 // ============================================================
@@ -945,6 +1076,9 @@ function moveBasePlayer(dx, dy) {
     updateBaseCoordinates();
     updateBaseCamera();
 
+    scheduleBasePositionSave();
+    updateBasePresence();
+
     if (
         typeof checkNearbyBaseCombatEvents ===
         "function"
@@ -957,6 +1091,153 @@ function moveBasePlayer(dx, dy) {
     );
 
     return true;
+}
+
+
+// ============================================================
+// SALVATAGGIO POSIZIONE BASE
+// ============================================================
+
+function scheduleBasePositionSave() {
+
+    basePositionSavePending =
+        true;
+
+
+    if (
+        basePositionSaveTimer
+    ) {
+
+        clearTimeout(
+            basePositionSaveTimer
+        );
+
+    }
+
+
+    basePositionSaveTimer =
+        setTimeout(
+            () => {
+
+                flushBasePositionSave();
+
+            },
+            120
+        );
+
+}
+
+
+// ============================================================
+// SALVA ULTIMA POSIZIONE NEL DATABASE
+// ============================================================
+
+async function flushBasePositionSave() {
+
+    if (
+        !character ||
+        basePlayerX === null ||
+        basePlayerY === null
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        basePositionSaveRunning
+    ) {
+
+        basePositionSavePending =
+            true;
+
+        return;
+
+    }
+
+
+    basePositionSaveRunning =
+        true;
+
+    basePositionSavePending =
+        false;
+
+
+    const saveX =
+        Number(basePlayerX);
+
+    const saveY =
+        Number(basePlayerY);
+
+
+    try {
+
+        const {
+            error
+        } =
+            await db
+                .from("characters")
+                .update({
+
+                    base_x:
+                        saveX,
+
+                    base_y:
+                        saveY
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character.base_x =
+            saveX;
+
+        character.base_y =
+            saveY;
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio posizione Base:",
+            error
+        );
+
+
+        setMessage(
+            "Movimento effettuato, ma la posizione non è stata salvata."
+        );
+
+
+    } finally {
+
+        basePositionSaveRunning =
+            false;
+
+
+        if (
+            basePositionSavePending ||
+            saveX !== basePlayerX ||
+            saveY !== basePlayerY
+        ) {
+
+            flushBasePositionSave();
+
+        }
+
+    }
+
 }
 
 
@@ -1119,3 +1400,1421 @@ function setupBaseVolumeControl() {
         }
     );
 }
+
+
+// ============================================================
+// CADUTI DEL PALAZZO
+// ============================================================
+
+async function loadBaseLeaderboard() {
+
+    const container =
+        document.getElementById(
+            "dungeon-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_dead_characters_leaderboard_with_badges",
+                {
+                    p_limit:
+                        20
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderBaseLeaderboard(
+            data || []
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento Caduti del Palazzo:",
+            error
+        );
+
+
+        container.innerHTML =
+            `
+                <div class="dungeon-leaderboard-empty">
+                    Classifica non disponibile.
+                </div>
+            `;
+
+    }
+
+}
+
+
+function renderBaseLeaderboard(
+    rows
+) {
+
+    const container =
+        document.getElementById(
+            "dungeon-leaderboard-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(rows) ||
+        rows.length === 0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-leaderboard-empty">
+                    Nessun caduto registrato.
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        rows
+            .map(
+                row => {
+
+                    const position =
+                        Number(
+                            row.posizione
+                        ) || 0;
+
+
+                    const score =
+                        Number(
+                            row.score
+                        ) || 0;
+
+
+                    const name =
+                        escapeBaseHtml(
+                            row.character_name ||
+                            "Avventuriero"
+                        );
+
+
+                    const badges =
+                        Array.isArray(
+                            row.boss_badges
+                        )
+                            ? row.boss_badges
+                            : [];
+
+
+                    const badgesHtml =
+                        badges
+                            .map(
+                                badge => {
+
+                                    const badgeName =
+                                        escapeBaseHtml(
+                                            badge?.badge_name ||
+                                            badge?.display_name ||
+                                            "Boss sconfitto"
+                                        );
+
+
+                                    let iconPath =
+                                        String(
+                                            badge?.icon_path ||
+                                            ""
+                                        );
+
+
+                                    // Le icone salvate come "immagini/..."
+                                    // sono relative alla root del gioco.
+                                    // Base si trova una cartella più in basso.
+                                    if (
+                                        iconPath.startsWith(
+                                            "immagini/"
+                                        )
+                                    ) {
+
+                                        iconPath =
+                                            "../" +
+                                            iconPath;
+
+                                    }
+
+
+                                    iconPath =
+                                        escapeBaseHtml(
+                                            iconPath
+                                        );
+
+
+                                    const floorNumber =
+                                        Number(
+                                            badge?.floor_number
+                                        ) || 0;
+
+
+                                    const title =
+                                        floorNumber > 0
+                                            ? `${badgeName} · Piano ${floorNumber}`
+                                            : badgeName;
+
+
+                                    if (!iconPath) {
+
+                                        return `
+                                            <span
+                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
+                                                title="${title}"
+                                            >
+                                                🛡
+                                            </span>
+                                        `;
+
+                                    }
+
+
+                                    return `
+                                        <span
+                                            class="dungeon-leaderboard-badge-wrap"
+                                            title="${title}"
+                                        >
+                                            <img
+                                                class="dungeon-leaderboard-badge"
+                                                src="${iconPath}"
+                                                alt="${badgeName}"
+                                                loading="lazy"
+                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                                            >
+                                            <span
+                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
+                                                style="display:none"
+                                                aria-hidden="true"
+                                            >
+                                                🛡
+                                            </span>
+                                        </span>
+                                    `;
+
+                                }
+                            )
+                            .join("");
+
+
+                    return `
+                        <div class="dungeon-leaderboard-row">
+
+                            <div class="dungeon-leaderboard-position">
+                                #${position}
+                            </div>
+
+                            <div class="dungeon-leaderboard-identity">
+
+                                <div
+                                    class="dungeon-leaderboard-name"
+                                    title="${name}"
+                                >
+                                    ${name}
+                                </div>
+
+                                ${
+                                    badgesHtml
+                                        ? `
+                                            <div class="dungeon-leaderboard-badges">
+                                                ${badgesHtml}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+
+                            </div>
+
+                            <div class="dungeon-leaderboard-score">
+                                ${score}
+                            </div>
+
+                        </div>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+// ============================================================
+// REALTIME / PERSONAGGI ONLINE
+// ============================================================
+
+async function setupBaseRealtime() {
+
+    if (
+        !character ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    baseChannel =
+        db.channel(
+            BASE_CHANNEL_NAME,
+            {
+                config: {
+                    presence: {
+                        key:
+                            character.id
+                    }
+                }
+            }
+        );
+
+
+    baseChannel.on(
+        "presence",
+        {
+            event:
+                "sync"
+        },
+        () => {
+
+            renderBaseOnlinePlayers();
+
+        }
+    );
+
+
+    baseChannel.on(
+        "broadcast",
+        {
+            event:
+                "base-chat"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            addBaseChatMessage(
+                data
+            );
+
+        }
+    );
+
+
+    await new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            baseChannel.subscribe(
+                async status => {
+
+                    console.log(
+                        "Realtime Base:",
+                        status
+                    );
+
+
+                    if (
+                        status ===
+                        "SUBSCRIBED"
+                    ) {
+
+                        baseRealtimeReady =
+                            true;
+
+
+                        try {
+
+                            await baseChannel.track(
+                                getMyBasePresenceData()
+                            );
+
+
+                            renderBaseOnlinePlayers();
+
+                            resolve();
+
+
+                        } catch (error) {
+
+                            reject(
+                                error
+                            );
+
+                        }
+
+                    }
+
+
+                    if (
+                        status ===
+                        "CHANNEL_ERROR"
+                    ) {
+
+                        reject(
+                            new Error(
+                                "Errore nel canale realtime del Livello Base."
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+function getMyBasePresenceData() {
+
+    return {
+
+        character_id:
+            character.id,
+
+        user_id:
+            currentUser.id,
+
+        name:
+            character.nome ||
+            "Avventuriero",
+
+        token:
+            character.token ||
+            "token_1.png",
+
+        x:
+            Number(basePlayerX),
+
+        y:
+            Number(basePlayerY),
+
+        current_hp:
+            character.current_hp,
+
+        active_combat_id:
+            character.active_combat_id ||
+            null,
+
+        in_combat:
+            !!character.active_combat_id,
+
+        location:
+            "base",
+
+        online_at:
+            new Date()
+                .toISOString()
+
+    };
+
+}
+
+
+async function updateBasePresence() {
+
+    if (
+        !baseChannel ||
+        !baseRealtimeReady ||
+        !character
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await baseChannel.track(
+            getMyBasePresenceData()
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento Presence Base:",
+            error
+        );
+
+    }
+
+}
+
+
+function renderBaseOnlinePlayers() {
+
+    const container =
+        document.getElementById(
+            "dungeon-online-list"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    if (
+        !baseChannel ||
+        !character
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Connessione...
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    const state =
+        baseChannel.presenceState();
+
+
+    const playersById =
+        new Map();
+
+
+    Object.values(
+        state
+    ).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    if (
+                        !presence ||
+                        !presence.character_id
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const previous =
+                        playersById.get(
+                            presence.character_id
+                        );
+
+
+                    if (
+                        !previous ||
+                        String(
+                            presence.online_at ||
+                            ""
+                        ) >=
+                        String(
+                            previous.online_at ||
+                            ""
+                        )
+                    ) {
+
+                        playersById.set(
+                            presence.character_id,
+                            presence
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    if (
+        character.id &&
+        !playersById.has(
+            character.id
+        )
+    ) {
+
+        playersById.set(
+            character.id,
+            getMyBasePresenceData()
+        );
+
+    }
+
+
+    const players =
+        Array.from(
+            playersById.values()
+        )
+            .sort(
+                (
+                    a,
+                    b
+                ) => {
+
+                    const aIsMe =
+                        a.character_id ===
+                        character.id;
+
+                    const bIsMe =
+                        b.character_id ===
+                        character.id;
+
+
+                    if (
+                        aIsMe !==
+                        bIsMe
+                    ) {
+
+                        return aIsMe
+                            ? -1
+                            : 1;
+
+                    }
+
+
+                    return String(
+                        a.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            b.name ||
+                            ""
+                        ),
+                        "it"
+                    );
+
+                }
+            );
+
+
+    if (
+        players.length ===
+        0
+    ) {
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Nessun personaggio online.
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    container.replaceChildren();
+
+
+    players.forEach(
+        player => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "dungeon-online-row";
+
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+
+            image.className =
+                "dungeon-online-token";
+
+
+            image.src =
+                "../immagini/token/" +
+                (
+                    player.token ||
+                    "token_1.png"
+                );
+
+
+            image.alt =
+                player.name ||
+                "Personaggio";
+
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+
+            info.className =
+                "dungeon-online-info";
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "dungeon-online-name";
+
+
+            const isMe =
+                player.character_id ===
+                character.id;
+
+
+            name.textContent =
+                `${
+                    player.name ||
+                    "Avventuriero"
+                }${
+                    isMe
+                        ? " (tu)"
+                        : ""
+                }`;
+
+
+            const status =
+                document.createElement(
+                    "div"
+                );
+
+
+            status.className =
+                "dungeon-online-status";
+
+
+            status.textContent =
+                "Nel Livello Base";
+
+
+            const dot =
+                document.createElement(
+                    "span"
+                );
+
+
+            dot.className =
+                "dungeon-online-dot";
+
+
+            info.append(
+                name,
+                status
+            );
+
+
+            row.append(
+                image,
+                info,
+                dot
+            );
+
+
+            container.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// CHAT LIVELLO BASE
+// ============================================================
+
+function setupBaseChat() {
+
+    const input =
+        document.getElementById(
+            "floor-chat-input"
+        );
+
+
+    const button =
+        document.getElementById(
+            "floor-chat-send"
+        );
+
+
+    if (
+        !input ||
+        !button
+    ) {
+
+        return;
+
+    }
+
+
+    // base.html nasceva con la chat disabilitata.
+    // La abilitiamo ora che è collegata al database.
+    input.disabled =
+        false;
+
+    button.disabled =
+        false;
+
+    input.placeholder =
+        "Scrivi...";
+
+
+    button.addEventListener(
+        "click",
+        async () => {
+
+            await sendBaseChatMessage(
+                input
+            );
+
+        }
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        async event => {
+
+            if (
+                event.key !==
+                "Enter" ||
+                event.shiftKey
+            ) {
+
+                return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            await sendBaseChatMessage(
+                input
+            );
+
+        }
+    );
+
+}
+
+
+async function loadBaseChatHistory() {
+
+    const container =
+        document.getElementById(
+            "floor-chat-messages"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .select(`
+                    id,
+                    character_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .eq(
+                    "floor_id",
+                    BASE_CHAT_FLOOR_ID
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                )
+                .limit(
+                    BASE_CHAT_HISTORY_LIMIT
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderedBaseChatMessageIds.clear();
+
+
+        container.innerHTML =
+            "";
+
+
+        const rows =
+            Array.isArray(data)
+                ? [...data]
+                : [];
+
+
+        if (
+            rows.length ===
+            0
+        ) {
+
+            container.innerHTML =
+                `
+                    <div class="chat-placeholder">
+                        Nessun messaggio ancora.
+                    </div>
+                `;
+
+            return;
+
+        }
+
+
+        rows.forEach(
+            row => {
+
+                addBaseChatMessage(
+                    {
+
+                        id:
+                            row.id,
+
+                        character_id:
+                            row.character_id,
+
+                        name:
+                            row.sender_name,
+
+                        text:
+                            row.message_text,
+
+                        timestamp:
+                            row.created_at
+
+                    },
+                    true
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore caricamento storico chat Base:",
+            error
+        );
+
+    }
+
+}
+
+
+async function sendBaseChatMessage(
+    input
+) {
+
+    if (
+        !input ||
+        !character ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    const messageText =
+        input.value.trim();
+
+
+    if (!messageText) {
+
+        return;
+
+    }
+
+
+    const originalValue =
+        input.value;
+
+
+    input.value =
+        "";
+
+
+    try {
+
+        const {
+            data: savedMessage,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .insert({
+
+                    floor_id:
+                        BASE_CHAT_FLOOR_ID,
+
+                    character_id:
+                        character.id,
+
+                    user_id:
+                        currentUser.id,
+
+                    sender_name:
+                        character.nome ||
+                        "Avventuriero",
+
+                    message_text:
+                        messageText
+
+                })
+                .select(`
+                    id,
+                    character_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const message = {
+
+            id:
+                savedMessage.id,
+
+            character_id:
+                savedMessage.character_id,
+
+            name:
+                savedMessage.sender_name ||
+                character.nome ||
+                "Avventuriero",
+
+            text:
+                savedMessage.message_text ||
+                messageText,
+
+            timestamp:
+                savedMessage.created_at ||
+                new Date()
+                    .toISOString()
+
+        };
+
+
+        addBaseChatMessage(
+            message
+        );
+
+
+        if (
+            baseChannel &&
+            baseRealtimeReady
+        ) {
+
+            try {
+
+                await baseChannel.send({
+
+                    type:
+                        "broadcast",
+
+                    event:
+                        "base-chat",
+
+                    payload:
+                        message
+
+                });
+
+
+            } catch (broadcastError) {
+
+                console.error(
+                    "Errore broadcast chat Base:",
+                    broadcastError
+                );
+
+            }
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore salvataggio chat Base:",
+            error
+        );
+
+
+        input.value =
+            originalValue;
+
+
+        setMessage(
+            "Non è stato possibile inviare il messaggio."
+        );
+
+    }
+
+}
+
+
+function addBaseChatMessage(
+    message,
+    fromHistory = false
+) {
+
+    if (!message) {
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "floor-chat-messages"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    const messageId =
+        message.id
+            ? String(
+                message.id
+            )
+            : null;
+
+
+    if (
+        messageId &&
+        renderedBaseChatMessageIds.has(
+            messageId
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (messageId) {
+
+        renderedBaseChatMessageIds.add(
+            messageId
+        );
+
+    }
+
+
+    const placeholder =
+        container.querySelector(
+            ".chat-placeholder"
+        );
+
+
+    if (placeholder) {
+
+        placeholder.remove();
+
+    }
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "floor-chat-message";
+
+
+    if (messageId) {
+
+        row.dataset.messageId =
+            messageId;
+
+    }
+
+
+    if (
+        character &&
+        message.character_id ===
+        character.id
+    ) {
+
+        row.classList.add(
+            "mine"
+        );
+
+    }
+
+
+    const name =
+        document.createElement(
+            "strong"
+        );
+
+
+    name.className =
+        "floor-chat-name";
+
+
+    name.textContent =
+        message.name ||
+        "Avventuriero";
+
+
+    const textElement =
+        document.createElement(
+            "span"
+        );
+
+
+    textElement.className =
+        "floor-chat-text";
+
+
+    textElement.textContent =
+        message.text ||
+        "";
+
+
+    row.append(
+        name,
+        document.createTextNode(
+            ": "
+        ),
+        textElement
+    );
+
+
+    if (fromHistory) {
+
+        container.appendChild(
+            row
+        );
+
+    } else {
+
+        container.prepend(
+            row
+        );
+
+    }
+
+
+    container.scrollTop =
+        0;
+
+}
+
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeBaseHtml(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+// ============================================================
+// USCITA PAGINA BASE
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (
+            basePositionSaveTimer
+        ) {
+
+            clearTimeout(
+                basePositionSaveTimer
+            );
+
+            basePositionSaveTimer =
+                null;
+
+        }
+
+
+        // Tenta l'ultimo salvataggio prima di uscire.
+        if (
+            character &&
+            basePlayerX !== null &&
+            basePlayerY !== null
+        ) {
+
+            db
+                .from("characters")
+                .update({
+
+                    base_x:
+                        Number(basePlayerX),
+
+                    base_y:
+                        Number(basePlayerY)
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                )
+                .then(
+                    () => {}
+                )
+                .catch(
+                    () => {}
+                );
+
+        }
+
+
+        if (
+            baseChannel
+        ) {
+
+            try {
+
+                baseChannel.untrack();
+
+            } catch (error) {
+
+                console.warn(
+                    "Errore chiusura Presence Base:",
+                    error
+                );
+
+            }
+
+        }
+
+    }
+);
