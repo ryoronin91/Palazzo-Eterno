@@ -54,19 +54,13 @@ const BASE_COMBAT_EVENTS = [
 
 
 // ============================================================
-// COOLDOWN
-// ============================================================
-
-const BASE_COMBAT_COOLDOWN_MS =
-    15 * 60 * 1000;
-
-
-// ============================================================
-// STATO LOCALE FRONTEND
+// STATO GLOBALE COMBAT BASE
 //
-// Per ora entrambi risultano disponibili.
-// Nel passaggio successivo collegheremo questo stato a Supabase,
-// così il cooldown sarà globale e condiviso tra tutti i PG.
+// Lo stato reale viene letto da Supabase tramite
+// get_base_combat_states().
+//
+// I due encounter hanno cooldown indipendenti e condivisi
+// tra tutti i giocatori.
 // ============================================================
 
 const baseCombatAvailability =
@@ -76,11 +70,15 @@ const baseCombatAvailability =
                 combatEvent.id,
                 {
                     available: true,
-                    cooldownUntil: null
+                    cooldownUntil: null,
+                    remainingSeconds: 0
                 }
             ]
         )
     );
+
+let baseCombatStateRefreshInterval =
+    null;
 
 
 // ============================================================
@@ -111,7 +109,9 @@ let nearbyBaseCombatKey =
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    async () => {
+
+        await refreshBaseCombatStates();
 
         renderBaseCombatEvents();
 
@@ -120,8 +120,124 @@ document.addEventListener(
             repositionBaseCombatEvents
         );
 
+        baseCombatStateRefreshInterval =
+            setInterval(
+                async () => {
+
+                    await refreshBaseCombatStates();
+
+                },
+                15000
+            );
+
     }
 );
+
+
+// ============================================================
+// AGGIORNA STATO DEI DUE COMBAT DAL SERVER
+// ============================================================
+
+async function refreshBaseCombatStates() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "get_base_combat_states"
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const leftState =
+            data?.left ||
+            {};
+
+        const rightState =
+            data?.right ||
+            {};
+
+
+        baseCombatAvailability.set(
+            "BASE_C1_LEFT",
+            {
+                available:
+                    leftState.available !==
+                    false,
+
+                cooldownUntil:
+                    leftState.cooldown_until ||
+                    null,
+
+                remainingSeconds:
+                    Number(
+                        leftState.remaining_seconds
+                    ) || 0
+            }
+        );
+
+
+        baseCombatAvailability.set(
+            "BASE_C1_RIGHT",
+            {
+                available:
+                    rightState.available !==
+                    false,
+
+                cooldownUntil:
+                    rightState.cooldown_until ||
+                    null,
+
+                remainingSeconds:
+                    Number(
+                        rightState.remaining_seconds
+                    ) || 0
+            }
+        );
+
+
+        renderBaseCombatEvents();
+
+
+        if (
+            baseCombatPromptOpen
+        ) {
+
+            const availableNearby =
+                getNearbyBaseCombatEvents();
+
+
+            if (
+                availableNearby.length ===
+                0
+            ) {
+
+                closeBaseCombatPrompt();
+
+            }
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore aggiornamento stato combat Base:",
+            error
+        );
+
+    }
+
+}
 
 
 // ============================================================
@@ -950,7 +1066,7 @@ async function enterBaseCombat(
             error
         } =
             await db.rpc(
-                "enter_dungeon_combat",
+                "enter_base_combat_checked",
                 {
                     p_encounter_id:
                         combatEvent.encounter_id,
@@ -1005,6 +1121,9 @@ async function enterBaseCombat(
         );
 
 
+        await refreshBaseCombatStates();
+
+
         if (button) {
 
             button.disabled =
@@ -1047,3 +1166,28 @@ function closeBaseCombatPrompt() {
         null;
 
 }
+
+
+// ============================================================
+// PULIZIA TIMER STATO BASE
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (
+            baseCombatStateRefreshInterval
+        ) {
+
+            clearInterval(
+                baseCombatStateRefreshInterval
+            );
+
+            baseCombatStateRefreshInterval =
+                null;
+
+        }
+
+    }
+);
