@@ -494,13 +494,43 @@ let basePlayerToken = null;
 
 const BASE_STATIC_DECORATIONS = [
     {
-        id: "tappeto_locanda",
-        imageSrc: "immagini/tappetoX.png?v=9",
-        alt: "Tappeto della locanda",
+        id: "tappeto_quest",
+        imageSrc: "immagini/tappetoX.png",
+        alt: "Tappeto quest",
         x: 12,
         y: 20,
         width: 3,
         height: 2,
+        zIndex: 6
+    },
+    {
+        id: "tappeto_runografo",
+        imageSrc: "immagini/tappetoX.png",
+        alt: "Tappeto runografo",
+        x: 17,
+        y: 20,
+        width: 3,
+        height: 2,
+        zIndex: 6
+    },
+    {
+        id: "tappeto_addestratore",
+        imageSrc: "immagini/tappetoY.png",
+        alt: "Tappeto addestratore",
+        x: 21,
+        y: 17,
+        width: 2,
+        height: 3,
+        zIndex: 6
+    },
+    {
+        id: "tappeto_vendor",
+        imageSrc: "immagini/tappeto_giallo.png",
+        alt: "Tappeto vendor",
+        x: 21,
+        y: 12,
+        width: 2,
+        height: 3,
         zIndex: 6
     }
 ];
