@@ -556,6 +556,16 @@ const BASE_STATIC_DECORATIONS = [
         width: 1,
         height: 1,
         zIndex: 12
+    },
+    {
+        id: "locanda",
+        imageSrc: "immagini/locandaX.png",
+        alt: "Locanda",
+        x: 3,
+        y: 14,
+        width: 4,
+        height: 6,
+        zIndex: 7
     }
 ];
 
