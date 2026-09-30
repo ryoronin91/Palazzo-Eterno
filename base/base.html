@@ -1,2854 +1,979 @@
-// ============================================================
-// PALAZZO ETERNO
-// BASE.JS
-//
-// Prima versione del "Livello Base".
-// Mantiene lo stile e i dati del personaggio del dungeon,
-// ma NON modifica dungeon_x / dungeon_y e non introduce ancora
-// logiche di movimento, eventi o combattimento.
-// ============================================================
+<!DOCTYPE html>
+<html lang="it">
 
-console.log("BASE.JS CARICATO");
+<head>
 
-const db = supabaseClient;
+    <meta charset="UTF-8">
 
-const BASE_MAP_COLUMNS = 27;
-const BASE_MAP_ROWS = 36;
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-const BASE_CAMERA_RADIUS = 6;
-const BASE_CAMERA_VISIBLE_CELLS =
-    BASE_CAMERA_RADIUS * 2 + 1;
-
-const BASE_CAMERA_TRANSITION_MS = 170;
-
-let currentUser = null;
-let character = null;
-let baseData = null;
-let baseWalkableCells = new Set();
+    <title>
+        Palazzo Eterno - Livello Base
+    </title>
 
 
-// ============================================================
-// DATABASE / REALTIME LIVELLO BASE
-// ============================================================
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
 
-let basePositionSaveTimer = null;
-let basePositionSaveRunning = false;
-let basePositionSavePending = false;
+    <link
+        rel="stylesheet"
+        href="../css/style.css"
+    >
 
-let baseChannel = null;
-let baseRealtimeReady = false;
+    <link
+        rel="stylesheet"
+        href="css/base.css?v=3"
+    >
 
-const BASE_CHANNEL_NAME =
-    "palazzo-eterno-base";
-
-const BASE_CHAT_FLOOR_ID =
-    "base";
-
-const BASE_CHAT_HISTORY_LIMIT =
-    100;
-
-const renderedBaseChatMessageIds =
-    new Set();
-
-let equipmentBonuses = {
-    attack_bonus: 0,
-    defense_bonus: 0,
-    forza_bonus: 0,
-    resistenza_bonus: 0,
-    costituzione_bonus: 0,
-    intelligenza_bonus: 0,
-    destrezza_bonus: 0,
-    fortuna_bonus: 0
-};
-
-document.addEventListener("DOMContentLoaded", async () => {
-    try {
-        setMessage("Caricamento del Livello Base...");
-
-        setupBaseVolumeControl();
-
-        await loadBaseMapDefinition();
-        await loadCharacter();
-        await loadCharacterEquipment();
-
-        updateCharacterPanel();
-
-        // ----------------------------------------------------
-        // CADUTI DEL PALAZZO
-        // ----------------------------------------------------
-
-        await loadBaseLeaderboard();
-
-        // ----------------------------------------------------
-        // CHAT
-        // ----------------------------------------------------
-
-        setupBaseChat();
-        await loadBaseChatHistory();
-
-        // ----------------------------------------------------
-        // POSIZIONE PERSISTENTE
-        // ----------------------------------------------------
-
-        await initializeBasePlayer();
-
-        setupBaseCamera();
-        setupBaseMovement();
-
-        // ----------------------------------------------------
-        // EVENTI SULLA CASELLA DI ARRIVO
-        // ----------------------------------------------------
-
-        if (
-            typeof checkBaseTeleportEvent ===
-            "function"
-        ) {
-            checkBaseTeleportEvent();
+    <style>
+        .dungeon-player-coordinates {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            letter-spacing: 0.04em;
+            opacity: 0.8;
         }
 
-        // ----------------------------------------------------
-        // PERSONAGGI ONLINE / REALTIME
-        // ----------------------------------------------------
-
-        await setupBaseRealtime();
-
-        setMessage(
-            "Livello Base caricato."
-        );
-    } catch (error) {
-        console.error("Errore avvio Livello Base:", error);
-        setMessage(
-            error?.message ||
-            "Errore durante il caricamento del Livello Base.",
-            true
-        );
-    }
-});
-
-async function loadBaseMapDefinition() {
-    const response = await fetch("base.json", {
-        cache: "no-store"
-    });
-
-    if (!response.ok) {
-        throw new Error("Impossibile caricare base.json.");
-    }
-
-    const data = await response.json();
-
-    baseData = data;
-
-    baseWalkableCells =
-        new Set(
-            (
-                Array.isArray(data?.walkable_cells)
-                    ? data.walkable_cells
-                    : []
-            )
-                .map(
-                    cell =>
-                        `${Number(cell.x)},${Number(cell.y)}`
-                )
-        );
-
-    const columns =
-        Number(data?.grid?.columns) ||
-        BASE_MAP_COLUMNS;
-
-    const rows =
-        Number(data?.grid?.rows) ||
-        BASE_MAP_ROWS;
-
-    if (
-        columns !== BASE_MAP_COLUMNS ||
-        rows !== BASE_MAP_ROWS
-    ) {
-        console.warn(
-            `La mappa Base dichiara ${columns}x${rows}; ` +
-            `la pagina è configurata per ${BASE_MAP_COLUMNS}x${BASE_MAP_ROWS}.`
-        );
-    }
-
-    console.log("Definizione Livello Base caricata:", data);
-}
-
-async function loadCharacter() {
-    const {
-        data: { user },
-        error: authError
-    } = await db.auth.getUser();
-
-    if (authError) {
-        throw authError;
-    }
-
-    if (!user) {
-        window.location.href = "../login.html";
-        return;
-    }
-
-    currentUser = user;
-
-    const { data, error } = await db
-        .from("characters")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    if (!data) {
-        window.location.href = "../personaggio.html";
-        return;
-    }
-
-    character = data;
-}
-
-async function loadCharacterEquipment() {
-    if (!character) {
-        return;
-    }
-
-    const { data, error } = await db
-        .from("character_inventory")
-        .select(`
-            equipped_slot,
-            item:items (
-                attack_bonus,
-                defense_bonus,
-                forza_bonus,
-                resistenza_bonus,
-                costituzione_bonus,
-                intelligenza_bonus,
-                destrezza_bonus,
-                fortuna_bonus
-            )
-        `)
-        .eq("character_id", character.id);
-
-    if (error) {
-        console.warn(
-            "Equipaggiamento non disponibile nel Livello Base:",
-            error
-        );
-        return;
-    }
-
-    equipmentBonuses = {
-        attack_bonus: 0,
-        defense_bonus: 0,
-        forza_bonus: 0,
-        resistenza_bonus: 0,
-        costituzione_bonus: 0,
-        intelligenza_bonus: 0,
-        destrezza_bonus: 0,
-        fortuna_bonus: 0
-    };
-
-    (data || [])
-        .filter(entry => entry.equipped_slot && entry.item)
-        .forEach(entry => {
-            const item = entry.item;
-
-            Object.keys(equipmentBonuses).forEach(key => {
-                equipmentBonuses[key] +=
-                    Number(item?.[key]) || 0;
-            });
-        });
-}
-
-function getEffectiveAttribute(attribute) {
-    const base = Number(character?.[attribute]) || 1;
-    const bonus =
-        Number(
-            equipmentBonuses[
-                `${attribute}_bonus`
-            ]
-        ) || 0;
-
-    return Math.max(
-        1,
-        Math.min(30, base + bonus)
-    );
-}
-
-function getCalculatedStats() {
-    const forza = getEffectiveAttribute("forza");
-    const resistenza = getEffectiveAttribute("resistenza");
-    const costituzione = getEffectiveAttribute("costituzione");
-    const intelligenza = getEffectiveAttribute("intelligenza");
-    const destrezza = getEffectiveAttribute("destrezza");
-    const fortuna = getEffectiveAttribute("fortuna");
-
-    return {
-        forza,
-        resistenza,
-        costituzione,
-        intelligenza,
-        destrezza,
-        fortuna,
-
-        attack:
-            Math.ceil(forza / 2) +
-            (Number(equipmentBonuses.attack_bonus) || 0),
-
-        defense:
-            Math.ceil(7 + resistenza / 2) +
-            (Number(equipmentBonuses.defense_bonus) || 0),
-
-        maxHealth:
-            Math.ceil(5 * costituzione / 2),
-
-        maxMana:
-            Math.ceil(5 * intelligenza / 2),
-
-        movement:
-            Math.ceil(4 + destrezza / 2),
-
-        critical:
-            Math.round(
-                fortuna * (50 / 30) * 100
-            ) / 100
-    };
-}
-
-function updateCharacterPanel() {
-    if (!character) {
-        return;
-    }
-
-    const stats = getCalculatedStats();
-    const name =
-        character.nome ||
-        "Avventuriero";
-
-    setText("character-name", name);
-    setText("character-name-panel", name);
-    setText(
-        "character-level",
-        Number(character.livello) || 1
-    );
-
-    const portrait =
-        document.getElementById("character-token");
-
-    if (portrait) {
-        portrait.src =
-            "../immagini/token/" +
-            (
-                character.token ||
-                "token_1.png"
-            );
-
-        portrait.alt =
-            `Token di ${name}`;
-    }
-
-    setText("forza-display", stats.forza);
-    setText("resistenza-display", stats.resistenza);
-    setText("costituzione-display", stats.costituzione);
-    setText("intelligenza-display", stats.intelligenza);
-    setText("destrezza-display", stats.destrezza);
-    setText("fortuna-display", stats.fortuna);
-
-    const currentPF =
-        character.current_hp === null ||
-        character.current_hp === undefined
-            ? stats.maxHealth
-            : Math.max(
-                0,
-                Math.min(
-                    Number(character.current_hp),
-                    stats.maxHealth
-                )
-            );
-
-    const currentPM =
-        character.current_pm === null ||
-        character.current_pm === undefined
-            ? stats.maxMana
-            : Math.max(
-                0,
-                Math.min(
-                    Number(character.current_pm),
-                    stats.maxMana
-                )
-            );
-
-    setText("attack-display", stats.attack);
-    setText("defense-display", stats.defense);
-    setText(
-        "health-display",
-        `${currentPF}/${stats.maxHealth}`
-    );
-    setText(
-        "mana-display",
-        `${currentPM}/${stats.maxMana}`
-    );
-    setText("movement-display", stats.movement);
-    setText(
-        "critical-display",
-        `${stats.critical.toFixed(2)}%`
-    );
-}
-
-function setText(id, value) {
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-        element.textContent = value;
-    }
-}
-
-function setMessage(text, error = false) {
-    const element =
-        document.getElementById(
-            "dungeon-message"
-        );
-
-    if (!element) {
-        return;
-    }
-
-    element.textContent = text;
-    element.classList.toggle(
-        "error",
-        !!error
-    );
-}
-
-
-// ============================================================
-// POSIZIONE PG - TEST LIVELLO BASE
-// ============================================================
-//
-// Per questa prima prova NON salviamo nulla in Supabase.
-// La posizione del dungeon principale resta quindi intatta.
-//
-// La mappa Base usa una griglia 27 x 36.
-// ============================================================
-
-const BASE_INITIAL_PLAYER_X = 12;
-const BASE_INITIAL_PLAYER_Y = 19;
-
-let basePlayerX = BASE_INITIAL_PLAYER_X;
-let basePlayerY = BASE_INITIAL_PLAYER_Y;
-let basePlayerToken = null;
-
-
-// ============================================================
-// CREA E POSIZIONA IL TOKEN
-// ============================================================
-
-async function initializeBasePlayer() {
-    const map =
-        document.getElementById("dungeon-map");
-
-    if (
-        !map ||
-        !character
-    ) {
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // POSIZIONE SALVATA NEL DATABASE
-    // --------------------------------------------------------
-
-    const storedX =
-        Number(character.base_x);
-
-    const storedY =
-        Number(character.base_y);
-
-    const storedPositionValid =
-        Number.isInteger(storedX) &&
-        Number.isInteger(storedY) &&
-        storedX >= 0 &&
-        storedY >= 0 &&
-        storedX < BASE_MAP_COLUMNS &&
-        storedY < BASE_MAP_ROWS &&
-        isBaseCellWalkable(
-            storedX,
-            storedY
-        );
-
-
-    if (storedPositionValid) {
-
-        basePlayerX =
-            storedX;
-
-        basePlayerY =
-            storedY;
-
-    } else {
-
-        basePlayerX =
-            BASE_INITIAL_PLAYER_X;
-
-        basePlayerY =
-            BASE_INITIAL_PLAYER_Y;
-
-
-        character.base_x =
-            basePlayerX;
-
-        character.base_y =
-            basePlayerY;
-
-
-        const {
-            error
-        } =
-            await db
-                .from("characters")
-                .update({
-
-                    base_x:
-                        basePlayerX,
-
-                    base_y:
-                        basePlayerY
-
-                })
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (error) {
-
-            throw error;
-
+        /* =====================================================
+           CAMERA LIVELLO BASE
+           Visuale: 13x13 celle = PG + raggio 6
+           Mappa completa: 27 colonne x 36 righe
+        ====================================================== */
+
+        .dungeon-map-frame {
+            position: relative !important;
+            overflow: hidden !important;
+            aspect-ratio: 1 / 1;
         }
 
-    }
-
-
-    // --------------------------------------------------------
-    // TOKEN DEL PERSONAGGIO
-    // --------------------------------------------------------
-
-    if (!basePlayerToken) {
-        basePlayerToken =
-            document.createElement("div");
-
-        basePlayerToken.className =
-            "dungeon-player-token base-player-token";
-
-        basePlayerToken.dataset.characterId =
-            character.id;
-
-        const image =
-            document.createElement("img");
-
-        image.src =
-            "../immagini/token/" +
-            (
-                character.token ||
-                "token_1.png"
-            );
-
-        image.alt =
-            character.nome ||
-            "Personaggio";
-
-        image.draggable = false;
-
-        basePlayerToken.appendChild(image);
-        map.appendChild(basePlayerToken);
-    }
-
-    positionBasePlayerToken();
-    updateBaseCoordinates();
-}
-
-
-
-// ============================================================
-// POSIZIONA TOKEN SULLA GRIGLIA 27 x 36
-// ============================================================
-
-function positionBasePlayerToken() {
-    const map =
-        document.getElementById("dungeon-map");
-
-    if (
-        !map ||
-        !basePlayerToken
-    ) {
-        return;
-    }
-
-    const rect =
-        map.getBoundingClientRect();
-
-    if (
-        rect.width <= 0 ||
-        rect.height <= 0
-    ) {
-        return;
-    }
-
-    const cellWidth =
-        rect.width /
-        BASE_MAP_COLUMNS;
-
-    const cellHeight =
-        rect.height /
-        BASE_MAP_ROWS;
-
-    const tokenSize =
-        Math.min(
-            cellWidth,
-            cellHeight
-        ) * 0.88;
-
-    basePlayerToken.style.width =
-        `${tokenSize}px`;
-
-    basePlayerToken.style.height =
-        `${tokenSize}px`;
-
-    basePlayerToken.style.left =
-        `${
-            (
-                basePlayerX +
-                0.5
-            ) *
-            cellWidth -
-            tokenSize / 2
-        }px`;
-
-    basePlayerToken.style.top =
-        `${
-            (
-                basePlayerY +
-                0.5
-            ) *
-            cellHeight -
-            tokenSize / 2
-        }px`;
-}
-
-
-// ============================================================
-// COORDINATE A SCHERMO
-// ============================================================
-
-function updateBaseCoordinates() {
-    const element =
-        document.getElementById(
-            "dungeon-player-coordinates"
-        );
-
-    if (!element) {
-        return;
-    }
-
-    element.textContent =
-        `Coordinate PG: X ${basePlayerX} · Y ${basePlayerY}`;
-}
-
-
-// ============================================================
-// MOVIMENTO TEST
-// ============================================================
-
-function setupBaseMovement() {
-    document.addEventListener(
-        "keydown",
-        event => {
-            const target =
-                event.target;
-
-            if (
-                target instanceof HTMLInputElement ||
-                target instanceof HTMLTextAreaElement ||
-                target instanceof HTMLSelectElement ||
-                target?.isContentEditable
-            ) {
-                return;
-            }
-
-            let dx = 0;
-            let dy = 0;
-
-            switch (
-                event.key.toLowerCase()
-            ) {
-                case "w":
-                case "arrowup":
-                    dy = -1;
-                    break;
-
-                case "s":
-                case "arrowdown":
-                    dy = 1;
-                    break;
-
-                case "a":
-                case "arrowleft":
-                    dx = -1;
-                    break;
-
-                case "d":
-                case "arrowright":
-                    dx = 1;
-                    break;
-
-                default:
-                    return;
-            }
-
-            event.preventDefault();
-
-            if (event.repeat) {
-                return;
-            }
-
-            moveBasePlayer(dx, dy);
-        }
-    );
-
-    const map =
-        document.getElementById("dungeon-map");
-
-    if (map) {
-        map.addEventListener(
-            "click",
-            event => {
-                const rect =
-                    map.getBoundingClientRect();
-
-                const cellWidth =
-                    rect.width /
-                    BASE_MAP_COLUMNS;
-
-                const cellHeight =
-                    rect.height /
-                    BASE_MAP_ROWS;
-
-                const clickedX =
-                    Math.floor(
-                        (
-                            event.clientX -
-                            rect.left
-                        ) /
-                        cellWidth
-                    );
-
-                const clickedY =
-                    Math.floor(
-                        (
-                            event.clientY -
-                            rect.top
-                        ) /
-                        cellHeight
-                    );
-
-                const dx =
-                    clickedX -
-                    basePlayerX;
-
-                const dy =
-                    clickedY -
-                    basePlayerY;
-
-                if (
-                    Math.abs(dx) +
-                    Math.abs(dy) !==
-                    1
-                ) {
-                    return;
-                }
-
-                moveBasePlayer(dx, dy);
-            }
-        );
-    }
-
-    window.addEventListener(
-        "resize",
-        () => {
-            updateBaseCamera(true);
-            positionBasePlayerToken();
-        }
-    );
-}
-
-
-// ============================================================
-// CAMERA LIVELLO BASE
-// ============================================================
-//
-// Come nel dungeon principale:
-// visuale di 13 x 13 caselle, cioè PG + 6 celle per lato.
-// La mappa completa continua ad avere coordinate 27 x 36.
-// ============================================================
-
-function setupBaseCamera() {
-    updateBaseCamera(true);
-}
-
-
-function updateBaseCamera(instant = false) {
-    const frame =
-        document.querySelector(
-            ".dungeon-map-frame"
-        );
-
-    const map =
-        document.getElementById(
-            "dungeon-map"
-        );
-
-    if (
-        !frame ||
-        !map ||
-        basePlayerX === null ||
-        basePlayerY === null
-    ) {
-        return;
-    }
-
-    const frameRect =
-        frame.getBoundingClientRect();
-
-    const mapRect =
-        map.getBoundingClientRect();
-
-    if (
-        frameRect.width <= 0 ||
-        frameRect.height <= 0 ||
-        mapRect.width <= 0 ||
-        mapRect.height <= 0
-    ) {
-        return;
-    }
-
-    const cellWidth =
-        mapRect.width /
-        BASE_MAP_COLUMNS;
-
-    const cellHeight =
-        mapRect.height /
-        BASE_MAP_ROWS;
-
-    const playerCenterX =
-        (
-            Number(basePlayerX) +
-            0.5
-        ) *
-        cellWidth;
-
-    const playerCenterY =
-        (
-            Number(basePlayerY) +
-            0.5
-        ) *
-        cellHeight;
-
-    let cameraX =
-        playerCenterX -
-        frameRect.width / 2;
-
-    let cameraY =
-        playerCenterY -
-        frameRect.height / 2;
-
-    const maxCameraX =
-        Math.max(
-            0,
-            mapRect.width -
-            frameRect.width
-        );
-
-    const maxCameraY =
-        Math.max(
-            0,
-            mapRect.height -
-            frameRect.height
-        );
-
-    cameraX =
-        Math.max(
-            0,
-            Math.min(
-                cameraX,
-                maxCameraX
-            )
-        );
-
-    cameraY =
-        Math.max(
-            0,
-            Math.min(
-                cameraY,
-                maxCameraY
-            )
-        );
-
-    map.style.transition =
-        instant
-            ? "none"
-            : `transform ${BASE_CAMERA_TRANSITION_MS}ms ease-out`;
-
-    map.style.transform =
-        `translate(${-cameraX}px, ${-cameraY}px)`;
-
-    if (instant) {
-        requestAnimationFrame(
-            () => {
-                map.style.transition =
-                    `transform ${BASE_CAMERA_TRANSITION_MS}ms ease-out`;
-            }
-        );
-    }
-}
-
-
-// ============================================================
-// COLLISIONI LIVELLO BASE
-// ============================================================
-
-function isBaseCellWalkable(x, y) {
-    if (
-        !baseData ||
-        !(baseWalkableCells instanceof Set)
-    ) {
-        return false;
-    }
-
-    return baseWalkableCells.has(
-        `${Number(x)},${Number(y)}`
-    );
-}
-
-
-// ============================================================
-// PASSAGGI BLOCCATI TRA CELLE
-// ============================================================
-//
-// I primi quattro passaggi sono bloccati in entrambe le direzioni.
-// Il passaggio X18 Y10 -> X18 Y9 è invece bloccato SOLO in quella
-// direzione: da X18 Y9 a X18 Y10 rimane consentito.
-// ============================================================
-
-const BASE_BLOCKED_EDGES_BIDIRECTIONAL =
-    new Set([
-        "7,10|7,9",
-        "8,9|8,10",
-        "10,10|10,9",
-        "11,9|11,10"
-    ]);
-
-
-const BASE_BLOCKED_EDGES_ONE_WAY =
-    new Set();
-
-
-function isBasePassageBlocked(
-    fromX,
-    fromY,
-    toX,
-    toY
-) {
-
-    const directKey =
-        `${fromX},${fromY}|${toX},${toY}`;
-
-    const reverseKey =
-        `${toX},${toY}|${fromX},${fromY}`;
-
-
-    if (
-        BASE_BLOCKED_EDGES_ONE_WAY.has(
-            directKey
-        )
-    ) {
-
-        return true;
-
-    }
-
-
-    return (
-        BASE_BLOCKED_EDGES_BIDIRECTIONAL.has(
-            directKey
-        )
-        ||
-        BASE_BLOCKED_EDGES_BIDIRECTIONAL.has(
-            reverseKey
-        )
-    );
-}
-
-
-// ============================================================
-// ESEGUE UN PASSO
-// ============================================================
-
-function moveBasePlayer(dx, dy) {
-    const newX =
-        basePlayerX + dx;
-
-    const newY =
-        basePlayerY + dy;
-
-    if (
-        newX < 0 ||
-        newY < 0 ||
-        newX >= BASE_MAP_COLUMNS ||
-        newY >= BASE_MAP_ROWS
-    ) {
-        setMessage(
-            "Non puoi andare oltre i confini del Livello Base."
-        );
-
-        return false;
-    }
-
-    // ========================================================
-    // CANCELLO A SENSO UNICO X18 Y10 -> X18 Y9
-    // ========================================================
-
-    if (
-        basePlayerX === 18 &&
-        basePlayerY === 10 &&
-        newX === 18 &&
-        newY === 9
-    ) {
-        setMessage(
-            "Questo cancello si può attraversare solo dall'altro lato"
-        );
-
-        return false;
-    }
-
-
-    if (
-        isBasePassageBlocked(
-            basePlayerX,
-            basePlayerY,
-            newX,
-            newY
-        )
-    ) {
-        setMessage(
-            "Il passaggio è bloccato."
-        );
-
-        return false;
-    }
-
-    // ========================================================
-    // CANCELLO CENTRALE X9 Y9 <-> X9 Y10
-    //
-    // Il passaggio è bloccato finché almeno uno dei due combat
-    // Base è disponibile. La funzione vive in eventi_base.js.
-    // ========================================================
-
-    const crossesBaseGate =
-        (
-            basePlayerX === 9 &&
-            basePlayerY === 9 &&
-            newX === 9 &&
-            newY === 10
-        )
-        ||
-        (
-            basePlayerX === 9 &&
-            basePlayerY === 10 &&
-            newX === 9 &&
-            newY === 9
-        );
-
-    if (
-        crossesBaseGate &&
-        typeof isBaseFilterBlocked === "function" &&
-        isBaseFilterBlocked()
-    ) {
-        setMessage(
-            "Il cancello è chiuso. Si aprirà quando non ci saranno nemici nelle vicinanze"
-        );
-
-        return false;
-    }
-
-    if (
-        !isBaseCellWalkable(
-            newX,
-            newY
-        )
-    ) {
-        setMessage(
-            "Il passaggio è bloccato."
-        );
-
-        return false;
-    }
-
-    basePlayerX = newX;
-    basePlayerY = newY;
-
-    positionBasePlayerToken();
-    updateBaseCoordinates();
-    updateBaseCamera();
-
-    scheduleBasePositionSave();
-    updateBasePresence();
-
-    if (
-        typeof checkNearbyBaseCombatEvents ===
-        "function"
-    ) {
-        checkNearbyBaseCombatEvents();
-    }
-
-    if (
-        typeof checkBaseTeleportEvent ===
-        "function"
-    ) {
-        checkBaseTeleportEvent();
-    }
-
-    setMessage(
-        `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
-    );
-
-    return true;
-}
-
-
-// ============================================================
-// SALVATAGGIO POSIZIONE BASE
-// ============================================================
-
-function scheduleBasePositionSave() {
-
-    basePositionSavePending =
-        true;
-
-
-    if (
-        basePositionSaveTimer
-    ) {
-
-        clearTimeout(
-            basePositionSaveTimer
-        );
-
-    }
-
-
-    basePositionSaveTimer =
-        setTimeout(
-            () => {
-
-                flushBasePositionSave();
-
-            },
-            120
-        );
-
-}
-
-
-// ============================================================
-// SALVA ULTIMA POSIZIONE NEL DATABASE
-// ============================================================
-
-async function flushBasePositionSave() {
-
-    if (
-        !character ||
-        basePlayerX === null ||
-        basePlayerY === null
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        basePositionSaveRunning
-    ) {
-
-        basePositionSavePending =
-            true;
-
-        return;
-
-    }
-
-
-    basePositionSaveRunning =
-        true;
-
-    basePositionSavePending =
-        false;
-
-
-    const saveX =
-        Number(basePlayerX);
-
-    const saveY =
-        Number(basePlayerY);
-
-
-    try {
-
-        const {
-            error
-        } =
-            await db
-                .from("characters")
-                .update({
-
-                    base_x:
-                        saveX,
-
-                    base_y:
-                        saveY
-
-                })
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (error) {
-
-            throw error;
-
+        .dungeon-map {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 207.6923076923% !important;
+            height: 276.9230769231% !important;
+            transform-origin: 0 0;
+            will-change: transform;
         }
 
-
-        character.base_x =
-            saveX;
-
-        character.base_y =
-            saveY;
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore salvataggio posizione Base:",
-            error
-        );
-
-
-        setMessage(
-            "Movimento effettuato, ma la posizione non è stata salvata."
-        );
-
-
-    } finally {
-
-        basePositionSaveRunning =
-            false;
-
-
-        if (
-            basePositionSavePending ||
-            saveX !== basePlayerX ||
-            saveY !== basePlayerY
-        ) {
-
-            flushBasePositionSave();
-
+        .dungeon-map-image {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: fill;
         }
-
-    }
-
-}
+    </style>
 
 
-// ============================================================
-// VOLUME
-// ============================================================
+    <!-- =====================================================
+         SUPABASE
+    ====================================================== -->
 
-const BASE_VOLUME_KEY =
-    "palazzo-eterno-base-volume";
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-let baseVolume =
-    loadBaseVolume();
+<script src="../js/config.js?v=10"></script>
 
-let baseMusic = null;
-
-function loadBaseVolume() {
-    try {
-        const saved =
-            localStorage.getItem(
-                BASE_VOLUME_KEY
-            );
-
-        const value =
-            Number(saved);
-
-        return Number.isFinite(value)
-            ? Math.max(
-                0,
-                Math.min(1, value)
-            )
-            : 0.35;
-
-    } catch {
-        return 0.35;
-    }
-}
-
-function volumeIcon(volume) {
-    if (volume <= 0) return "🔇";
-    if (volume < 0.5) return "🔉";
-    return "🔊";
-}
-
-function setupBaseVolumeControl() {
-    const control =
-        document.querySelector(
-            ".dungeon-volume-control"
-        );
-
-    const button =
-        document.getElementById(
-            "dungeon-volume-button"
-        );
-
-    const popover =
-        document.getElementById(
-            "dungeon-volume-popover"
-        );
-
-    const slider =
-        document.getElementById(
-            "dungeon-volume-slider"
-        );
-
-    const value =
-        document.getElementById(
-            "dungeon-volume-value"
-        );
-
-    if (
-        !control ||
-        !button ||
-        !popover ||
-        !slider
-    ) {
-        return;
-    }
-
-    const updateUI = () => {
-        const percentage =
-            Math.round(baseVolume * 100);
-
-        button.textContent =
-            volumeIcon(baseVolume);
-
-        slider.value =
-            String(percentage);
-
-        if (value) {
-            value.textContent =
-                `${percentage}%`;
-        }
-
-        if (baseMusic) {
-            baseMusic.volume =
-                baseVolume;
-        }
-    };
-
-    updateUI();
-
-    button.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            event.stopPropagation();
-
-            popover.hidden =
-                !popover.hidden;
-
-            button.setAttribute(
-                "aria-expanded",
-                popover.hidden
-                    ? "false"
-                    : "true"
-            );
-        }
-    );
-
-    slider.addEventListener(
-        "input",
-        () => {
-            baseVolume =
-                Math.max(
-                    0,
-                    Math.min(
-                        1,
-                        Number(slider.value) / 100
-                    )
-                );
-
-            try {
-                localStorage.setItem(
-                    BASE_VOLUME_KEY,
-                    String(baseVolume)
-                );
-            } catch {}
-
-            updateUI();
-        }
-    );
-
-    document.addEventListener(
-        "click",
-        event => {
-            if (
-                control.contains(
-                    event.target
-                )
-            ) {
-                return;
-            }
-
-            popover.hidden = true;
-
-            button.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-        }
-    );
-}
+</head>
 
 
-// ============================================================
-// CADUTI DEL PALAZZO
-// ============================================================
-
-async function loadBaseLeaderboard() {
-
-    const container =
-        document.getElementById(
-            "dungeon-leaderboard-list"
-        );
+<body>
 
 
-    if (!container) {
+    <!-- =====================================================
+         PAGINA DUNGEON
+    ====================================================== -->
 
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db.rpc(
-                "get_dead_characters_leaderboard_with_badges",
-                {
-                    p_limit:
-                        20
-                }
-            );
+    <main class="dungeon-page">
 
 
-        if (error) {
+        <!-- =================================================
+             HEADER
+        ================================================== -->
 
-            throw error;
-
-        }
-
-
-        renderBaseLeaderboard(
-            data || []
-        );
+        <header class="dungeon-header">
 
 
-    } catch (error) {
+            <a
+                href="../scheda.html"
+                class="dungeon-exit-button"
+            >
+                ESCI
+            </a>
 
-        console.error(
-            "Errore caricamento Caduti del Palazzo:",
-            error
-        );
 
+            <div class="dungeon-volume-control">
 
-        container.innerHTML =
-            `
-                <div class="dungeon-leaderboard-empty">
-                    Classifica non disponibile.
+                <button
+                    id="dungeon-volume-button"
+                    class="dungeon-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="dungeon-volume-popover"
+                    class="dungeon-volume-popover"
+                    hidden
+                >
+                    <input
+                        id="dungeon-volume-slider"
+                        class="dungeon-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="dungeon-volume-value"
+                        class="dungeon-volume-value"
+                    >
+                        35%
+                    </span>
                 </div>
-            `;
 
-    }
-
-}
+            </div>
 
 
-function renderBaseLeaderboard(
-    rows
-) {
+            <div class="dungeon-title-block">
 
-    const container =
-        document.getElementById(
-            "dungeon-leaderboard-list"
-        );
+                <h1>
+                    PALAZZO ETERNO
+                </h1>
 
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(rows) ||
-        rows.length === 0
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="dungeon-leaderboard-empty">
-                    Nessun caduto registrato.
+                <div class="dungeon-floor-title">
+                    LIVELLO BASE
                 </div>
-            `;
 
-        return;
-
-    }
+            </div>
 
 
-    container.innerHTML =
-        rows
-            .map(
-                row => {
-
-                    const position =
-                        Number(
-                            row.posizione
-                        ) || 0;
+            <div
+                id="dungeon-message"
+                class="dungeon-message"
+            >
+                Caricamento...
+            </div>
 
 
-                    const score =
-                        Number(
-                            row.score
-                        ) || 0;
+        </header>
 
 
-                    const name =
-                        escapeBaseHtml(
-                            row.character_name ||
-                            "Avventuriero"
-                        );
+
+        <!-- =================================================
+             LAYOUT PRINCIPALE
+        ================================================== -->
+
+        <section class="dungeon-layout">
 
 
-                    const badges =
-                        Array.isArray(
-                            row.boss_badges
-                        )
-                            ? row.boss_badges
-                            : [];
+            <!-- =============================================
+                 SINISTRA
+                 CHAT
+            ============================================== -->
+
+            <aside class="dungeon-chat-column">
 
 
-                    const badgesHtml =
-                        badges
-                            .map(
-                                badge => {
+                <!-- =============================================
+                     CADUTI DEL PALAZZO
+                ============================================== -->
 
-                                    const badgeName =
-                                        escapeBaseHtml(
-                                            badge?.badge_name ||
-                                            badge?.display_name ||
-                                            "Boss sconfitto"
-                                        );
+                <section class="dungeon-panel dungeon-leaderboard-panel">
 
+                    <div class="dungeon-panel-title">
+                        CADUTI DEL PALAZZO
+                    </div>
 
-                                    let iconPath =
-                                        String(
-                                            badge?.icon_path ||
-                                            ""
-                                        );
+                    <div
+                        id="dungeon-leaderboard-list"
+                        class="dungeon-leaderboard-list"
+                    >
+                        <div class="dungeon-leaderboard-empty">
+                            Caricamento classifica...
+                        </div>
+                    </div>
 
-
-                                    // Le icone salvate come "immagini/..."
-                                    // sono relative alla root del gioco.
-                                    // Base si trova una cartella più in basso.
-                                    if (
-                                        iconPath.startsWith(
-                                            "immagini/"
-                                        )
-                                    ) {
-
-                                        iconPath =
-                                            "../" +
-                                            iconPath;
-
-                                    }
+                </section>
 
 
-                                    iconPath =
-                                        escapeBaseHtml(
-                                            iconPath
-                                        );
+                <!-- =============================================
+                     ONLINE + CHAT
+                ============================================== -->
+
+                <div class="dungeon-social-column">
 
 
-                                    const floorNumber =
-                                        Number(
-                                            badge?.floor_number
-                                        ) || 0;
+                    <section class="dungeon-panel dungeon-online-panel">
 
+                        <div class="dungeon-panel-title">
+                            PERSONAGGI ONLINE
+                        </div>
 
-                                    const title =
-                                        floorNumber > 0
-                                            ? `${badgeName} · Piano ${floorNumber}`
-                                            : badgeName;
-
-
-                                    if (!iconPath) {
-
-                                        return `
-                                            <span
-                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
-                                                title="${title}"
-                                            >
-                                                🛡
-                                            </span>
-                                        `;
-
-                                    }
-
-
-                                    return `
-                                        <span
-                                            class="dungeon-leaderboard-badge-wrap"
-                                            title="${title}"
-                                        >
-                                            <img
-                                                class="dungeon-leaderboard-badge"
-                                                src="${iconPath}"
-                                                alt="${badgeName}"
-                                                loading="lazy"
-                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
-                                            >
-                                            <span
-                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
-                                                style="display:none"
-                                                aria-hidden="true"
-                                            >
-                                                🛡
-                                            </span>
-                                        </span>
-                                    `;
-
-                                }
-                            )
-                            .join("");
-
-
-                    return `
-                        <div class="dungeon-leaderboard-row">
-
-                            <div class="dungeon-leaderboard-position">
-                                #${position}
+                        <div
+                            id="dungeon-online-list"
+                            class="dungeon-online-list"
+                        >
+                            <div class="dungeon-online-empty">
+                                Connessione...
                             </div>
+                        </div>
 
-                            <div class="dungeon-leaderboard-identity">
+                    </section>
 
-                                <div
-                                    class="dungeon-leaderboard-name"
-                                    title="${name}"
-                                >
-                                    ${name}
-                                </div>
 
-                                ${
-                                    badgesHtml
-                                        ? `
-                                            <div class="dungeon-leaderboard-badges">
-                                                ${badgesHtml}
-                                            </div>
-                                        `
-                                        : ""
-                                }
+                    <section class="dungeon-panel dungeon-chat-panel">
 
-                            </div>
 
-                            <div class="dungeon-leaderboard-score">
-                                ${score}
+                        <div class="dungeon-panel-title">
+
+                            CHAT
+
+                        </div>
+
+
+                        <div
+                            id="floor-chat-messages"
+                            class="floor-chat-messages"
+                        >
+
+                            <div class="chat-placeholder">
+
+                                Nessun messaggio.
+
                             </div>
 
                         </div>
-                    `;
 
-                }
-            )
-            .join("");
 
-}
+                        <div class="floor-chat-controls">
 
 
-// ============================================================
-// REALTIME / PERSONAGGI ONLINE
-// ============================================================
+                            <input
+                                id="floor-chat-input"
+                                class="floor-chat-input"
+                                type="text"
+                                maxlength="300"
+                                autocomplete="off"
+                                placeholder="Chat del Livello Base non ancora attiva" disabled
+                            >
 
-async function setupBaseRealtime() {
 
-    if (
-        !character ||
-        !currentUser
-    ) {
+                            <button
+                                id="floor-chat-send"
+                                class="floor-chat-send"
+                                type="button"
+                                disabled
+                                aria-label="Invia messaggio"
+                            >
+                                ➤
+                            </button>
 
-        return;
 
-    }
+                        </div>
 
 
-    baseChannel =
-        db.channel(
-            BASE_CHANNEL_NAME,
-            {
-                config: {
-                    presence: {
-                        key:
-                            character.id
-                    }
-                }
-            }
-        );
+                    </section>
 
 
-    baseChannel.on(
-        "presence",
-        {
-            event:
-                "sync"
-        },
-        () => {
-
-            renderBaseOnlinePlayers();
-
-        }
-    );
-
-
-    baseChannel.on(
-        "broadcast",
-        {
-            event:
-                "base-chat"
-        },
-        message => {
-
-            const data =
-                message.payload;
-
-
-            if (!data) {
-
-                return;
-
-            }
-
-
-            addBaseChatMessage(
-                data
-            );
-
-        }
-    );
-
-
-    await new Promise(
-        (
-            resolve,
-            reject
-        ) => {
-
-            baseChannel.subscribe(
-                async status => {
-
-                    console.log(
-                        "Realtime Base:",
-                        status
-                    );
-
-
-                    if (
-                        status ===
-                        "SUBSCRIBED"
-                    ) {
-
-                        baseRealtimeReady =
-                            true;
-
-
-                        try {
-
-                            await baseChannel.track(
-                                getMyBasePresenceData()
-                            );
-
-
-                            renderBaseOnlinePlayers();
-
-                            resolve();
-
-
-                        } catch (error) {
-
-                            reject(
-                                error
-                            );
-
-                        }
-
-                    }
-
-
-                    if (
-                        status ===
-                        "CHANNEL_ERROR"
-                    ) {
-
-                        reject(
-                            new Error(
-                                "Errore nel canale realtime del Livello Base."
-                            )
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-function getMyBasePresenceData() {
-
-    return {
-
-        character_id:
-            character.id,
-
-        user_id:
-            currentUser.id,
-
-        name:
-            character.nome ||
-            "Avventuriero",
-
-        token:
-            character.token ||
-            "token_1.png",
-
-        x:
-            Number(basePlayerX),
-
-        y:
-            Number(basePlayerY),
-
-        current_hp:
-            character.current_hp,
-
-        active_combat_id:
-            character.active_combat_id ||
-            null,
-
-        in_combat:
-            !!character.active_combat_id,
-
-        location:
-            "base",
-
-        online_at:
-            new Date()
-                .toISOString()
-
-    };
-
-}
-
-
-async function updateBasePresence() {
-
-    if (
-        !baseChannel ||
-        !baseRealtimeReady ||
-        !character
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        await baseChannel.track(
-            getMyBasePresenceData()
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore aggiornamento Presence Base:",
-            error
-        );
-
-    }
-
-}
-
-
-function renderBaseOnlinePlayers() {
-
-    const container =
-        document.getElementById(
-            "dungeon-online-list"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    if (
-        !baseChannel ||
-        !character
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="dungeon-online-empty">
-                    Connessione...
                 </div>
-            `;
 
-        return;
 
-    }
+            </aside>
 
 
-    const state =
-        baseChannel.presenceState();
 
+            <!-- =============================================
+                 CENTRO
+                 MAPPA
+            ============================================== -->
 
-    const playersById =
-        new Map();
+            <section class="dungeon-map-column">
 
 
-    Object.values(
-        state
-    ).forEach(
-        presences => {
+                <div class="dungeon-map-frame">
 
-            presences.forEach(
-                presence => {
 
-                    if (
-                        !presence ||
-                        !presence.character_id
-                    ) {
+                    <div
+                        id="dungeon-map"
+                        class="dungeon-map"
+                    >
 
-                        return;
 
-                    }
+                        <!--
+                            L'immagine della mappa rimane
+                            separata dai token.
+                        -->
 
+                        <img
+                            id="dungeon-map-image"
+                            class="dungeon-map-image"
+                            src="immagini/base_map.png?v=1"
+                            alt="Mappa del Livello Base"
+                            draggable="false"
+                        >
 
-                    const previous =
-                        playersById.get(
-                            presence.character_id
-                        );
 
+                        <!--
+                            I token vengono inseriti qui
+                            dal JavaScript.
+                        -->
 
-                    if (
-                        !previous ||
-                        String(
-                            presence.online_at ||
-                            ""
-                        ) >=
-                        String(
-                            previous.online_at ||
-                            ""
-                        )
-                    ) {
 
-                        playersById.set(
-                            presence.character_id,
-                            presence
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-    if (
-        character.id &&
-        !playersById.has(
-            character.id
-        )
-    ) {
-
-        playersById.set(
-            character.id,
-            getMyBasePresenceData()
-        );
-
-    }
-
-
-    const players =
-        Array.from(
-            playersById.values()
-        )
-            .sort(
-                (
-                    a,
-                    b
-                ) => {
-
-                    const aIsMe =
-                        a.character_id ===
-                        character.id;
-
-                    const bIsMe =
-                        b.character_id ===
-                        character.id;
-
-
-                    if (
-                        aIsMe !==
-                        bIsMe
-                    ) {
-
-                        return aIsMe
-                            ? -1
-                            : 1;
-
-                    }
-
-
-                    return String(
-                        a.name ||
-                        ""
-                    ).localeCompare(
-                        String(
-                            b.name ||
-                            ""
-                        ),
-                        "it"
-                    );
-
-                }
-            );
-
-
-    if (
-        players.length ===
-        0
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="dungeon-online-empty">
-                    Nessun personaggio online.
-                </div>
-            `;
-
-        return;
-
-    }
-
-
-    container.replaceChildren();
-
-
-    players.forEach(
-        player => {
-
-            const row =
-                document.createElement(
-                    "div"
-                );
-
-
-            row.className =
-                "dungeon-online-row";
-
-
-            const image =
-                document.createElement(
-                    "img"
-                );
-
-
-            image.className =
-                "dungeon-online-token";
-
-
-            image.src =
-                "../immagini/token/" +
-                (
-                    player.token ||
-                    "token_1.png"
-                );
-
-
-            image.alt =
-                player.name ||
-                "Personaggio";
-
-
-            const info =
-                document.createElement(
-                    "div"
-                );
-
-
-            info.className =
-                "dungeon-online-info";
-
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-
-            name.className =
-                "dungeon-online-name";
-
-
-            const isMe =
-                player.character_id ===
-                character.id;
-
-
-            name.textContent =
-                `${
-                    player.name ||
-                    "Avventuriero"
-                }${
-                    isMe
-                        ? " (tu)"
-                        : ""
-                }`;
-
-
-            const status =
-                document.createElement(
-                    "div"
-                );
-
-
-            status.className =
-                "dungeon-online-status";
-
-
-            status.textContent =
-                "Nel Livello Base";
-
-
-            const dot =
-                document.createElement(
-                    "span"
-                );
-
-
-            dot.className =
-                "dungeon-online-dot";
-
-
-            info.append(
-                name,
-                status
-            );
-
-
-            row.append(
-                image,
-                info,
-                dot
-            );
-
-
-            container.appendChild(
-                row
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// CHAT LIVELLO BASE
-// ============================================================
-
-function setupBaseChat() {
-
-    const input =
-        document.getElementById(
-            "floor-chat-input"
-        );
-
-
-    const button =
-        document.getElementById(
-            "floor-chat-send"
-        );
-
-
-    if (
-        !input ||
-        !button
-    ) {
-
-        return;
-
-    }
-
-
-    // base.html nasceva con la chat disabilitata.
-    // La abilitiamo ora che è collegata al database.
-    input.disabled =
-        false;
-
-    button.disabled =
-        false;
-
-    input.placeholder =
-        "Scrivi...";
-
-
-    button.addEventListener(
-        "click",
-        async () => {
-
-            await sendBaseChatMessage(
-                input
-            );
-
-        }
-    );
-
-
-    input.addEventListener(
-        "keydown",
-        async event => {
-
-            if (
-                event.key !==
-                "Enter" ||
-                event.shiftKey
-            ) {
-
-                return;
-
-            }
-
-
-            event.preventDefault();
-
-
-            await sendBaseChatMessage(
-                input
-            );
-
-        }
-    );
-
-}
-
-
-async function loadBaseChatHistory() {
-
-    const container =
-        document.getElementById(
-            "floor-chat-messages"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await db
-                .from(
-                    "dungeon_chat_messages"
-                )
-                .select(`
-                    id,
-                    character_id,
-                    sender_name,
-                    message_text,
-                    created_at
-                `)
-                .eq(
-                    "floor_id",
-                    BASE_CHAT_FLOOR_ID
-                )
-                .order(
-                    "created_at",
-                    {
-                        ascending:
-                            false
-                    }
-                )
-                .limit(
-                    BASE_CHAT_HISTORY_LIMIT
-                );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        renderedBaseChatMessageIds.clear();
-
-
-        container.innerHTML =
-            "";
-
-
-        const rows =
-            Array.isArray(data)
-                ? [...data]
-                : [];
-
-
-        if (
-            rows.length ===
-            0
-        ) {
-
-            container.innerHTML =
-                `
-                    <div class="chat-placeholder">
-                        Nessun messaggio ancora.
                     </div>
-                `;
 
-            return;
 
-        }
+                </div>
 
 
-        rows.forEach(
-            row => {
+                <!-- =========================================
+                     COMANDI
+                ========================================== -->
 
-                addBaseChatMessage(
-                    {
+                <div class="dungeon-map-footer">
 
-                        id:
-                            row.id,
 
-                        character_id:
-                            row.character_id,
+                    <div class="movement-help">
 
-                        name:
-                            row.sender_name,
+                        <span class="movement-key">
+                            W
+                        </span>
 
-                        text:
-                            row.message_text,
+                        <span class="movement-key">
+                            A
+                        </span>
 
-                        timestamp:
-                            row.created_at
+                        <span class="movement-key">
+                            S
+                        </span>
 
-                    },
-                    true
-                );
+                        <span class="movement-key">
+                            D
+                        </span>
 
-            }
-        );
 
+                        <span class="movement-description">
 
-    } catch (error) {
+                            Muoviti con WASD, frecce
+                            o clicca una casella adiacente.
 
-        console.error(
-            "Errore caricamento storico chat Base:",
-            error
-        );
+                        </span>
 
-    }
+                    </div>
 
-}
+                    <div
+                        id="dungeon-player-coordinates"
+                        class="dungeon-player-coordinates"
+                    >
+                        Coordinate PG: X -- · Y --
+                    </div>
 
 
-async function sendBaseChatMessage(
-    input
-) {
+                </div>
 
-    if (
-        !input ||
-        !character ||
-        !currentUser
-    ) {
 
-        return;
+            </section>
 
-    }
 
 
-    const messageText =
-        input.value.trim();
+            <!-- =============================================
+                 DESTRA
+            ============================================== -->
 
+            <aside class="dungeon-character-column">
 
-    if (!messageText) {
 
-        return;
+                <!-- =========================================
+                     BLOCCO PERSONAGGIO
+                ========================================== -->
 
-    }
+                <section class="dungeon-character-summary">
 
 
-    const originalValue =
-        input.value;
+                    <!-- NOME -->
 
+                    <div
+                        id="character-name"
+                        class="dungeon-character-name"
+                    >
+                        PERSONAGGIO
+                    </div>
 
-    input.value =
-        "";
 
 
-    try {
+                    <!-- =====================================
+                         PARTE SUPERIORE
+                    ====================================== -->
 
-        const {
-            data: savedMessage,
-            error
-        } =
-            await db
-                .from(
-                    "dungeon_chat_messages"
-                )
-                .insert({
+                    <div class="character-summary-top">
 
-                    floor_id:
-                        BASE_CHAT_FLOOR_ID,
 
-                    character_id:
-                        character.id,
+                        <!-- ===============================
+                             RITRATTO
+                        ================================ -->
 
-                    user_id:
-                        currentUser.id,
+                        <div class="character-portrait-wrapper">
 
-                    sender_name:
-                        character.nome ||
-                        "Avventuriero",
 
-                    message_text:
-                        messageText
+                            <img
+                                id="character-token"
+                                class="character-portrait"
+                                src=""
+                                alt="Personaggio"
+                                draggable="false"
+                            >
 
-                })
-                .select(`
-                    id,
-                    character_id,
-                    sender_name,
-                    message_text,
-                    created_at
-                `)
-                .single();
 
+                        </div>
 
-        if (error) {
 
-            throw error;
 
-        }
+                        <!-- ===============================
+                             APRI SCHEDA
+                        ================================ -->
 
+                        <a
+                            href="../scheda.html"
+                            class="open-sheet-button"
+                        >
+                            APRI SCHEDA
+                        </a>
 
-        const message = {
 
-            id:
-                savedMessage.id,
+                    </div>
 
-            character_id:
-                savedMessage.character_id,
 
-            name:
-                savedMessage.sender_name ||
-                character.nome ||
-                "Avventuriero",
 
-            text:
-                savedMessage.message_text ||
-                messageText,
+                    <!-- =====================================
+                         STATISTICHE
+                    ====================================== -->
 
-            timestamp:
-                savedMessage.created_at ||
-                new Date()
-                    .toISOString()
+                    <div class="quick-section">
 
-        };
 
+                        <div class="quick-section-title">
+                            STATISTICHE
+                        </div>
 
-        addBaseChatMessage(
-            message
-        );
 
+                        <div class="quick-stat-grid">
 
-        if (
-            baseChannel &&
-            baseRealtimeReady
-        ) {
 
-            try {
+                            <!-- ATT -->
 
-                await baseChannel.send({
+                            <div class="quick-stat">
 
-                    type:
-                        "broadcast",
+                                <span class="quick-stat-label">
+                                    ATT
+                                </span>
 
-                    event:
-                        "base-chat",
+                                <strong
+                                    id="attack-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-                    payload:
-                        message
+                            </div>
 
-                });
 
+                            <!-- DIF -->
 
-            } catch (broadcastError) {
+                            <div class="quick-stat">
 
-                console.error(
-                    "Errore broadcast chat Base:",
-                    broadcastError
-                );
+                                <span class="quick-stat-label">
+                                    DIF
+                                </span>
 
-            }
+                                <strong
+                                    id="defense-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-        }
+                            </div>
 
 
-    } catch (error) {
+                            <!-- VITA -->
 
-        console.error(
-            "Errore salvataggio chat Base:",
-            error
-        );
+                            <div class="quick-stat">
 
+                                <span class="quick-stat-label">
+                                    VITA
+                                </span>
 
-        input.value =
-            originalValue;
+                                <strong
+                                    id="health-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
+                            </div>
 
-        setMessage(
-            "Non è stato possibile inviare il messaggio."
-        );
 
-    }
+                            <!-- MANA -->
 
-}
+                            <div class="quick-stat">
 
+                                <span class="quick-stat-label">
+                                    MANA
+                                </span>
 
-function addBaseChatMessage(
-    message,
-    fromHistory = false
-) {
+                                <strong
+                                    id="mana-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    if (!message) {
+                            </div>
 
-        return;
 
-    }
+                            <!-- MOV -->
 
+                            <div class="quick-stat">
 
-    const container =
-        document.getElementById(
-            "floor-chat-messages"
-        );
+                                <span class="quick-stat-label">
+                                    MOV
+                                </span>
 
+                                <strong
+                                    id="movement-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    if (!container) {
+                            </div>
 
-        return;
 
-    }
+                            <!-- CRT -->
 
+                            <div class="quick-stat">
 
-    const messageId =
-        message.id
-            ? String(
-                message.id
-            )
-            : null;
+                                <span class="quick-stat-label">
+                                    CRT
+                                </span>
 
+                                <strong
+                                    id="critical-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    if (
-        messageId &&
-        renderedBaseChatMessageIds.has(
-            messageId
-        )
-    ) {
+                            </div>
 
-        return;
 
-    }
+                        </div>
 
 
-    if (messageId) {
+                    </div>
 
-        renderedBaseChatMessageIds.add(
-            messageId
-        );
 
-    }
 
+                    <!-- =====================================
+                         ATTRIBUTI
+                    ====================================== -->
 
-    const placeholder =
-        container.querySelector(
-            ".chat-placeholder"
-        );
+                    <div class="quick-section">
 
 
-    if (placeholder) {
+                        <div class="quick-section-title">
+                            ATTRIBUTI
+                        </div>
 
-        placeholder.remove();
 
-    }
+                        <div class="quick-stat-grid">
 
 
-    const row =
-        document.createElement(
-            "div"
-        );
+                            <!-- FOR -->
 
+                            <div class="quick-stat">
 
-    row.className =
-        "floor-chat-message";
+                                <span class="quick-stat-label">
+                                    FOR
+                                </span>
 
+                                <strong
+                                    id="forza-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    if (messageId) {
+                            </div>
 
-        row.dataset.messageId =
-            messageId;
 
-    }
+                            <!-- RES -->
 
+                            <div class="quick-stat">
 
-    if (
-        character &&
-        message.character_id ===
-        character.id
-    ) {
+                                <span class="quick-stat-label">
+                                    RES
+                                </span>
 
-        row.classList.add(
-            "mine"
-        );
+                                <strong
+                                    id="resistenza-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    }
+                            </div>
 
 
-    const name =
-        document.createElement(
-            "strong"
-        );
+                            <!-- COS -->
 
+                            <div class="quick-stat">
 
-    name.className =
-        "floor-chat-name";
+                                <span class="quick-stat-label">
+                                    COS
+                                </span>
 
+                                <strong
+                                    id="costituzione-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    name.textContent =
-        message.name ||
-        "Avventuriero";
+                            </div>
 
 
-    const textElement =
-        document.createElement(
-            "span"
-        );
+                            <!-- INT -->
 
+                            <div class="quick-stat">
 
-    textElement.className =
-        "floor-chat-text";
+                                <span class="quick-stat-label">
+                                    INT
+                                </span>
 
+                                <strong
+                                    id="intelligenza-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    textElement.textContent =
-        message.text ||
-        "";
+                            </div>
 
 
-    row.append(
-        name,
-        document.createTextNode(
-            ": "
-        ),
-        textElement
-    );
+                            <!-- DES -->
 
+                            <div class="quick-stat">
 
-    if (fromHistory) {
+                                <span class="quick-stat-label">
+                                    DES
+                                </span>
 
-        container.appendChild(
-            row
-        );
+                                <strong
+                                    id="destrezza-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
-    } else {
+                            </div>
 
-        container.prepend(
-            row
-        );
 
-    }
+                            <!-- LCK -->
 
+                            <div class="quick-stat">
 
-    container.scrollTop =
-        0;
+                                <span class="quick-stat-label">
+                                    LCK
+                                </span>
 
-}
+                                <strong
+                                    id="fortuna-display"
+                                    class="quick-stat-value"
+                                >
+                                    -
+                                </strong>
 
+                            </div>
 
-// ============================================================
-// ESCAPE HTML
-// ============================================================
 
-function escapeBaseHtml(
-    value
-) {
+                        </div>
 
-    return String(
-        value ??
-        ""
-    )
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
 
-}
+                    </div>
 
 
-// ============================================================
-// USCITA PAGINA BASE
-// ============================================================
+                    <!--
+                        Manteniamo questo elemento nascosto
+                        per compatibilità con eventuale codice
+                        precedente.
+                    -->
 
-window.addEventListener(
-    "beforeunload",
-    () => {
+                    <span
+                        id="character-level"
+                        hidden
+                    >
+                        1
+                    </span>
 
-        if (
-            basePositionSaveTimer
-        ) {
 
-            clearTimeout(
-                basePositionSaveTimer
-            );
+                    <span
+                        id="character-name-panel"
+                        hidden
+                    ></span>
 
-            basePositionSaveTimer =
-                null;
 
-        }
+                </section>
 
 
-        // Tenta l'ultimo salvataggio prima di uscire.
-        if (
-            character &&
-            basePlayerX !== null &&
-            basePlayerY !== null
-        ) {
 
-            db
-                .from("characters")
-                .update({
+                <!-- =========================================
+                     SEPARATORE
+                ========================================== -->
 
-                    base_x:
-                        Number(basePlayerX),
+                <div class="dungeon-side-divider"></div>
 
-                    base_y:
-                        Number(basePlayerY)
 
-                })
-                .eq(
-                    "id",
-                    character.id
-                )
-                .then(
-                    () => {}
-                )
-                .catch(
-                    () => {}
-                );
 
-        }
+                <!-- =========================================
+                     AZIONI + NOTE
+                ========================================== -->
 
+                <section class="dungeon-action-column">
 
-        if (
-            baseChannel
-        ) {
 
-            try {
+                    <!-- =====================================
+                         ABILITÀ / CONSUMABILI
+                    ====================================== -->
 
-                baseChannel.untrack();
+                    <div class="dungeon-actions-panel">
 
-            } catch (error) {
 
-                console.warn(
-                    "Errore chiusura Presence Base:",
-                    error
-                );
+                        <div class="dungeon-actions-title">
 
-            }
+                            ABILITÀ / CONSUMABILI
 
-        }
+                        </div>
 
-    }
-);
+
+
+                        <!-- ===============================
+                             SLOT 1 - CURA
+                        ================================ -->
+
+                        <button
+                            id="dungeon-heal-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            disabled
+                            data-action="heal"
+                        >
+
+
+                            <span class="action-card-icon">
+                                ✦
+                            </span>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
+                                    CURA
+                                </strong>
+
+                                <small>
+                                    2 PM
+                                </small>
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
+                             SLOT 2 - POZIONE VITA
+                        ================================ -->
+
+                        <button
+                            id="dungeon-health-potion-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            disabled
+                            data-action="health-potion"
+                        >
+
+
+                            <span class="action-card-icon">
+                                ♥
+                            </span>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
+                                    POZIONE DI VITA
+                                </strong>
+
+                                <small
+                                    id="dungeon-health-potion-count"
+                                >
+                                    x0
+                                </small>
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
+                             SLOT 3 - POZIONE MANA
+                        ================================ -->
+
+                        <button
+                            id="dungeon-mana-potion-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            disabled
+                            data-action="mana-potion"
+                        >
+
+
+                            <span class="action-card-icon">
+                                ◆
+                            </span>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
+                                    POZIONE DI MANA
+                                </strong>
+
+                                <small
+                                    id="dungeon-mana-potion-count"
+                                >
+                                    x0
+                                </small>
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
+                             PAGINAZIONE
+                        ================================ -->
+
+                        <div class="dungeon-action-pagination">
+
+
+                            <button
+                                id="dungeon-actions-prev"
+                                class="action-page-button"
+                                type="button"
+                                disabled
+                                aria-label="Pagina precedente"
+                            >
+                                ‹
+                            </button>
+
+
+                            <span
+                                id="dungeon-actions-page"
+                                class="action-page-number"
+                            >
+                                1
+                            </span>
+
+
+                            <button
+                                id="dungeon-actions-next"
+                                class="action-page-button"
+                                type="button"
+                                disabled
+                                aria-label="Pagina successiva"
+                            >
+                                ›
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- =====================================
+                         NOTE
+                    ====================================== -->
+
+                    <div class="dungeon-notes-panel">
+
+
+                        <div class="dungeon-actions-title">
+
+                            NOTE
+
+                        </div>
+
+
+                        <textarea
+                            id="character-notes"
+                            class="dungeon-notes"
+                            maxlength="3000"
+                            placeholder="Le note saranno collegate al Livello Base in seguito..." disabled
+                        ></textarea>
+
+
+                        <button
+                            id="save-notes-button"
+                            class="save-notes-button"
+                            type="button"
+                            disabled
+                        >
+                            SALVA NOTE
+                        </button>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- =====================================================
+         SCRIPT
+    ====================================================== -->
+
+    <script src="js/base.js?v=14"></script>
+    <script src="js/eventi_base.js?v=8"></script>
+
+</body>
+
+</html>

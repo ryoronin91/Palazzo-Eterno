@@ -96,6 +96,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         setupBaseMovement();
 
         // ----------------------------------------------------
+        // EVENTI SULLA CASELLA DI ARRIVO
+        // ----------------------------------------------------
+
+        if (
+            typeof checkBaseTeleportEvent ===
+            "function"
+        ) {
+            checkBaseTeleportEvent();
+        }
+
+        // ----------------------------------------------------
         // PERSONAGGI ONLINE / REALTIME
         // ----------------------------------------------------
 
