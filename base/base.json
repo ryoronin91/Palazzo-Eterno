@@ -1,7 +1,7 @@
 {
   "id": "palazzo_eterno_livello_base",
   "name": "Palazzo Eterno - Livello Base",
-  "version": 2,
+  "version": 3,
   "image": "immagini/base_map.png",
   "grid": {
     "columns": 27,
@@ -13,7 +13,9 @@
     "Livello Base condiviso dei PG.",
     "La griglia usa 27 colonne x 36 righe, origine in alto a sinistra.",
     "walkable_cells definisce le caselle percorribili; tutte le altre caselle sono considerate non percorribili.",
-    "In questa fase il movimento del PG è solo locale e non viene ancora salvato su Supabase."
+    "In questa fase il movimento del PG è solo locale e non viene ancora salvato su Supabase.",
+    "Correzione v3: x22,y10..y21 resi percorribili.",
+    "Correzione v3: intera zona sud y22..y32 spostata di una casella verso sinistra."
   ],
   "areas": [
     {
@@ -267,6 +269,10 @@
       "y": 10
     },
     {
+      "x": 22,
+      "y": 10
+    },
+    {
       "x": 3,
       "y": 11
     },
@@ -343,6 +349,10 @@
       "y": 11
     },
     {
+      "x": 22,
+      "y": 11
+    },
+    {
       "x": 3,
       "y": 12
     },
@@ -419,6 +429,10 @@
       "y": 12
     },
     {
+      "x": 22,
+      "y": 12
+    },
+    {
       "x": 3,
       "y": 13
     },
@@ -495,6 +509,10 @@
       "y": 13
     },
     {
+      "x": 22,
+      "y": 13
+    },
+    {
       "x": 3,
       "y": 14
     },
@@ -571,6 +589,10 @@
       "y": 14
     },
     {
+      "x": 22,
+      "y": 14
+    },
+    {
       "x": 3,
       "y": 15
     },
@@ -647,6 +669,10 @@
       "y": 15
     },
     {
+      "x": 22,
+      "y": 15
+    },
+    {
       "x": 3,
       "y": 16
     },
@@ -723,6 +749,10 @@
       "y": 16
     },
     {
+      "x": 22,
+      "y": 16
+    },
+    {
       "x": 3,
       "y": 17
     },
@@ -799,6 +829,10 @@
       "y": 17
     },
     {
+      "x": 22,
+      "y": 17
+    },
+    {
       "x": 3,
       "y": 18
     },
@@ -875,6 +909,10 @@
       "y": 18
     },
     {
+      "x": 22,
+      "y": 18
+    },
+    {
       "x": 3,
       "y": 19
     },
@@ -951,6 +989,10 @@
       "y": 19
     },
     {
+      "x": 22,
+      "y": 19
+    },
+    {
       "x": 3,
       "y": 20
     },
@@ -1027,6 +1069,10 @@
       "y": 20
     },
     {
+      "x": 22,
+      "y": 20
+    },
+    {
       "x": 3,
       "y": 21
     },
@@ -1101,30 +1147,38 @@
     {
       "x": 21,
       "y": 21
+    },
+    {
+      "x": 22,
+      "y": 21
+    },
+    {
+      "x": 9,
+      "y": 22
     },
     {
       "x": 10,
       "y": 22
     },
     {
-      "x": 11,
-      "y": 22
+      "x": 9,
+      "y": 23
     },
     {
       "x": 10,
       "y": 23
     },
     {
-      "x": 11,
-      "y": 23
+      "x": 9,
+      "y": 24
     },
     {
       "x": 10,
       "y": 24
     },
     {
-      "x": 11,
-      "y": 24
+      "x": 8,
+      "y": 25
     },
     {
       "x": 9,
@@ -1139,8 +1193,8 @@
       "y": 25
     },
     {
-      "x": 12,
-      "y": 25
+      "x": 7,
+      "y": 26
     },
     {
       "x": 8,
@@ -1163,8 +1217,8 @@
       "y": 26
     },
     {
-      "x": 13,
-      "y": 26
+      "x": 6,
+      "y": 27
     },
     {
       "x": 7,
@@ -1195,8 +1249,8 @@
       "y": 27
     },
     {
-      "x": 14,
-      "y": 27
+      "x": 5,
+      "y": 28
     },
     {
       "x": 6,
@@ -1231,8 +1285,8 @@
       "y": 28
     },
     {
-      "x": 14,
-      "y": 28
+      "x": 5,
+      "y": 29
     },
     {
       "x": 6,
@@ -1267,8 +1321,8 @@
       "y": 29
     },
     {
-      "x": 14,
-      "y": 29
+      "x": 6,
+      "y": 30
     },
     {
       "x": 7,
@@ -1295,8 +1349,8 @@
       "y": 30
     },
     {
-      "x": 13,
-      "y": 30
+      "x": 6,
+      "y": 31
     },
     {
       "x": 7,
@@ -1323,8 +1377,8 @@
       "y": 31
     },
     {
-      "x": 13,
-      "y": 31
+      "x": 8,
+      "y": 32
     },
     {
       "x": 9,
@@ -1332,10 +1386,6 @@
     },
     {
       "x": 10,
-      "y": 32
-    },
-    {
-      "x": 11,
       "y": 32
     }
   ],
