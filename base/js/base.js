@@ -891,6 +891,40 @@ function moveBasePlayer(dx, dy) {
         return false;
     }
 
+    // ========================================================
+    // CANCELLO CENTRALE X9 Y9 <-> X9 Y10
+    //
+    // Il passaggio è bloccato finché almeno uno dei due combat
+    // Base è disponibile. La funzione vive in eventi_base.js.
+    // ========================================================
+
+    const crossesBaseGate =
+        (
+            basePlayerX === 9 &&
+            basePlayerY === 9 &&
+            newX === 9 &&
+            newY === 10
+        )
+        ||
+        (
+            basePlayerX === 9 &&
+            basePlayerY === 10 &&
+            newX === 9 &&
+            newY === 9
+        );
+
+    if (
+        crossesBaseGate &&
+        typeof isBaseFilterBlocked === "function" &&
+        isBaseFilterBlocked()
+    ) {
+        setMessage(
+            "Il cancello è chiuso."
+        );
+
+        return false;
+    }
+
     if (
         !isBaseCellWalkable(
             newX,

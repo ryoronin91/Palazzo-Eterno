@@ -90,6 +90,27 @@ const baseCombatTokens =
 
 
 // ============================================================
+// CANCELLO CENTRALE
+// ============================================================
+//
+// Posizionato sul lato basso della casella X9 Y9,
+// quindi sul confine tra X9 Y9 e X9 Y10.
+//
+// gatec.png = chiuso quando almeno un combat è disponibile.
+// gateo.png = aperto quando entrambi i combat sono in cooldown.
+// ============================================================
+
+let baseGateElement =
+    null;
+
+const BASE_GATE_OPEN_IMAGE =
+    "immagini/gateo.png";
+
+const BASE_GATE_CLOSED_IMAGE =
+    "immagini/gatec.png";
+
+
+// ============================================================
 // STATO POPUP / RILEVAZIONE
 // ============================================================
 
@@ -114,10 +135,16 @@ document.addEventListener(
         await refreshBaseCombatStates();
 
         renderBaseCombatEvents();
+        renderBaseGate();
 
         window.addEventListener(
             "resize",
-            repositionBaseCombatEvents
+            () => {
+
+                repositionBaseCombatEvents();
+                positionBaseGate();
+
+            }
         );
 
         baseCombatStateRefreshInterval =
@@ -206,6 +233,7 @@ async function refreshBaseCombatStates() {
 
 
         renderBaseCombatEvents();
+        renderBaseGate();
 
 
         if (
@@ -236,6 +264,260 @@ async function refreshBaseCombatStates() {
         );
 
     }
+
+}
+
+
+// ============================================================
+// CANCELLO CENTRALE BLOCCATO?
+// ============================================================
+//
+// Il cancello rimane CHIUSO se almeno uno dei due combat
+// è disponibile.
+//
+// Si APRE solo quando entrambi i combat risultano indisponibili
+// perché in cooldown.
+// ============================================================
+
+function isBaseFilterBlocked() {
+
+    const leftState =
+        baseCombatAvailability.get(
+            "BASE_C1_LEFT"
+        );
+
+    const rightState =
+        baseCombatAvailability.get(
+            "BASE_C1_RIGHT"
+        );
+
+
+    const leftAvailable =
+        leftState?.available ===
+        true;
+
+    const rightAvailable =
+        rightState?.available ===
+        true;
+
+
+    return (
+        leftAvailable ||
+        rightAvailable
+    );
+
+}
+
+
+// ============================================================
+// RENDER CANCELLO CENTRALE
+// ============================================================
+
+function renderBaseGate() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (!map) {
+
+        return;
+
+    }
+
+
+    if (!baseGateElement) {
+
+        baseGateElement =
+            document.createElement(
+                "div"
+            );
+
+
+        baseGateElement.className =
+            "base-gate-token";
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+
+        image.draggable =
+            false;
+
+        image.style.width =
+            "100%";
+
+        image.style.height =
+            "100%";
+
+        image.style.objectFit =
+            "contain";
+
+        image.style.display =
+            "block";
+
+
+        baseGateElement.appendChild(
+            image
+        );
+
+
+        map.appendChild(
+            baseGateElement
+        );
+
+    }
+
+
+    const image =
+        baseGateElement.querySelector(
+            "img"
+        );
+
+
+    const blocked =
+        isBaseFilterBlocked();
+
+
+    if (image) {
+
+        image.src =
+            blocked
+                ? BASE_GATE_CLOSED_IMAGE
+                : BASE_GATE_OPEN_IMAGE;
+
+
+        image.alt =
+            blocked
+                ? "Cancello chiuso"
+                : "Cancello aperto";
+
+    }
+
+
+    baseGateElement.title =
+        blocked
+            ? "Cancello chiuso"
+            : "Cancello aperto";
+
+
+    positionBaseGate();
+
+}
+
+
+// ============================================================
+// POSIZIONA CANCELLO
+//
+// Il centro del cancello viene appoggiato sul bordo inferiore
+// della cella X9 Y9.
+// ============================================================
+
+function positionBaseGate() {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !map ||
+        !baseGateElement
+    ) {
+
+        return;
+
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+
+    const gateWidth =
+        cellWidth *
+        1.20;
+
+
+    const gateHeight =
+        cellHeight *
+        0.90;
+
+
+    const cellCenterX =
+        (
+            9 +
+            0.5
+        ) *
+        cellWidth;
+
+
+    const lowerEdgeY =
+        (
+            9 +
+            1
+        ) *
+        cellHeight;
+
+
+    baseGateElement.style.position =
+        "absolute";
+
+
+    baseGateElement.style.width =
+        `${gateWidth}px`;
+
+
+    baseGateElement.style.height =
+        `${gateHeight}px`;
+
+
+    baseGateElement.style.left =
+        `${
+            cellCenterX -
+            gateWidth / 2
+        }px`;
+
+
+    baseGateElement.style.top =
+        `${
+            lowerEdgeY -
+            gateHeight / 2
+        }px`;
+
+
+    baseGateElement.style.zIndex =
+        "18";
+
+
+    baseGateElement.style.pointerEvents =
+        "none";
 
 }
 
