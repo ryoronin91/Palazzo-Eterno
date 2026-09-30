@@ -3451,3 +3451,17 @@ body {
         max-height: none;
     }
 }
+
+
+/* ============================================================
+   LIVELLO BASE - TOKEN PG / TEST MOVIMENTO
+   ============================================================ */
+
+.base-player-token {
+    z-index: 30;
+    pointer-events: none;
+}
+
+#dungeon-map {
+    cursor: crosshair;
+}

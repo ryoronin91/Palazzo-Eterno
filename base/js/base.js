@@ -40,8 +40,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         updateCharacterPanel();
 
+        initializeBasePlayer();
+        setupBaseMovement();
+
         setMessage(
-            "Livello Base caricato. Movimento ed eventi verranno collegati quando sarà definita la funzione di questo livello."
+            "Livello Base caricato. Prova a muovere il PG di qualche casella con WASD o le frecce."
         );
     } catch (error) {
         console.error("Errore avvio Livello Base:", error);
@@ -333,6 +336,327 @@ function setMessage(text, error = false) {
         !!error
     );
 }
+
+
+// ============================================================
+// POSIZIONE PG - TEST LIVELLO BASE
+// ============================================================
+//
+// Per questa prima prova NON salviamo nulla in Supabase.
+// La posizione del dungeon principale resta quindi intatta.
+//
+// La mappa Base usa una griglia 27 x 36.
+// ============================================================
+
+const BASE_INITIAL_PLAYER_X = 13;
+const BASE_INITIAL_PLAYER_Y = 31;
+
+let basePlayerX = BASE_INITIAL_PLAYER_X;
+let basePlayerY = BASE_INITIAL_PLAYER_Y;
+let basePlayerToken = null;
+
+
+// ============================================================
+// CREA E POSIZIONA IL TOKEN
+// ============================================================
+
+function initializeBasePlayer() {
+    const map =
+        document.getElementById("dungeon-map");
+
+    if (
+        !map ||
+        !character
+    ) {
+        return;
+    }
+
+    if (!basePlayerToken) {
+        basePlayerToken =
+            document.createElement("div");
+
+        basePlayerToken.className =
+            "dungeon-player-token base-player-token";
+
+        basePlayerToken.dataset.characterId =
+            character.id;
+
+        const image =
+            document.createElement("img");
+
+        image.src =
+            "../immagini/token/" +
+            (
+                character.token ||
+                "token_1.png"
+            );
+
+        image.alt =
+            character.nome ||
+            "Personaggio";
+
+        image.draggable = false;
+
+        basePlayerToken.appendChild(image);
+        map.appendChild(basePlayerToken);
+    }
+
+    positionBasePlayerToken();
+    updateBaseCoordinates();
+}
+
+
+// ============================================================
+// POSIZIONA TOKEN SULLA GRIGLIA 27 x 36
+// ============================================================
+
+function positionBasePlayerToken() {
+    const map =
+        document.getElementById("dungeon-map");
+
+    if (
+        !map ||
+        !basePlayerToken
+    ) {
+        return;
+    }
+
+    const rect =
+        map.getBoundingClientRect();
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) * 0.88;
+
+    basePlayerToken.style.width =
+        `${tokenSize}px`;
+
+    basePlayerToken.style.height =
+        `${tokenSize}px`;
+
+    basePlayerToken.style.left =
+        `${
+            (
+                basePlayerX +
+                0.5
+            ) *
+            cellWidth -
+            tokenSize / 2
+        }px`;
+
+    basePlayerToken.style.top =
+        `${
+            (
+                basePlayerY +
+                0.5
+            ) *
+            cellHeight -
+            tokenSize / 2
+        }px`;
+}
+
+
+// ============================================================
+// COORDINATE A SCHERMO
+// ============================================================
+
+function updateBaseCoordinates() {
+    const element =
+        document.getElementById(
+            "dungeon-player-coordinates"
+        );
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        `Coordinate PG: X ${basePlayerX} · Y ${basePlayerY}`;
+}
+
+
+// ============================================================
+// MOVIMENTO TEST
+// ============================================================
+
+function setupBaseMovement() {
+    document.addEventListener(
+        "keydown",
+        event => {
+            const target =
+                event.target;
+
+            if (
+                target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement ||
+                target instanceof HTMLSelectElement ||
+                target?.isContentEditable
+            ) {
+                return;
+            }
+
+            let dx = 0;
+            let dy = 0;
+
+            switch (
+                event.key.toLowerCase()
+            ) {
+                case "w":
+                case "arrowup":
+                    dy = -1;
+                    break;
+
+                case "s":
+                case "arrowdown":
+                    dy = 1;
+                    break;
+
+                case "a":
+                case "arrowleft":
+                    dx = -1;
+                    break;
+
+                case "d":
+                case "arrowright":
+                    dx = 1;
+                    break;
+
+                default:
+                    return;
+            }
+
+            event.preventDefault();
+
+            if (event.repeat) {
+                return;
+            }
+
+            moveBasePlayer(dx, dy);
+        }
+    );
+
+    const map =
+        document.getElementById("dungeon-map");
+
+    if (map) {
+        map.addEventListener(
+            "click",
+            event => {
+                const rect =
+                    map.getBoundingClientRect();
+
+                const cellWidth =
+                    rect.width /
+                    BASE_MAP_COLUMNS;
+
+                const cellHeight =
+                    rect.height /
+                    BASE_MAP_ROWS;
+
+                const clickedX =
+                    Math.floor(
+                        (
+                            event.clientX -
+                            rect.left
+                        ) /
+                        cellWidth
+                    );
+
+                const clickedY =
+                    Math.floor(
+                        (
+                            event.clientY -
+                            rect.top
+                        ) /
+                        cellHeight
+                    );
+
+                const dx =
+                    clickedX -
+                    basePlayerX;
+
+                const dy =
+                    clickedY -
+                    basePlayerY;
+
+                if (
+                    Math.abs(dx) +
+                    Math.abs(dy) !==
+                    1
+                ) {
+                    return;
+                }
+
+                moveBasePlayer(dx, dy);
+            }
+        );
+    }
+
+    window.addEventListener(
+        "resize",
+        positionBasePlayerToken
+    );
+}
+
+
+// ============================================================
+// ESEGUE UN PASSO
+// ============================================================
+
+function moveBasePlayer(dx, dy) {
+    const newX =
+        basePlayerX + dx;
+
+    const newY =
+        basePlayerY + dy;
+
+    // Per questo primissimo test controlliamo solo i confini.
+    // Pareti e celle percorribili verranno collegate al JSON
+    // nel passaggio successivo.
+
+    if (
+        newX < 0 ||
+        newY < 0 ||
+        newX >= BASE_MAP_COLUMNS ||
+        newY >= BASE_MAP_ROWS
+    ) {
+        setMessage(
+            "Non puoi andare oltre i confini del Livello Base."
+        );
+
+        return false;
+    }
+
+    basePlayerX = newX;
+    basePlayerY = newY;
+
+    positionBasePlayerToken();
+    updateBaseCoordinates();
+
+    setMessage(
+        `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
+    );
+
+    return true;
+}
+
 
 // ============================================================
 // VOLUME
