@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=6"
+        href="css/master.css?v=7"
     >
 <style>
 
@@ -200,7 +200,33 @@
 
             <div class="master-header-title">
                 <span class="master-label">MODALITÀ MASTER</span>
-                <h1>PALAZZO ETERNO - PIANO 1</h1>
+                <h1 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h1>
+            </div>
+
+            <div
+                class="master-floor-switch"
+                role="group"
+                aria-label="Piano osservato dal Master"
+            >
+                <button
+                    id="master-floor-dungeon"
+                    type="button"
+                    class="master-floor-button is-active"
+                    data-master-floor="dungeon"
+                    aria-pressed="true"
+                >
+                    PIANO 1
+                </button>
+
+                <button
+                    id="master-floor-base"
+                    type="button"
+                    class="master-floor-button"
+                    data-master-floor="base"
+                    aria-pressed="false"
+                >
+                    LIVELLO BASE
+                </button>
             </div>
 
             <div class="master-header-actions">
@@ -346,11 +372,11 @@
                     <span><b class="legend-dot is-online"></b> PG online</span>
                     <span><b class="legend-dot is-offline"></b> PG offline</span>
                     <span><b class="legend-symbol combat">⚔</b> Combat</span>
-                    <span><b class="legend-symbol boss">👹</b> Boss</span>
-                    <span><b class="legend-symbol pvp">⚔</b> PvP</span>
-                    <span><b class="legend-symbol vendor">🐒</b> Vendor</span>
-                    <span><b class="legend-symbol trap">⚠</b> Trappola</span>
-                    <span><b class="legend-symbol event">◆</b> Evento</span>
+                    <span id="master-legend-boss"><b class="legend-symbol boss">👹</b> Boss</span>
+                    <span id="master-legend-pvp"><b class="legend-symbol pvp">⚔</b> PvP</span>
+                    <span id="master-legend-vendor"><b class="legend-symbol vendor">🐒</b> Vendor</span>
+                    <span id="master-legend-trap"><b class="legend-symbol trap">⚠</b> Trappola</span>
+                    <span id="master-legend-event"><b class="legend-symbol event">◆</b> Evento</span>
                 </div>
 
                 <div
@@ -693,7 +719,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=8"></script>
+    <script src="js/master.js?v=9"></script>
 
 
 </body>

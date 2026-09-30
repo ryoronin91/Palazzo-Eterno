@@ -181,17 +181,23 @@ document.addEventListener(
 
             setupLogout();
 
+            setupMasterFloorSelector();
+
             setupMasterChat();
 
             await loadMasterChatHistory();
 
             setupMap();
 
+            // Prima leggiamo le sessioni attive: servono anche
+            // per capire a quale piano appartiene un PG in combat.
+            await loadActiveMasterCombats();
+
             await Promise.all([
                 loadMasterTrapStates(),
                 loadAllMasterCharacters(),
-                loadActiveMasterCombats(),
-                loadMasterBossPassword()
+                loadMasterBossPassword(),
+                loadMasterCooldownStates()
             ]);
 
             renderMasterEvents();
@@ -4096,3 +4102,3159 @@ window.addEventListener("beforeunload", () => {
         masterDashboardRefreshTimer = null;
     }
 });
+
+
+// ============================================================
+// DASHBOARD MASTER v9
+// PIANO 1 / LIVELLO BASE + COOLDOWN BOSS / COMBAT BASE
+// ============================================================
+
+let masterViewFloor = "dungeon";
+let masterFloorSwitchInProgress = false;
+
+const MASTER_BASE_CHANNEL_NAME =
+    "palazzo-eterno-base";
+
+const MASTER_BASE_CHAT_FLOOR_ID =
+    "base";
+
+const MASTER_DUNGEON_CHAT_FLOOR_ID =
+    "floor_1";
+
+const MASTER_BASE_MAP_COLUMNS =
+    27;
+
+const MASTER_BASE_MAP_ROWS =
+    36;
+
+const MASTER_BASE_COMBAT_EVENTS = [
+    {
+        id: "BASE_C1_LEFT",
+        x: 8,
+        y: 7,
+        encounter_id: "base_combat_left",
+        state_key: "left",
+        label: "COMBAT BASE SINISTRO"
+    },
+    {
+        id: "BASE_C1_RIGHT",
+        x: 10,
+        y: 7,
+        encounter_id: "base_combat_right",
+        state_key: "right",
+        label: "COMBAT BASE DESTRO"
+    }
+];
+
+let masterBossState = {
+    available: true,
+    cooldown_until: null
+};
+
+let masterBaseCombatStates = {
+    left: {
+        available: true,
+        cooldown_until: null,
+        remaining_seconds: 0
+    },
+    right: {
+        available: true,
+        cooldown_until: null,
+        remaining_seconds: 0
+    }
+};
+
+let masterCooldownCountdownTimer = null;
+
+
+// ============================================================
+// CONFIGURAZIONE PIANO
+// ============================================================
+
+function getMasterFloorConfig() {
+
+    if (masterViewFloor === "base") {
+
+        return {
+            key: "base",
+            title: "PALAZZO ETERNO - LIVELLO BASE",
+            columns: MASTER_BASE_MAP_COLUMNS,
+            rows: MASTER_BASE_MAP_ROWS,
+            image: "base/immagini/base_map.png",
+            imageAlt: "Mappa completa del Livello Base",
+            channel: MASTER_BASE_CHANNEL_NAME,
+            chatFloorId: MASTER_BASE_CHAT_FLOOR_ID,
+            chatEvent: "base-chat",
+            message: "Modalità Master connessa al Livello Base."
+        };
+
+    }
+
+
+    return {
+        key: "dungeon",
+        title: "PALAZZO ETERNO - PIANO 1",
+        columns: MAP_COLUMNS,
+        rows: MAP_ROWS,
+        image: "immagini/dungeon-test.png?v=2",
+        imageAlt: "Mappa completa del dungeon",
+        channel: DUNGEON_CHANNEL_NAME,
+        chatFloorId: MASTER_DUNGEON_CHAT_FLOOR_ID,
+        chatEvent: "floor-chat",
+        message: "Modalità Master connessa al Piano 1."
+    };
+
+}
+
+
+function getMasterMapColumns() {
+
+    return getMasterFloorConfig().columns;
+
+}
+
+
+function getMasterMapRows() {
+
+    return getMasterFloorConfig().rows;
+
+}
+
+
+function getMasterChatFloorId() {
+
+    return getMasterFloorConfig().chatFloorId;
+
+}
+
+
+function getMasterChatBroadcastEvent() {
+
+    return getMasterFloorConfig().chatEvent;
+
+}
+
+
+// ============================================================
+// SELETTORE PIANO
+// ============================================================
+
+function setupMasterFloorSelector() {
+
+    document
+        .querySelectorAll(
+            "[data-master-floor]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    async () => {
+
+                        const floor =
+                            button.dataset.masterFloor;
+
+
+                        if (
+                            !floor ||
+                            floor === masterViewFloor ||
+                            masterFloorSwitchInProgress
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        await switchMasterFloor(
+                            floor
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+    updateMasterFloorInterface();
+
+}
+
+
+async function switchMasterFloor(
+    floor
+) {
+
+    if (
+        ![
+            "dungeon",
+            "base"
+        ].includes(floor)
+    ) {
+
+        return;
+
+    }
+
+
+    masterFloorSwitchInProgress =
+        true;
+
+
+    try {
+
+        setMasterChatConnected(
+            false
+        );
+
+
+        realtimeReady =
+            false;
+
+
+        if (dungeonChannel) {
+
+            try {
+
+                await db.removeChannel(
+                    dungeonChannel
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "Errore chiusura canale Master:",
+                    error
+                );
+
+            }
+
+
+            dungeonChannel =
+                null;
+
+        }
+
+
+        masterViewFloor =
+            floor;
+
+
+        onlinePlayers.clear();
+
+
+        allMasterPlayers.clear();
+
+
+        playerTokens.forEach(
+            token => token?.remove()
+        );
+
+
+        playerTokens.clear();
+
+
+        renderedMasterChatMessageIds.clear();
+
+
+        const chat =
+            document.getElementById(
+                "master-chat-messages"
+            );
+
+
+        if (chat) {
+
+            chat.innerHTML =
+                `
+                    <div class="master-chat-empty">
+                        Caricamento messaggi...
+                    </div>
+                `;
+
+        }
+
+
+        updateMasterFloorInterface();
+
+
+        await loadActiveMasterCombats();
+
+
+        await Promise.all([
+            loadMasterCooldownStates(),
+            loadAllMasterCharacters(),
+            loadMasterChatHistory()
+        ]);
+
+
+        renderMasterEvents();
+
+
+        await setupRealtime();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore cambio piano Master:",
+            error
+        );
+
+
+        showMessage(
+            "Impossibile cambiare piano."
+        );
+
+
+    } finally {
+
+        masterFloorSwitchInProgress =
+            false;
+
+    }
+
+}
+
+
+function updateMasterFloorInterface() {
+
+    const config =
+        getMasterFloorConfig();
+
+
+    const title =
+        document.getElementById(
+            "master-floor-title"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            config.title;
+
+    }
+
+
+    document
+        .querySelectorAll(
+            "[data-master-floor]"
+        )
+        .forEach(
+            button => {
+
+                const active =
+                    button.dataset.masterFloor ===
+                    masterViewFloor;
+
+
+                button.classList.toggle(
+                    "is-active",
+                    active
+                );
+
+
+                button.setAttribute(
+                    "aria-pressed",
+                    active
+                        ? "true"
+                        : "false"
+                );
+
+            }
+        );
+
+
+    const image =
+        document.getElementById(
+            "master-map-image"
+        );
+
+
+    if (image) {
+
+        image.src =
+            config.image;
+
+        image.alt =
+            config.imageAlt;
+
+    }
+
+
+    const map =
+        document.getElementById(
+            "master-map"
+        );
+
+
+    map?.classList.toggle(
+        "is-base-view",
+        masterViewFloor ===
+            "base"
+    );
+
+
+    const dungeonOnlyLegendIds = [
+        "master-legend-boss",
+        "master-legend-pvp",
+        "master-legend-vendor",
+        "master-legend-trap",
+        "master-legend-event"
+    ];
+
+
+    dungeonOnlyLegendIds.forEach(
+        id => {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.hidden =
+                    masterViewFloor ===
+                    "base";
+
+            }
+
+        }
+    );
+
+
+    showMessage(
+        masterViewFloor === "base"
+            ? "Visualizzazione Livello Base."
+            : "Visualizzazione Piano 1."
+    );
+
+}
+
+
+// ============================================================
+// COOLDOWN
+// ============================================================
+
+async function loadMasterCooldownStates() {
+
+    const jobs = [];
+
+
+    jobs.push(
+        (
+            async () => {
+
+                try {
+
+                    const {
+                        data,
+                        error
+                    } =
+                        await db.rpc(
+                            "get_goblin_boss_state"
+                        );
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+
+                    masterBossState = {
+                        available:
+                            data?.available !==
+                            false,
+
+                        cooldown_until:
+                            data?.cooldown_until ||
+                            null
+                    };
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Errore cooldown Boss Master:",
+                        error
+                    );
+
+                }
+
+            }
+        )()
+    );
+
+
+    jobs.push(
+        (
+            async () => {
+
+                try {
+
+                    const {
+                        data,
+                        error
+                    } =
+                        await db.rpc(
+                            "get_base_combat_states"
+                        );
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+
+                    masterBaseCombatStates = {
+                        left: {
+                            available:
+                                data?.left?.available !==
+                                false,
+
+                            cooldown_until:
+                                data?.left?.cooldown_until ||
+                                null,
+
+                            remaining_seconds:
+                                Number(
+                                    data?.left?.remaining_seconds
+                                ) || 0
+                        },
+
+                        right: {
+                            available:
+                                data?.right?.available !==
+                                false,
+
+                            cooldown_until:
+                                data?.right?.cooldown_until ||
+                                null,
+
+                            remaining_seconds:
+                                Number(
+                                    data?.right?.remaining_seconds
+                                ) || 0
+                        }
+                    };
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Errore cooldown combat Base Master:",
+                        error
+                    );
+
+                }
+
+            }
+        )()
+    );
+
+
+    await Promise.all(
+        jobs
+    );
+
+
+    renderMasterEvents();
+
+
+    startMasterCooldownCountdown();
+
+}
+
+
+function startMasterCooldownCountdown() {
+
+    if (
+        masterCooldownCountdownTimer
+    ) {
+
+        clearInterval(
+            masterCooldownCountdownTimer
+        );
+
+    }
+
+
+    masterCooldownCountdownTimer =
+        setInterval(
+            () => {
+
+                updateMasterCombatCooldownCountdowns();
+
+            },
+            1000
+        );
+
+}
+
+
+function formatMasterCooldown(
+    cooldownUntil
+) {
+
+    if (!cooldownUntil) {
+
+        return "";
+
+    }
+
+
+    const end =
+        new Date(
+            cooldownUntil
+        ).getTime();
+
+
+    if (
+        !Number.isFinite(
+            end
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    const seconds =
+        Math.ceil(
+            Math.max(
+                0,
+                end -
+                Date.now()
+            ) /
+            1000
+        );
+
+
+    if (
+        seconds <=
+        0
+    ) {
+
+        return "";
+
+    }
+
+
+    const hours =
+        Math.floor(
+            seconds /
+            3600
+        );
+
+
+    const minutes =
+        Math.floor(
+            (
+                seconds %
+                3600
+            ) /
+            60
+        );
+
+
+    const remainingSeconds =
+        seconds %
+        60;
+
+
+    return hours >
+        0
+
+        ? `${hours}:${String(
+            minutes
+        ).padStart(
+            2,
+            "0"
+        )}:${String(
+            remainingSeconds
+        ).padStart(
+            2,
+            "0"
+        )}`
+
+        : `${minutes}:${String(
+            remainingSeconds
+        ).padStart(
+            2,
+            "0"
+        )}`;
+
+}
+
+
+function updateMasterCombatCooldownCountdowns() {
+
+    document
+        .querySelectorAll(
+            ".master-event-marker[data-cooldown-until]"
+        )
+        .forEach(
+            marker => {
+
+                const countdown =
+                    marker.querySelector(
+                        ".master-event-countdown"
+                    );
+
+
+                const value =
+                    formatMasterCooldown(
+                        marker.dataset.cooldownUntil
+                    );
+
+
+                if (countdown) {
+
+                    countdown.textContent =
+                        value;
+
+                }
+
+
+                if (!value) {
+
+                    marker.classList.remove(
+                        "is-cooldown"
+                    );
+
+
+                    marker.classList.add(
+                        "is-available"
+                    );
+
+                }
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// CHAT DINAMICA
+// ============================================================
+
+async function loadMasterChatHistory() {
+
+    const container =
+        document.getElementById(
+            "master-chat-messages"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .select(`
+                    id,
+                    character_id,
+                    user_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .eq(
+                    "floor_id",
+                    getMasterChatFloorId()
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                )
+                .limit(
+                    MASTER_CHAT_HISTORY_LIMIT
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        renderedMasterChatMessageIds.clear();
+
+
+        container.innerHTML =
+            "";
+
+
+        const rows =
+            Array.isArray(data)
+                ? [...data]
+                : [];
+
+
+        if (
+            rows.length ===
+            0
+        ) {
+
+            container.innerHTML =
+                `
+                    <div class="master-chat-empty">
+                        Nessun messaggio ancora.
+                    </div>
+                `;
+
+
+            return;
+
+        }
+
+
+        rows.forEach(
+            row => {
+
+                appendMasterChatMessage(
+                    {
+                        id:
+                            row.id,
+
+                        character_id:
+                            row.character_id,
+
+                        master_user_id:
+                            row.character_id === null
+                                ? row.user_id
+                                : null,
+
+                        name:
+                            row.sender_name,
+
+                        text:
+                            row.message_text,
+
+                        timestamp:
+                            row.created_at,
+
+                        sent_at:
+                            row.created_at
+                    },
+                    row.sender_name ===
+                        "MASTER"
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore storico chat Master:",
+            error
+        );
+
+    }
+
+}
+
+
+async function sendMasterChatMessage() {
+
+    const input =
+        document.getElementById(
+            "master-chat-input"
+        );
+
+
+    const feedback =
+        document.getElementById(
+            "master-chat-feedback"
+        );
+
+
+    if (
+        !input ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    const text =
+        input.value
+            .trim();
+
+
+    if (!text) {
+
+        return;
+
+    }
+
+
+    if (
+        !dungeonChannel ||
+        !realtimeReady
+    ) {
+
+        if (feedback) {
+
+            feedback.textContent =
+                "Chat non connessa.";
+
+        }
+
+
+        return;
+
+    }
+
+
+    const originalValue =
+        input.value;
+
+
+    input.value =
+        "";
+
+
+    if (feedback) {
+
+        feedback.textContent =
+            "";
+
+    }
+
+
+    try {
+
+        const {
+            data: savedMessage,
+            error
+        } =
+            await db
+                .from(
+                    "dungeon_chat_messages"
+                )
+                .insert({
+                    floor_id:
+                        getMasterChatFloorId(),
+
+                    character_id:
+                        null,
+
+                    user_id:
+                        currentUser.id,
+
+                    sender_name:
+                        "MASTER",
+
+                    message_text:
+                        text
+                })
+                .select(`
+                    id,
+                    character_id,
+                    user_id,
+                    sender_name,
+                    message_text,
+                    created_at
+                `)
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const payload = {
+            id:
+                savedMessage.id,
+
+            character_id:
+                null,
+
+            master_user_id:
+                savedMessage.user_id ||
+                currentUser.id,
+
+            name:
+                "MASTER",
+
+            nome:
+                "MASTER",
+
+            text:
+                savedMessage.message_text ||
+                text,
+
+            timestamp:
+                savedMessage.created_at,
+
+            sent_at:
+                savedMessage.created_at
+        };
+
+
+        appendMasterChatMessage(
+            payload,
+            true
+        );
+
+
+        await dungeonChannel.send({
+            type:
+                "broadcast",
+
+            event:
+                getMasterChatBroadcastEvent(),
+
+            payload
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore invio chat Master:",
+            error
+        );
+
+
+        input.value =
+            originalValue;
+
+
+        if (feedback) {
+
+            feedback.textContent =
+                "Messaggio non inviato.";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// REALTIME DINAMICO
+// ============================================================
+
+async function setupRealtime() {
+
+    const config =
+        getMasterFloorConfig();
+
+
+    showMessage(
+        masterViewFloor === "base"
+            ? "Connessione al Livello Base..."
+            : "Connessione al dungeon..."
+    );
+
+
+    dungeonChannel =
+        db.channel(
+            config.channel
+        );
+
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event:
+                "sync"
+        },
+        () => {
+
+            syncPresencePlayers();
+
+        }
+    );
+
+
+    dungeonChannel.on(
+        "broadcast",
+        {
+            event:
+                config.chatEvent
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+
+            if (!data) {
+
+                return;
+
+            }
+
+
+            appendMasterChatMessage(
+                data,
+                data.name === "MASTER" ||
+                data.nome === "MASTER" ||
+                data.sender_name === "MASTER"
+            );
+
+        }
+    );
+
+
+    // Il Piano 1 invia player-move/player-state.
+    // La Base mantiene comunque Presence aggiornata ad ogni passo.
+    if (
+        masterViewFloor ===
+        "dungeon"
+    ) {
+
+        [
+            "player-move",
+            "player-state"
+        ].forEach(
+            eventName => {
+
+                dungeonChannel.on(
+                    "broadcast",
+                    {
+                        event:
+                            eventName
+                    },
+                    message => {
+
+                        const data =
+                            message.payload;
+
+
+                        if (
+                            !data ||
+                            !data.character_id
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        updatePlayer(
+                            data
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    }
+
+
+    await new Promise(
+        resolve => {
+
+            dungeonChannel.subscribe(
+                status => {
+
+                    console.log(
+                        `Realtime Master ${masterViewFloor}:`,
+                        status
+                    );
+
+
+                    if (
+                        status ===
+                        "SUBSCRIBED"
+                    ) {
+
+                        realtimeReady =
+                            true;
+
+
+                        setMasterChatConnected(
+                            true
+                        );
+
+
+                        syncPresencePlayers();
+
+
+                        showMessage(
+                            config.message
+                        );
+
+
+                        resolve();
+
+                    }
+
+
+                    if (
+                        status === "CHANNEL_ERROR" ||
+                        status === "TIMED_OUT" ||
+                        status === "CLOSED"
+                    ) {
+
+                        realtimeReady =
+                            false;
+
+
+                        setMasterChatConnected(
+                            false
+                        );
+
+
+                        resolve();
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// PRESENCE DINAMICA
+// ============================================================
+
+function syncPresencePlayers() {
+
+    if (!dungeonChannel) {
+
+        return;
+
+    }
+
+
+    const state =
+        dungeonChannel
+            .presenceState();
+
+
+    const currentIds =
+        new Set();
+
+
+    Object.values(
+        state
+    ).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    if (
+                        !presence?.character_id
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    currentIds.add(
+                        presence.character_id
+                    );
+
+
+                    onlinePlayers.set(
+                        presence.character_id,
+                        {
+                            ...presence,
+
+                            nome:
+                                presence.nome ||
+                                presence.name ||
+                                "Avventuriero"
+                        }
+                    );
+
+
+                    const existing =
+                        allMasterPlayers.get(
+                            presence.character_id
+                        );
+
+
+                    if (existing) {
+
+                        allMasterPlayers.set(
+                            presence.character_id,
+                            {
+                                ...existing,
+
+                                nome:
+                                    presence.nome ||
+                                    presence.name ||
+                                    existing.nome,
+
+                                token:
+                                    presence.token ||
+                                    existing.token,
+
+                                x:
+                                    Number.isFinite(
+                                        Number(
+                                            presence.x
+                                        )
+                                    )
+                                        ? Number(
+                                            presence.x
+                                        )
+                                        : existing.x,
+
+                                y:
+                                    Number.isFinite(
+                                        Number(
+                                            presence.y
+                                        )
+                                    )
+                                        ? Number(
+                                            presence.y
+                                        )
+                                        : existing.y,
+
+                                current_hp:
+                                    presence.current_hp !==
+                                    undefined
+                                        ? presence.current_hp
+                                        : existing.current_hp,
+
+                                active_combat_id:
+                                    presence.active_combat_id !==
+                                    undefined
+                                        ? presence.active_combat_id
+                                        : existing.active_combat_id,
+
+                                online:
+                                    true
+                            }
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    for (
+        const characterId
+        of Array.from(
+            onlinePlayers.keys()
+        )
+    ) {
+
+        if (
+            !currentIds.has(
+                characterId
+            )
+        ) {
+
+            onlinePlayers.delete(
+                characterId
+            );
+
+
+            const existing =
+                allMasterPlayers.get(
+                    characterId
+                );
+
+
+            if (existing) {
+
+                allMasterPlayers.set(
+                    characterId,
+                    {
+                        ...existing,
+                        online:
+                            false
+                    }
+                );
+
+            }
+
+        }
+
+    }
+
+
+    renderAllTokens();
+
+    updatePlayerList();
+
+    updateOnlineCounter();
+
+    renderActiveMasterCombats();
+
+}
+
+
+// ============================================================
+// PG DEL PIANO SELEZIONATO
+// ============================================================
+
+function isMasterCharacterOnSelectedFloor(
+    characterData
+) {
+
+    const location =
+        characterData?.current_location ||
+        "dungeon";
+
+
+    if (
+        location ===
+        "base"
+    ) {
+
+        return masterViewFloor ===
+            "base";
+
+    }
+
+
+    if (
+        location ===
+        "combat" &&
+        characterData?.active_combat_id
+    ) {
+
+        const session =
+            activeMasterCombats.get(
+                characterData.active_combat_id
+            );
+
+
+        const isBaseCombat =
+            String(
+                session?.encounter_id ||
+                ""
+            ).startsWith(
+                "base_"
+            );
+
+
+        return masterViewFloor ===
+            (
+                isBaseCombat
+                    ? "base"
+                    : "dungeon"
+            );
+
+    }
+
+
+    // vendor/PvP/dungeon appartengono al Piano 1.
+    return masterViewFloor ===
+        "dungeon";
+
+}
+
+
+async function loadAllMasterCharacters() {
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "characters"
+            )
+            .select(`
+                id,
+                user_id,
+                nome,
+                livello,
+                token,
+                forza,
+                resistenza,
+                costituzione,
+                intelligenza,
+                destrezza,
+                fortuna,
+                current_hp,
+                current_pm,
+                dungeon_x,
+                dungeon_y,
+                base_x,
+                base_y,
+                current_location,
+                active_combat_id
+            `);
+
+
+    if (error) {
+
+        console.error(
+            "Errore caricamento PG Master:",
+            error
+        );
+
+
+        return;
+
+    }
+
+
+    const rows =
+        (
+            data ||
+            []
+        ).filter(
+            isMasterCharacterOnSelectedFloor
+        );
+
+
+    const characterIds =
+        rows.map(
+            characterData =>
+                characterData.id
+        );
+
+
+    await loadMasterCharacterExtras(
+        characterIds
+    );
+
+
+    const currentIds =
+        new Set();
+
+
+    allMasterPlayers.clear();
+
+
+    rows.forEach(
+        characterData => {
+
+            currentIds.add(
+                characterData.id
+            );
+
+
+            const presence =
+                onlinePlayers.get(
+                    characterData.id
+                );
+
+
+            const storedX =
+                masterViewFloor === "base"
+                    ? Number(
+                        characterData.base_x
+                    )
+                    : Number(
+                        characterData.dungeon_x
+                    );
+
+
+            const storedY =
+                masterViewFloor === "base"
+                    ? Number(
+                        characterData.base_y
+                    )
+                    : Number(
+                        characterData.dungeon_y
+                    );
+
+
+            const x =
+                presence &&
+                Number.isFinite(
+                    Number(
+                        presence.x
+                    )
+                )
+
+                    ? Number(
+                        presence.x
+                    )
+
+                    : storedX;
+
+
+            const y =
+                presence &&
+                Number.isFinite(
+                    Number(
+                        presence.y
+                    )
+                )
+
+                    ? Number(
+                        presence.y
+                    )
+
+                    : storedY;
+
+
+            allMasterPlayers.set(
+                characterData.id,
+                {
+                    ...characterData,
+
+                    character_id:
+                        characterData.id,
+
+                    nome:
+                        presence?.nome ||
+                        presence?.name ||
+                        characterData.nome ||
+                        "Avventuriero",
+
+                    token:
+                        presence?.token ||
+                        characterData.token ||
+                        "token_1.png",
+
+                    x:
+                        Number.isFinite(
+                            x
+                        )
+                            ? x
+                            : 0,
+
+                    y:
+                        Number.isFinite(
+                            y
+                        )
+                            ? y
+                            : 0,
+
+                    current_hp:
+                        presence?.current_hp !==
+                        undefined
+                            ? presence.current_hp
+                            : characterData.current_hp,
+
+                    active_combat_id:
+                        presence?.active_combat_id !==
+                        undefined
+                            ? presence.active_combat_id
+                            : characterData.active_combat_id ||
+                              null,
+
+                    score:
+                        masterPlayerScores.get(
+                            characterData.id
+                        ) ??
+                        0,
+
+                    has_monkey_finger:
+                        masterMonkeyFingerOwners.has(
+                            characterData.id
+                        ),
+
+                    online:
+                        onlinePlayers.has(
+                            characterData.id
+                        )
+                }
+            );
+
+        }
+    );
+
+
+    for (
+        const [
+            characterId,
+            token
+        ]
+        of Array.from(
+            playerTokens.entries()
+        )
+    ) {
+
+        if (
+            !currentIds.has(
+                characterId
+            )
+        ) {
+
+            token?.remove();
+
+            playerTokens.delete(
+                characterId
+            );
+
+        }
+
+    }
+
+
+    renderAllTokens();
+
+    updatePlayerList();
+
+    updateOnlineCounter();
+
+    renderMasterMonkeyFingerStatus();
+
+}
+
+
+// ============================================================
+// TOKEN CON GRIGLIA DINAMICA
+// ============================================================
+
+function renderPlayerToken(
+    characterId
+) {
+
+    const player =
+        allMasterPlayers.get(
+            characterId
+        );
+
+
+    if (!player) {
+
+        const old =
+            playerTokens.get(
+                characterId
+            );
+
+
+        old?.remove();
+
+        playerTokens.delete(
+            characterId
+        );
+
+
+        return;
+
+    }
+
+
+    const image =
+        document.getElementById(
+            "master-map-image"
+        );
+
+
+    const container =
+        document.getElementById(
+            "master-map"
+        );
+
+
+    if (
+        !image ||
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    const mapRect =
+        image.getBoundingClientRect();
+
+
+    const containerRect =
+        container.getBoundingClientRect();
+
+
+    if (
+        mapRect.width <=
+            0 ||
+        mapRect.height <=
+            0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        mapRect.width /
+        getMasterMapColumns();
+
+
+    const cellHeight =
+        mapRect.height /
+        getMasterMapRows();
+
+
+    let token =
+        playerTokens.get(
+            characterId
+        );
+
+
+    if (!token) {
+
+        token =
+            document.createElement(
+                "img"
+            );
+
+
+        token.className =
+            "master-player-token";
+
+
+        token.addEventListener(
+            "click",
+            event => {
+
+                event.stopPropagation();
+
+
+                openCharacterSheet(
+                    characterId
+                );
+
+            }
+        );
+
+
+        container.appendChild(
+            token
+        );
+
+
+        playerTokens.set(
+            characterId,
+            token
+        );
+
+    }
+
+
+    token.src =
+        "immagini/token/" +
+        (
+            player.token ||
+            "token_1.png"
+        );
+
+
+    token.alt =
+        "Token di " +
+        (
+            player.nome ||
+            "Avventuriero"
+        );
+
+
+    token.title =
+        `${player.nome || "Avventuriero"}` +
+        `${player.online ? " · ONLINE" : " · OFFLINE"}` +
+        `${player.active_combat_id ? " · IN COMBATTIMENTO" : ""}`;
+
+
+    token.classList.toggle(
+        "is-online",
+        !!player.online
+    );
+
+
+    token.classList.toggle(
+        "is-offline",
+        !player.online
+    );
+
+
+    token.classList.toggle(
+        "is-in-combat",
+        !!player.active_combat_id
+    );
+
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) *
+        0.92;
+
+
+    token.style.width =
+        `${tokenSize}px`;
+
+
+    token.style.height =
+        `${tokenSize}px`;
+
+
+    const x =
+        Number.isFinite(
+            Number(
+                player.x
+            )
+        )
+            ? Number(
+                player.x
+            )
+            : 0;
+
+
+    const y =
+        Number.isFinite(
+            Number(
+                player.y
+            )
+        )
+            ? Number(
+                player.y
+            )
+            : 0;
+
+
+    const centerX =
+        (
+            x +
+            0.5
+        ) *
+        cellWidth;
+
+
+    const centerY =
+        (
+            y +
+            0.5
+        ) *
+        cellHeight;
+
+
+    const offsetX =
+        mapRect.left -
+        containerRect.left;
+
+
+    const offsetY =
+        mapRect.top -
+        containerRect.top;
+
+
+    token.style.left =
+        `${offsetX + centerX - tokenSize / 2}px`;
+
+
+    token.style.top =
+        `${offsetY + centerY - tokenSize / 2}px`;
+
+}
+
+
+// ============================================================
+// EVENTI MAPPA DINAMICI
+// ============================================================
+
+function renderMasterEvents() {
+
+    const image =
+        document.getElementById(
+            "master-map-image"
+        );
+
+
+    const container =
+        document.getElementById(
+            "master-map"
+        );
+
+
+    if (
+        !image ||
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    container
+        .querySelectorAll(
+            ".master-event-marker"
+        )
+        .forEach(
+            marker =>
+                marker.remove()
+        );
+
+
+    const mapRect =
+        image.getBoundingClientRect();
+
+
+    const containerRect =
+        container.getBoundingClientRect();
+
+
+    if (
+        mapRect.width <=
+            0 ||
+        mapRect.height <=
+            0
+    ) {
+
+        return;
+
+    }
+
+
+    const cellWidth =
+        mapRect.width /
+        getMasterMapColumns();
+
+
+    const cellHeight =
+        mapRect.height /
+        getMasterMapRows();
+
+
+    const offsetX =
+        mapRect.left -
+        containerRect.left;
+
+
+    const offsetY =
+        mapRect.top -
+        containerRect.top;
+
+
+    const placeMarker =
+        (
+            x,
+            y,
+            marker
+        ) => {
+
+            const markerSize =
+                Math.min(
+                    cellWidth,
+                    cellHeight
+                ) *
+                0.72;
+
+
+            marker.style.width =
+                `${markerSize}px`;
+
+
+            marker.style.height =
+                `${markerSize}px`;
+
+
+            marker.style.left =
+                `${
+                    offsetX +
+                    (
+                        x +
+                        0.5
+                    ) *
+                    cellWidth -
+                    markerSize /
+                    2
+                }px`;
+
+
+            marker.style.top =
+                `${
+                    offsetY +
+                    (
+                        y +
+                        0.5
+                    ) *
+                    cellHeight -
+                    markerSize /
+                    2
+                }px`;
+
+
+            container.appendChild(
+                marker
+            );
+
+        };
+
+
+    if (
+        masterViewFloor ===
+        "base"
+    ) {
+
+        MASTER_BASE_COMBAT_EVENTS.forEach(
+            combatEvent => {
+
+                const state =
+                    masterBaseCombatStates[
+                        combatEvent.state_key
+                    ] ||
+                    {
+                        available:
+                            true,
+                        cooldown_until:
+                            null
+                    };
+
+
+                const marker =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                marker.className =
+                    "master-event-marker is-base-combat";
+
+
+                marker.dataset.eventId =
+                    combatEvent.id;
+
+
+                marker.textContent =
+                    "⚔";
+
+
+                const activeCombat =
+                    getActiveCombatForEncounter(
+                        combatEvent.encounter_id
+                    );
+
+
+                if (activeCombat) {
+
+                    marker.classList.add(
+                        "has-live-combat"
+                    );
+
+
+                    marker.title =
+                        `${combatEvent.label}\n` +
+                        `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
+                        "COMBATTIMENTO IN CORSO\nClicca per osservare";
+
+
+                    marker.addEventListener(
+                        "click",
+                        event => {
+
+                            event.stopPropagation();
+
+                            openMasterCombat(
+                                activeCombat.id
+                            );
+
+                        }
+                    );
+
+
+                } else if (
+                    state.available !==
+                    false
+                ) {
+
+                    marker.classList.add(
+                        "is-available"
+                    );
+
+
+                    marker.title =
+                        `${combatEvent.label}\n` +
+                        `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
+                        "DISPONIBILE";
+
+
+                } else {
+
+                    marker.classList.add(
+                        "is-cooldown"
+                    );
+
+
+                    marker.dataset.cooldownUntil =
+                        state.cooldown_until ||
+                        "";
+
+
+                    const countdown =
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    countdown.className =
+                        "master-event-countdown";
+
+
+                    countdown.textContent =
+                        formatMasterCooldown(
+                            state.cooldown_until
+                        );
+
+
+                    marker.appendChild(
+                        countdown
+                    );
+
+
+                    marker.title =
+                        `${combatEvent.label}\n` +
+                        `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
+                        "IN COOLDOWN";
+
+                }
+
+
+                placeMarker(
+                    combatEvent.x,
+                    combatEvent.y,
+                    marker
+                );
+
+            }
+        );
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // EVENTI PIANO 1
+    // --------------------------------------------------------
+
+    Object.entries(
+        MASTER_DUNGEON_EVENTS
+    ).forEach(
+        ([
+            coordinateKey,
+            dungeonEvent
+        ]) => {
+
+            const [
+                x,
+                y
+            ] =
+                coordinateKey
+                    .split(",")
+                    .map(Number);
+
+
+            const marker =
+                document.createElement(
+                    "div"
+                );
+
+
+            marker.className =
+                "master-event-marker";
+
+
+            marker.dataset.eventId =
+                dungeonEvent.id;
+
+
+            marker.dataset.eventType =
+                dungeonEvent.type;
+
+
+            if (
+                dungeonEvent.type ===
+                "communication"
+            ) {
+
+                marker.classList.add(
+                    "is-communication"
+                );
+
+
+                marker.textContent =
+                    "◆";
+
+
+                marker.title =
+                    `EVENTO\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
+
+            }
+
+
+            if (
+                dungeonEvent.type ===
+                "trap"
+            ) {
+
+                marker.classList.add(
+                    "is-trap"
+                );
+
+
+                const icon =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                icon.className =
+                    "master-event-icon";
+
+
+                icon.textContent =
+                    "⚠";
+
+
+                const countdown =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                countdown.className =
+                    "master-event-countdown";
+
+
+                marker.append(
+                    icon,
+                    countdown
+                );
+
+
+                updateSingleMasterTrapMarker(
+                    marker,
+                    dungeonEvent,
+                    x,
+                    y
+                );
+
+            }
+
+
+            placeMarker(
+                x,
+                y,
+                marker
+            );
+
+        }
+    );
+
+
+    MASTER_COMBAT_EVENTS.forEach(
+        combatEvent => {
+
+            const marker =
+                document.createElement(
+                    "div"
+                );
+
+
+            const isBoss =
+                combatEvent.type ===
+                "boss";
+
+
+            marker.className =
+                "master-event-marker is-combat" +
+                (
+                    isBoss
+                        ? " is-boss"
+                        : ""
+                );
+
+
+            marker.dataset.eventId =
+                combatEvent.id;
+
+
+            marker.dataset.eventType =
+                isBoss
+                    ? "boss"
+                    : "combat";
+
+
+            marker.textContent =
+                isBoss
+                    ? "👹"
+                    : "⚔";
+
+
+            const liveCombat =
+                getActiveCombatForEncounter(
+                    combatEvent.encounter_id
+                );
+
+
+            if (liveCombat) {
+
+                marker.classList.add(
+                    "has-live-combat"
+                );
+
+
+                marker.title =
+                    `${
+                        isBoss
+                            ? "BOSS IN CORSO"
+                            : "COMBATTIMENTO IN CORSO"
+                    }\n` +
+                    `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
+                    `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
+                    "Clicca per osservare";
+
+
+                marker.addEventListener(
+                    "click",
+                    event => {
+
+                        event.stopPropagation();
+
+
+                        openMasterCombat(
+                            liveCombat.id
+                        );
+
+                    }
+                );
+
+
+            } else if (
+                isBoss &&
+                masterBossState.available ===
+                false
+            ) {
+
+                marker.classList.add(
+                    "is-cooldown"
+                );
+
+
+                marker.dataset.cooldownUntil =
+                    masterBossState.cooldown_until ||
+                    "";
+
+
+                const countdown =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                countdown.className =
+                    "master-event-countdown";
+
+
+                countdown.textContent =
+                    formatMasterCooldown(
+                        masterBossState.cooldown_until
+                    );
+
+
+                marker.appendChild(
+                    countdown
+                );
+
+
+                marker.title =
+                    `GOBLIN BOSS IN COOLDOWN\n` +
+                    `X ${combatEvent.x} • Y ${combatEvent.y}`;
+
+
+            } else {
+
+                marker.classList.add(
+                    "is-available"
+                );
+
+
+                marker.title =
+                    `${
+                        isBoss
+                            ? "GOBLIN BOSS"
+                            : "EVENTO COMBAT"
+                    }\n` +
+                    `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
+                    `X ${combatEvent.x} • Y ${combatEvent.y}`;
+
+            }
+
+
+            placeMarker(
+                combatEvent.x,
+                combatEvent.y,
+                marker
+            );
+
+        }
+    );
+
+
+    MASTER_SPECIAL_EVENTS.forEach(
+        specialEvent => {
+
+            const marker =
+                document.createElement(
+                    "div"
+                );
+
+
+            marker.className =
+                `master-event-marker is-special is-${specialEvent.type}`;
+
+
+            marker.dataset.eventId =
+                specialEvent.id;
+
+
+            marker.dataset.eventType =
+                specialEvent.type;
+
+
+            marker.textContent =
+                specialEvent.type ===
+                "pvp"
+                    ? "⚔"
+                    : "🐒";
+
+
+            marker.title =
+                `${specialEvent.label}\n` +
+                `X ${specialEvent.x} • Y ${specialEvent.y}`;
+
+
+            placeMarker(
+                specialEvent.x,
+                specialEvent.y,
+                marker
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// SCHEDA PG: COORDINATE DEL PIANO SELEZIONATO
+// ============================================================
+
+async function openCharacterSheet(
+    characterId
+) {
+
+    const modal =
+        document.getElementById(
+            "master-character-modal"
+        );
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    showMessage(
+        "Caricamento scheda..."
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await db
+            .from(
+                "characters"
+            )
+            .select(`
+                id,
+                nome,
+                livello,
+                token,
+                forza,
+                resistenza,
+                costituzione,
+                intelligenza,
+                destrezza,
+                fortuna,
+                current_hp,
+                current_pm,
+                dungeon_x,
+                dungeon_y,
+                base_x,
+                base_y,
+                current_location,
+                active_combat_id
+            `)
+            .eq(
+                "id",
+                characterId
+            )
+            .single();
+
+
+    if (error) {
+
+        console.error(
+            "Errore caricamento scheda:",
+            error
+        );
+
+
+        showMessage(
+            "Impossibile caricare la scheda."
+        );
+
+
+        return;
+
+    }
+
+
+    const cached =
+        allMasterPlayers.get(
+            characterId
+        );
+
+
+    fillCharacterSheet({
+        ...data,
+
+        online:
+            !!cached?.online,
+
+        active_combat_id:
+            cached?.active_combat_id ||
+            data.active_combat_id ||
+            null,
+
+        score:
+            cached?.score ??
+            masterPlayerScores.get(
+                characterId
+            ) ??
+            0,
+
+        has_monkey_finger:
+            cached?.has_monkey_finger ??
+            masterMonkeyFingerOwners.has(
+                characterId
+            ),
+
+        master_display_x:
+            cached?.x ??
+            (
+                masterViewFloor === "base"
+                    ? data.base_x
+                    : data.dungeon_x
+            ),
+
+        master_display_y:
+            cached?.y ??
+            (
+                masterViewFloor === "base"
+                    ? data.base_y
+                    : data.dungeon_y
+            )
+    });
+
+
+    modal.hidden =
+        false;
+
+
+    document.body.style.overflow =
+        "hidden";
+
+
+    showMessage(
+        ""
+    );
+
+}
+
+
+function fillCharacterSheet(
+    characterData
+) {
+
+    const forza =
+        getStat(
+            characterData.forza
+        );
+
+
+    const resistenza =
+        getStat(
+            characterData.resistenza
+        );
+
+
+    const costituzione =
+        getStat(
+            characterData.costituzione
+        );
+
+
+    const intelligenza =
+        getStat(
+            characterData.intelligenza
+        );
+
+
+    const destrezza =
+        getStat(
+            characterData.destrezza
+        );
+
+
+    const fortuna =
+        getStat(
+            characterData.fortuna
+        );
+
+
+    setText(
+        "master-character-name",
+        characterData.nome ||
+        "Avventuriero"
+    );
+
+
+    setText(
+        "master-character-level",
+        "Livello " +
+        (
+            Number(
+                characterData.livello
+            ) ||
+            1
+        )
+    );
+
+
+    const token =
+        document.getElementById(
+            "master-character-token"
+        );
+
+
+    if (token) {
+
+        token.src =
+            "immagini/token/" +
+            (
+                characterData.token ||
+                "token_1.png"
+            );
+
+
+        token.alt =
+            "Token di " +
+            (
+                characterData.nome ||
+                "personaggio"
+            );
+
+    }
+
+
+    setText(
+        "master-forza",
+        forza
+    );
+
+    setText(
+        "master-resistenza",
+        resistenza
+    );
+
+    setText(
+        "master-costituzione",
+        costituzione
+    );
+
+    setText(
+        "master-intelligenza",
+        intelligenza
+    );
+
+    setText(
+        "master-destrezza",
+        destrezza
+    );
+
+    setText(
+        "master-fortuna",
+        fortuna
+    );
+
+
+    const attack =
+        Math.ceil(
+            forza /
+            2
+        );
+
+
+    const defense =
+        Math.ceil(
+            7 +
+            resistenza /
+            2
+        );
+
+
+    const life =
+        Math.ceil(
+            5 *
+            costituzione /
+            2
+        );
+
+
+    const mana =
+        Math.ceil(
+            5 *
+            intelligenza /
+            2
+        );
+
+
+    const movement =
+        Math.ceil(
+            4 +
+            destrezza /
+            2
+        );
+
+
+    const critical =
+        Math.min(
+            50,
+            Math.ceil(
+                fortuna *
+                (
+                    50 /
+                    30
+                )
+            )
+        );
+
+
+    setText(
+        "master-attack",
+        attack
+    );
+
+    setText(
+        "master-defense",
+        defense
+    );
+
+    setText(
+        "master-life",
+        life
+    );
+
+    setText(
+        "master-mana",
+        mana
+    );
+
+    setText(
+        "master-movement",
+        movement
+    );
+
+    setText(
+        "master-critical",
+        `${critical}%`
+    );
+
+
+    const currentHp =
+        characterData.current_hp === null ||
+        characterData.current_hp === undefined
+
+            ? life
+
+            : Number(
+                characterData.current_hp
+            );
+
+
+    const currentPm =
+        characterData.current_pm === null ||
+        characterData.current_pm === undefined
+
+            ? mana
+
+            : Number(
+                characterData.current_pm
+            );
+
+
+    setText(
+        "master-character-current-hp",
+        `${currentHp} / ${life}`
+    );
+
+
+    setText(
+        "master-character-current-pm",
+        `${currentPm} / ${mana}`
+    );
+
+
+    setText(
+        "master-character-score",
+        Number(
+            characterData.score
+        ) ||
+        0
+    );
+
+
+    setText(
+        "master-character-monkey-finger",
+        characterData.has_monkey_finger
+            ? "☝ SÌ"
+            : "NO"
+    );
+
+
+    setText(
+        "master-character-online-status",
+        characterData.online
+            ? "● ONLINE"
+            : "○ OFFLINE"
+    );
+
+
+    const fingerBox =
+        document
+            .getElementById(
+                "master-character-monkey-finger"
+            )
+            ?.closest(
+                ".master-runtime-box"
+            );
+
+
+    if (fingerBox) {
+
+        fingerBox.classList.toggle(
+            "has-monkey-finger",
+            !!characterData.has_monkey_finger
+        );
+
+    }
+
+
+    setText(
+        "master-character-position",
+        `X ${
+            Number(
+                characterData.master_display_x
+            ) ||
+            0
+        } • Y ${
+            Number(
+                characterData.master_display_y
+            ) ||
+            0
+        }`
+    );
+
+
+    const combatBox =
+        document.getElementById(
+            "master-character-combat-box"
+        );
+
+
+    const observeButton =
+        document.getElementById(
+            "master-character-observe-combat"
+        );
+
+
+    if (
+        characterData.active_combat_id
+    ) {
+
+        const session =
+            activeMasterCombats.get(
+                characterData.active_combat_id
+            );
+
+
+        setText(
+            "master-character-combat-label",
+            session?.encounter_id
+                ? `${session.encounter_id} · Round ${Number(session.round_number) || 1}`
+                : characterData.active_combat_id
+        );
+
+
+        if (combatBox) {
+
+            combatBox.hidden =
+                false;
+
+        }
+
+
+        if (observeButton) {
+
+            observeButton.onclick =
+                () =>
+                    openMasterCombat(
+                        characterData.active_combat_id
+                    );
+
+        }
+
+
+    } else {
+
+        if (combatBox) {
+
+            combatBox.hidden =
+                true;
+
+        }
+
+
+        if (observeButton) {
+
+            observeButton.onclick =
+                null;
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// REFRESH DASHBOARD DINAMICO
+// ============================================================
+
+function startMasterDashboardRefresh() {
+
+    if (
+        masterDashboardRefreshTimer
+    ) {
+
+        clearInterval(
+            masterDashboardRefreshTimer
+        );
+
+    }
+
+
+    masterDashboardRefreshTimer =
+        setInterval(
+            async () => {
+
+                await loadActiveMasterCombats();
+
+
+                await Promise.all([
+                    loadAllMasterCharacters(),
+                    loadMasterBossPassword(),
+                    loadMasterCooldownStates()
+                ]);
+
+            },
+            4000
+        );
+
+}
+
+
+// ============================================================
+// RIDIMENSIONAMENTO v9
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        renderAllTokens();
+
+        renderMasterEvents();
+
+    }
+);
+
+
+// ============================================================
+// CLEANUP v9
+// ============================================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (
+            masterCooldownCountdownTimer
+        ) {
+
+            clearInterval(
+                masterCooldownCountdownTimer
+            );
+
+
+            masterCooldownCountdownTimer =
+                null;
+
+        }
+
+    }
+);
