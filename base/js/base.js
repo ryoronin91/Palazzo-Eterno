@@ -792,6 +792,67 @@ function isBaseCellWalkable(x, y) {
 
 
 // ============================================================
+// PASSAGGI BLOCCATI TRA CELLE
+// ============================================================
+//
+// I primi quattro passaggi sono bloccati in entrambe le direzioni.
+// Il passaggio X18 Y10 -> X18 Y9 è invece bloccato SOLO in quella
+// direzione: da X18 Y9 a X18 Y10 rimane consentito.
+// ============================================================
+
+const BASE_BLOCKED_EDGES_BIDIRECTIONAL =
+    new Set([
+        "7,10|7,9",
+        "8,9|8,10",
+        "10,10|10,9",
+        "11,9|11,10"
+    ]);
+
+
+const BASE_BLOCKED_EDGES_ONE_WAY =
+    new Set([
+        "18,10|18,9"
+    ]);
+
+
+function isBasePassageBlocked(
+    fromX,
+    fromY,
+    toX,
+    toY
+) {
+
+    const directKey =
+        `${fromX},${fromY}|${toX},${toY}`;
+
+    const reverseKey =
+        `${toX},${toY}|${fromX},${fromY}`;
+
+
+    if (
+        BASE_BLOCKED_EDGES_ONE_WAY.has(
+            directKey
+        )
+    ) {
+
+        return true;
+
+    }
+
+
+    return (
+        BASE_BLOCKED_EDGES_BIDIRECTIONAL.has(
+            directKey
+        )
+        ||
+        BASE_BLOCKED_EDGES_BIDIRECTIONAL.has(
+            reverseKey
+        )
+    );
+}
+
+
+// ============================================================
 // ESEGUE UN PASSO
 // ============================================================
 
@@ -810,6 +871,21 @@ function moveBasePlayer(dx, dy) {
     ) {
         setMessage(
             "Non puoi andare oltre i confini del Livello Base."
+        );
+
+        return false;
+    }
+
+    if (
+        isBasePassageBlocked(
+            basePlayerX,
+            basePlayerY,
+            newX,
+            newY
+        )
+    ) {
+        setMessage(
+            "Il passaggio è bloccato."
         );
 
         return false;
