@@ -268,10 +268,9 @@ const DUNGEON_COMMUNICATION_EVENTS = [
         id: "stairs_down",
         x: 11,
         y: 17,
-        type: "stairs",
-        score_bonus: 50,
+        type: "base_return",
         message:
-            "Queste scale scendono verso il prossimo livello del Palazzo."
+            "Queste scale conducono al Livello Base del Palazzo."
     },
 
     {
@@ -365,6 +364,20 @@ function checkCommunicationEvent() {
 
     if (
         dungeonEvent.type ===
+        "base_return"
+    ) {
+
+        openBaseReturnStairsPrompt(
+            dungeonEvent
+        );
+
+        return true;
+
+    }
+
+
+    if (
+        dungeonEvent.type ===
         "stairs"
     ) {
 
@@ -392,6 +405,320 @@ function checkCommunicationEvent() {
 
 
     return false;
+
+}
+
+
+// ============================================================
+// SCALE X11 Y17 -> LIVELLO BASE
+// ============================================================
+//
+// Queste scale NON assegnano punti e NON archiviano/eliminano
+// il personaggio.
+//
+// Il PG viene trasferito nel Livello Base alla casella X11 Y3.
+// ============================================================
+
+function openBaseReturnStairsPrompt(
+    dungeonEvent
+) {
+
+    if (
+        !dungeonEvent ||
+        document.getElementById(
+            "base-return-stairs-overlay"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.id =
+        "base-return-stairs-overlay";
+
+    overlay.className =
+        "combat-event-overlay";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "combat-event-modal";
+
+
+    modal.innerHTML = `
+        <div class="combat-event-icon">
+            ▲
+        </div>
+
+        <h2>
+            SCALE
+        </h2>
+
+        <p>
+            ${escapeCommunicationHtml(
+                dungeonEvent.message
+            )}
+        </p>
+
+        <div class="combat-event-warning">
+            Salendo tornerai al
+            <strong>Livello Base</strong>.
+        </div>
+
+        <div class="combat-event-buttons">
+
+            <button
+                id="base-return-stay-button"
+                type="button"
+                class="combat-event-button combat-event-cancel"
+            >
+                RIMANI
+            </button>
+
+            <button
+                id="base-return-enter-button"
+                type="button"
+                class="combat-event-button combat-event-enter"
+            >
+                RAGGIUNGI IL LIVELLO BASE
+            </button>
+
+        </div>
+    `;
+
+
+    overlay.appendChild(
+        modal
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    document
+        .getElementById(
+            "base-return-stay-button"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                overlay.remove();
+
+                eventLocked =
+                    false;
+
+                setMessage(
+                    "Decidi di rimanere nel dungeon."
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "base-return-enter-button"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await returnToBaseFromDungeon();
+
+            }
+        );
+
+}
+
+
+// ============================================================
+// TRASFERISCE IL PG AL LIVELLO BASE
+// ============================================================
+
+async function returnToBaseFromDungeon() {
+
+    if (
+        !character ||
+        !character.id
+    ) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "base-return-enter-button"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "SALITA...";
+
+    }
+
+
+    eventLocked =
+        true;
+
+    movementQueue.length =
+        0;
+
+
+    try {
+
+        // ----------------------------------------------------
+        // Salva immediatamente l'ultima posizione dungeon.
+        // Non assegna alcun punto.
+        // ----------------------------------------------------
+
+        if (
+            typeof flushPositionSave ===
+            "function"
+        ) {
+
+            await flushPositionSave();
+
+        }
+
+
+        // ----------------------------------------------------
+        // Posizione di arrivo nel Livello Base: X11 Y3
+        // ----------------------------------------------------
+
+        const {
+            error
+        } =
+            await db
+                .from(
+                    "characters"
+                )
+                .update({
+
+                    base_x:
+                        11,
+
+                    base_y:
+                        3,
+
+                    current_location:
+                        "base"
+
+                })
+                .eq(
+                    "id",
+                    character.id
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        character.base_x =
+            11;
+
+        character.base_y =
+            3;
+
+        character.current_location =
+            "base";
+
+
+        // ----------------------------------------------------
+        // Rimuove il PG dalla Presence del Piano 1
+        // ----------------------------------------------------
+
+        if (
+            dungeonChannel &&
+            realtimeReady
+        ) {
+
+            try {
+
+                await dungeonChannel.untrack();
+
+            } catch (presenceError) {
+
+                console.error(
+                    "Errore untrack durante ritorno alla Base:",
+                    presenceError
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------------
+        // APRE IL LIVELLO BASE
+        // ----------------------------------------------------
+
+        window.location.href =
+            "base/base.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Errore ritorno al Livello Base:",
+            error
+        );
+
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile tornare al Livello Base."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "RAGGIUNGI IL LIVELLO BASE";
+
+        }
+
+
+        eventLocked =
+            false;
+
+    }
 
 }
 
