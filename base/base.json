@@ -1,0 +1,56 @@
+{
+  "id": "palazzo_eterno_livello_base",
+  "name": "Palazzo Eterno - Livello Base",
+  "version": 1,
+  "image": "immagini/mappa_celeste_del_tempio_sotterraneo.png",
+  "grid": {
+    "columns": 27,
+    "rows": 36,
+    "origin": "top-left",
+    "coordinate_format": "x,y"
+  },
+  "notes": [
+    "Mappa basata sul disegno 27x36 fornito.",
+    "Le coordinate definitive di celle percorribili, muri, scale ed eventi vanno allineate allo schema JSON già usato dal Piano 1 prima dell'integrazione nel gioco."
+  ],
+  "areas": [
+    {
+      "id": "sala_principale",
+      "type": "room",
+      "description": "Grande sala rettangolare centrale."
+    },
+    {
+      "id": "sala_nord",
+      "type": "room",
+      "description": "Sala rettangolare superiore collegata alla sala principale."
+    },
+    {
+      "id": "stanza_sud",
+      "type": "room",
+      "description": "Sala poligonale inferiore collegata da un corridoio."
+    }
+  ],
+  "special_points": [
+    {
+      "id": "sigillo_blu",
+      "type": "marker",
+      "description": "Sigillo circolare blu visibile nell'angolo nord-ovest della sala principale.",
+      "coordinates": null
+    },
+    {
+      "id": "scala_nord_ovest",
+      "type": "stairs_up",
+      "description": "Scala che sale nel corridoio superiore sinistro.",
+      "coordinates": null
+    },
+    {
+      "id": "scala_nord_est",
+      "type": "stairs_up",
+      "description": "Scala che sale nel corridoio superiore destro.",
+      "coordinates": null
+    }
+  ],
+  "walkable_cells": [],
+  "blocked_cells": [],
+  "events": []
+}
