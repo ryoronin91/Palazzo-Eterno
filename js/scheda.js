@@ -3865,6 +3865,22 @@ function setupEvents() {
     }
 
 
+    const enterPalazzoButton =
+        document.getElementById(
+            "enter-palazzo-button"
+        );
+
+
+    if (enterPalazzoButton) {
+
+        enterPalazzoButton.addEventListener(
+            "click",
+            enterPalazzoAtLastLocation
+        );
+
+    }
+
+
     const logoutButton =
         document.getElementById(
             "logout-button"
@@ -3879,6 +3895,95 @@ function setupEvents() {
         );
 
     }
+
+}
+
+
+// ============================================================
+// RIENTRA NEL PALAZZO ALL'ULTIMA POSIZIONE
+// ============================================================
+//
+// Priorità:
+// 1. combat attivo
+// 2. vendor
+// 3. livello Base
+// 4. Piano 1
+//
+// Le coordinate già salvate non vengono toccate.
+// ============================================================
+
+function enterPalazzoAtLastLocation(
+    event
+) {
+
+    if (event) {
+
+        event.preventDefault();
+
+    }
+
+
+    if (!character) {
+
+        window.location.href =
+            "dungeon.html";
+
+        return;
+
+    }
+
+
+    if (
+        character.active_combat_id
+    ) {
+
+        window.location.href =
+            `combat.html?combat_id=${encodeURIComponent(
+                character.active_combat_id
+            )}`;
+
+        return;
+
+    }
+
+
+    const location =
+        String(
+            character.current_location ||
+            ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    if (
+        location ===
+        "vendor"
+    ) {
+
+        window.location.href =
+            "vendor.html";
+
+        return;
+
+    }
+
+
+    if (
+        location ===
+        "base"
+    ) {
+
+        window.location.href =
+            "base/base.html";
+
+        return;
+
+    }
+
+
+    window.location.href =
+        "dungeon.html";
 
 }
 
