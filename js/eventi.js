@@ -699,6 +699,18 @@ async function returnToBaseFromDungeon() {
         // APRE IL LIVELLO BASE
         // ----------------------------------------------------
 
+        try {
+            sessionStorage.setItem(
+                "palazzo_eterno_skip_base_arrival_event",
+                "1"
+            );
+        } catch (storageError) {
+            console.warn(
+                "Impossibile impostare flag arrivo Base:",
+                storageError
+            );
+        }
+
         window.location.href =
             "base/base.html";
 
@@ -992,6 +1004,18 @@ async function returnToSecretBaseStairs() {
 
         }
 
+
+        try {
+            sessionStorage.setItem(
+                "palazzo_eterno_skip_base_arrival_event",
+                "1"
+            );
+        } catch (storageError) {
+            console.warn(
+                "Impossibile impostare flag arrivo Base:",
+                storageError
+            );
+        }
 
         window.location.href =
             "base/base.html";

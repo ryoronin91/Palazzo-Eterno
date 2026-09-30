@@ -98,8 +98,43 @@ document.addEventListener("DOMContentLoaded", async () => {
         // ----------------------------------------------------
         // EVENTI SULLA CASELLA DI ARRIVO
         // ----------------------------------------------------
+        //
+        // Quando il PG arriva qui tramite le scale del dungeon,
+        // NON riapriamo immediatamente il popup della stessa
+        // scala. Il flag viene consumato una sola volta.
+        // ----------------------------------------------------
+
+        let skipArrivalEvent =
+            false;
+
+        try {
+
+            skipArrivalEvent =
+                sessionStorage.getItem(
+                    "palazzo_eterno_skip_base_arrival_event"
+                ) ===
+                "1";
+
+            if (skipArrivalEvent) {
+
+                sessionStorage.removeItem(
+                    "palazzo_eterno_skip_base_arrival_event"
+                );
+
+            }
+
+        } catch (storageError) {
+
+            console.warn(
+                "Impossibile leggere flag arrivo Base:",
+                storageError
+            );
+
+        }
+
 
         if (
+            !skipArrivalEvent &&
             typeof checkBaseTeleportEvent ===
             "function"
         ) {
