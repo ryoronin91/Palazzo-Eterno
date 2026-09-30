@@ -104,7 +104,7 @@ let baseGateElement =
     null;
 
 const BASE_GATE_OPEN_IMAGE =
-    "immagini/gateo.png";
+    "immagini/gateo.png?v=2";
 
 const BASE_GATE_CLOSED_IMAGE =
     "immagini/gatec.png";
