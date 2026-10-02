@@ -39,6 +39,26 @@
                 "alt": "Fegato d'Oca",
                 "zIndex": 13
             }
+        },
+        {
+            "id": "addestratore",
+            "name": "Addestratore",
+            "description": "Coda d'Orso permette di ridistribuire i 10 punti iniziali e di allenare permanentemente le statistiche.",
+            "area": {
+                "x": 21,
+                "y": 17,
+                "width": 2,
+                "height": 3
+            },
+            "npc": {
+                "x": 22,
+                "y": 18,
+                "width": 1,
+                "height": 1,
+                "image": "../immagini/eventi/train.png",
+                "alt": "Coda d'Orso",
+                "zIndex": 13
+            }
         }
     ]
 }

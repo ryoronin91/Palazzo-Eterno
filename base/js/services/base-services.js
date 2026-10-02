@@ -35,6 +35,9 @@
     const LOCANDA_SERVICE_ID =
         "locanda";
 
+    const ADDESTRATORE_SERVICE_ID =
+        "addestratore";
+
     let services = [];
     let initialized = false;
     let refreshTimer = null;
@@ -622,6 +625,25 @@
                     status === "active"
                         ? "immagini/tappeto_blu.png"
                         : "immagini/tappetoX.png";
+            }
+        }
+
+
+        if (
+            service.id ===
+            ADDESTRATORE_SERVICE_ID
+        ) {
+
+            const carpet =
+                document.querySelector(
+                    '[data-decoration-id="tappeto_addestratore"]'
+                );
+
+            if (carpet) {
+                carpet.src =
+                    status === "active"
+                        ? "immagini/tappeto_rosso.png"
+                        : "immagini/tappetoY.png";
             }
         }
 

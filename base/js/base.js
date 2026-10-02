@@ -70,6 +70,20 @@ let baseLocandaEntering =
 
 
 // ============================================================
+// ADDESTRATORE - CODA D'ORSO
+// ============================================================
+
+const BASE_ADDESTRATORE_X = 22;
+const BASE_ADDESTRATORE_Y = 18;
+
+const BASE_ADDESTRATORE_PAGE =
+    "services/addestratore/addestratore.html";
+
+let baseAddestratoreEntering =
+    false;
+
+
+// ============================================================
 // RIPOSO NELL'AREA DELLA LOCANDA
 // ============================================================
 
@@ -1397,6 +1411,72 @@ async function enterBaseRunografo() {
 
 
 // ============================================================
+// ADDESTRATORE - CODA D'ORSO
+// ============================================================
+
+function isBaseAddestratoreCell(x, y) {
+    return (
+        Number(x) === BASE_ADDESTRATORE_X &&
+        Number(y) === BASE_ADDESTRATORE_Y
+    );
+}
+
+function isBaseAddestratoreActive() {
+    if (typeof isBaseServiceActive !== "function") {
+        return false;
+    }
+
+    return isBaseServiceActive("addestratore") === true;
+}
+
+async function enterBaseAddestratore() {
+    if (baseAddestratoreEntering || !character) {
+        return;
+    }
+
+    if (!isBaseAddestratoreActive()) {
+        return;
+    }
+
+    baseAddestratoreEntering = true;
+    setMessage("Ti avvicini a Coda d'Orso...");
+
+    try {
+        if (basePositionSaveTimer) {
+            clearTimeout(basePositionSaveTimer);
+            basePositionSaveTimer = null;
+        }
+
+        basePositionSavePending = false;
+        await flushBasePositionSave();
+
+        const { error } = await db
+            .from("characters")
+            .update({
+                base_x: Number(basePlayerX),
+                base_y: Number(basePlayerY)
+            })
+            .eq("id", character.id);
+
+        if (error) {
+            throw error;
+        }
+
+        character.base_x = Number(basePlayerX);
+        character.base_y = Number(basePlayerY);
+
+        // Servizio interno alla Base: current_location resta "base".
+        window.location.href = BASE_ADDESTRATORE_PAGE;
+
+    } catch (error) {
+        console.error("Errore ingresso Addestratore dalla Base:", error);
+        baseAddestratoreEntering = false;
+        setMessage("Non riesco ad aprire l'Addestratore. Riprova.", true);
+    }
+}
+
+
+// ============================================================
 // LOCANDA - FEGATO D'OCA
 // ============================================================
 
@@ -2561,6 +2641,19 @@ function moveBasePlayer(dx, dy) {
 
         return false;
     }
+
+    // ========================================================
+    // ADDESTRATORE - CODA D'ORSO
+    // ========================================================
+
+    if (
+        isBaseAddestratoreCell(newX, newY) &&
+        isBaseAddestratoreActive()
+    ) {
+        enterBaseAddestratore();
+        return false;
+    }
+
 
     // ========================================================
     // LOCANDA - FEGATO D'OCA

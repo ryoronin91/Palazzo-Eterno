@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palazzo Eterno - Coda d'Orso</title>
+    <link rel="stylesheet" href="addestratore.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../../js/config.js?v=11"></script>
+</head>
+<body>
+<main class="trainer-page">
+    <section class="panel status-panel">
+        <h1>ADDESTRATORE</h1>
+        <div class="metric"><span>ORO</span><strong id="gold">0</strong></div>
+        <div class="metric"><span>SCORE</span><strong id="score">0</strong></div>
+        <div class="metric"><span>PUNTI ALLENATI</span><strong><span id="spent">0</span> / 164</strong></div>
+
+        <hr>
+        <h2>PROSSIMO ALLENAMENTO</h2>
+        <div id="next-training">Caricamento...</div>
+
+        <hr>
+        <h2>RIDISTRIBUZIONE</h2>
+        <p>Puoi ridistribuire soltanto i 10 punti assegnati alla creazione del personaggio.</p>
+        <p>I punti ottenuti con l'allenamento restano permanenti.</p>
+        <strong>Costo: 400 oro</strong>
+        <button id="reset-open" type="button">RIDISTRIBUISCI 10 PUNTI</button>
+    </section>
+
+    <section class="portrait-panel" aria-label="Coda d'Orso">
+        <button id="exit" class="exit" type="button">← ESCI</button>
+        <img src="../../../immagini/vendor/train.png" alt="Coda d'Orso">
+
+        <div class="dialogue">
+            <strong>CODA D'ORSO - ADDESTRATORE</strong>
+            <p id="dialogue">FORZA! IL DOLORE È SOLO IL MUSCOLO CHE TI FA I COMPLIMENTI!</p>
+
+            <form id="vendor-ai-form" class="ai-form" autocomplete="off">
+                <input
+                    id="vendor-ai-input"
+                    type="text"
+                    maxlength="500"
+                    placeholder="Parla con Coda d'Orso..."
+                    aria-label="Parla con Coda d'Orso"
+                >
+                <button id="vendor-ai-send" type="submit">PARLA</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel training-panel">
+        <h2>ALLENAMENTO STATISTICHE</h2>
+        <p class="training-note">Puoi comprare soltanto il prossimo punto della progressione. Dopo l'acquisto viene sbloccato quello successivo.</p>
+        <div id="stats" class="stats"></div>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+    </section>
+</main>
+
+<div id="reset-modal" class="modal" hidden>
+    <div class="modal-card">
+        <h2>RIDISTRIBUISCI I 10 PUNTI INIZIALI</h2>
+        <p>Punti da assegnare: <strong id="reset-left">10</strong></p>
+        <div id="reset-stats" class="reset-stats"></div>
+        <div class="modal-actions">
+            <button id="reset-cancel" type="button">ANNULLA</button>
+            <button id="reset-confirm" type="button">CONFERMA - 400 ORO</button>
+        </div>
+        <div id="reset-feedback" class="feedback" aria-live="polite"></div>
+    </div>
+</div>
+
+<script src="addestratore.js?v=2"></script>
+</body>
+</html>
