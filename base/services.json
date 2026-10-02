@@ -59,6 +59,26 @@
                 "alt": "Coda d'Orso",
                 "zIndex": 13
             }
+        },
+        {
+            "id": "quest_giver",
+            "name": "Missioni",
+            "description": "Dente di Castoro controlla le missioni completate e consegna le ricompense.",
+            "area": {
+                "x": 12,
+                "y": 20,
+                "width": 3,
+                "height": 2
+            },
+            "npc": {
+                "x": 13,
+                "y": 21,
+                "width": 1,
+                "height": 1,
+                "image": "../immagini/eventi/quest.png",
+                "alt": "Dente di Castoro",
+                "zIndex": 13
+            }
         }
     ]
 }

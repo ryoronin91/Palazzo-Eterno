@@ -38,6 +38,9 @@
     const ADDESTRATORE_SERVICE_ID =
         "addestratore";
 
+    const QUEST_GIVER_SERVICE_ID =
+        "quest_giver";
+
     let services = [];
     let initialized = false;
     let refreshTimer = null;
@@ -644,6 +647,25 @@
                     status === "active"
                         ? "immagini/tappeto_rosso.png"
                         : "immagini/tappetoY.png";
+            }
+        }
+
+
+        if (
+            service.id ===
+            QUEST_GIVER_SERVICE_ID
+        ) {
+
+            const carpet =
+                document.querySelector(
+                    '[data-decoration-id="tappeto_quest"]'
+                );
+
+            if (carpet) {
+                carpet.src =
+                    status === "active"
+                        ? "immagini/tappeto_verde.png"
+                        : "immagini/tappetoX.png";
             }
         }
 

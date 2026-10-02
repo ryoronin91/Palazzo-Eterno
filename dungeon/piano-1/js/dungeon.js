@@ -651,6 +651,10 @@ document.addEventListener(
 
             await initializePlayer();
 
+            // Registra la casella realmente occupata dal token per
+            // la missione di esplorazione del Piano 1.
+            await recordCurrentFloorVisit();
+
 
             // ------------------------------------------------
             // CAMERA
@@ -2098,6 +2102,45 @@ function updatePlayerCoordinates(
 
 
 // ============================================================
+// TRACCIAMENTO CASELLE REALMENTE VISITATE - PIANO 1
+// ============================================================
+
+async function recordCurrentFloorVisit() {
+
+    if (
+        !character ||
+        !character.id ||
+        !Number.isInteger(Number(playerX)) ||
+        !Number.isInteger(Number(playerY))
+    ) {
+        return;
+    }
+
+    try {
+        const { error } = await db.rpc(
+            "record_floor_visit",
+            {
+                p_floor_id: "piano_1",
+                p_x: Number(playerX),
+                p_y: Number(playerY)
+            }
+        );
+
+        if (error) {
+            throw error;
+        }
+
+    } catch (error) {
+        // Il tracciamento missione non deve bloccare il movimento.
+        console.warn(
+            "Errore registrazione casella visitata:",
+            error
+        );
+    }
+}
+
+
+// ============================================================
 // POSIZIONE INIZIALE
 // ============================================================
 
@@ -3486,6 +3529,10 @@ async function performMovement(
 
 
     updateFogOfWar();
+
+    // Registra la casella calpestata. Il salvataggio è idempotente:
+    // tornare sulla stessa casella non incrementa il progresso.
+    recordCurrentFloorVisit();
 
     let hasNearbyCombatEvent =
     false;

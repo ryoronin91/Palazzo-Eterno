@@ -84,6 +84,20 @@ let baseAddestratoreEntering =
 
 
 // ============================================================
+// QUEST GIVER - DENTE DI CASTORO
+// ============================================================
+
+const BASE_QUEST_GIVER_X = 13;
+const BASE_QUEST_GIVER_Y = 21;
+
+const BASE_QUEST_GIVER_PAGE =
+    "services/questgiver/questgiver.html";
+
+let baseQuestGiverEntering =
+    false;
+
+
+// ============================================================
 // RIPOSO NELL'AREA DELLA LOCANDA
 // ============================================================
 
@@ -1477,6 +1491,72 @@ async function enterBaseAddestratore() {
 
 
 // ============================================================
+// QUEST GIVER - DENTE DI CASTORO
+// ============================================================
+
+function isBaseQuestGiverCell(x, y) {
+    return (
+        Number(x) === BASE_QUEST_GIVER_X &&
+        Number(y) === BASE_QUEST_GIVER_Y
+    );
+}
+
+function isBaseQuestGiverActive() {
+    if (typeof isBaseServiceActive !== "function") {
+        return false;
+    }
+
+    return isBaseServiceActive("quest_giver") === true;
+}
+
+async function enterBaseQuestGiver() {
+    if (baseQuestGiverEntering || !character) {
+        return;
+    }
+
+    if (!isBaseQuestGiverActive()) {
+        return;
+    }
+
+    baseQuestGiverEntering = true;
+    setMessage("Ti avvicini a Dente di Castoro...");
+
+    try {
+        if (basePositionSaveTimer) {
+            clearTimeout(basePositionSaveTimer);
+            basePositionSaveTimer = null;
+        }
+
+        basePositionSavePending = false;
+        await flushBasePositionSave();
+
+        const { error } = await db
+            .from("characters")
+            .update({
+                base_x: Number(basePlayerX),
+                base_y: Number(basePlayerY)
+            })
+            .eq("id", character.id);
+
+        if (error) {
+            throw error;
+        }
+
+        character.base_x = Number(basePlayerX);
+        character.base_y = Number(basePlayerY);
+
+        // Servizio interno alla Base: current_location resta "base".
+        window.location.href = BASE_QUEST_GIVER_PAGE;
+
+    } catch (error) {
+        console.error("Errore ingresso Quest Giver dalla Base:", error);
+        baseQuestGiverEntering = false;
+        setMessage("Non riesco ad aprire le Missioni. Riprova.", true);
+    }
+}
+
+
+// ============================================================
 // LOCANDA - FEGATO D'OCA
 // ============================================================
 
@@ -2651,6 +2731,24 @@ function moveBasePlayer(dx, dy) {
         isBaseAddestratoreActive()
     ) {
         enterBaseAddestratore();
+        return false;
+    }
+
+    // ========================================================
+    // QUEST GIVER - DENTE DI CASTORO
+    // ========================================================
+    //
+    // Quando il servizio è ACTIVE, la casella X13 Y21 è
+    // occupata da Dente di Castoro. Tentare di entrarci apre
+    // la pagina Missioni senza sovrapporre il token.
+    // Durante UNBUILT / BUILDING la casella resta libera.
+    // ========================================================
+
+    if (
+        isBaseQuestGiverCell(newX, newY) &&
+        isBaseQuestGiverActive()
+    ) {
+        enterBaseQuestGiver();
         return false;
     }
 

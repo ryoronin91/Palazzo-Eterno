@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palazzo Eterno - Dente di Castoro</title>
+    <link rel="stylesheet" href="questgiver.css?v=1">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../../js/config.js?v=11"></script>
+</head>
+<body>
+
+<main class="vendor-page questgiver-page">
+
+    <!-- SINISTRA: SERVIZIO / MANUTENZIONE / UPGRADE -->
+    <section class="merchant-panel player-inventory questgiver-service-panel" aria-label="Servizio Missioni">
+        <div class="player-inventory-header">
+            <div class="player-inventory-title">SERVIZIO MISSIONI</div>
+            <div class="player-gold-line">
+                <span>MONETE D'ORO</span>
+                <strong id="player-gold-amount">0</strong>
+            </div>
+        </div>
+
+        <div class="player-inventory-divider"></div>
+
+        <div class="questgiver-left-scroll">
+            <section class="questgiver-service-box" aria-label="Riserva del servizio Missioni">
+                <div class="questgiver-service-title">RISERVA DEL SERVIZIO</div>
+
+                <div class="questgiver-service-grid">
+                    <div>
+                        <span>Autonomia</span>
+                        <strong id="questgiver-service-time">--:--:--</strong>
+                    </div>
+                    <div>
+                        <span>Riserva equivalente</span>
+                        <strong><span id="questgiver-service-gold">--</span> oro</strong>
+                    </div>
+                </div>
+
+                <form id="questgiver-maintenance-form" class="questgiver-maintenance-form">
+                    <input id="questgiver-maintenance-quantity" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Monete da aggiungere alla riserva">
+                    <button id="questgiver-maintenance-button" type="submit" class="merchant-button">ALIMENTA RISERVA</button>
+                </form>
+
+                <div id="questgiver-maintenance-feedback" class="questgiver-maintenance-feedback" aria-live="polite"></div>
+            </section>
+
+            <section class="questgiver-upgrade-box" aria-label="Potenziamento Missioni">
+                <div class="questgiver-upgrade-heading">
+                    <div>
+                        <div class="questgiver-service-title">POTENZIAMENTO</div>
+                        <strong id="questgiver-upgrade-level">LV 1 → LV 2</strong>
+                    </div>
+                    <span id="questgiver-upgrade-status" class="questgiver-upgrade-status">NON DISPONIBILE</span>
+                </div>
+
+                <div id="questgiver-upgrade-requirements" class="questgiver-upgrade-requirements">
+                    <div class="inventory-empty">Caricamento requisiti...</div>
+                </div>
+
+                <div id="questgiver-upgrade-feedback" class="questgiver-maintenance-feedback" aria-live="polite"></div>
+            </section>
+        </div>
+    </section>
+
+    <!-- CENTRO: DENTE DI CASTORO / DIALOGO -->
+    <section class="vendor-portrait" aria-label="Dente di Castoro">
+        <button id="vendor-exit-button" class="vendor-exit-button" type="button">← ESCI</button>
+
+        <div class="vendor-volume-control">
+            <button id="vendor-volume-button" class="vendor-volume-button" type="button" aria-label="Regola volume musica" aria-expanded="false" title="Volume musica">🔊</button>
+            <div id="vendor-volume-popover" class="vendor-volume-popover" hidden>
+                <input id="vendor-volume-slider" class="vendor-volume-slider" type="range" min="0" max="100" step="5" value="35" aria-label="Volume musica">
+                <span id="vendor-volume-value" class="vendor-volume-value">35%</span>
+            </div>
+        </div>
+
+        <img src="../../../immagini/vendor/quest.png" alt="Dente di Castoro">
+
+        <div class="vendor-dialogue-overlay" aria-label="Dialogo Dente di Castoro">
+            <div class="vendor-dialogue-name">DENTE DI CASTORO - MISSIONI</div>
+            <div class="dialogue-mini-divider"></div>
+            <div class="vendor-dialogue-body">
+                <p id="vendor-dialogue-text" class="vendor-dialogue-text" aria-live="polite">Ehi tu. Se hai fatto qualcosa di utile, dimostralo. Altrimenti levati.</p>
+            </div>
+
+            <form id="vendor-ai-form" class="vendor-ai-form" autocomplete="off">
+                <input id="vendor-ai-input" class="vendor-ai-input" type="text" maxlength="500" placeholder="Parla con Dente di Castoro..." aria-label="Parla con Dente di Castoro">
+                <button id="vendor-ai-send" class="vendor-ai-send" type="submit">PARLA</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- DESTRA: MISSIONI DISPONIBILI -->
+    <section class="merchant-panel vendor-inventory" aria-label="Missioni di Dente di Castoro">
+        <div class="ornate-heading">MISSIONI</div>
+        <div class="ornate-subheading">Non devi accettarle. Completa il requisito, torna qui e ritira il premio.</div>
+        <div class="ornate-divider"></div>
+
+        <div class="questgiver-missions-scroll">
+            <section class="questgiver-score-box">
+                <span>SCORE ATTUALE</span>
+                <strong id="quest-score">0</strong>
+            </section>
+
+            <div id="quest-list" class="quest-list">
+                <div class="inventory-empty">Caricamento missioni...</div>
+            </div>
+
+            <div id="quest-feedback" class="questgiver-maintenance-feedback quest-feedback" aria-live="polite"></div>
+        </div>
+    </section>
+
+</main>
+
+<script src="questgiver.js?v=1"></script>
+</body>
+</html>
