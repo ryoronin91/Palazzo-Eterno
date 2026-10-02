@@ -742,6 +742,39 @@ async function descendToNextFloor(
             character.id;
 
 
+        // Ogni scala del dungeon ritorna alla scala corrispondente
+        // del Livello Base.
+        let targetBaseX = null;
+        let targetBaseY = null;
+
+
+        if (
+            dungeonEvent?.id ===
+            "stairs_down"
+        ) {
+
+            // Dungeon X11 Y17 -> Base X11 Y3
+            targetBaseX = 11;
+            targetBaseY = 3;
+
+        } else if (
+            dungeonEvent?.id ===
+            "stairs_down_secret"
+        ) {
+
+            // Dungeon X19 Y22 -> Base X18 Y8
+            targetBaseX = 18;
+            targetBaseY = 8;
+
+        } else {
+
+            throw new Error(
+                "Scala del dungeon non riconosciuta."
+            );
+
+        }
+
+
         const {
             error: updateError
         } =
@@ -750,6 +783,12 @@ async function descendToNextFloor(
                     "characters"
                 )
                 .update({
+                    base_x:
+                        targetBaseX,
+
+                    base_y:
+                        targetBaseY,
+
                     current_location:
                         "base"
                 })
@@ -766,8 +805,33 @@ async function descendToNextFloor(
         }
 
 
+        character.base_x =
+            targetBaseX;
+
+        character.base_y =
+            targetBaseY;
+
         character.current_location =
             "base";
+
+
+        // Evita che, appena caricata la Base sulla casella della scala,
+        // venga riaperto immediatamente lo stesso popup.
+        try {
+
+            sessionStorage.setItem(
+                "palazzo_eterno_skip_base_arrival_event",
+                "1"
+            );
+
+        } catch (storageError) {
+
+            console.warn(
+                "Impossibile impostare flag arrivo Base:",
+                storageError
+            );
+
+        }
 
 
         if (
