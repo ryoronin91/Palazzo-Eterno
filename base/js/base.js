@@ -2781,6 +2781,24 @@ function moveBasePlayer(dx, dy) {
 
 
 // ========================================================
+// COMBAT DEL LIVELLO BASE
+// ========================================================
+//
+// Dopo ogni movimento controlla se il PG è adiacente a uno
+// dei due combat X8 Y7 / X10 Y7 definiti in eventi_base.js.
+// Il controllo apre il popup singolo oppure la scelta tra i
+// due scontri quando il PG si trova nella zona centrale.
+// ========================================================
+
+if (
+    typeof checkNearbyBaseCombatEvents ===
+    "function"
+) {
+    checkNearbyBaseCombatEvents();
+}
+
+
+// ========================================================
 // SERVIZI DEL LIVELLO BASE
 // ========================================================
 //
