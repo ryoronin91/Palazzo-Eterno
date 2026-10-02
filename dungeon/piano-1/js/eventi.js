@@ -432,9 +432,8 @@ const DUNGEON_COMMUNICATION_EVENTS = [
         x: 11,
         y: 17,
         type: "stairs",
-        score_bonus: 50,
         message:
-            "Queste scale scendono verso il prossimo livello del Palazzo."
+            "Queste scale salgono verso il prossimo livello del Palazzo."
     },
 
     {
@@ -442,9 +441,8 @@ const DUNGEON_COMMUNICATION_EVENTS = [
         x: 19,
         y: 22,
         type: "stairs",
-        score_bonus: 100,
         message:
-            "Queste scale scendono verso il prossimo livello del Palazzo."
+            "Queste scale salgono verso il prossimo livello del Palazzo."
     },
 
     {
@@ -611,7 +609,7 @@ function openStairsPrompt(
 
     modal.innerHTML = `
         <div class="combat-event-icon">
-            ▼
+            ▲
         </div>
 
         <h2>
@@ -623,12 +621,6 @@ function openStairsPrompt(
                 dungeonEvent.message
             )}
         </p>
-
-        <div class="combat-event-warning">
-            Scendere al prossimo livello conclude
-            questa esplorazione e assegna
-            <strong>+${Number(dungeonEvent.score_bonus) || 50} punti</strong>.
-        </div>
 
         <div class="combat-event-buttons">
 
@@ -645,7 +637,7 @@ function openStairsPrompt(
                 type="button"
                 class="combat-event-button combat-event-enter"
             >
-                SCENDI AL PROSSIMO LIVELLO
+                VAI ALLA BASE
             </button>
 
         </div>
@@ -702,8 +694,8 @@ function openStairsPrompt(
 
 
 // ============================================================
-// SCENDI AL PROSSIMO LIVELLO
-// +50 SCORE, ARCHIVIA LA RUN, ELIMINA IL PG, PAGINA MORTE
+// SCALE - RITORNO ALLA BASE
+// Nessun bonus score e nessuna chiusura/archiviazione della run.
 // ============================================================
 
 async function descendToNextFloor(
@@ -732,7 +724,7 @@ async function descendToNextFloor(
             true;
 
         button.textContent =
-            "DISCESA...";
+            "RITORNO ALLA BASE...";
 
     }
 
@@ -749,39 +741,17 @@ async function descendToNextFloor(
         const characterId =
             character.id;
 
-        const deadName =
-            character.nome ||
-            "Avventuriero";
-
-        const currentScore =
-            Number(
-                character.score
-            ) || 0;
-
-        const floorBonus =
-            Number(
-                dungeonEvent?.score_bonus
-            ) || 50;
-
-        const scoreWithFloorBonus =
-            currentScore +
-            floorBonus;
-
-
-        // ----------------------------------------------------
-        // 1. BONUS DISCESA
-        // ----------------------------------------------------
 
         const {
-            error: scoreError
+            error: updateError
         } =
             await db
                 .from(
                     "characters"
                 )
                 .update({
-                    score:
-                        scoreWithFloorBonus
+                    current_location:
+                        "base"
                 })
                 .eq(
                     "id",
@@ -789,88 +759,16 @@ async function descendToNextFloor(
                 );
 
 
-        if (scoreError) {
+        if (updateError) {
 
-            throw scoreError;
-
-        }
-
-
-        character.score =
-            scoreWithFloorBonus;
-
-
-        // ----------------------------------------------------
-        // 2. SCORE FINALE
-        // Include anche il valore degli oggetti in inventario.
-        // ----------------------------------------------------
-
-        const {
-            data: finalScoreData,
-            error: finalScoreError
-        } =
-            await db.rpc(
-                "get_character_final_score",
-                {
-                    p_character_id:
-                        characterId
-                }
-            );
-
-
-        if (finalScoreError) {
-
-            throw finalScoreError;
+            throw updateError;
 
         }
 
 
-        const deadFinalScore =
-            Number(
-                finalScoreData
-            ) || 0;
+        character.current_location =
+            "base";
 
-
-        // ----------------------------------------------------
-        // 3. ARCHIVIA LA RUN
-        // ----------------------------------------------------
-
-        const {
-            error: archiveError
-        } =
-            await db
-                .from(
-                    "dead_characters"
-                )
-                .insert({
-
-                    character_id:
-                        characterId,
-
-                    user_id:
-                        character.user_id ||
-                        currentUser?.id ||
-                        null,
-
-                    character_name:
-                        deadName,
-
-                    score:
-                        deadFinalScore
-
-                });
-
-
-        if (archiveError) {
-
-            throw archiveError;
-
-        }
-
-
-        // ----------------------------------------------------
-        // 4. RIMUOVE PRESENCE
-        // ----------------------------------------------------
 
         if (
             dungeonChannel &&
@@ -884,7 +782,7 @@ async function descendToNextFloor(
             } catch (presenceError) {
 
                 console.error(
-                    "Errore untrack durante discesa:",
+                    "Errore untrack durante ritorno alla Base:",
                     presenceError
                 );
 
@@ -893,58 +791,21 @@ async function descendToNextFloor(
         }
 
 
-        // ----------------------------------------------------
-        // 5. ELIMINA IL PERSONAGGIO VIVO
-        // ----------------------------------------------------
-
-        const {
-            error: deleteError
-        } =
-            await db
-                .from(
-                    "characters"
-                )
-                .delete()
-                .eq(
-                    "id",
-                    characterId
-                );
-
-
-        if (deleteError) {
-
-            throw deleteError;
-
-        }
-
-
-        character =
-            null;
-
-
-        // ----------------------------------------------------
-        // 6. PAGINA FINALE
-        // ----------------------------------------------------
-
         window.location.href =
-            `morte.html?nome=${encodeURIComponent(
-                deadName
-            )}&score=${encodeURIComponent(
-                deadFinalScore
-            )}`;
+            "../../base/base.html";
 
 
     } catch (error) {
 
         console.error(
-            "Errore discesa al prossimo livello:",
+            "Errore ritorno alla Base:",
             error
         );
 
 
         setMessage(
             error?.message ||
-            "Non è stato possibile scendere al prossimo livello."
+            "Non è stato possibile tornare alla Base."
         );
 
 
@@ -954,7 +815,7 @@ async function descendToNextFloor(
                 false;
 
             button.textContent =
-                "SCENDI AL PROSSIMO LIVELLO";
+                "VAI ALLA BASE";
 
         }
 
