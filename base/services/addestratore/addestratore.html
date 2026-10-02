@@ -4,72 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Coda d'Orso</title>
-    <link rel="stylesheet" href="addestratore.css?v=2">
+    <link rel="stylesheet" href="addestratore.css?v=3">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../../js/config.js?v=11"></script>
 </head>
 <body>
-<main class="trainer-page">
-    <section class="panel status-panel">
-        <h1>ADDESTRATORE</h1>
-        <div class="metric"><span>ORO</span><strong id="gold">0</strong></div>
-        <div class="metric"><span>SCORE</span><strong id="score">0</strong></div>
-        <div class="metric"><span>PUNTI ALLENATI</span><strong><span id="spent">0</span> / 164</strong></div>
 
-        <hr>
-        <h2>PROSSIMO ALLENAMENTO</h2>
-        <div id="next-training">Caricamento...</div>
+<main class="vendor-page addestratore-page">
 
-        <hr>
-        <h2>RIDISTRIBUZIONE</h2>
-        <p>Puoi ridistribuire soltanto i 10 punti assegnati alla creazione del personaggio.</p>
-        <p>I punti ottenuti con l'allenamento restano permanenti.</p>
-        <strong>Costo: 400 oro</strong>
-        <button id="reset-open" type="button">RIDISTRIBUISCI 10 PUNTI</button>
+    <!-- SINISTRA: SERVIZIO / MANUTENZIONE / UPGRADE -->
+    <section class="merchant-panel player-inventory addestratore-service-panel" aria-label="Servizio Addestratore">
+        <div class="player-inventory-header">
+            <div class="player-inventory-title">SERVIZIO ADDESTRATORE</div>
+            <div class="player-gold-line">
+                <span>MONETE D'ORO</span>
+                <strong id="player-gold-amount">0</strong>
+            </div>
+        </div>
+
+        <div class="player-inventory-divider"></div>
+
+        <div class="addestratore-left-scroll">
+            <section class="addestratore-service-box" aria-label="Riserva dell'Addestratore">
+                <div class="addestratore-service-title">RISERVA DEL SERVIZIO</div>
+
+                <div class="addestratore-service-grid">
+                    <div>
+                        <span>Autonomia</span>
+                        <strong id="addestratore-service-time">--:--:--</strong>
+                    </div>
+                    <div>
+                        <span>Riserva equivalente</span>
+                        <strong><span id="addestratore-service-gold">--</span> oro</strong>
+                    </div>
+                </div>
+
+                <form id="addestratore-maintenance-form" class="addestratore-maintenance-form">
+                    <input id="addestratore-maintenance-quantity" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Monete da aggiungere alla riserva">
+                    <button id="addestratore-maintenance-button" type="submit" class="merchant-button">ALIMENTA RISERVA</button>
+                </form>
+
+                <div id="addestratore-maintenance-feedback" class="addestratore-maintenance-feedback" aria-live="polite"></div>
+            </section>
+
+            <section class="addestratore-upgrade-box" aria-label="Potenziamento Addestratore">
+                <div class="addestratore-upgrade-heading">
+                    <div>
+                        <div class="addestratore-service-title">POTENZIAMENTO</div>
+                        <strong id="addestratore-upgrade-level">LV 1 → LV 2</strong>
+                    </div>
+                    <span id="addestratore-upgrade-status" class="addestratore-upgrade-status">NON DISPONIBILE</span>
+                </div>
+
+                <div id="addestratore-upgrade-requirements" class="addestratore-upgrade-requirements">
+                    <div class="inventory-empty">Caricamento requisiti...</div>
+                </div>
+
+                <div id="addestratore-upgrade-feedback" class="addestratore-maintenance-feedback" aria-live="polite"></div>
+            </section>
+        </div>
     </section>
 
-    <section class="portrait-panel" aria-label="Coda d'Orso">
-        <button id="exit" class="exit" type="button">← ESCI</button>
+    <!-- CENTRO: CODA D'ORSO / DIALOGO -->
+    <section class="vendor-portrait" aria-label="Coda d'Orso">
+        <button id="vendor-exit-button" class="vendor-exit-button" type="button">← ESCI</button>
+
+        <div class="vendor-volume-control">
+            <button id="vendor-volume-button" class="vendor-volume-button" type="button" aria-label="Regola volume musica" aria-expanded="false" title="Volume musica">🔊</button>
+            <div id="vendor-volume-popover" class="vendor-volume-popover" hidden>
+                <input id="vendor-volume-slider" class="vendor-volume-slider" type="range" min="0" max="100" step="5" value="35" aria-label="Volume musica">
+                <span id="vendor-volume-value" class="vendor-volume-value">35%</span>
+            </div>
+        </div>
+
         <img src="../../../immagini/vendor/train.png" alt="Coda d'Orso">
 
-        <div class="dialogue">
-            <strong>CODA D'ORSO - ADDESTRATORE</strong>
-            <p id="dialogue">FORZA! IL DOLORE È SOLO IL MUSCOLO CHE TI FA I COMPLIMENTI!</p>
+        <div class="vendor-dialogue-overlay" aria-label="Dialogo Coda d'Orso">
+            <div class="vendor-dialogue-name">CODA D'ORSO - ADDESTRATORE</div>
+            <div class="dialogue-mini-divider"></div>
+            <div class="vendor-dialogue-body">
+                <p id="vendor-dialogue-text" class="vendor-dialogue-text" aria-live="polite">FORZA! IL DOLORE È SOLO IL MUSCOLO CHE TI FA I COMPLIMENTI!</p>
+            </div>
 
-            <form id="vendor-ai-form" class="ai-form" autocomplete="off">
-                <input
-                    id="vendor-ai-input"
-                    type="text"
-                    maxlength="500"
-                    placeholder="Parla con Coda d'Orso..."
-                    aria-label="Parla con Coda d'Orso"
-                >
-                <button id="vendor-ai-send" type="submit">PARLA</button>
+            <form id="vendor-ai-form" class="vendor-ai-form" autocomplete="off">
+                <input id="vendor-ai-input" class="vendor-ai-input" type="text" maxlength="500" placeholder="Parla con Coda d'Orso..." aria-label="Parla con Coda d'Orso">
+                <button id="vendor-ai-send" class="vendor-ai-send" type="submit">PARLA</button>
             </form>
         </div>
     </section>
 
-    <section class="panel training-panel">
-        <h2>ALLENAMENTO STATISTICHE</h2>
-        <p class="training-note">Puoi comprare soltanto il prossimo punto della progressione. Dopo l'acquisto viene sbloccato quello successivo.</p>
-        <div id="stats" class="stats"></div>
-        <div id="feedback" class="feedback" aria-live="polite"></div>
+    <!-- DESTRA: SERVIZI DEL VENDOR -->
+    <section class="merchant-panel vendor-inventory" aria-label="Allenamento di Coda d'Orso">
+        <div class="ornate-heading">ALLENAMENTO</div>
+        <div class="ornate-subheading">Ridistribuisci la build iniziale o acquista il prossimo punto statistica disponibile.</div>
+        <div class="ornate-divider"></div>
+
+        <div class="addestratore-training-scroll">
+            <section class="trainer-summary-box">
+                <div class="trainer-summary-grid">
+                    <div><span>SCORE</span><strong id="score">0</strong></div>
+                    <div><span>PUNTI ALLENATI</span><strong><span id="spent">0</span> / 164</strong></div>
+                </div>
+
+                <div class="addestratore-service-title">PROSSIMO ALLENAMENTO</div>
+                <div id="next-training">Caricamento...</div>
+            </section>
+
+            <section class="trainer-stats-box">
+                <div class="addestratore-service-title">STATISTICHE</div>
+                <div id="stats" class="stats"></div>
+                <div id="feedback" class="addestratore-maintenance-feedback" aria-live="polite"></div>
+            </section>
+
+            <section class="trainer-reset-box">
+                <div class="addestratore-service-title">RIDISTRIBUZIONE</div>
+                <p>Ridistribuisce soltanto i <strong>10 punti iniziali</strong>. I punti acquistati da Coda d'Orso restano permanenti.</p>
+                <div class="trainer-reset-price">400 monete d'oro</div>
+                <button id="reset-open" type="button" class="merchant-button">RIDISTRIBUISCI 10 PUNTI</button>
+            </section>
+        </div>
     </section>
+
 </main>
 
 <div id="reset-modal" class="modal" hidden>
     <div class="modal-card">
-        <h2>RIDISTRIBUISCI I 10 PUNTI INIZIALI</h2>
-        <p>Punti da assegnare: <strong id="reset-left">10</strong></p>
+        <div class="addestratore-service-title">RIDISTRIBUISCI I 10 PUNTI INIZIALI</div>
+        <p>Punti ancora da assegnare: <strong id="reset-left">10</strong></p>
         <div id="reset-stats" class="reset-stats"></div>
         <div class="modal-actions">
-            <button id="reset-cancel" type="button">ANNULLA</button>
-            <button id="reset-confirm" type="button">CONFERMA - 400 ORO</button>
+            <button id="reset-cancel" type="button" class="merchant-button secondary">ANNULLA</button>
+            <button id="reset-confirm" type="button" class="merchant-button">CONFERMA - 400 ORO</button>
         </div>
-        <div id="reset-feedback" class="feedback" aria-live="polite"></div>
+        <div id="reset-feedback" class="addestratore-maintenance-feedback" aria-live="polite"></div>
     </div>
 </div>
 
-<script src="addestratore.js?v=2"></script>
+<script src="addestratore.js?v=3"></script>
 </body>
 </html>
