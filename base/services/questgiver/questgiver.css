@@ -2763,3 +2763,65 @@ input {
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
+
+/* ============================================================
+   CONFERMA MISSIONE NEL DIALOGO DI DENTE DI CASTORO
+============================================================ */
+
+.quest-dialogue-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.quest-dialogue-actions[hidden] {
+    display: none !important;
+}
+
+.quest-dialogue-action {
+    min-width: 118px;
+    min-height: 36px;
+    padding: 8px 15px;
+
+    border: 1px solid var(--gold-dark);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(54, 45, 28, 0.96),
+            rgba(20, 18, 14, 0.96)
+        );
+
+    color: var(--gold-bright);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    cursor: pointer;
+
+    box-shadow:
+        inset 0 0 0 1px rgba(198, 164, 92, 0.08),
+        0 3px 10px rgba(0, 0, 0, 0.32);
+}
+
+.quest-dialogue-action:hover:not(:disabled) {
+    border-color: var(--gold);
+    color: var(--ivory);
+    transform: translateY(-1px);
+}
+
+.quest-dialogue-action:disabled {
+    opacity: 0.48;
+    cursor: default;
+}
+
+.quest-dialogue-cancel {
+    border-color: rgba(198, 164, 92, 0.34);
+    background: rgba(12, 12, 14, 0.86);
+    color: rgba(235, 224, 198, 0.76);
+}
+
+.vendor-ai-form[hidden] {
+    display: none !important;
+}
+

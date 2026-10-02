@@ -16,11 +16,14 @@ let aiBusy = false;
 let aiVisitHistory = [];
 let pageBackgroundMusic = null;
 let leavingPage = false;
+let pendingQuestKey = null;
+let questClaimBusy = false;
 
 
 document.addEventListener("DOMContentLoaded", async () => {
     setupExitButton();
     setupAiChat();
+    setupQuestDialogueActions();
     setupMaintenanceForm();
     setupUpgradeContributions();
     setupVolumeControl();
@@ -449,25 +452,133 @@ function renderQuests() {
         `;
 
         card.querySelector("button")?.addEventListener("click", () => {
-            claimQuest(String(quest.quest_key || ""));
+            requestQuestCompletion(String(quest.quest_key || ""));
         });
 
         container.appendChild(card);
     });
 }
 
-async function claimQuest(questKey) {
-    if (!questKey) return;
+function setupQuestDialogueActions() {
+    const confirmButton = document.getElementById("quest-dialogue-confirm");
+    const cancelButton = document.getElementById("quest-dialogue-cancel");
+
+    confirmButton?.addEventListener("click", async () => {
+        if (!pendingQuestKey || questClaimBusy) return;
+        await claimQuest(pendingQuestKey);
+    });
+
+    cancelButton?.addEventListener("click", () => {
+        cancelPendingQuestCompletion();
+    });
+}
+
+function requestQuestCompletion(questKey) {
+    if (!questKey || questClaimBusy) return;
 
     const quest = (state?.quests || []).find(row => row.quest_key === questKey);
     if (!quest || quest.can_complete !== true) return;
 
-    if (!window.confirm(`Completare la missione “${quest.title}” e ritirare il premio?`)) {
+    pendingQuestKey = questKey;
+    setQuestFeedback("");
+    disableQuestButtons(true);
+
+    const actionBox = document.getElementById("quest-dialogue-actions");
+    const confirmButton = document.getElementById("quest-dialogue-confirm");
+    const aiForm = document.getElementById("vendor-ai-form");
+
+    if (confirmButton) {
+        confirmButton.textContent = questKey === "floor1_explorer" ? "VERIFICA" : "CONSEGNA";
+        confirmButton.disabled = false;
+    }
+
+    if (actionBox) actionBox.hidden = false;
+    if (aiForm) aiForm.hidden = true;
+
+    showDialogue(getQuestConfirmationLine(quest));
+}
+
+function getQuestConfirmationLine(quest) {
+    switch (String(quest?.quest_key || "")) {
+        case "boss_head":
+            return "Ehi tu. Quella è davvero la testa del boss? Mollala qui e ti do quello che ti spetta. La consegni?";
+
+        case "monkey_finger":
+            return "Non puntarmelo contro. È da maleducati. Lascialo qui, prenditi il premio e portami via quella roba dalla faccia.";
+
+        case "floor1_explorer":
+            return "Ehi tu. Dici di aver messo piede in ogni angolo del primo piano? Va bene. Vuoi che controlli e chiudiamo questa storia?";
+
+        default:
+            return `Ehi tu. Vuoi davvero completare “${String(quest?.title || "questa missione")}” e ritirare il premio?`;
+    }
+}
+
+function getQuestSuccessLine(questKey) {
+    switch (String(questKey || "")) {
+        case "boss_head":
+            return "Tsk. Sì, è la testa giusta. Puzzava meno quando era attaccata al resto. Prendi il premio e sparisci.";
+
+        case "monkey_finger":
+            return "Finalmente. Mettilo lì e non puntarmelo più contro. È da maleducati. Prendi il premio e levati.";
+
+        case "floor1_explorer":
+            return "Mh. Hai davvero calpestato tutto il piano. Non pensavo avessi tanta pazienza. Prendi il premio prima che cambi idea.";
+
+        default:
+            return "Tsk. Almeno questa l'hai fatta. Prendi il premio e non montarti la testa.";
+    }
+}
+
+function cancelPendingQuestCompletion() {
+    if (questClaimBusy) return;
+
+    pendingQuestKey = null;
+    closeQuestDialogueActions();
+    renderQuests();
+    showDialogue("Tsk. Allora deciditi prima di farmi perdere tempo.");
+}
+
+function closeQuestDialogueActions() {
+    const actionBox = document.getElementById("quest-dialogue-actions");
+    const confirmButton = document.getElementById("quest-dialogue-confirm");
+    const cancelButton = document.getElementById("quest-dialogue-cancel");
+    const aiForm = document.getElementById("vendor-ai-form");
+
+    if (actionBox) actionBox.hidden = true;
+    if (confirmButton) {
+        confirmButton.disabled = false;
+        confirmButton.textContent = "CONSEGNA";
+    }
+    if (cancelButton) cancelButton.disabled = false;
+    if (aiForm) aiForm.hidden = false;
+}
+
+async function claimQuest(questKey) {
+    if (!questKey || questClaimBusy) return;
+
+    const quest = (state?.quests || []).find(row => row.quest_key === questKey);
+    if (!quest || quest.can_complete !== true) {
+        pendingQuestKey = null;
+        closeQuestDialogueActions();
+        renderQuests();
         return;
     }
 
+    questClaimBusy = true;
     disableQuestButtons(true);
     setQuestFeedback("");
+
+    const confirmButton = document.getElementById("quest-dialogue-confirm");
+    const cancelButton = document.getElementById("quest-dialogue-cancel");
+
+    if (confirmButton) {
+        confirmButton.disabled = true;
+        confirmButton.textContent = "...";
+    }
+    if (cancelButton) cancelButton.disabled = true;
+
+    showDialogue("Ehi tu. Fammi controllare...");
 
     try {
         await ensureServiceActive();
@@ -482,14 +593,25 @@ async function claimQuest(questKey) {
         state = data || state;
         await loadCharacterInventory();
         updateGoldHeader();
+
+        pendingQuestKey = null;
+        closeQuestDialogueActions();
         renderQuests();
         setQuestFeedback("Missione completata. Premio consegnato.");
-        showDialogue("Tsk. Almeno questa l'hai fatta. Prendi il premio e non montarti la testa.");
+        showDialogue(getQuestSuccessLine(questKey));
 
     } catch (error) {
         console.error("Errore completamento missione:", error);
-        setQuestFeedback(error?.message || "Non puoi completare questa missione.", true);
+
+        pendingQuestKey = null;
+        closeQuestDialogueActions();
+        renderQuests();
+
+        const message = error?.message || "Non puoi completare questa missione.";
+        setQuestFeedback(message, true);
+        showDialogue(`Ehi tu. No. ${message}`);
     } finally {
+        questClaimBusy = false;
         disableQuestButtons(false);
     }
 }

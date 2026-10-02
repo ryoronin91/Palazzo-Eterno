@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Dente di Castoro</title>
-    <link rel="stylesheet" href="questgiver.css?v=1">
+    <link rel="stylesheet" href="questgiver.css?v=2">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../../js/config.js?v=11"></script>
 </head>
@@ -86,6 +86,11 @@
                 <p id="vendor-dialogue-text" class="vendor-dialogue-text" aria-live="polite">Ehi tu. Se hai fatto qualcosa di utile, dimostralo. Altrimenti levati.</p>
             </div>
 
+            <div id="quest-dialogue-actions" class="quest-dialogue-actions" hidden aria-label="Conferma missione">
+                <button id="quest-dialogue-confirm" class="quest-dialogue-action quest-dialogue-confirm" type="button">CONSEGNA</button>
+                <button id="quest-dialogue-cancel" class="quest-dialogue-action quest-dialogue-cancel" type="button">ANNULLA</button>
+            </div>
+
             <form id="vendor-ai-form" class="vendor-ai-form" autocomplete="off">
                 <input id="vendor-ai-input" class="vendor-ai-input" type="text" maxlength="500" placeholder="Parla con Dente di Castoro..." aria-label="Parla con Dente di Castoro">
                 <button id="vendor-ai-send" class="vendor-ai-send" type="submit">PARLA</button>
@@ -115,6 +120,6 @@
 
 </main>
 
-<script src="questgiver.js?v=1"></script>
+<script src="questgiver.js?v=2"></script>
 </body>
 </html>
