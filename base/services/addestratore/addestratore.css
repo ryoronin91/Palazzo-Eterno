@@ -2659,3 +2659,32 @@ input {
     }
     .vendor-portrait { min-height: 620px; }
 }
+
+
+/* ============================================================
+   CONFERME AZIONI NEL DIALOGO DI CODA D'ORSO
+============================================================ */
+
+.vendor-action-controls {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(198, 164, 92, 0.22);
+}
+
+.vendor-action-controls[hidden] {
+    display: none;
+}
+
+.vendor-action-controls .merchant-button {
+    min-width: 110px;
+}
+
+.vendor-action-confirm {
+    border-color: var(--gold);
+    color: var(--gold-bright);
+}

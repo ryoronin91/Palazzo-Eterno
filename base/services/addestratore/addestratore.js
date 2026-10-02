@@ -26,12 +26,14 @@ let aiBusy = false;
 let aiVisitHistory = [];
 let pageBackgroundMusic = null;
 let leavingPage = false;
+let pendingVendorAction = null;
 
 
 document.addEventListener("DOMContentLoaded", async () => {
     setupExitButton();
     setupResetControls();
     setupAiChat();
+    setupDialogueActions();
     setupMaintenanceForm();
     setupUpgradeContributions();
     setupVolumeControl();
@@ -450,31 +452,53 @@ function renderTraining() {
     });
 }
 
-async function train(stat) {
-    if (!state?.next_training) return;
+function train(stat) {
+    if (!state?.next_training || pendingVendorAction) return;
 
     const nextNumber = state.next_training.number;
     const goldCost = state.next_training.gold_cost;
     const label = STAT_LABELS[stat];
 
-    if (!window.confirm(`Acquistare il punto #${nextNumber} e aumentare ${label} di 1 per ${goldCost} oro?`)) return;
+    pendingVendorAction = {
+        type: "training",
+        stat,
+        label,
+        nextNumber,
+        goldCost
+    };
+
+    showVendorAction(
+        `OOOH! PUNTO #${nextNumber}! Vuoi pompare ${label} di 1 per ${goldCost} monete? FORZA, DIMMI CHE LO FACCIAMO!`,
+        "ALLENA"
+    );
+}
+
+async function executeTraining(action) {
+    if (!action?.stat) return;
 
     disableTrainingButtons(true);
+    setVendorActionBusy(true);
+    showDialogue(`GRANDE! FERMO LÌ! ${action.label.toUpperCase()} STA PER DIVENTARE PIÙ GROSSA!`);
 
     try {
-        const { data, error } = await db.rpc("train_character_stat", { p_stat: stat });
+        const { data, error } = await db.rpc("train_character_stat", { p_stat: action.stat });
         if (error) throw error;
 
         state = data;
-        feedback(`${label} aumentata di 1. Ora è disponibile il punto successivo.`);
+        feedback(`${action.label} aumentata di 1. Ora è disponibile il punto successivo.`);
+        clearVendorAction();
+        showDialogue(`SÌÌÌ! ${action.label.toUpperCase()} +1! QUESTO È IL SUONO DELLA CRESCITA! AVANTI COL PROSSIMO!`);
         renderTraining();
         await loadCharacterInventory();
         updateGoldHeader();
     } catch (error) {
         console.error(error);
         feedback(error?.message || "Allenamento fallito.", true);
+        clearVendorAction();
+        showDialogue(`EH?! QUALCOSA HA CEDUTO PRIMA DEL MUSCOLO! ${error?.message || "ALLENAMENTO FALLITO!"}`);
     } finally {
         disableTrainingButtons(false);
+        setVendorActionBusy(false);
     }
 }
 
@@ -546,35 +570,108 @@ function renderReset() {
     document.getElementById("reset-confirm").disabled = used !== 10;
 }
 
-async function confirmReset() {
+function confirmReset() {
     const total = Object.values(resetValues).reduce((sum, value) => sum + value, 0);
-    if (total !== 10) return;
+    if (total !== 10 || pendingVendorAction) return;
 
-    if (!window.confirm("Confermi la ridistribuzione dei 10 punti iniziali per 400 oro?")) return;
+    pendingVendorAction = {
+        type: "reset",
+        distribution: { ...resetValues },
+        goldCost: 400
+    };
 
-    const button = document.getElementById("reset-confirm");
-    button.disabled = true;
+    document.getElementById("reset-modal").hidden = true;
+
+    showVendorAction(
+        "QUATTROCENTO MONETE E TI RIMETTO IN ORDINE QUEI DIECI PUNTI! NON È MAGIA: È DISCIPLINA! CONFERMI?",
+        "RIDISTRIBUISCI"
+    );
+}
+
+async function executeReset(action) {
+    if (!action?.distribution) return;
+
+    setVendorActionBusy(true);
+    showDialogue("PERFETTO! VIA IL VECCHIO PROGRAMMA! ADESSO TI RIMONTO COME SI DEVE!");
 
     try {
-        const { data, error } = await db.rpc("reset_training_base_stats", { p_distribution: resetValues });
+        const { data, error } = await db.rpc("reset_training_base_stats", {
+            p_distribution: action.distribution
+        });
         if (error) throw error;
 
         state = data;
-        document.getElementById("reset-modal").hidden = true;
         feedback("I 10 punti iniziali sono stati ridistribuiti.");
+        clearVendorAction();
+        showDialogue("ECCOTI! DIECI PUNTI, NUOVA DISTRIBUZIONE! ADESSO VAI E FAMMI SENTIRE QUELLE STATISTICHE URLARE!");
         renderTraining();
         await loadCharacterInventory();
         updateGoldHeader();
     } catch (error) {
         console.error(error);
-        const el = document.getElementById("reset-feedback");
-        el.textContent = error?.message || "Ridistribuzione fallita.";
-        el.classList.add("is-error");
+        feedback(error?.message || "Ridistribuzione fallita.", true);
+        clearVendorAction();
+        showDialogue(`NOOO! IL PROGRAMMA È SALTATO! ${error?.message || "RIDISTRIBUZIONE FALLITA!"}`);
     } finally {
-        button.disabled = false;
+        setVendorActionBusy(false);
     }
 }
 
+
+// ============================================================
+// CONFERME IN DIALOGO
+// ============================================================
+
+function setupDialogueActions() {
+    document.getElementById("vendor-action-confirm")?.addEventListener("click", async () => {
+        const action = pendingVendorAction;
+        if (!action) return;
+
+        if (action.type === "training") {
+            await executeTraining(action);
+            return;
+        }
+
+        if (action.type === "reset") {
+            await executeReset(action);
+        }
+    });
+
+    document.getElementById("vendor-action-cancel")?.addEventListener("click", () => {
+        if (!pendingVendorAction) return;
+        clearVendorAction();
+        showDialogue("EH?! VA BENE! MA I MUSCOLI NON CRESCONO CON I RIPENSAMENTI! QUANDO SEI PRONTO, IO SONO QUI!");
+    });
+}
+
+function showVendorAction(message, confirmLabel = "CONFERMA") {
+    const controls = document.getElementById("vendor-action-controls");
+    const confirmButton = document.getElementById("vendor-action-confirm");
+    const cancelButton = document.getElementById("vendor-action-cancel");
+
+    showDialogue(message);
+
+    if (confirmButton) {
+        confirmButton.textContent = confirmLabel;
+        confirmButton.disabled = false;
+    }
+
+    if (cancelButton) cancelButton.disabled = false;
+    if (controls) controls.hidden = false;
+}
+
+function clearVendorAction() {
+    pendingVendorAction = null;
+    const controls = document.getElementById("vendor-action-controls");
+    if (controls) controls.hidden = true;
+}
+
+function setVendorActionBusy(busy) {
+    const confirmButton = document.getElementById("vendor-action-confirm");
+    const cancelButton = document.getElementById("vendor-action-cancel");
+    if (confirmButton) confirmButton.disabled = Boolean(busy);
+    if (cancelButton) cancelButton.disabled = Boolean(busy);
+}
 
 // ============================================================
 // IA
@@ -591,6 +688,11 @@ function setupAiChat() {
 
 async function sendAiMessage() {
     if (aiBusy) return;
+
+    if (pendingVendorAction) {
+        showDialogue("PRIMA DECIDI! ALLENAMENTO O RIPENSAMENTO? POI PARLIAMO!");
+        return;
+    }
 
     const input = document.getElementById("vendor-ai-input");
     const button = document.getElementById("vendor-ai-send");
