@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Registrazione - Palazzo Eterno</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <main class="home">
+
+        <div class="home-card">
+
+            <h1>CREA ACCOUNT</h1>
+
+            <p>
+                Crea il tuo account per entrare nel Palazzo Eterno.
+            </p>
+
+            <form id="register-form">
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="La tua email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Password"
+                        minlength="6"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password-confirm">
+                        Conferma password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password-confirm"
+                        placeholder="Ripeti la password"
+                        minlength="6"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="button">
+                    CREA ACCOUNT
+                </button>
+
+            </form>
+
+            <div id="message"></div>
+
+            <p class="back-link">
+                <a href="login.html">
+                    Hai già un account? Accedi
+                </a>
+            </p>
+
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+
+</body>
+
+</html>

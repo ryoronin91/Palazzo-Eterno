@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>La mia scheda - Palazzo Eterno</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/scheda.css?v=2"
+    >
+
+
+</head>
+
+
+<body>
+
+    <main class="character-sheet-page">
+
+        <aside class="sheet-leaderboard">
+
+            <div class="sheet-leaderboard-title">
+                CADUTI DEL PALAZZO
+            </div>
+
+            <div
+                id="sheet-leaderboard-list"
+                class="sheet-leaderboard-list"
+            >
+                <div class="sheet-leaderboard-empty">
+                    Caricamento classifica...
+                </div>
+            </div>
+
+        </aside>
+
+
+        <div class="character-sheet">
+
+
+            <!-- =================================================
+                 BARRA SUPERIORE
+            ================================================= -->
+
+            <div class="sheet-topbar">
+
+                <div
+                    id="user-email"
+                    class="sheet-user"
+                >
+                    Caricamento...
+                </div>
+
+
+                <div class="sheet-actions">
+
+                    <div class="sheet-volume-control">
+
+                        <button
+                            id="sheet-volume-button"
+                            class="button secondary sheet-volume-button"
+                            type="button"
+                            aria-label="Regola volume musica"
+                            aria-expanded="false"
+                            title="Volume musica"
+                        >
+                            🔊
+                        </button>
+
+                        <div
+                            id="sheet-volume-popover"
+                            class="sheet-volume-popover"
+                            hidden
+                        >
+                            <input
+                                id="sheet-volume-slider"
+                                class="sheet-volume-slider"
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="5"
+                                value="35"
+                                aria-label="Volume musica"
+                            >
+
+                            <span
+                                id="sheet-volume-value"
+                                class="sheet-volume-value"
+                            >
+                                35%
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <a
+                        id="enter-palazzo-button"
+                        href="dungeon/piano-1/dungeon.html"
+                        class="button"
+                    >
+                        ENTRA NEL DUNGEON
+                    </a>
+
+
+                    <a
+                        id="master-entry-button"
+                        href="master.html"
+                        class="button secondary"
+                        style="display:none;"
+                    >
+                        ENTRA DA MASTER
+                    </a>
+
+
+                    <button
+                        id="logout-button"
+                        class="button secondary"
+                        type="button"
+                    >
+                        ESCI
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 TOKEN + NOME
+            ================================================= -->
+
+            <section class="identity-section">
+
+                <div class="character-token-container">
+
+                    <img
+                        id="character-token"
+                        class="character-token"
+                        src=""
+                        alt="Token del personaggio"
+                    >
+
+                </div>
+
+
+                <div class="identity-info">
+
+                    <h1
+                        id="character-name"
+                        class="character-name"
+                    >
+                        Caricamento...
+                    </h1>
+
+
+                    <div
+                        id="character-level"
+                        class="character-level"
+                    >
+                        Livello 1
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 TRE COLONNE
+            ================================================= -->
+
+            <div class="sheet-main-grid">
+
+
+                <!-- =============================================
+                     COLONNA 1
+                     ATTRIBUTI + STATISTICHE
+                ============================================== -->
+
+                <div class="sheet-column">
+
+
+                    <!-- ATTRIBUTI -->
+
+                    <section class="attributes-section">
+
+                        <h2 class="sheet-section-title">
+                            Attributi
+                        </h2>
+
+
+                        <div class="attributes-grid">
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    FOR
+                                </div>
+
+                                <div class="attribute-name">
+                                    FORZA
+                                </div>
+
+                                <div
+                                    id="forza-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    RES
+                                </div>
+
+                                <div class="attribute-name">
+                                    RESISTENZA
+                                </div>
+
+                                <div
+                                    id="resistenza-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    COS
+                                </div>
+
+                                <div class="attribute-name">
+                                    COSTITUZIONE
+                                </div>
+
+                                <div
+                                    id="costituzione-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    INT
+                                </div>
+
+                                <div class="attribute-name">
+                                    INTELLIGENZA
+                                </div>
+
+                                <div
+                                    id="intelligenza-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    DES
+                                </div>
+
+                                <div class="attribute-name">
+                                    DESTREZZA
+                                </div>
+
+                                <div
+                                    id="destrezza-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="attribute-box">
+
+                                <div class="attribute-label">
+                                    LCK
+                                </div>
+
+                                <div class="attribute-name">
+                                    FORTUNA
+                                </div>
+
+                                <div
+                                    id="fortuna-display"
+                                    class="attribute-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- STATISTICHE -->
+
+                    <section class="secondary-section">
+
+                        <h2 class="sheet-section-title">
+                            Statistiche
+                        </h2>
+
+
+                        <div class="secondary-grid">
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    ATTACCO
+                                </div>
+
+                                <div
+                                    id="attack-display"
+                                    class="secondary-value"
+                                >
+                                    1
+                                </div>
+
+                            </div>
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    DIFESA
+                                </div>
+
+                                <div
+                                    id="defense-display"
+                                    class="secondary-value"
+                                >
+                                    8
+                                </div>
+
+                            </div>
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    PF
+                                </div>
+
+                                <div
+                                    id="life-display"
+                                    class="secondary-value"
+                                >
+                                    3/3
+                                </div>
+
+                            </div>
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    PM
+                                </div>
+
+                                <div
+                                    id="mana-display"
+                                    class="secondary-value"
+                                >
+                                    3/3
+                                </div>
+
+                            </div>
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    MOVIMENTO
+                                </div>
+
+                                <div
+                                    id="movement-display"
+                                    class="secondary-value"
+                                >
+                                    5
+                                </div>
+
+                            </div>
+
+
+                            <div class="secondary-box">
+
+                                <div class="secondary-name">
+                                    CRITICO
+                                </div>
+
+                                <div
+                                    id="critical-display"
+                                    class="secondary-value"
+                                >
+                                    1.67%
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+
+                </div>
+
+
+                <!-- =============================================
+                     COLONNA 2
+                     ABILITÀ
+                ============================================== -->
+
+                <div class="sheet-column">
+
+                    <section class="abilities-section">
+
+                        <h2 class="sheet-section-title">
+                            Abilità
+                        </h2>
+
+
+                        <div
+                            id="abilities-list"
+                            class="abilities-list"
+                        >
+
+                            <div class="abilities-empty">
+                                Caricamento abilità...
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- =============================================
+                     COLONNA 3
+                     EQUIPAGGIAMENTO
+                ============================================== -->
+
+                <div class="sheet-column">
+
+                    <section class="equipment-section">
+
+                        <h2 class="sheet-section-title">
+                            Equipaggiamento
+                        </h2>
+
+
+                        <div class="equipment-grid">
+
+
+                            <div
+                                id="equipment-slot-hand-1"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Mano 1
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="equipment-slot-hand-2"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Mano 2
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="equipment-slot-armor"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Armatura
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="equipment-slot-accessory-1"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Accessorio 1
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="equipment-slot-accessory-2"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Accessorio 2
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="equipment-slot-accessory-3"
+                                class="equipment-slot"
+                            >
+
+                                <div class="equipment-slot-title">
+                                    Accessorio 3
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 DIVISORE
+            ================================================= -->
+
+            <div class="sheet-bottom-divider"></div>
+
+
+            <!-- =================================================
+                 NOTE + ZAINO
+            ================================================= -->
+
+            <div class="sheet-bottom-grid">
+
+
+                <!-- =============================================
+                     NOTE
+                ============================================== -->
+
+                <div class="bottom-column">
+
+                    <section class="notes-section">
+
+                        <h2 class="sheet-section-title">
+                            Note
+                        </h2>
+
+
+                        <textarea
+                            id="character-notes"
+                            placeholder="Scrivi qui tutto ciò che vuoi ricordare..."
+                        ></textarea>
+
+
+                        <div class="notes-actions">
+
+                            <button
+                                id="save-notes-button"
+                                class="button"
+                                type="button"
+                            >
+                                SALVA NOTE
+                            </button>
+
+                        </div>
+
+
+                        <div id="sheet-message"></div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- =============================================
+                     ZAINO
+                ============================================== -->
+
+                <div class="bottom-column">
+
+                    <section class="backpack-section">
+
+                        <div class="backpack-header">
+
+                            <h2 class="sheet-section-title">
+                                Zaino
+                            </h2>
+
+
+                            <span id="backpack-count">
+                                0 oggetti
+                            </span>
+
+                        </div>
+
+
+                        <div id="backpack-list"></div>
+
+
+                        <div id="backpack-empty">
+                            Lo zaino è vuoto.
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </main>
+
+
+    <!-- =======================================================
+         SUPABASE
+    ======================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+    <script src="js/config.js"></script>
+
+    <script src="js/scheda.js?v=15"></script>
+
+</body>
+
+</html>

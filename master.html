@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Master - Palazzo Eterno</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/master.css?v=7"
+    >
+<style>
+
+    /* ========================================================
+       EVENTI VISIBILI AL MASTER
+    ======================================================== */
+
+    .master-event-marker {
+
+        position: absolute;
+
+        z-index: 80;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        transform-origin: center;
+
+        border-radius: 50%;
+
+        font-family:
+            Arial,
+            sans-serif;
+
+        font-weight: 800;
+
+        line-height: 1;
+
+        cursor: help;
+
+        user-select: none;
+
+        box-sizing: border-box;
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.75
+            );
+
+        pointer-events: auto;
+
+    }
+
+
+    .master-event-marker.is-communication {
+
+        color:
+            #ffe59a;
+
+        background:
+            rgba(
+                79,
+                55,
+                10,
+                0.88
+            );
+
+        border:
+            2px solid
+            #d4aa45;
+
+        font-size:
+            clamp(
+                10px,
+                1vw,
+                18px
+            );
+
+    }
+
+
+    .master-event-marker.is-trap {
+
+        border:
+            2px solid;
+
+        font-size:
+            clamp(
+                10px,
+                1vw,
+                18px
+            );
+
+    }
+
+
+    .master-event-marker.is-trap.is-active {
+
+        color:
+            #ffffff;
+
+        background:
+            rgba(
+                145,
+                15,
+                15,
+                0.92
+            );
+
+        border-color:
+            #ff5757;
+
+    }
+
+
+    .master-event-marker.is-trap.is-cooldown {
+
+        color:
+            #dedede;
+
+        background:
+            rgba(
+                55,
+                55,
+                55,
+                0.9
+            );
+
+        border-color:
+            #999999;
+
+    }
+
+
+    .master-event-icon {
+
+        display: block;
+
+        line-height: 0.9;
+
+    }
+
+
+    .master-event-countdown {
+
+        display: block;
+
+        margin-top: 1px;
+
+        font-size:
+            clamp(
+                6px,
+                0.55vw,
+                10px
+            );
+
+        line-height: 1;
+
+        white-space: nowrap;
+
+    }
+
+</style>
+    
+</head>
+
+
+<body>
+
+    <main class="master-page">
+
+
+
+        <!-- ==================================================
+             HEADER COMPATTO
+        =================================================== -->
+
+        <header class="master-header">
+
+            <div class="master-header-title">
+                <span class="master-label">MODALITÀ MASTER</span>
+                <h1 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h1>
+            </div>
+
+            <div
+                class="master-floor-switch"
+                role="group"
+                aria-label="Piano osservato dal Master"
+            >
+                <button
+                    id="master-floor-dungeon"
+                    type="button"
+                    class="master-floor-button is-active"
+                    data-master-floor="dungeon"
+                    aria-pressed="true"
+                >
+                    PIANO 1
+                </button>
+
+                <button
+                    id="master-floor-base"
+                    type="button"
+                    class="master-floor-button"
+                    data-master-floor="base"
+                    aria-pressed="false"
+                >
+                    LIVELLO BASE
+                </button>
+            </div>
+
+            <div class="master-header-actions">
+
+                <a
+                    href="scheda.html"
+                    class="button secondary"
+                >
+                    TORNA ALLA SCHEDA
+                </a>
+
+                <button
+                    id="logout-button"
+                    type="button"
+                    class="button secondary"
+                >
+                    ESCI
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             DASHBOARD MASTER
+             1 Chat
+             2 Personaggi
+             3 Mappa
+             4 Password Boss
+             5 Dito di Scimmia
+             6 Combattimenti
+        =================================================== -->
+
+        <section class="master-layout">
+
+            <!-- COLONNA SINISTRA -->
+            <div class="master-left-column">
+
+                <!-- 1 - CHAT -->
+                <aside class="master-chat-panel master-dashboard-panel">
+
+                    <div class="master-chat-header">
+                        <span class="panel-label">COMUNICAZIONI</span>
+                        <h2>CHAT</h2>
+
+                        <div
+                            id="master-chat-status"
+                            class="master-chat-status"
+                        >
+                            Connessione...
+                        </div>
+                    </div>
+
+                    <div
+                        id="master-chat-messages"
+                        class="master-chat-messages"
+                    >
+                        <div class="master-chat-empty">
+                            Nessun messaggio ancora.
+                        </div>
+                    </div>
+
+                    <form
+                        id="master-chat-form"
+                        class="master-chat-form"
+                    >
+
+                        <label
+                            for="master-chat-input"
+                            class="master-chat-label"
+                        >
+                            MESSAGGIO
+                        </label>
+
+                        <textarea
+                            id="master-chat-input"
+                            class="master-chat-input"
+                            maxlength="300"
+                            placeholder="Scrivi come Master..."
+                            disabled
+                        ></textarea>
+
+                        <div class="master-chat-actions">
+
+                            <div
+                                id="master-chat-feedback"
+                                class="master-chat-feedback"
+                            ></div>
+
+                            <button
+                                id="master-chat-send"
+                                type="submit"
+                                class="button master-chat-send"
+                                disabled
+                            >
+                                INVIA
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </aside>
+
+
+                <!-- 2 - PERSONAGGI -->
+                <aside class="master-players-panel master-dashboard-panel">
+
+                    <div class="master-panel-header">
+                        <span class="panel-label">PRESENZE</span>
+                        <h2>PERSONAGGI</h2>
+
+                        <div
+                            id="master-online-count"
+                            class="master-online-count"
+                        >
+                            Connessione...
+                        </div>
+                    </div>
+
+                    <div
+                        id="master-player-list"
+                        class="master-player-list"
+                    >
+                        <div class="master-player-empty">
+                            Nessun personaggio presente nel piano.
+                        </div>
+                    </div>
+
+                </aside>
+
+            </div>
+
+
+            <!-- 3 - MAPPA -->
+            <div class="master-map-column">
+
+                <div
+                    class="master-map-legend"
+                    aria-label="Legenda mappa Master"
+                >
+                    <span><b class="legend-dot is-online"></b> PG online</span>
+                    <span><b class="legend-dot is-offline"></b> PG offline</span>
+                    <span><b class="legend-symbol combat">⚔</b> Combat</span>
+                    <span id="master-legend-boss"><b class="legend-symbol boss">👹</b> Boss</span>
+                    <span id="master-legend-pvp"><b class="legend-symbol pvp">⚔</b> PvP</span>
+                    <span id="master-legend-vendor"><b class="legend-symbol vendor">🐒</b> Vendor</span>
+                    <span id="master-legend-trap"><b class="legend-symbol trap">⚠</b> Trappola</span>
+                    <span id="master-legend-event"><b class="legend-symbol event">◆</b> Evento</span>
+                </div>
+
+                <div
+                    id="master-map"
+                    class="master-map"
+                >
+
+                    <img
+                        id="master-map-image"
+                        src="immagini/dungeon-test.png?v=2"
+                        alt="Mappa completa del dungeon"
+                    >
+
+                </div>
+
+                <div
+                    id="master-message"
+                    class="master-message"
+                >
+                    Connessione al dungeon...
+                </div>
+
+            </div>
+
+
+            <!-- COLONNA DESTRA -->
+            <div class="master-right-column">
+
+                <!-- 4 - PASSWORD BOSS -->
+                <aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
+
+                    <div class="master-panel-header compact">
+                        <span class="panel-label">ACCESSO BOSS</span>
+                        <h2>PASSWORD ATTUALE</h2>
+                    </div>
+
+                    <div class="master-special-value">
+                        <strong id="master-boss-password">...</strong>
+                        <span id="master-boss-password-expiry">
+                            Caricamento...
+                        </span>
+                    </div>
+
+                </aside>
+
+
+                <!-- 5 - DITO DI SCIMMIA -->
+                <aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
+
+                    <div class="master-panel-header compact">
+                        <span class="panel-label">OGGETTO SPECIALE</span>
+                        <h2>DITO DI SCIMMIA</h2>
+                    </div>
+
+                    <div class="master-special-value">
+                        <strong id="master-monkey-finger-status">
+                            Caricamento...
+                        </strong>
+                        <span id="master-monkey-finger-owner"></span>
+                    </div>
+
+                </aside>
+
+
+                <!-- 6 - COMBATTIMENTI -->
+                <aside class="master-combats-panel master-dashboard-panel">
+
+                    <div class="master-panel-header">
+                        <span class="panel-label">CONTROLLO</span>
+                        <h2>COMBATTIMENTI IN CORSO</h2>
+
+                        <div
+                            id="master-combat-count"
+                            class="master-online-count"
+                        >
+                            Nessun combattimento attivo
+                        </div>
+                    </div>
+
+                    <div
+                        id="master-combat-list"
+                        class="master-combat-list"
+                    >
+                        <div class="master-player-empty">
+                            Nessun combattimento in corso.
+                        </div>
+                    </div>
+
+                </aside>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             MODALE SCHEDA PERSONAGGIO
+        =================================================== -->
+
+        <div
+            id="master-character-modal"
+            class="master-modal"
+            hidden
+        >
+
+            <div
+                class="master-modal-backdrop"
+                data-close-master-modal
+            ></div>
+
+
+            <section
+                class="master-character-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="master-character-name"
+            >
+
+                <button
+                    id="master-modal-close"
+                    class="master-modal-close"
+                    type="button"
+                    aria-label="Chiudi scheda"
+                >
+                    ×
+                </button>
+
+
+                <div class="master-character-top">
+
+                    <div class="master-character-token-wrapper">
+
+                        <img
+                            id="master-character-token"
+                            class="master-character-token"
+                            src=""
+                            alt=""
+                        >
+
+                    </div>
+
+
+                    <div class="master-character-identity">
+
+                        <span class="panel-label">
+                            PERSONAGGIO
+                        </span>
+
+                        <h2 id="master-character-name">
+                            Caricamento...
+                        </h2>
+
+                        <div
+                            id="master-character-level"
+                            class="master-character-level"
+                        >
+                            Livello 1
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ==================================================
+                     ATTRIBUTI
+                =================================================== -->
+
+                <h3>
+                    ATTRIBUTI
+                </h3>
+
+                <div class="master-attributes-grid">
+
+                    <div class="master-stat-box">
+                        <span>FOR</span>
+                        <strong id="master-forza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>RES</span>
+                        <strong id="master-resistenza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>COS</span>
+                        <strong id="master-costituzione">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>INT</span>
+                        <strong id="master-intelligenza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>DES</span>
+                        <strong id="master-destrezza">1</strong>
+                    </div>
+
+                    <div class="master-stat-box">
+                        <span>LCK</span>
+                        <strong id="master-fortuna">1</strong>
+                    </div>
+
+                </div>
+
+
+
+                <!-- ==================================================
+                     STATISTICHE
+                =================================================== -->
+
+                <h3>
+                    STATISTICHE
+                </h3>
+
+                <div class="master-secondary-grid">
+
+                    <div class="master-secondary-box">
+                        <span>ATTACCO</span>
+                        <strong id="master-attack">1</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>DIFESA</span>
+                        <strong id="master-defense">8</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>VITA</span>
+                        <strong id="master-life">3</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>MANA</span>
+                        <strong id="master-mana">3</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>MOVIMENTO</span>
+                        <strong id="master-movement">5</strong>
+                    </div>
+
+                    <div class="master-secondary-box">
+                        <span>CRITICO</span>
+                        <strong id="master-critical">2%</strong>
+                    </div>
+
+                </div>
+
+
+
+
+                <div class="master-character-runtime">
+
+                    <div class="master-runtime-box">
+                        <span>STATO</span>
+                        <strong id="master-character-online-status">OFFLINE</strong>
+                    </div>
+
+                    <div class="master-runtime-box">
+                        <span>PF ATTUALI</span>
+                        <strong id="master-character-current-hp">-</strong>
+                    </div>
+
+                    <div class="master-runtime-box">
+                        <span>PM ATTUALI</span>
+                        <strong id="master-character-current-pm">-</strong>
+                    </div>
+
+                    <div class="master-runtime-box master-runtime-score">
+                        <span>SCORE</span>
+                        <strong id="master-character-score">0</strong>
+                    </div>
+
+                    <div class="master-runtime-box master-runtime-finger">
+                        <span>DITO DI SCIMMIA</span>
+                        <strong id="master-character-monkey-finger">NO</strong>
+                    </div>
+
+                </div>
+
+                <div
+                    id="master-character-combat-box"
+                    class="master-character-combat-box"
+                    hidden
+                >
+                    <div>
+                        <span>COMBATTIMENTO ATTIVO</span>
+                        <strong id="master-character-combat-label">-</strong>
+                    </div>
+
+                    <button
+                        id="master-character-observe-combat"
+                        type="button"
+                        class="button master-observe-button"
+                    >
+                        OSSERVA COMBATTIMENTO
+                    </button>
+                </div>
+
+                <div class="master-character-position">
+
+                    <span>
+                        POSIZIONE
+                    </span>
+
+                    <strong id="master-character-position">
+                        X 0 • Y 0
+                    </strong>
+
+                </div>
+
+
+            </section>
+
+        </div>
+
+
+    </main>
+
+
+
+    <!-- ======================================================
+         SUPABASE
+    ======================================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <!-- ======================================================
+         CONFIG
+    ======================================================= -->
+
+    <script src="js/config.js?v=2"></script>
+
+
+    <!-- ======================================================
+         MASTER
+    ======================================================= -->
+
+    <script src="js/master.js?v=9"></script>
+
+
+</body>
+
+</html>

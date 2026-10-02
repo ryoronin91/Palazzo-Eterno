@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Palazzo Eterno - Locanda</title>
+
+    <link rel="stylesheet" href="locanda.css?v=1">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../../js/config.js?v=11"></script>
+</head>
+
+<body>
+
+    <main class="vendor-page locanda-page">
+
+        <!-- ==================================================
+             SERVIZIO LOCANDA
+        =================================================== -->
+
+        <section
+            class="merchant-panel player-inventory locanda-service-panel"
+            aria-label="Servizio Locanda"
+        >
+
+            <div class="player-inventory-header">
+
+                <div class="player-inventory-title">
+                    SERVIZIO LOCANDA
+                </div>
+
+                <div class="player-gold-line">
+                    <span>MONETE D'ORO</span>
+                    <strong id="player-gold-amount">0</strong>
+                </div>
+
+            </div>
+
+            <div class="player-inventory-divider"></div>
+
+            <div class="locanda-left-scroll">
+
+                <section
+                    class="locanda-service-box"
+                    aria-label="Riserva della Locanda"
+                >
+                    <div class="locanda-service-title">
+                        RISERVA DEL SERVIZIO
+                    </div>
+
+                    <div class="locanda-service-grid">
+                        <div>
+                            <span>Autonomia</span>
+                            <strong id="locanda-service-time">--:--:--</strong>
+                        </div>
+
+                        <div>
+                            <span>Riserva equivalente</span>
+                            <strong><span id="locanda-service-gold">--</span> oro</strong>
+                        </div>
+                    </div>
+
+                    <form id="locanda-maintenance-form" class="locanda-maintenance-form">
+                        <input
+                            id="locanda-maintenance-quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            value="1"
+                            inputmode="numeric"
+                            aria-label="Monete da aggiungere alla riserva"
+                        >
+
+                        <button
+                            id="locanda-maintenance-button"
+                            type="submit"
+                            class="merchant-button"
+                        >
+                            ALIMENTA RISERVA
+                        </button>
+                    </form>
+
+                    <div
+                        id="locanda-maintenance-feedback"
+                        class="locanda-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+                </section>
+
+                <section
+                    class="locanda-upgrade-box"
+                    aria-label="Potenziamento Locanda"
+                >
+                    <div class="locanda-upgrade-heading">
+                        <div>
+                            <div class="locanda-service-title">POTENZIAMENTO</div>
+                            <strong id="locanda-upgrade-level">LV 1 → LV 2</strong>
+                        </div>
+
+                        <span id="locanda-upgrade-status" class="locanda-upgrade-status">
+                            IN CORSO
+                        </span>
+                    </div>
+
+                    <div id="locanda-upgrade-requirements" class="locanda-upgrade-requirements">
+                        <div class="inventory-empty">Caricamento requisiti...</div>
+                    </div>
+
+                    <div
+                        id="locanda-upgrade-feedback"
+                        class="locanda-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+                </section>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             FEGATO D'OCA CENTRALE
+        =================================================== -->
+
+        <section
+            class="vendor-portrait"
+            aria-label="Fegato d'Oca"
+        >
+
+            <button
+                id="vendor-exit-button"
+                class="vendor-exit-button"
+                type="button"
+            >
+                ← ESCI
+            </button>
+
+
+            <div class="vendor-volume-control">
+
+                <button
+                    id="vendor-volume-button"
+                    class="vendor-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="vendor-volume-popover"
+                    class="vendor-volume-popover"
+                    hidden
+                >
+
+                    <input
+                        id="vendor-volume-slider"
+                        class="vendor-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="vendor-volume-value"
+                        class="vendor-volume-value"
+                    >
+                        35%
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <img
+                src="../../../immagini/vendor/fegato_oca.png"
+                alt="Fegato d'Oca"
+            >
+
+
+            <div
+                class="vendor-dialogue-overlay"
+                aria-label="Dialogo Fegato d'Oca"
+            >
+
+                <div class="vendor-dialogue-name">
+                    FEGATO D'OCA - LOCANDIERE
+                </div>
+
+                <div class="dialogue-mini-divider"></div>
+
+                <div class="vendor-dialogue-body">
+
+                    <p
+                        id="vendor-dialogue-text"
+                        class="vendor-dialogue-text"
+                        aria-live="polite"
+                    >
+                        Mettiti comodo. Qui dentro anche le ferite imparano ad aspettare.
+                    </p>
+
+                </div>
+
+
+                <form
+                    id="vendor-ai-form"
+                    class="vendor-ai-form"
+                    autocomplete="off"
+                >
+
+                    <input
+                        id="vendor-ai-input"
+                        class="vendor-ai-input"
+                        type="text"
+                        maxlength="500"
+                        placeholder="Parla con Fegato d'Oca..."
+                        aria-label="Parla con Fegato d'Oca"
+                    >
+
+                    <button
+                        id="vendor-ai-send"
+                        class="vendor-ai-send"
+                        type="submit"
+                    >
+                        PARLA
+                    </button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             RISTORO
+        =================================================== -->
+
+        <section
+            class="merchant-panel vendor-inventory"
+            aria-label="Ristoro della Locanda"
+        >
+
+            <div class="ornate-heading">
+                RISTORO
+            </div>
+
+            <div class="ornate-subheading">
+                Finché resti nella Locanda recuperi
+                <strong>1 PF e 1 PM al minuto</strong>.
+            </div>
+
+            <div class="ornate-divider"></div>
+
+            <div class="locanda-rest-content">
+
+                <section class="locanda-vitals-box">
+
+                    <div class="locanda-vitals-row">
+                        <span>PF</span>
+                        <strong>
+                            <span id="locanda-current-pf">--</span>
+                            /
+                            <span id="locanda-max-pf">--</span>
+                        </strong>
+                    </div>
+
+                    <div class="locanda-vitals-progress">
+                        <span id="locanda-pf-bar"></span>
+                    </div>
+
+                    <div class="locanda-vitals-row locanda-vitals-row-pm">
+                        <span>PM</span>
+                        <strong>
+                            <span id="locanda-current-pm">--</span>
+                            /
+                            <span id="locanda-max-pm">--</span>
+                        </strong>
+                    </div>
+
+                    <div class="locanda-vitals-progress">
+                        <span id="locanda-pm-bar"></span>
+                    </div>
+
+                    <div class="locanda-next-tick">
+                        Prossimo recupero:
+                        <strong id="locanda-next-tick">01:00</strong>
+                    </div>
+
+                    <div
+                        id="locanda-regeneration-feedback"
+                        class="locanda-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+
+                </section>
+
+
+                <section class="locanda-meal-box">
+
+                    <div class="locanda-service-title">
+                        PASTO CALDO
+                    </div>
+
+                    <p>
+                        Un pasto completo preparato da Fegato d'Oca.
+                        Ripristina immediatamente tutti i PF e PM.
+                    </p>
+
+                    <div class="locanda-meal-price">
+                        25 monete d'oro
+                    </div>
+
+                    <button
+                        id="locanda-hot-meal-button"
+                        type="button"
+                        class="merchant-button locanda-hot-meal-button"
+                    >
+                        MANGIA
+                    </button>
+
+                    <div
+                        id="locanda-meal-feedback"
+                        class="locanda-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="locanda.js?v=2"></script>
+
+</body>
+</html>

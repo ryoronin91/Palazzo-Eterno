@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Combattimento - Palazzo Eterno
+    </title>
+
+
+<link rel="stylesheet" href="css/combat.css?v=7">
+
+
+</head>
+
+
+<body>
+
+
+    <main class="combat-page">
+
+
+        <!-- ========================================================
+             HEADER
+        ========================================================= -->
+
+        <header class="combat-header">
+
+
+            <div class="combat-title-wrap">
+
+                <h1>
+                    COMBATTIMENTO
+                </h1>
+
+
+                <div
+                    id="combat-status"
+                    class="combat-status"
+                >
+                    Caricamento...
+                </div>
+
+
+                <div
+                    id="combat-master-badge"
+                    class="combat-master-badge"
+                >
+                    MODALITÀ MASTER · OSSERVATORE
+                </div>
+
+            </div>
+
+
+        </header>
+
+
+
+        <!-- ========================================================
+             LAYOUT
+        ========================================================= -->
+
+        <section class="combat-layout">
+
+
+
+            <!-- ====================================================
+                 REGISTRO
+            ===================================================== -->
+
+            <aside class="combat-log-column">
+
+
+                <section class="combat-panel combat-log-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            REGISTRO
+                        </h2>
+
+                    </div>
+
+
+                    <div
+                        id="combat-log"
+                        class="combat-log"
+                    >
+
+                        <div class="combat-log-placeholder">
+                            Il combattimento è iniziato.
+                        </div>
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+
+            <!-- ====================================================
+                 TURN ORDER + CHAT
+            ===================================================== -->
+
+            <aside class="combat-secondary-column">
+
+
+
+                <!-- TURN ORDER -->
+
+                <section class="combat-panel turn-order-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            TURN ORDER
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-entity-list"
+                            class="combat-entity-list"
+                        ></div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- CHAT -->
+
+                <section class="combat-panel combat-chat-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            CHAT
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-chat-messages"
+                            class="combat-chat-messages"
+                        >
+
+                            <div class="combat-chat-placeholder">
+
+                                La chat verrà collegata
+                                al multiplayer
+                                in un passaggio successivo.
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="combat-chat-compose">
+
+
+                            <input
+                                id="combat-chat-input"
+                                class="combat-chat-input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Scrivi..."
+                            >
+
+
+                            <button
+                                id="combat-chat-send"
+                                class="combat-button"
+                                type="button"
+                                disabled
+                            >
+                                ➤
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+
+            <!-- ====================================================
+                 MAPPA
+            ===================================================== -->
+
+            <section class="combat-map-column">
+
+
+                <section class="combat-panel combat-map-panel">
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            MAPPA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-map"
+                            class="combat-map"
+                        ></div>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </section>
+
+
+
+            <!-- ====================================================
+                 COLONNA SCHEDA / BUFF / NOTE
+            ===================================================== -->
+
+            <aside class="combat-character-column">
+
+
+
+                <!-- =================================================
+                     SCHEDA PG
+                ================================================== -->
+
+                <section
+                    class="combat-panel player-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            SCHEDA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-character-name"
+                            class="character-name"
+                        >
+                            -
+                        </div>
+
+
+
+                        <!-- PF -->
+
+                        <div class="combat-resource">
+
+
+                            <div class="combat-resource-row">
+
+                                <span>
+                                    PF
+                                </span>
+
+                                <strong id="combat-pf-value">
+                                    0 / 0
+                                </strong>
+
+                            </div>
+
+
+                            <div class="combat-resource-bar">
+
+                                <div
+                                    id="combat-pf-bar"
+                                    class="combat-resource-fill"
+                                ></div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- PM -->
+
+                        <div class="combat-resource">
+
+
+                            <div class="combat-resource-row">
+
+                                <span>
+                                    PM
+                                </span>
+
+                                <strong id="combat-pm-value">
+                                    0 / 0
+                                </strong>
+
+                            </div>
+
+
+                            <div class="combat-resource-bar">
+
+                                <div
+                                    id="combat-pm-bar"
+                                    class="combat-resource-fill"
+                                ></div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- STATISTICHE -->
+
+                        <div class="combat-stats">
+
+
+                            <div class="combat-stat-label">
+                                ATTACCO
+                            </div>
+
+                            <div
+                                id="combat-attack-value"
+                                class="combat-stat-value"
+                            >
+                                -
+                            </div>
+
+
+
+                            <div class="combat-stat-label">
+                                DIFESA
+                            </div>
+
+                            <div
+                                id="combat-defense-value"
+                                class="combat-stat-value"
+                            >
+                                -
+                            </div>
+
+
+
+                            <div class="combat-stat-label">
+                                MOVIMENTO
+                            </div>
+
+                            <div
+                                id="combat-movement-value"
+                                class="combat-stat-value"
+                            >
+                                -
+                            </div>
+
+
+
+                            <div class="combat-stat-label">
+                                CRITICO
+                            </div>
+
+                            <div
+                                id="combat-critical-value"
+                                class="combat-stat-value"
+                            >
+                                -
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- RISORSE DEL TURNO -->
+
+                        <div class="turn-resources">
+
+
+                            <div
+                                id="turn-resource-movement"
+                                class="turn-resource"
+                            >
+                                MOV
+                            </div>
+
+
+                            <div
+                                id="turn-resource-action"
+                                class="turn-resource"
+                            >
+                                AZIONE
+                            </div>
+
+
+                            <div
+                                id="turn-resource-item"
+                                class="turn-resource"
+                            >
+                                OGGETTO
+                            </div>
+
+
+                        </div>
+
+
+
+                        <!-- AZIONI -->
+
+                        <div class="combat-actions">
+
+
+                            <button
+                                id="combat-action-attack"
+                                class="combat-button"
+                                type="button"
+                            >
+                                ATTACCO BASE
+                            </button>
+
+
+                            <button
+                                id="combat-action-abilities"
+                                class="combat-button"
+                                type="button"
+                            >
+                                ABILITÀ
+                            </button>
+
+
+                            <button
+                                id="combat-action-backpack"
+                                class="combat-button"
+                                type="button"
+                            >
+                                ZAINO
+                            </button>
+
+
+                            <button
+                                id="combat-action-pass"
+                                class="combat-button combat-button-pass"
+                                type="button"
+                            >
+                                SALTA TURNO
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- =================================================
+                     MASTER
+                ================================================== -->
+
+                <section
+                    class="combat-panel master-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            MASTER
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div class="selected-entity-placeholder">
+
+                            Modalità osservatore attiva.
+
+                            <br><br>
+
+                            Il Master non possiede
+                            un'entità nel combattimento.
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- =================================================
+                     BUFF
+                ================================================== -->
+
+                <section
+                    class="combat-panel buff-panel player-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            BUFF ATTIVI + DURATA
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <div
+                            id="combat-active-buffs"
+                            class="combat-buff-list"
+                        >
+
+                            <div class="combat-buff-empty">
+
+                                Nessun buff attivo.
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- =================================================
+                     NOTE
+                ================================================== -->
+
+                <section
+                    class="combat-panel notes-panel player-only"
+                >
+
+
+                    <div class="combat-panel-header">
+
+                        <h2>
+                            NOTE
+                        </h2>
+
+                    </div>
+
+
+                    <div class="combat-panel-body">
+
+
+                        <textarea
+                            id="combat-notes"
+                            class="combat-notes"
+                            placeholder="Note del personaggio..."
+                        ></textarea>
+
+
+                        <button
+                            id="combat-notes-save"
+                            class="combat-button notes-save"
+                            type="button"
+                        >
+                            SALVA NOTE
+                        </button>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+
+            <!-- ====================================================
+                 ABILITÀ / ZAINO
+            ===================================================== -->
+
+            <aside
+                class="combat-drawer-column player-only"
+            >
+
+
+                <section
+                    class="combat-panel combat-drawer"
+                >
+
+
+                    <div
+                        class="
+                            combat-panel-header
+                            combat-drawer-header
+                        "
+                    >
+
+
+                        <h2 id="combat-drawer-title">
+                            ABILITÀ / ZAINO
+                        </h2>
+
+
+                        <button
+                            id="combat-drawer-close"
+                            class="combat-drawer-close"
+                            type="button"
+                            aria-label="Chiudi pannello"
+                        >
+                            ×
+                        </button>
+
+
+                    </div>
+
+
+                    <div
+                        id="combat-drawer-body"
+                        class="
+                            combat-panel-body
+                            combat-drawer-body
+                        "
+                    >
+
+
+                        <div class="combat-drawer-placeholder">
+
+                            Seleziona
+                            <strong>ABILITÀ</strong>
+                            oppure
+                            <strong>ZAINO</strong>
+                            dalla scheda.
+
+                        </div>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- ============================================================
+         SUPABASE
+    ============================================================ -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+
+    <script src="js/config.js"></script>
+
+
+    <!--
+        v=20 per evitare che il browser carichi
+        la vecchia versione dalla cache.
+    -->
+
+    <script src="js/combat-log.js?v=53"></script>
+    <script src="js/combat-chat.js?v=1"></script>
+    <script src="js/combat-ai.js?v=65"></script>
+    <script src="js/combat-actions.js?v=59"></script>
+    <script src="js/combat-ui.js?v=57"></script>
+    <script src="js/combat-loot.js?v=55"></script>
+    <script src="js/combat.js?v=69"></script>
+
+<div
+    id="combat-victory-overlay"
+    class="combat-victory-overlay"
+    aria-hidden="true"
+>
+    <div class="combat-victory-panel">
+
+        <div class="combat-victory-kicker">
+            COMBATTIMENTO CONCLUSO
+        </div>
+
+        <h1>
+            VITTORIA
+        </h1>
+
+        <div class="combat-victory-divider"></div>
+
+        <p class="combat-victory-text">
+            Tutti i nemici sono stati sconfitti.
+        </p>
+
+        <div
+            id="combat-victory-loot"
+            class="combat-victory-loot"
+        >
+            Il bottino verrà mostrato qui.
+        </div>
+
+    <button
+        id="combat-victory-exit"
+        class="combat-victory-exit"
+        type="button"
+    >
+        ESCI
+    </button>
+
+    </div>
+</div>
+
+</body>
+
+</html>

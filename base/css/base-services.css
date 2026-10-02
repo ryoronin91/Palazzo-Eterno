@@ -1,0 +1,1004 @@
+/* ============================================================
+   PALAZZO ETERNO
+   LIVELLO BASE - SERVIZI
+   ============================================================ */
+
+
+/* ============================================================
+   MODALE GENERALE
+   ============================================================ */
+
+body.base-service-modal-open {
+    overflow: hidden;
+}
+
+
+.base-service-overlay {
+    position: fixed;
+    inset: 0;
+
+    z-index: 10000;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 10px;
+
+    box-sizing: border-box;
+
+    background: rgba(0, 0, 0, 0.72);
+
+    backdrop-filter: blur(3px);
+}
+
+
+.base-service-overlay.is-open {
+    display: flex;
+}
+
+
+.base-service-modal {
+    position: relative;
+
+    width: min(
+        500px,
+        calc(100vw - 40px)
+    );
+
+    max-height: calc(
+        100vh - 60px
+    );
+
+    overflow: hidden;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    border:
+        1px solid
+        rgba(
+            207,
+            173,
+            105,
+            0.62
+        );
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(
+                33,
+                28,
+                24,
+                0.98
+            ),
+            rgba(
+                16,
+                14,
+                13,
+                0.99
+            )
+        );
+
+    box-shadow:
+        0 24px 70px
+        rgba(
+            0,
+            0,
+            0,
+            0.7
+        ),
+        inset 0 0 35px
+        rgba(
+            191,
+            145,
+            73,
+            0.05
+        );
+
+    color: #efe4cb;
+}
+
+
+.base-service-content {
+    overflow: hidden;
+}
+
+
+.base-service-close {
+    position: absolute;
+
+    top: 10px;
+    right: 12px;
+
+    width: 36px;
+    height: 36px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #d7c19a;
+
+    font-size: 28px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    z-index: 2;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.base-service-header {
+    padding: 0 28px;
+
+    margin-bottom: 12px;
+
+    text-align: center;
+}
+
+
+.base-service-eyebrow {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #a9936d;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 0.15em;
+
+    text-align: center;
+}
+
+
+.base-service-header h2 {
+    margin: 0;
+
+    color: #f2d79a;
+
+    font-size:
+        clamp(
+            24px,
+            4vw,
+            32px
+        );
+
+    text-align: center;
+}
+
+
+/* ============================================================
+   TESTI
+   ============================================================ */
+
+.base-service-description {
+    margin:
+        12px 0 14px;
+
+    color: #efe4cb;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+
+.base-service-content h3 {
+    margin:
+        12px 0 10px;
+
+    color: #ead5aa;
+
+    font-size: 16px;
+
+    text-align: center;
+}
+
+
+.base-service-note {
+    margin-top: 10px;
+
+    margin-bottom: 0;
+
+    color: #c8b99d;
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    text-align: center;
+}
+
+
+.base-service-warning {
+    margin-top: 14px;
+
+    margin-bottom: 0;
+
+    color: #d5a69a;
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    text-align: center;
+}
+
+
+/* ============================================================
+   STATO DEL SERVIZIO
+   ============================================================ */
+
+.base-service-status {
+    display: table;
+
+    min-height: 28px;
+
+    margin:
+        0 auto 12px;
+
+    padding: 5px 10px;
+
+    border:
+        1px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.14
+        );
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    letter-spacing: 0.08em;
+
+    text-align: center;
+}
+
+
+.base-service-status-unbuilt {
+    background:
+        rgba(
+            107,
+            89,
+            63,
+            0.32
+        );
+}
+
+
+.base-service-status-building {
+    background:
+        rgba(
+            173,
+            121,
+            48,
+            0.28
+        );
+}
+
+
+.base-service-status-active {
+    background:
+        rgba(
+            79,
+            132,
+            80,
+            0.28
+        );
+}
+
+
+/* ============================================================
+   REQUISITI
+   ============================================================ */
+
+.base-service-requirements {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 10px;
+}
+
+
+.base-service-requirement {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    min-width: 0;
+
+    padding: 12px;
+
+    box-sizing: border-box;
+
+    border:
+        1px solid
+        rgba(
+            214,
+            185,
+            126,
+            0.18
+        );
+
+    border-radius: 8px;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.025
+        );
+}
+
+
+.base-service-requirement.is-complete {
+    opacity: 0.75;
+}
+
+
+.base-service-requirement-head {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 8px;
+
+    min-width: 0;
+
+    margin-bottom: 2px;
+}
+
+
+.base-service-requirement-head strong {
+    min-width: 0;
+
+    color: #f0dfbe;
+
+    font-size: 13px;
+
+    line-height: 1.2;
+}
+
+
+.base-service-requirement-head span {
+    flex-shrink: 0;
+
+    color: #d7c19a;
+
+    font-size: 12px;
+
+    font-variant-numeric:
+        tabular-nums;
+}
+
+
+/* ============================================================
+   BARRA PROGRESSO
+   ============================================================ */
+
+.base-service-progress {
+    height: 7px;
+
+    overflow: hidden;
+
+    margin-bottom: 3px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.08
+        );
+}
+
+
+.base-service-progress > span {
+    display: block;
+
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            #8f6b36,
+            #d6b46f
+        );
+
+    transition:
+        width
+        180ms
+        ease;
+}
+
+
+/* ============================================================
+   INPUT QUANTITÀ
+   ============================================================ */
+
+.base-service-quantity {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 9px 10px;
+
+    border:
+        1px solid
+        rgba(
+            207,
+            173,
+            105,
+            0.38
+        );
+
+    border-radius: 6px;
+
+    outline: none;
+
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.32
+        );
+
+    color: #fff3d7;
+
+    font: inherit;
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+.base-service-quantity:focus {
+    border-color:
+        rgba(
+            231,
+            193,
+            112,
+            0.8
+        );
+}
+
+
+/* ============================================================
+   PULSANTE CONTRIBUISCI
+   ============================================================ */
+
+.base-service-contribute {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 9px 8px;
+
+    border:
+        1px solid
+        rgba(
+            216,
+            181,
+            110,
+            0.55
+        );
+
+    border-radius: 6px;
+
+    background:
+        rgba(
+            118,
+            83,
+            39,
+            0.45
+        );
+
+    color: #f4e2bb;
+
+    font: inherit;
+
+    font-size: 13px;
+    font-weight: 800;
+
+    letter-spacing: 0.03em;
+
+    white-space: nowrap;
+
+    text-align: center;
+
+    cursor: pointer;
+}
+
+
+.base-service-contribute:hover {
+    background:
+        rgba(
+            148,
+            103,
+            47,
+            0.58
+        );
+}
+
+
+.base-service-contribute:disabled {
+    opacity: 0.5;
+
+    cursor: wait;
+}
+
+
+/* ============================================================
+   QUANTITÀ NELLO ZAINO
+   ============================================================ */
+
+.base-service-inventory-count {
+    margin-top: 1px;
+
+    color: #a99b83;
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+
+.base-service-inventory-count strong {
+    color: #e1c890;
+}
+
+
+/* ============================================================
+   COSTRUZIONE / COUNTDOWN
+   ============================================================ */
+
+.base-service-countdown-block {
+    display: grid;
+
+    gap: 5px;
+
+    margin:
+        12px 0 16px;
+
+    padding: 16px;
+
+    border:
+        1px solid
+        rgba(
+            213,
+            179,
+            108,
+            0.24
+        );
+
+    border-radius: 8px;
+
+    text-align: center;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.025
+        );
+}
+
+
+.base-service-countdown-block span {
+    color: #b9a98c;
+
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.1em;
+}
+
+
+.base-service-live-countdown {
+    color: #f0d18e;
+
+    font-size:
+        clamp(
+            28px,
+            7vw,
+            42px
+        );
+
+    font-variant-numeric:
+        tabular-nums;
+}
+
+
+/* ============================================================
+   RISERVA SERVIZIO ATTIVO
+   ============================================================ */
+
+.base-service-reserve {
+    margin-bottom: 14px;
+
+    color: #cbbda3;
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+.base-service-maintenance-box {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    margin-top: 14px;
+
+    padding: 12px;
+
+    box-sizing: border-box;
+
+    border:
+        1px solid
+        rgba(
+            213,
+            179,
+            108,
+            0.2
+        );
+
+    border-radius: 8px;
+}
+
+
+.base-service-maintenance-box label {
+    color: #d4c3a4;
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+
+/* ============================================================
+   FEEDBACK
+   ============================================================ */
+
+.base-service-feedback {
+    display: none;
+
+    margin-top: 12px;
+
+    padding: 8px 10px;
+
+    border-radius: 6px;
+
+    background:
+        rgba(
+            69,
+            112,
+            75,
+            0.3
+        );
+
+    color: #d9eadb;
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+
+.base-service-feedback.is-visible {
+    display: block;
+}
+
+
+.base-service-feedback.is-error {
+    background:
+        rgba(
+            132,
+            59,
+            55,
+            0.34
+        );
+
+    color: #f0cbc7;
+}
+
+
+/* ============================================================
+   ELEMENTI SOPRA LA MAPPA
+   ============================================================ */
+
+.base-service-npc,
+.base-service-building-marker {
+    position: absolute;
+
+    box-sizing: border-box;
+
+    pointer-events: none;
+
+    user-select: none;
+}
+
+
+.base-service-npc {
+    display: none;
+
+    object-fit: contain;
+}
+
+
+.base-service-building-marker {
+    z-index: 12;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+}
+
+
+.base-service-building-marker.is-building {
+    display: flex;
+}
+
+
+/* ============================================================
+   COSTRUZIONE - INDICATORE SULLA MAPPA
+   ============================================================ */
+
+.base-service-construction-ring {
+    --construction-progress: 0deg;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: clamp(
+        30px,
+        4.4vw,
+        48px
+    );
+
+    aspect-ratio: 1 / 1;
+
+    border-radius: 50%;
+
+    background:
+        conic-gradient(
+            #5ee7ff
+            0deg,
+            #e0b765
+            var(--construction-progress),
+
+            rgba(
+                255,
+                255,
+                255,
+                0.15
+            )
+            var(--construction-progress),
+
+            rgba(
+                255,
+                255,
+                255,
+                0.15
+            )
+            360deg
+        );
+
+    box-shadow:
+        0 4px 15px
+        rgba(
+            0,
+            0,
+            0,
+            0.55
+        );
+}
+
+
+.base-service-construction-ring::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 3px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(
+            25,
+            21,
+            17,
+            0.95
+        );
+}
+
+
+.base-service-construction-ring-inner {
+    position: relative;
+
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    color: #ead199;
+
+    font-size:
+        clamp(
+            15px,
+            2.4vw,
+            24px
+        );
+
+    line-height: 1;
+}
+
+
+/* ============================================================
+   SICUREZZA CONTRO OVERFLOW
+   ============================================================ */
+
+.base-service-requirement,
+.base-service-requirement-head,
+.base-service-quantity,
+.base-service-contribute,
+.base-service-maintenance-box {
+    min-width: 0;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (
+    max-width: 560px
+) {
+
+    .base-service-overlay {
+        align-items: center;
+
+        padding: 8px;
+    }
+
+
+    .base-service-modal {
+        width:
+            calc(
+                100vw - 16px
+            );
+
+        max-height:
+            calc(
+                100vh - 24px
+            );
+
+        padding:
+            16px 12px;
+    }
+
+
+    .base-service-header {
+        padding:
+            0 24px;
+
+        margin-bottom:
+            10px;
+    }
+
+
+    .base-service-requirements {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap: 8px;
+    }
+
+
+    .base-service-requirement {
+        padding: 9px;
+    }
+
+
+    .base-service-requirement-head {
+        flex-direction: column;
+
+        gap: 3px;
+
+        text-align: center;
+    }
+
+
+    .base-service-requirement-head strong {
+        text-align: center;
+    }
+
+
+    .base-service-contribute {
+        font-size: 11px;
+
+        padding:
+            8px 4px;
+
+        letter-spacing:
+            0;
+    }
+
+
+    .base-service-quantity {
+        padding:
+            8px 5px;
+
+        font-size:
+            12px;
+    }
+
+
+    .base-service-description {
+        font-size:
+            12px;
+    }
+
+
+    .base-service-note,
+    .base-service-warning {
+        font-size:
+            11px;
+
+        line-height:
+            1.35;
+    }
+
+}

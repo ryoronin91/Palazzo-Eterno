@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Statistiche GDR</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .pool {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #111;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #3498db;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 250px;
+        }
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 35px;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .value {
+            width: 25px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pool">Punti disponibili: <span id="pool">30</span></div>
+
+    <div class="container">
+        <!-- ATTRIBUTI PRIMARI -->
+        <div class="column">
+            <h2>Attributi Primari</h2>
+            <div class="row">
+                <span>FOR:</span>
+                <div class="controls">
+                    <button onclick="cambia('for', -1)">-</button>
+                    <span class="value" id="v-for">1</span>
+                    <button onclick="cambia('for', 1)">+</button>
+                </div>
+            </div>
+            <div class="row">
+                <span>RES:</span>
+                <div class="controls">
+                    <button onclick="cambia('res', -1)">-</button>
+                    <span class="value" id="v-res">1</span>
+                    <button onclick="cambia('res', 1)">+</button>
+                </div>
+            </div>
+            <div class="row">
+                <span>COS:</span>
+                <div class="controls">
+                    <button onclick="cambia('cos', -1)">-</button>
+                    <span class="value" id="v-cos">1</span>
+                    <button onclick="cambia('cos', 1)">+</button>
+                </div>
+            </div>
+            <div class="row">
+                <span>VOL:</span>
+                <div class="controls">
+                    <button onclick="cambia('vol', -1)">-</button>
+                    <span class="value" id="v-vol">1</span>
+                    <button onclick="cambia('vol', 1)">+</button>
+                </div>
+            </div>
+            <div class="row">
+                <span>DES:</span>
+                <div class="controls">
+                    <button onclick="cambia('des', -1)">-</button>
+                    <span class="value" id="v-des">1</span>
+                    <button onclick="cambia('des', 1)">+</button>
+                </div>
+            </div>
+            <div class="row">
+                <span>LCK:</span>
+                <div class="controls">
+                    <button onclick="cambia('lck', -1)">-</button>
+                    <span class="value" id="v-lck">1</span>
+                    <button onclick="cambia('lck', 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATISTICHE DERIVATE -->
+        <div class="column">
+            <h2>Statistiche Derivate</h2>
+            <div class="row"><span>ATT (FOR/2):</span> <span id="s-att">1</span></div>
+            <div class="row"><span>DIF (7 + RES/2):</span> <span id="s-dif">8</span></div>
+            <div class="row"><span>PF (5 * COS/2):</span> <span id="s-pf">5</span></div>
+            <div class="row"><span>PM (5 * VOL/2):</span> <span id="s-pm">5</span></div>
+            <div class="row"><span>MOV (4 + DES/2):</span> <span id="s-mov">5</span></div>
+            <div class="row"><span>CRT (Max 50%):</span> <span id="s-crt">1.7%</span></div>
+        </div>
+    </div>
+
+    <script>
+        let punti = 30;
+        // Gli attributi ora partono tutti da 1
+        const attr = { for: 1, res: 1, cos: 1, vol: 1, des: 1, lck: 1 };
+
+        function aggiorna() {
+            document.getElementById('pool').innerText = punti;
+            
+            for (let k in attr) {
+                document.getElementById(`v-${k}`).innerText = attr[k];
+            }
+
+            // Calcolo matematico con arrotondamento per eccesso (Math.ceil)
+            document.getElementById('s-att').innerText = Math.ceil(attr.for / 2);
+            document.getElementById('s-dif').innerText = 7 + Math.ceil(attr.res / 2);
+            document.getElementById('s-pf').innerText  = 5 * Math.ceil(attr.cos / 2);
+            document.getElementById('s-pm').innerText  = 5 * Math.ceil(attr.vol / 2);
+            document.getElementById('s-mov').innerText = 4 + Math.ceil(attr.des / 2);
+            
+            // Formula del critico riscalata su 30 punti per toccare il 50% esatto al massimo (30 * 1.666... = 50)
+            const crtVal = (attr.lck * (50 / 30)).toFixed(1);
+            document.getElementById('s-crt').innerText = `${crtVal}%`;
+        }
+
+        function cambia(tipo, val) {
+            // Controlla che non si scenda sotto 1 e non si superi 30
+            if (val === 1 && punti > 0 && attr[tipo] < 30) {
+                attr[tipo]++;
+                punti--;
+            } else if (val === -1 && attr[tipo] > 1) {
+                attr[tipo]--;
+                punti++;
+            }
+            aggiorna();
+        }
+
+        aggiorna();
+    </script>
+</body>
+</html>

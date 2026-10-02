@@ -1,0 +1,44 @@
+{
+    "services": [
+        {
+            "id": "runografo",
+            "name": "Runografo",
+            "description": "Il Runografo è un artigiano che vende e potenzia le pergamene abilità.",
+            "area": {
+                "x": 17,
+                "y": 20,
+                "width": 3,
+                "height": 2
+            },
+            "npc": {
+                "x": 18,
+                "y": 21,
+                "width": 1,
+                "height": 1,
+                "image": "../immagini/eventi/runografo.png",
+                "alt": "Runografo",
+                "zIndex": 13
+            }
+        },
+        {
+            "id": "locanda",
+            "name": "Locanda",
+            "description": "La Locanda di Fegato d'Oca permette di riposare, recuperare PF e PM e acquistare un Pasto Caldo.",
+            "area": {
+                "x": 3,
+                "y": 14,
+                "width": 4,
+                "height": 6
+            },
+            "npc": {
+                "x": 4,
+                "y": 15,
+                "width": 1,
+                "height": 1,
+                "image": "../immagini/eventi/fegato_oca.png",
+                "alt": "Fegato d'Oca",
+                "zIndex": 13
+            }
+        }
+    ]
+}

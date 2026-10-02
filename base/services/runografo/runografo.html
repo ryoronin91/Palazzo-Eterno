@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Palazzo Eterno - Runografo</title>
+
+    <link rel="stylesheet" href="runografo.css?v=2">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../../js/config.js?v=11"></script>
+</head>
+
+<body>
+
+    <main class="vendor-page runografo-page">
+
+        <!-- ==================================================
+             SERVIZIO RUNOGRAFO
+        =================================================== -->
+
+        <section
+            class="merchant-panel player-inventory runografo-service-panel"
+            aria-label="Servizio Runografo"
+        >
+
+            <div class="player-inventory-header">
+
+                <div class="player-inventory-title">
+                    SERVIZIO RUNOGRAFO
+                </div>
+
+                <div class="player-gold-line">
+                    <span>MONETE D'ORO</span>
+                    <strong id="player-gold-amount">0</strong>
+                </div>
+
+            </div>
+
+            <div class="player-inventory-divider"></div>
+
+            <div class="runografo-left-scroll">
+
+                <section
+                    class="runografo-service-box"
+                    aria-label="Riserva del Runografo"
+                >
+                    <div class="runografo-service-title">
+                        RISERVA DEL SERVIZIO
+                    </div>
+
+                    <div class="runografo-service-grid">
+                        <div>
+                            <span>Autonomia</span>
+                            <strong id="runografo-service-time">--:--:--</strong>
+                        </div>
+
+                        <div>
+                            <span>Riserva equivalente</span>
+                            <strong><span id="runografo-service-gold">--</span> oro</strong>
+                        </div>
+                    </div>
+
+                    <form id="runografo-maintenance-form" class="runografo-maintenance-form">
+                        <input
+                            id="runografo-maintenance-quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            value="1"
+                            inputmode="numeric"
+                            aria-label="Monete da aggiungere alla riserva"
+                        >
+
+                        <button
+                            id="runografo-maintenance-button"
+                            type="submit"
+                            class="merchant-button"
+                        >
+                            ALIMENTA RISERVA
+                        </button>
+                    </form>
+
+                    <div
+                        id="runografo-maintenance-feedback"
+                        class="runografo-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+                </section>
+
+                <section
+                    class="runografo-upgrade-box"
+                    aria-label="Potenziamento Runografo"
+                >
+                    <div class="runografo-upgrade-heading">
+                        <div>
+                            <div class="runografo-service-title">POTENZIAMENTO</div>
+                            <strong id="runografo-upgrade-level">LV 1 → LV 2</strong>
+                        </div>
+
+                        <span id="runografo-upgrade-status" class="runografo-upgrade-status">
+                            IN CORSO
+                        </span>
+                    </div>
+
+                    <div id="runografo-upgrade-requirements" class="runografo-upgrade-requirements">
+                        <div class="inventory-empty">Caricamento requisiti...</div>
+                    </div>
+
+                    <div
+                        id="runografo-upgrade-feedback"
+                        class="runografo-maintenance-feedback"
+                        aria-live="polite"
+                    ></div>
+                </section>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             RUNOGRAFO CENTRALE
+        =================================================== -->
+
+        <section
+            class="vendor-portrait"
+            aria-label="Runografo"
+        >
+
+            <button
+                id="vendor-exit-button"
+                class="vendor-exit-button"
+                type="button"
+            >
+                ← ESCI
+            </button>
+
+
+            <div class="vendor-volume-control">
+
+                <button
+                    id="vendor-volume-button"
+                    class="vendor-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="vendor-volume-popover"
+                    class="vendor-volume-popover"
+                    hidden
+                >
+
+                    <input
+                        id="vendor-volume-slider"
+                        class="vendor-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="vendor-volume-value"
+                        class="vendor-volume-value"
+                    >
+                        35%
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <img
+                src="../../../immagini/vendor/runografo.png"
+                alt="Runografo"
+            >
+
+
+            <div
+                class="vendor-dialogue-overlay"
+                aria-label="Dialogo Runografo"
+            >
+
+                <div class="vendor-dialogue-name">
+                    OCCHIO DI LINCE - RUNOGRAFO
+                </div>
+
+                <div class="dialogue-mini-divider"></div>
+
+                <div class="vendor-dialogue-body">
+
+                    <p
+                        id="vendor-dialogue-text"
+                        class="vendor-dialogue-text"
+                        aria-live="polite"
+                    >
+                        Le rune ricordano ciò che gli uomini dimenticano. Cerchi una pergamena?
+                    </p>
+
+                </div>
+
+
+                <form
+                    id="vendor-ai-form"
+                    class="vendor-ai-form"
+                    autocomplete="off"
+                >
+
+                    <input
+                        id="vendor-ai-input"
+                        class="vendor-ai-input"
+                        type="text"
+                        maxlength="500"
+                        placeholder="Parla con il Runografo..."
+                        aria-label="Parla con il Runografo"
+                    >
+
+                    <button
+                        id="vendor-ai-send"
+                        class="vendor-ai-send"
+                        type="submit"
+                    >
+                        PARLA
+                    </button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             PERGAMENE + RISERVA
+        =================================================== -->
+
+        <section
+            class="merchant-panel vendor-inventory"
+            aria-label="Pergamene del Runografo"
+        >
+
+            <div class="ornate-heading">
+                PERGAMENE ABILITÀ
+            </div>
+
+            <div class="ornate-subheading">
+                Disponibili ai personaggi con score almeno
+                <strong>300</strong>.
+            </div>
+
+            <div class="ornate-divider"></div>
+
+
+            <div class="runografo-stock-divider"></div>
+
+
+            <div
+                id="runografo-stock"
+                class="vendor-stock"
+            >
+                <div class="inventory-empty">
+                    Caricamento pergamene...
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="runografo.js?v=8"></script>
+
+</body>
+</html>
