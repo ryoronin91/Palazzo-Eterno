@@ -3852,3 +3852,95 @@ body.base-noticeboard-open {
 
 }
 
+
+/* ============================================================
+   BASE - CHAT + PERSONAGGI ONLINE: ALTEZZA VINCOLATA E SCROLL
+   Evita che la colonna sinistra cresca all'infinito.
+============================================================ */
+
+.dungeon-social-column {
+    min-height: 0;
+    height: min(690px, calc(100vh - 175px));
+    max-height: calc(100vh - 175px);
+    overflow: hidden;
+}
+
+.dungeon-online-panel {
+    flex: 0 0 185px;
+    min-height: 0;
+    max-height: 185px;
+    overflow: hidden;
+}
+
+.dungeon-online-list {
+    height: 132px;
+    max-height: 132px;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+.dungeon-chat-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+}
+
+.floor-chat-messages {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 0;
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+.floor-chat-controls {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 1250px) {
+    .dungeon-social-column {
+        height: min(590px, calc(100vh - 165px));
+        max-height: calc(100vh - 165px);
+    }
+
+    .dungeon-online-panel {
+        flex-basis: 150px;
+        max-height: 150px;
+    }
+
+    .dungeon-online-list {
+        height: 100px;
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 1050px) {
+    .dungeon-social-column {
+        height: 280px;
+        max-height: 280px;
+        overflow: hidden;
+    }
+
+    .dungeon-online-panel {
+        flex-basis: 105px;
+        max-height: 105px;
+    }
+
+    .dungeon-online-list {
+        height: 60px;
+        max-height: 60px;
+    }
+}
+
+@media (max-width: 760px) {
+    .dungeon-social-column {
+        height: 420px;
+        max-height: 420px;
+    }
+}

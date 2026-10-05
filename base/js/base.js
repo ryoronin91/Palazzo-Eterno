@@ -154,6 +154,15 @@ let equipmentBonuses = {
     fortuna_bonus: 0
 };
 
+// ============================================================
+// ABILITÀ / CONSUMABILI NELLA BASE
+// ============================================================
+
+let characterInventory = [];
+let characterAbilities = [];
+let baseActionsReady = false;
+
+
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         setMessage("Caricamento del Livello Base...");
@@ -163,8 +172,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         await loadBaseMapDefinition();
         await loadCharacter();
         await loadCharacterEquipment();
+        await loadBaseAbilities();
 
         updateCharacterPanel();
+        setupBaseActions();
+        updateBaseConsumables();
+        updateBaseAbilityVisibility();
 
         // ----------------------------------------------------
         // CADUTI DEL PALAZZO
@@ -369,14 +382,23 @@ async function loadCharacter() {
 
 async function loadCharacterEquipment() {
     if (!character) {
+        characterInventory = [];
         return;
     }
 
     const { data, error } = await db
         .from("character_inventory")
         .select(`
+            id,
+            quantity,
             equipped_slot,
             item:items (
+                id,
+                name,
+                item_type,
+                equip_slot,
+                heal_pf,
+                heal_pm,
                 attack_bonus,
                 defense_bonus,
                 forza_bonus,
@@ -391,11 +413,14 @@ async function loadCharacterEquipment() {
 
     if (error) {
         console.warn(
-            "Equipaggiamento non disponibile nel Livello Base:",
+            "Inventario/equipaggiamento non disponibile nel Livello Base:",
             error
         );
+        characterInventory = [];
         return;
     }
+
+    characterInventory = data || [];
 
     equipmentBonuses = {
         attack_bonus: 0,
@@ -408,7 +433,7 @@ async function loadCharacterEquipment() {
         fortuna_bonus: 0
     };
 
-    (data || [])
+    characterInventory
         .filter(entry => entry.equipped_slot && entry.item)
         .forEach(entry => {
             const item = entry.item;
@@ -418,6 +443,366 @@ async function loadCharacterEquipment() {
                     Number(item?.[key]) || 0;
             });
         });
+
+    updateBaseConsumables();
+}
+
+// ============================================================
+// ABILITÀ PERSONAGGIO NELLA BASE
+// ============================================================
+
+async function loadBaseAbilities() {
+    if (!character) {
+        characterAbilities = [];
+        return;
+    }
+
+    const { data, error } = await db
+        .from("character_abilities")
+        .select(`
+            id,
+            ability_id,
+            level,
+            ability:abilities (
+                id,
+                name,
+                description,
+                ability_type,
+                pm_cost,
+                max_level
+            )
+        `)
+        .eq("character_id", character.id);
+
+    if (error) {
+        console.warn(
+            "Abilità non disponibili nel Livello Base:",
+            error
+        );
+        characterAbilities = [];
+        return;
+    }
+
+    characterAbilities = data || [];
+}
+
+function hasBaseAbility(abilityId) {
+    return characterAbilities.some(
+        entry =>
+            entry.ability_id === abilityId ||
+            entry.ability?.id === abilityId
+    );
+}
+
+function updateBaseAbilityVisibility() {
+    const healButton =
+        document.getElementById("dungeon-heal-button");
+
+    if (healButton) {
+        healButton.style.display =
+            hasBaseAbility("cura") ? "" : "none";
+    }
+
+    updateBaseActionAvailability();
+}
+
+// ============================================================
+// AZIONI / CONSUMABILI NELLA BASE
+// ============================================================
+
+function setupBaseActions() {
+    if (baseActionsReady) {
+        return;
+    }
+
+    baseActionsReady = true;
+
+    const healButton =
+        document.getElementById("dungeon-heal-button");
+
+    const healthPotionButton =
+        document.getElementById("dungeon-health-potion-button");
+
+    const manaPotionButton =
+        document.getElementById("dungeon-mana-potion-button");
+
+    if (healButton) {
+        healButton.addEventListener("click", async () => {
+            if (healButton.disabled) {
+                return;
+            }
+
+            await useBaseHeal();
+        });
+    }
+
+    if (healthPotionButton) {
+        healthPotionButton.addEventListener("click", async () => {
+            if (healthPotionButton.disabled) {
+                return;
+            }
+
+            await useBasePotion("health");
+        });
+    }
+
+    if (manaPotionButton) {
+        manaPotionButton.addEventListener("click", async () => {
+            if (manaPotionButton.disabled) {
+                return;
+            }
+
+            await useBasePotion("mana");
+        });
+    }
+
+    updateBaseActionAvailability();
+}
+
+function findBasePotion(type) {
+    return characterInventory.find(entry => {
+        if (!entry.item || Number(entry.quantity) <= 0) {
+            return false;
+        }
+
+        if (type === "health") {
+            return (Number(entry.item.heal_pf) || 0) > 0;
+        }
+
+        if (type === "mana") {
+            return (Number(entry.item.heal_pm) || 0) > 0;
+        }
+
+        return false;
+    });
+}
+
+function updateBaseConsumables() {
+    const healthPotion = findBasePotion("health");
+    const manaPotion = findBasePotion("mana");
+
+    setText(
+        "dungeon-health-potion-count",
+        `x${healthPotion ? Number(healthPotion.quantity) || 0 : 0}`
+    );
+
+    setText(
+        "dungeon-mana-potion-count",
+        `x${manaPotion ? Number(manaPotion.quantity) || 0 : 0}`
+    );
+
+    updateBaseActionAvailability();
+}
+
+function updateBaseActionAvailability() {
+    if (!character) {
+        return;
+    }
+
+    const stats = getCalculatedStats();
+
+    const currentPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+            ? stats.maxHealth
+            : Number(character.current_hp);
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+            ? stats.maxMana
+            : Number(character.current_pm);
+
+    const healButton =
+        document.getElementById("dungeon-heal-button");
+
+    if (healButton) {
+        healButton.disabled =
+            !hasBaseAbility("cura") ||
+            currentPM < 2 ||
+            currentPF >= stats.maxHealth;
+    }
+
+    const healthButton =
+        document.getElementById("dungeon-health-potion-button");
+
+    const manaButton =
+        document.getElementById("dungeon-mana-potion-button");
+
+    if (healthButton) {
+        healthButton.disabled =
+            !findBasePotion("health") ||
+            currentPF >= stats.maxHealth;
+    }
+
+    if (manaButton) {
+        manaButton.disabled =
+            !findBasePotion("mana") ||
+            currentPM >= stats.maxMana;
+    }
+}
+
+async function useBasePotion(type) {
+    const potion = findBasePotion(type);
+
+    if (!potion) {
+        setMessage(
+            type === "health"
+                ? "Non hai Pozioni di Vita."
+                : "Non hai Pozioni di Mana."
+        );
+        return;
+    }
+
+    const stats = getCalculatedStats();
+
+    const oldPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+            ? stats.maxHealth
+            : Number(character.current_hp);
+
+    const oldPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+            ? stats.maxMana
+            : Number(character.current_pm);
+
+    let newPF = oldPF;
+    let newPM = oldPM;
+
+    if (type === "health") {
+        if (oldPF >= stats.maxHealth) {
+            setMessage("Hai già tutti i PF.");
+            return;
+        }
+
+        newPF = Math.min(
+            stats.maxHealth,
+            oldPF + (Number(potion.item.heal_pf) || 0)
+        );
+    } else {
+        if (oldPM >= stats.maxMana) {
+            setMessage("Hai già tutti i PM.");
+            return;
+        }
+
+        newPM = Math.min(
+            stats.maxMana,
+            oldPM + (Number(potion.item.heal_pm) || 0)
+        );
+    }
+
+    try {
+        const { error: rpcError } = await db.rpc(
+            "use_inventory_item",
+            {
+                p_inventory_id: potion.id
+            }
+        );
+
+        if (rpcError) {
+            throw rpcError;
+        }
+
+        const updateData =
+            type === "health"
+                ? { current_hp: newPF }
+                : { current_pm: newPM };
+
+        const { error } = await db
+            .from("characters")
+            .update(updateData)
+            .eq("id", character.id);
+
+        if (error) {
+            throw error;
+        }
+
+        if (type === "health") {
+            character.current_hp = newPF;
+        } else {
+            character.current_pm = newPM;
+        }
+
+        await loadCharacterEquipment();
+        updateCharacterPanel();
+        updateBaseActionAvailability();
+        await updateBasePresence();
+
+        setMessage(
+            type === "health"
+                ? `Bevi una Pozione di Vita e recuperi ${newPF - oldPF} PF.`
+                : `Bevi una Pozione di Mana e recuperi ${newPM - oldPM} PM.`
+        );
+    } catch (error) {
+        console.error("Errore utilizzo pozione nella Base:", error);
+        setMessage("Non è stato possibile utilizzare la pozione.", true);
+    }
+}
+
+async function useBaseHeal() {
+    if (!character || !hasBaseAbility("cura")) {
+        setMessage("Il personaggio non conosce Cura.");
+        return;
+    }
+
+    const stats = getCalculatedStats();
+
+    const currentPF =
+        character.current_hp === null ||
+        character.current_hp === undefined
+            ? stats.maxHealth
+            : Number(character.current_hp);
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+            ? stats.maxMana
+            : Number(character.current_pm);
+
+    if (currentPF >= stats.maxHealth) {
+        setMessage("Hai già tutti i PF.");
+        return;
+    }
+
+    if (currentPM < 2) {
+        setMessage("Non hai abbastanza PM per usare Cura.");
+        return;
+    }
+
+    const level = Number(character.livello) || 1;
+    const healAmount = stats.intelligenza + level;
+    const newPF = Math.min(stats.maxHealth, currentPF + healAmount);
+    const newPM = Math.max(0, currentPM - 2);
+
+    try {
+        const { error } = await db
+            .from("characters")
+            .update({
+                current_hp: newPF,
+                current_pm: newPM
+            })
+            .eq("id", character.id);
+
+        if (error) {
+            throw error;
+        }
+
+        character.current_hp = newPF;
+        character.current_pm = newPM;
+
+        updateCharacterPanel();
+        updateBaseActionAvailability();
+        await updateBasePresence();
+
+        setMessage(
+            `Usi Cura e recuperi ${newPF - currentPF} PF. (-2 PM)`
+        );
+    } catch (error) {
+        console.error("Errore Cura nella Base:", error);
+        setMessage("Non è stato possibile usare Cura.", true);
+    }
 }
 
 function getEffectiveAttribute(attribute) {
@@ -931,7 +1316,7 @@ function positionBasePlayerToken() {
         }px`;
 
     basePlayerToken.style.zIndex =
-        "40";
+        "20";
 }
 
 
@@ -4197,7 +4582,7 @@ function positionBaseRemotePlayerToken(
         `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
 
     element.style.zIndex =
-        "39";
+        "19";
 
 }
 
