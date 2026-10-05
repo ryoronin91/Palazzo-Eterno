@@ -1,4 +1,7 @@
-const INTRO_IMAGES = [
+const SCENE_DURATION_MS = 6000;
+const FADE_DURATION_MS = 350;
+
+const scenes = [
     "immagini/intro1.png",
     "immagini/intro2.png",
     "immagini/intro3.png",
@@ -6,148 +9,215 @@ const INTRO_IMAGES = [
     "immagini/intro5.png"
 ];
 
-const SCENE_DURATION_MS = 6000;
-const FADE_DURATION_MS = 350;
-
-const introImage = document.getElementById("intro-image");
-const introMusic = document.getElementById("intro-music");
-const introSfx1 = document.getElementById("intro-sfx-1");
-
-let currentSceneIndex = 0;
+let currentScene = 0;
 let sceneTimer = null;
-let transitionTimer = null;
 let sfx1Played = false;
-let audioUnlocked = false;
+
+const introImage =
+    document.getElementById("intro-image");
+
+const introMusic =
+    document.getElementById("intro-music");
+
+const introSfx1 =
+    document.getElementById("intro-sfx1");
+
 
 function preloadIntroImages() {
-    INTRO_IMAGES.forEach((src) => {
-        const image = new Image();
-        image.src = src;
+
+    scenes.forEach((src) => {
+
+        const img = new Image();
+
+        img.src = src;
     });
 }
 
-async function startBackgroundMusic() {
+
+function showSceneImmediately(index) {
+
+    if (
+        !introImage ||
+        !scenes[index]
+    ) {
+        return;
+    }
+
+    currentScene = index;
+
+    introImage.src =
+        scenes[index];
+
+    introImage.classList.remove(
+        "is-fading"
+    );
+
+    playSceneSfx(index);
+}
+
+
+function startBackgroundMusic() {
+
     if (!introMusic) {
         return;
     }
 
     introMusic.loop = true;
 
-    try {
-        await introMusic.play();
-        audioUnlocked = true;
-    } catch (error) {
-        // I browser possono bloccare l'autoplay con audio.
-        // Il primo click o tasto premuto proverà a sbloccarlo.
-    }
+    introMusic.currentTime = 0;
+
+    introMusic
+        .play()
+        .catch((error) => {
+
+            console.warn(
+                "Autoplay musica bloccato dal browser:",
+                error
+            );
+        });
 }
 
+
+function unlockAudio() {
+
+    if (
+        introMusic &&
+        introMusic.paused
+    ) {
+
+        introMusic
+            .play()
+            .catch(() => {});
+    }
+
+    window.removeEventListener(
+        "pointerdown",
+        unlockAudio
+    );
+
+    window.removeEventListener(
+        "keydown",
+        unlockAudio
+    );
+}
+
+
 function playSceneSfx(index) {
-    if (index !== 3 || sfx1Played || !introSfx1) {
+
+    if (
+        index !== 3 ||
+        sfx1Played ||
+        !introSfx1
+    ) {
         return;
     }
 
     sfx1Played = true;
+
     introSfx1.currentTime = 0;
 
-    introSfx1.play().catch(() => {
-        // Se l'audio non è ancora stato autorizzato dal browser,
-        // il fallback di sblocco proverà a riprodurlo se siamo ancora
-        // sulla scena 4.
-        sfx1Played = false;
-    });
+    introSfx1
+        .play()
+        .catch(() => {
+
+            sfx1Played = false;
+        });
 }
 
-async function unlockAudio() {
-    if (audioUnlocked) {
+
+function changeScene(nextIndex) {
+
+    if (
+        !introImage ||
+        nextIndex < 0 ||
+        nextIndex >= scenes.length
+    ) {
         return;
     }
 
-    try {
-        if (introMusic) {
-            await introMusic.play();
-        }
+    introImage.classList.add(
+        "is-fading"
+    );
 
-        audioUnlocked = true;
+    window.setTimeout(() => {
 
-        if (currentSceneIndex === 3 && !sfx1Played) {
-            playSceneSfx(currentSceneIndex);
-        }
-    } catch (error) {
-        return;
-    }
+        currentScene =
+            nextIndex;
 
-    window.removeEventListener("pointerdown", unlockAudio);
-    window.removeEventListener("keydown", unlockAudio);
-}
+        introImage.src =
+            scenes[currentScene];
 
-function showSceneImmediately(index) {
-    if (!introImage) {
-        return;
-    }
-
-    if (index < 0 || index >= INTRO_IMAGES.length) {
-        return;
-    }
-
-    currentSceneIndex = index;
-    introImage.src = INTRO_IMAGES[currentSceneIndex];
-    introImage.classList.remove("is-fading");
-
-    playSceneSfx(currentSceneIndex);
-}
-
-function transitionToScene(index) {
-    if (!introImage) {
-        return;
-    }
-
-    if (index < 0 || index >= INTRO_IMAGES.length) {
-        return;
-    }
-
-    clearTimeout(transitionTimer);
-
-    introImage.classList.add("is-fading");
-
-    transitionTimer = window.setTimeout(() => {
-        currentSceneIndex = index;
-        introImage.src = INTRO_IMAGES[currentSceneIndex];
+        playSceneSfx(
+            currentScene
+        );
 
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                introImage.classList.remove("is-fading");
-            });
+
+            introImage.classList.remove(
+                "is-fading"
+            );
         });
 
-        playSceneSfx(currentSceneIndex);
     }, FADE_DURATION_MS);
 }
 
+
 function scheduleNextScene() {
+
     clearTimeout(sceneTimer);
 
-    if (currentSceneIndex >= INTRO_IMAGES.length - 1) {
+    if (
+        currentScene >=
+        scenes.length - 1
+    ) {
         return;
     }
 
-    sceneTimer = window.setTimeout(() => {
-        transitionToScene(currentSceneIndex + 1);
-
+    sceneTimer =
         window.setTimeout(() => {
-            scheduleNextScene();
-        }, FADE_DURATION_MS);
-    }, SCENE_DURATION_MS);
+
+            changeScene(
+                currentScene + 1
+            );
+
+            window.setTimeout(() => {
+
+                scheduleNextScene();
+
+            }, FADE_DURATION_MS);
+
+        }, SCENE_DURATION_MS);
 }
+
 
 function startIntro() {
+
     preloadIntroImages();
+
     showSceneImmediately(0);
+
+    // Tenta di far partire la musica subito
+    // dalla prima slide.
     startBackgroundMusic();
+
     scheduleNextScene();
 
-    window.addEventListener("pointerdown", unlockAudio);
-    window.addEventListener("keydown", unlockAudio);
+    // Fallback:
+    // se il browser blocca l'autoplay,
+    // la musica parte al primo click o tasto.
+    window.addEventListener(
+        "pointerdown",
+        unlockAudio
+    );
+
+    window.addEventListener(
+        "keydown",
+        unlockAudio
+    );
 }
 
-window.addEventListener("DOMContentLoaded", startIntro);
+
+document.addEventListener(
+    "DOMContentLoaded",
+    startIntro
+);
