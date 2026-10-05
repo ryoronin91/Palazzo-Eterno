@@ -125,6 +125,12 @@ let basePositionSavePending = false;
 let baseChannel = null;
 let baseRealtimeReady = false;
 
+// Giocatori remoti presenti nel Livello Base.
+// La Presence mantiene lo stato, mentre queste Map gestiscono
+// i token realmente renderizzati sulla mappa.
+const baseOtherPlayers = new Map();
+const baseOtherPlayerTokens = new Map();
+
 const BASE_CHANNEL_NAME =
     "palazzo-eterno-base";
 
@@ -2418,6 +2424,7 @@ function setupBaseMovement() {
             updateBaseCamera(true);
             positionBaseStaticDecorations();
             positionBasePlayerToken();
+            positionAllBaseRemotePlayerTokens();
         }
     );
 }
@@ -3546,6 +3553,7 @@ async function setupBaseRealtime() {
         },
         () => {
 
+            syncBaseRemotePlayers();
             renderBaseOnlinePlayers();
 
         }
@@ -3610,6 +3618,7 @@ async function setupBaseRealtime() {
                             );
 
 
+                            syncBaseRemotePlayers();
                             renderBaseOnlinePlayers();
 
                             resolve();
@@ -3719,6 +3728,382 @@ async function updateBasePresence() {
         console.error(
             "Errore aggiornamento Presence Base:",
             error
+        );
+
+    }
+
+}
+
+
+
+// ============================================================
+// SINCRONIZZA TOKEN DEGLI ALTRI GIOCATORI NELLA BASE
+// ============================================================
+
+function syncBaseRemotePlayers() {
+
+    if (
+        !baseChannel ||
+        !character
+    ) {
+        return;
+    }
+
+    const state =
+        baseChannel.presenceState();
+
+    const onlineIds =
+        new Set();
+
+    Object.values(state).forEach(
+        presences => {
+
+            presences.forEach(
+                presence => {
+
+                    if (
+                        !presence ||
+                        !presence.character_id
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        presence.character_id ===
+                        character.id
+                    ) {
+                        return;
+                    }
+
+                    // Sicurezza: sulla mappa Base renderizziamo
+                    // soltanto Presence dichiarate come Base.
+                    if (
+                        presence.location &&
+                        presence.location !== "base"
+                    ) {
+                        return;
+                    }
+
+                    const x =
+                        Number(presence.x);
+
+                    const y =
+                        Number(presence.y);
+
+                    if (
+                        !Number.isFinite(x) ||
+                        !Number.isFinite(y)
+                    ) {
+                        return;
+                    }
+
+                    onlineIds.add(
+                        presence.character_id
+                    );
+
+                    updateBaseRemotePlayer(
+                        presence
+                    );
+
+                }
+            );
+
+        }
+    );
+
+    // Rimuove immediatamente i token di chi ha lasciato
+    // il canale Base o è entrato in un servizio/combat.
+    for (
+        const [
+            characterId,
+            token
+        ] of baseOtherPlayerTokens
+    ) {
+
+        if (
+            !onlineIds.has(characterId)
+        ) {
+
+            token.remove();
+
+            baseOtherPlayerTokens.delete(
+                characterId
+            );
+
+            baseOtherPlayers.delete(
+                characterId
+            );
+
+        }
+
+    }
+
+}
+
+
+function updateBaseRemotePlayer(data) {
+
+    if (
+        !data ||
+        !data.character_id ||
+        !character ||
+        data.character_id === character.id
+    ) {
+        return;
+    }
+
+    const x = Number(data.x);
+    const y = Number(data.y);
+
+    if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y)
+    ) {
+        return;
+    }
+
+    const previous =
+        baseOtherPlayers.get(
+            data.character_id
+        ) || {};
+
+    baseOtherPlayers.set(
+        data.character_id,
+        {
+            ...previous,
+            character_id:
+                data.character_id,
+            name:
+                data.name ||
+                previous.name ||
+                "Avventuriero",
+            token:
+                data.token ||
+                previous.token ||
+                "token_1.png",
+            x,
+            y,
+            current_hp:
+                data.current_hp !== undefined
+                    ? data.current_hp
+                    : previous.current_hp,
+            active_combat_id:
+                data.active_combat_id !== undefined
+                    ? data.active_combat_id
+                    : previous.active_combat_id,
+            in_combat:
+                data.in_combat !== undefined
+                    ? !!data.in_combat
+                    : !!previous.in_combat
+        }
+    );
+
+    showBaseRemotePlayerToken(
+        data.character_id
+    );
+
+}
+
+
+function showBaseRemotePlayerToken(
+    characterId
+) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+    if (!map) {
+        return;
+    }
+
+    const player =
+        baseOtherPlayers.get(
+            characterId
+        );
+
+    if (!player) {
+        return;
+    }
+
+    let token =
+        baseOtherPlayerTokens.get(
+            characterId
+        );
+
+    if (!token) {
+
+        token =
+            document.createElement(
+                "div"
+            );
+
+        token.className =
+            "dungeon-player-token other-player-token";
+
+        token.dataset.characterId =
+            characterId;
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.draggable = false;
+
+        token.appendChild(image);
+
+        const label =
+            document.createElement(
+                "div"
+            );
+
+        label.className =
+            "other-player-name";
+
+        token.appendChild(label);
+
+        map.appendChild(token);
+
+        baseOtherPlayerTokens.set(
+            characterId,
+            token
+        );
+
+    }
+
+    const image =
+        token.querySelector("img");
+
+    const label =
+        token.querySelector(
+            ".other-player-name"
+        );
+
+    if (image) {
+        image.src =
+            "../immagini/token/" +
+            (
+                player.token ||
+                "token_1.png"
+            );
+        image.alt =
+            player.name ||
+            "Avventuriero";
+    }
+
+    if (label) {
+        label.textContent =
+            player.name ||
+            "Avventuriero";
+    }
+
+    const inCombat =
+        player.in_combat === true ||
+        !!player.active_combat_id;
+
+    token.classList.toggle(
+        "is-in-combat",
+        inCombat
+    );
+
+    token.title =
+        inCombat
+            ? `${player.name} - IN COMBATTIMENTO`
+            : player.name;
+
+    positionBaseRemotePlayerToken(
+        token,
+        player.x,
+        player.y
+    );
+
+}
+
+
+function positionBaseRemotePlayerToken(
+    element,
+    x,
+    y
+) {
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+    if (
+        !map ||
+        !element
+    ) {
+        return;
+    }
+
+    const rect =
+        map.getBoundingClientRect();
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) * 0.88;
+
+    element.style.width =
+        `${tokenSize}px`;
+
+    element.style.height =
+        `${tokenSize}px`;
+
+    element.style.left =
+        `${(Number(x) + 0.5) * cellWidth - tokenSize / 2}px`;
+
+    element.style.top =
+        `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
+
+    element.style.zIndex =
+        "19";
+
+}
+
+
+function positionAllBaseRemotePlayerTokens() {
+
+    for (
+        const [
+            characterId,
+            token
+        ] of baseOtherPlayerTokens
+    ) {
+
+        const player =
+            baseOtherPlayers.get(
+                characterId
+            );
+
+        if (!player) {
+            continue;
+        }
+
+        positionBaseRemotePlayerToken(
+            token,
+            player.x,
+            player.y
         );
 
     }
