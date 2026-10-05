@@ -28,4 +28,11 @@ body {
     object-position: center;
     user-select: none;
     -webkit-user-drag: none;
+
+    opacity: 1;
+    transition: opacity 350ms ease-in-out;
+}
+
+.intro-image.is-fading {
+    opacity: 0;
 }
