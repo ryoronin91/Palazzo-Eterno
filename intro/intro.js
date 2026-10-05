@@ -3,44 +3,51 @@ const FADE_MS = 420;
 const scenes = [
     {
         image: null,
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: Così vicino, eppure così lontano",
+            "Così vicino... eppure ancora fuori dalla mia portata.",
         black: true
     },
     {
         image:
             "immagini/intro1.png",
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: L'ingresso dalle fogne è stato bloccato. Non sono stato abbastanza veloce.",
+            "L'accesso dalle fogne è stato sigillato. Sono arrivato troppo tardi.",
         startMusic: true
     },
     {
         image:
             "immagini/intro2.png",
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: Chiusa una porta si apre un portone. Vorrà dire che entrerò dalla porta principale"
+            "Chiusa una porta, se ne apre un'altra. Vorrà dire che entrerò dall'ingresso principale."
     },
     {
         image:
             "immagini/intro3.png",
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: Vieni, avvicinati. Devi fare un lavoro per me...."
+            "Vieni. Avvicinati. Ho un lavoro per te..."
     },
     {
         image:
             "immagini/intro4.png",
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: .... che tu lo voglia oppure no.",
+            "...che tu lo voglia oppure no.",
         playSfx1: true
     },
     {
         image:
             "immagini/intro5.png",
+        speaker: "Misteriosa figura",
         text:
-            "Misteriosa figura: Raggiungi la stanza dell'orologio, sconfiggi i custodi ed entra nel Cuore del Palazzo. Quando sarai lì ci rivedremo."
+            "Raggiungi la stanza dell'orologio. Sconfiggi i Custodi ed entra nel Cuore del Palazzo. Quando sarai lì... ci rivedremo."
     },
     {
         image: null,
+        speaker: "",
         text: "",
         black: true,
         final: true
@@ -60,6 +67,11 @@ const introRoot =
 const introImage =
     document.getElementById(
         "intro-image"
+    );
+
+const dialogueSpeaker =
+    document.getElementById(
+        "dialogue-speaker"
     );
 
 const dialogueText =
@@ -112,7 +124,6 @@ function startMusic() {
     }
 
     introMusic.loop = true;
-
     introMusic.currentTime = 0;
 
     introMusic
@@ -141,7 +152,6 @@ function playSfx1() {
     }
 
     sfx1Played = true;
-
     introSfx1.currentTime = 0;
 
     introSfx1
@@ -168,6 +178,9 @@ function applyScene(index) {
     }
 
     currentScene = index;
+
+    dialogueSpeaker.textContent =
+        scene.speaker || "";
 
     dialogueText.textContent =
         scene.text || "";
@@ -248,7 +261,6 @@ function goToNextScene() {
     }
 
     transitioning = true;
-
     nextButton.disabled = true;
 
     introRoot.classList.add(
@@ -288,7 +300,6 @@ function goToNextScene() {
 function startIntro() {
 
     preloadImages();
-
     applyScene(0);
 
     nextButton.addEventListener(
