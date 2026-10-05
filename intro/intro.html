@@ -3,18 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palazzo Eterno - Intro</title>
+    <title>Palazzo Eterno — Introduzione</title>
     <link rel="stylesheet" href="intro.css">
 </head>
+
 <body>
-    <main class="intro-screen">
+
+    <main id="intro-root" class="intro-root is-black">
+
         <img
             id="intro-image"
             class="intro-image"
-            src="immagini/intro1.png"
-            alt="Introduzione Palazzo Eterno"
+            src=""
+            alt=""
             draggable="false"
         >
+
+        <div class="intro-vignette"></div>
+
+        <section
+            id="dialogue-box"
+            class="dialogue-box"
+            aria-live="polite"
+        >
+            <p id="dialogue-text" class="dialogue-text"></p>
+
+            <button
+                id="next-button"
+                class="next-button"
+                type="button"
+                aria-label="Avanti"
+                title="Avanti"
+            >
+                ➤
+            </button>
+        </section>
+
     </main>
 
     <audio
@@ -25,11 +49,12 @@
     ></audio>
 
     <audio
-        id="intro-sfx-1"
+        id="intro-sfx1"
         src="audio/sfx1.mp3"
         preload="auto"
     ></audio>
 
-    <script src="intro.js?v=2"></script>
+    <script src="intro.js"></script>
+
 </body>
 </html>

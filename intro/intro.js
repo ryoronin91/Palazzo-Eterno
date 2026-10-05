@@ -1,64 +1,113 @@
-const SCENE_DURATION_MS = 6000;
-const FADE_DURATION_MS = 350;
+const FADE_MS = 420;
 
 const scenes = [
-    "immagini/intro1.png",
-    "immagini/intro2.png",
-    "immagini/intro3.png",
-    "immagini/intro4.png",
-    "immagini/intro5.png"
+    {
+        image: null,
+        text:
+            "Misteriosa figura: Così vicino, eppure così lontano",
+        black: true
+    },
+    {
+        image:
+            "immagini/intro1.png",
+        text:
+            "Misteriosa figura: L'ingresso dalle fogne è stato bloccato. Non sono stato abbastanza veloce.",
+        startMusic: true
+    },
+    {
+        image:
+            "immagini/intro2.png",
+        text:
+            "Misteriosa figura: Chiusa una porta si apre un portone. Vorrà dire che entrerò dalla porta principale"
+    },
+    {
+        image:
+            "immagini/intro3.png",
+        text:
+            "Misteriosa figura: Vieni, avvicinati. Devi fare un lavoro per me...."
+    },
+    {
+        image:
+            "immagini/intro4.png",
+        text:
+            "Misteriosa figura: .... che tu lo voglia oppure no.",
+        playSfx1: true
+    },
+    {
+        image:
+            "immagini/intro5.png",
+        text:
+            "Misteriosa figura: Raggiungi la stanza dell'orologio, sconfiggi i custodi ed entra nel Cuore del Palazzo. Quando sarai lì ci rivedremo."
+    },
+    {
+        image: null,
+        text: "",
+        black: true,
+        final: true
+    }
 ];
 
 let currentScene = 0;
-let sceneTimer = null;
+let transitioning = false;
+let musicStarted = false;
 let sfx1Played = false;
 
-const introImage =
-    document.getElementById("intro-image");
-
-const introMusic =
-    document.getElementById("intro-music");
-
-const introSfx1 =
-    document.getElementById("intro-sfx1");
-
-
-function preloadIntroImages() {
-
-    scenes.forEach((src) => {
-
-        const img = new Image();
-
-        img.src = src;
-    });
-}
-
-
-function showSceneImmediately(index) {
-
-    if (
-        !introImage ||
-        !scenes[index]
-    ) {
-        return;
-    }
-
-    currentScene = index;
-
-    introImage.src =
-        scenes[index];
-
-    introImage.classList.remove(
-        "is-fading"
+const introRoot =
+    document.getElementById(
+        "intro-root"
     );
 
-    playSceneSfx(index);
+const introImage =
+    document.getElementById(
+        "intro-image"
+    );
+
+const dialogueText =
+    document.getElementById(
+        "dialogue-text"
+    );
+
+const nextButton =
+    document.getElementById(
+        "next-button"
+    );
+
+const introMusic =
+    document.getElementById(
+        "intro-music"
+    );
+
+const introSfx1 =
+    document.getElementById(
+        "intro-sfx1"
+    );
+
+
+function preloadImages() {
+
+    scenes.forEach(
+        (scene) => {
+
+            if (!scene.image) {
+                return;
+            }
+
+            const image =
+                new Image();
+
+            image.src =
+                scene.image;
+        }
+    );
 }
 
 
-function startBackgroundMusic() {
+function startMusic() {
 
-    if (!introMusic) {
+    if (
+        musicStarted ||
+        !introMusic
+    ) {
         return;
     }
 
@@ -68,44 +117,23 @@ function startBackgroundMusic() {
 
     introMusic
         .play()
+        .then(() => {
+
+            musicStarted = true;
+        })
         .catch((error) => {
 
             console.warn(
-                "Autoplay musica bloccato dal browser:",
+                "Impossibile avviare music.mp3:",
                 error
             );
         });
 }
 
 
-function unlockAudio() {
+function playSfx1() {
 
     if (
-        introMusic &&
-        introMusic.paused
-    ) {
-
-        introMusic
-            .play()
-            .catch(() => {});
-    }
-
-    window.removeEventListener(
-        "pointerdown",
-        unlockAudio
-    );
-
-    window.removeEventListener(
-        "keydown",
-        unlockAudio
-    );
-}
-
-
-function playSceneSfx(index) {
-
-    if (
-        index !== 3 ||
         sfx1Played ||
         !introSfx1
     ) {
@@ -118,101 +146,154 @@ function playSceneSfx(index) {
 
     introSfx1
         .play()
-        .catch(() => {
+        .catch((error) => {
 
             sfx1Played = false;
+
+            console.warn(
+                "Impossibile avviare sfx1.mp3:",
+                error
+            );
         });
 }
 
 
-function changeScene(nextIndex) {
+function applyScene(index) {
 
-    if (
-        !introImage ||
-        nextIndex < 0 ||
-        nextIndex >= scenes.length
-    ) {
+    const scene =
+        scenes[index];
+
+    if (!scene) {
         return;
     }
 
-    introImage.classList.add(
-        "is-fading"
-    );
+    currentScene = index;
 
-    window.setTimeout(() => {
+    dialogueText.textContent =
+        scene.text || "";
 
-        currentScene =
-            nextIndex;
+    if (
+        scene.black ||
+        !scene.image
+    ) {
 
-        introImage.src =
-            scenes[currentScene];
-
-        playSceneSfx(
-            currentScene
+        introRoot.classList.add(
+            "is-black"
         );
 
-        requestAnimationFrame(() => {
+        introImage.removeAttribute(
+            "src"
+        );
 
-            introImage.classList.remove(
-                "is-fading"
-            );
-        });
+    } else {
 
-    }, FADE_DURATION_MS);
+        introImage.src =
+            scene.image;
+
+        introRoot.classList.remove(
+            "is-black"
+        );
+    }
+
+    if (scene.startMusic) {
+        startMusic();
+    }
+
+    if (scene.playSfx1) {
+        playSfx1();
+    }
+
+    nextButton.setAttribute(
+        "aria-label",
+        scene.final
+            ? "Vai alla creazione del personaggio"
+            : "Avanti"
+    );
+
+    nextButton.title =
+        scene.final
+            ? "Continua"
+            : "Avanti";
 }
 
 
-function scheduleNextScene() {
+function goToNextScene() {
 
-    clearTimeout(sceneTimer);
+    if (transitioning) {
+        return;
+    }
+
+    const scene =
+        scenes[currentScene];
 
     if (
-        currentScene >=
-        scenes.length - 1
+        scene &&
+        scene.final
+    ) {
+
+        window.location.href =
+            "../personaggio.html";
+
+        return;
+    }
+
+    const nextIndex =
+        currentScene + 1;
+
+    if (
+        nextIndex >=
+        scenes.length
     ) {
         return;
     }
 
-    sceneTimer =
-        window.setTimeout(() => {
+    transitioning = true;
 
-            changeScene(
-                currentScene + 1
+    nextButton.disabled = true;
+
+    introRoot.classList.add(
+        "is-transitioning"
+    );
+
+    window.setTimeout(
+        () => {
+
+            applyScene(
+                nextIndex
             );
 
-            window.setTimeout(() => {
+            introRoot.classList.remove(
+                "is-transitioning"
+            );
 
-                scheduleNextScene();
+            window.setTimeout(
+                () => {
 
-            }, FADE_DURATION_MS);
+                    transitioning =
+                        false;
 
-        }, SCENE_DURATION_MS);
+                    nextButton.disabled =
+                        false;
+
+                },
+                FADE_MS
+            );
+
+        },
+        FADE_MS
+    );
 }
 
 
 function startIntro() {
 
-    preloadIntroImages();
+    preloadImages();
 
-    showSceneImmediately(0);
+    applyScene(0);
 
-    // Tenta di far partire la musica subito
-    // dalla prima slide.
-    startBackgroundMusic();
-
-    scheduleNextScene();
-
-    // Fallback:
-    // se il browser blocca l'autoplay,
-    // la musica parte al primo click o tasto.
-    window.addEventListener(
-        "pointerdown",
-        unlockAudio
-    );
-
-    window.addEventListener(
-        "keydown",
-        unlockAudio
+    nextButton.addEventListener(
+        "click",
+        goToNextScene
     );
 }
 
