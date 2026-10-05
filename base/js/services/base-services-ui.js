@@ -413,26 +413,26 @@
             <p
                 class="base-service-note"
             >
-                Tutti i giocatori possono contribuire
-                alla costruzione.
-                Quando tutti i requisiti saranno completati,
-                inizierà l'evocazione del Runografo.
+                ${escapeHtml(
+                    config?.construction_note_1 ||
+                    "Tutti i giocatori possono contribuire alla costruzione."
+                )}
             </p>
 
             <p
                 class="base-service-note"
             >
-                La costruzione richiederà 1 ora.
-                Una volta evocato, il Runografo resterà
-                disponibile solo per un tempo limitato,
-                a meno che i giocatori non continuino
-                a riempire la sua riserva di monete.
+                ${escapeHtml(
+                    config?.construction_note_2 ||
+                    "La costruzione richiederà il tempo previsto dal servizio."
+                )}
             </p>
         `;
     }
 
 
     function renderBuilding(
+        config,
         payload
     ) {
         const remaining =
@@ -469,10 +469,10 @@
             <p
                 class="base-service-note"
             >
-                Al termine della costruzione
-                il Runografo diventerà operativo
-                e inizierà a consumare la propria
-                riserva di monete.
+                ${escapeHtml(
+                    config?.building_note ||
+                    "Al termine della costruzione il servizio diventerà operativo e inizierà a consumare la propria riserva di monete."
+                )}
             </p>
         `;
     }
@@ -761,6 +761,7 @@
         ) {
             body =
                 renderBuilding(
+                    currentConfig,
                     currentPayload
                 );
 
