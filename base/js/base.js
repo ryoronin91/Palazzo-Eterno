@@ -931,7 +931,7 @@ function positionBasePlayerToken() {
         }px`;
 
     basePlayerToken.style.zIndex =
-        "20";
+        "40";
 }
 
 
@@ -2876,6 +2876,7 @@ function moveBasePlayer(dx, dy) {
 
     scheduleBasePositionSave();
     updateBasePresence();
+    broadcastBasePlayerState();
 
  if (
     typeof checkBaseTeleportEvent ===
@@ -3556,6 +3557,52 @@ async function setupBaseRealtime() {
             syncBaseRemotePlayers();
             renderBaseOnlinePlayers();
 
+            // Presence serve soprattutto a sapere chi è online.
+            // Dopo un sync ribroadcastiamo anche la nostra posizione
+            // così gli altri client possono aggiornarci subito.
+            broadcastBasePlayerState();
+
+        }
+    );
+
+
+    // ========================================================
+    // MOVIMENTO ALTRI GIOCATORI
+    // ========================================================
+
+    baseChannel.on(
+        "broadcast",
+        {
+            event:
+                "base-player-move"
+        },
+        message => {
+
+            const data =
+                message.payload;
+
+            if (!data) {
+                return;
+            }
+
+            if (
+                data.character_id ===
+                character.id
+            ) {
+                return;
+            }
+
+            if (
+                data.location &&
+                data.location !== "base"
+            ) {
+                return;
+            }
+
+            updateBaseRemotePlayer(
+                data
+            );
+
         }
     );
 
@@ -3617,6 +3664,7 @@ async function setupBaseRealtime() {
                                 getMyBasePresenceData()
                             );
 
+                            await broadcastBasePlayerState();
 
                             syncBaseRemotePlayers();
                             renderBaseOnlinePlayers();
@@ -3727,6 +3775,78 @@ async function updateBasePresence() {
 
         console.error(
             "Errore aggiornamento Presence Base:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BROADCAST POSIZIONE BASE
+// ============================================================
+
+async function broadcastBasePlayerState() {
+
+    if (
+        !baseChannel ||
+        !baseRealtimeReady ||
+        !character
+    ) {
+        return;
+    }
+
+    try {
+
+        await baseChannel.send({
+
+            type:
+                "broadcast",
+
+            event:
+                "base-player-move",
+
+            payload: {
+
+                character_id:
+                    character.id,
+
+                name:
+                    character.nome ||
+                    "Avventuriero",
+
+                token:
+                    character.token ||
+                    "token_1.png",
+
+                x:
+                    Number(basePlayerX),
+
+                y:
+                    Number(basePlayerY),
+
+                current_hp:
+                    character.current_hp,
+
+                active_combat_id:
+                    character.active_combat_id ||
+                    null,
+
+                in_combat:
+                    !!character.active_combat_id,
+
+                location:
+                    "base"
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Errore broadcast posizione Base:",
             error
         );
 
@@ -4077,7 +4197,7 @@ function positionBaseRemotePlayerToken(
         `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
 
     element.style.zIndex =
-        "19";
+        "39";
 
 }
 
