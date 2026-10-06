@@ -1,0 +1,133 @@
+/* ============================================================
+   PALAZZO ETERNO - BUG & SUGGERIMENTI
+============================================================ */
+
+.feedback-modal[hidden] {
+    display: none !important;
+}
+
+.feedback-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.feedback-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(3px);
+}
+
+.feedback-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(680px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 30px;
+    border: 1px solid rgba(190, 166, 116, 0.72);
+    background: linear-gradient(180deg, rgba(19, 17, 14, 0.98), rgba(8, 8, 8, 0.99));
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
+}
+
+.feedback-title {
+    margin: 0 44px 12px 0;
+    color: #d4bd88;
+    font-size: 24px;
+    letter-spacing: 0.06em;
+}
+
+.feedback-description {
+    margin: 0 0 18px;
+    color: #d9d2c5;
+    line-height: 1.5;
+}
+
+.feedback-text {
+    display: block;
+    width: 100%;
+    min-height: 190px;
+    resize: vertical;
+    padding: 14px 16px;
+    border: 1px solid rgba(190, 166, 116, 0.46);
+    background: rgba(0, 0, 0, 0.42);
+    color: #f2eee4;
+    font: inherit;
+    line-height: 1.5;
+    outline: none;
+}
+
+.feedback-text:focus {
+    border-color: rgba(218, 190, 126, 0.9);
+    box-shadow: 0 0 0 1px rgba(218, 190, 126, 0.2);
+}
+
+.feedback-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.feedback-status {
+    flex: 1;
+    min-height: 1.4em;
+    color: #d9d2c5;
+    font-size: 14px;
+}
+
+.feedback-status.is-error {
+    color: #e89084;
+}
+
+.feedback-status.is-success {
+    color: #9fd39b;
+}
+
+.feedback-close-button {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: transparent;
+    color: #d4bd88;
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.feedback-close-button:hover {
+    color: #fff2cf;
+}
+
+body.feedback-modal-open {
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .feedback-modal {
+        padding: 12px;
+    }
+
+    .feedback-dialog {
+        padding: 24px 18px 18px;
+        max-height: calc(100vh - 24px);
+    }
+
+    .feedback-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .feedback-footer .button {
+        width: 100%;
+    }
+}

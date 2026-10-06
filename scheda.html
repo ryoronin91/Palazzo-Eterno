@@ -22,6 +22,11 @@
         href="css/scheda.css?v=2"
     >
 
+    <link
+        rel="stylesheet"
+        href="css/scheda-feedback.css?v=1"
+    >
+
 
 </head>
 
@@ -125,6 +130,15 @@
                     >
                         ENTRA DA MASTER
                     </a>
+
+
+                    <button
+                        id="feedback-open-button"
+                        class="button secondary"
+                        type="button"
+                    >
+                        BUG &amp; SUGGERIMENTI
+                    </button>
 
 
                     <button
@@ -673,6 +687,74 @@
 
 
     <!-- =======================================================
+         BUG & SUGGERIMENTI
+    ======================================================== -->
+
+    <div
+        id="feedback-modal"
+        class="feedback-modal"
+        hidden
+    >
+        <div
+            class="feedback-modal-backdrop"
+            data-feedback-close
+        ></div>
+
+        <section
+            class="feedback-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
+        >
+            <button
+                id="feedback-close-button"
+                class="feedback-close-button"
+                type="button"
+                aria-label="Chiudi"
+                title="Chiudi"
+            >
+                ×
+            </button>
+
+            <h2
+                id="feedback-title"
+                class="feedback-title"
+            >
+                BUG &amp; SUGGERIMENTI
+            </h2>
+
+            <p class="feedback-description">
+                Hai trovato un problema o hai un'idea per migliorare Palazzo Eterno?
+                Scrivila qui: verrà aggiunta direttamente alla lista delle cose da fare.
+            </p>
+
+            <textarea
+                id="feedback-text"
+                class="feedback-text"
+                maxlength="2000"
+                placeholder="Descrivi il bug o il suggerimento..."
+            ></textarea>
+
+            <div class="feedback-footer">
+                <span
+                    id="feedback-status"
+                    class="feedback-status"
+                    aria-live="polite"
+                ></span>
+
+                <button
+                    id="feedback-send-button"
+                    class="button"
+                    type="button"
+                >
+                    INVIA
+                </button>
+            </div>
+        </section>
+    </div>
+
+
+    <!-- =======================================================
          SUPABASE
     ======================================================== -->
 
@@ -683,6 +765,8 @@
     <script src="js/config.js"></script>
 
     <script src="js/scheda.js?v=15"></script>
+
+    <script src="js/scheda-feedback.js?v=1"></script>
 
 </body>
 
