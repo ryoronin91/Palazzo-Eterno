@@ -627,6 +627,16 @@ const combatTokens =
     new Map();
 
 
+// Token grafici dei giocatori, caricati tramite RPC sicura.
+// La query diretta a characters non funziona per gli altri utenti
+// quando la RLS consente di leggere solo il proprio personaggio.
+const combatPlayerTokens =
+    new Map();
+
+let combatPlayerTokenSignature =
+    "";
+
+
 // ============================================================
 // CELLE RANGE
 // ============================================================
@@ -1425,6 +1435,100 @@ async function loadCombatEntities() {
 
         }
     );
+
+
+    await loadCombatPlayerTokensIfNeeded();
+
+}
+
+
+// ============================================================
+// TOKEN GIOCATORI COMBAT
+// ============================================================
+
+async function loadCombatPlayerTokensIfNeeded() {
+
+    const characterIds =
+        Array.from(
+            combatEntities.values()
+        )
+            .filter(
+                entity =>
+                    entity.entity_type ===
+                        "player"
+                    &&
+                    entity.character_id
+            )
+            .map(
+                entity =>
+                    entity.character_id
+            )
+            .sort();
+
+
+    const signature =
+        JSON.stringify(
+            characterIds
+        );
+
+
+    if (
+        signature ===
+        combatPlayerTokenSignature
+    ) {
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await db.rpc(
+            "get_combat_player_tokens",
+            {
+                p_combat_id:
+                    combatId
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    combatPlayerTokens.clear();
+
+
+    (
+        data ||
+        []
+    ).forEach(
+        row => {
+
+            if (
+                row.character_id
+            ) {
+
+                combatPlayerTokens.set(
+                    row.character_id,
+                    row.token ||
+                        "token_1.png"
+                );
+
+            }
+
+        }
+    );
+
+
+    combatPlayerTokenSignature =
+        signature;
 
 }
 

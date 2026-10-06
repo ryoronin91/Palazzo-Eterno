@@ -287,7 +287,7 @@ function renderCombatTokens() {
 // TOKEN PG
 // ============================================================
 
-async function renderPlayerTokenContent(
+function renderPlayerTokenContent(
     token,
     entity
 ) {
@@ -319,65 +319,21 @@ async function renderPlayerTokenContent(
         "Personaggio";
 
 
-    // Token di fallback.
-    image.src =
-        "immagini/token/token_1.png";
-
-
-    if (
+    const tokenFile =
         entity.character_id
-    ) {
 
-        try {
+            ? combatPlayerTokens.get(
+                entity.character_id
+            )
 
-            const {
-                data,
-                error
-            } =
-                await db
-                    .from(
-                        "characters"
-                    )
-                    .select(
-                        "token"
-                    )
-                    .eq(
-                        "id",
-                        entity.character_id
-                    )
-                    .maybeSingle();
+            : null;
 
 
-            if (error) {
-
-                console.warn(
-                    "Errore caricamento token PG:",
-                    error
-                );
-
-            }
-
-
-            if (
-                data?.token
-            ) {
-
-                image.src =
-                    `immagini/token/${data.token}`;
-
-            }
-
-
-        } catch (error) {
-
-            console.warn(
-                "Errore token personaggio:",
-                error
-            );
-
-        }
-
-    }
+    image.src =
+        `immagini/token/${
+            tokenFile ||
+            "token_1.png"
+        }`;
 
 
     token.appendChild(
