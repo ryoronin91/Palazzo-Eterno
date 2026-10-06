@@ -36,7 +36,6 @@
 
 
     if (
-        !openButton ||
         !modal ||
         !textarea ||
         !sendButton
@@ -183,7 +182,7 @@
                             character_name:
                                 characterName,
                             page:
-                                "scheda.html"
+                                (window.location.pathname.split("/").pop() || "pagina")
                         }
                     }
                 );
@@ -234,9 +233,21 @@
     }
 
 
-    openButton.addEventListener(
+    // Supporta sia il pulsante statico di scheda.html sia i pulsanti
+    // creati dinamicamente dalla bacheca condivisa.
+    document.addEventListener(
         "click",
-        openModal
+        (event) => {
+            const trigger = event.target?.closest?.(
+                "#feedback-open-button, [data-feedback-open]"
+            );
+
+            if (!trigger) {
+                return;
+            }
+
+            openModal();
+        }
     );
 
     closeButton?.addEventListener(
