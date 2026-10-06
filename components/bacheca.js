@@ -7,13 +7,12 @@
             items: [
                 "Il Livello Base è ora accessibile dal dungeon.",
                 "Mano di Scimmia si è trasferito alla Base.",
-                "Sono iniziati i lavori per i nuovi servizi della Base."
+                "Sono sbloccabili i servizi della Base come Runografo, Addestratore, Locanda e Missioni."
             ]
         },
         upgrade: {
             title: "PROSSIMI UPGRADE",
             items: [
-                "Sistema di costruzione e potenziamento dei servizi.",
                 "Scambio tra giocatori."
             ]
         },
