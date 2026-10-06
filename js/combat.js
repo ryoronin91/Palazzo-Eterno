@@ -5,6 +5,139 @@
 
 let pageBackgroundMusic = null;
 
+const COMBAT_AUDIO_MUTED_KEY =
+    "palazzo-eterno-combat-audio-muted";
+
+
+function isCombatAudioMuted() {
+
+    return (
+        localStorage.getItem(
+            COMBAT_AUDIO_MUTED_KEY
+        ) ===
+        "true"
+    );
+
+}
+
+
+function updateCombatVolumeButton() {
+
+    const button =
+        document.getElementById(
+            "combat-volume-toggle"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    const muted =
+        isCombatAudioMuted();
+
+
+    button.textContent =
+        muted
+            ? "🔇"
+            : "🔊";
+
+
+    button.classList.toggle(
+        "muted",
+        muted
+    );
+
+
+    button.setAttribute(
+        "aria-pressed",
+        String(muted)
+    );
+
+
+    button.setAttribute(
+        "aria-label",
+        muted
+            ? "Attiva musica"
+            : "Disattiva musica"
+    );
+
+
+    button.title =
+        muted
+            ? "Attiva musica"
+            : "Disattiva musica";
+
+}
+
+
+function setupCombatVolumeControl() {
+
+    const button =
+        document.getElementById(
+            "combat-volume-toggle"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    updateCombatVolumeButton();
+
+
+    button.addEventListener(
+        "click",
+        async () => {
+
+            const nextMuted =
+                !isCombatAudioMuted();
+
+
+            localStorage.setItem(
+                COMBAT_AUDIO_MUTED_KEY,
+                String(nextMuted)
+            );
+
+
+            if (pageBackgroundMusic) {
+
+                pageBackgroundMusic.muted =
+                    nextMuted;
+
+
+                if (!nextMuted) {
+
+                    try {
+
+                        await pageBackgroundMusic.play();
+
+                    } catch (error) {
+
+                        // L'audio partirà alla prossima interazione
+                        // se il browser blocca ancora l'autoplay.
+
+                    }
+
+                }
+
+            }
+
+
+            updateCombatVolumeButton();
+
+        }
+    );
+
+}
+
+
 function startBackgroundMusic(
     source
 ) {
@@ -33,6 +166,13 @@ function startBackgroundMusic(
 
     pageBackgroundMusic.preload =
         "auto";
+
+
+    pageBackgroundMusic.muted =
+        isCombatAudioMuted();
+
+
+    updateCombatVolumeButton();
 
 
     const tryPlay =
@@ -373,8 +513,11 @@ document.addEventListener(
 
 
             // =================================================
-            // MUSICA COMBAT
+            // VOLUME / MUSICA COMBAT
             // =================================================
+
+            setupCombatVolumeControl();
+
 
             startBackgroundMusic(
                 combatSession?.encounter_id ===
