@@ -391,15 +391,19 @@ document.addEventListener(
 
 
             const critical =
-                Math.min(
-                    50,
-                    Math.ceil(
-                        fortuna *
-                        (
-                            50 / 30
-                        )
-                    )
-                );
+    Math.min(
+        50,
+        Math.round(
+            fortuna *
+            (
+                50 / 30
+            )
+            *
+            100
+        )
+        /
+        100
+    );
 
 
             return {
