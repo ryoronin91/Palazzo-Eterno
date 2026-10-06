@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/base.css?v=6"
+        href="css/base.css?v=10"
     >
 
     <link
@@ -720,6 +720,54 @@
                     </div>
 
 
+                    <!-- =====================================
+                         SCAMBIO TRA GIOCATORI
+                    ====================================== -->
+
+                    <section class="base-trade-inline-section">
+                        <div class="quick-section-title">GIOCATORI VICINI</div>
+                        <div id="base-trade-nearby-players" class="base-trade-nearby-list">
+                            <div class="base-trade-inline-empty">Nessun giocatore adiacente.</div>
+                        </div>
+                    </section>
+
+                    <section class="base-trade-inline-section">
+                        <div class="quick-section-title">SCAMBIO</div>
+
+                        <div id="base-trade-inline-panel" class="base-trade-inline-panel disabled">
+                            <div id="base-trade-status" class="base-trade-inline-status">
+                                Seleziona un giocatore adiacente.
+                            </div>
+
+                            <div class="base-trade-inline-grid">
+                                <div class="base-trade-inline-side">
+                                    <div class="base-trade-inline-side-title">LA TUA OFFERTA</div>
+                                    <div id="base-trade-my-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="base-trade-my-offer" class="base-trade-offer-list"></div>
+                                </div>
+
+                                <div class="base-trade-inline-side">
+                                    <div id="base-trade-other-name" class="base-trade-inline-side-title">ALTRO GIOCATORE</div>
+                                    <div id="base-trade-other-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="base-trade-other-offer" class="base-trade-offer-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="base-trade-add-box">
+                                <select id="base-trade-item-select" class="base-trade-select" aria-label="Oggetto da offrire" disabled></select>
+                                <input id="base-trade-item-quantity" class="base-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire" disabled>
+                                <button id="base-trade-add-item" class="base-trade-button compact" type="button" disabled>AGGIUNGI</button>
+                            </div>
+
+                            <div class="base-trade-inline-actions">
+                                <button id="base-trade-decline" class="base-trade-button secondary" type="button" hidden>RIFIUTA</button>
+                                <button id="base-trade-accept" class="base-trade-button primary" type="button" hidden>ACCETTA</button>
+                                <button id="base-trade-cancel" class="base-trade-button secondary" type="button" disabled>ANNULLA</button>
+                                <button id="base-trade-confirm" class="base-trade-button primary" type="button" disabled>CONFERMA</button>
+                            </div>
+                        </div>
+                    </section>
+
                     <!--
                         Manteniamo questo elemento nascosto
                         per compatibilità con eventuale codice
@@ -1012,63 +1060,12 @@
          SCAMBIO TRA GIOCATORI - SOLO LIVELLO BASE
     ====================================================== -->
 
-    <div id="base-trade-invite" class="base-trade-overlay" hidden>
-        <section class="base-trade-invite-card" role="dialog" aria-modal="true" aria-labelledby="base-trade-invite-title">
-            <div class="base-trade-kicker">RICHIESTA DI SCAMBIO</div>
-            <h2 id="base-trade-invite-title">
-                <span id="base-trade-invite-name">Un giocatore</span> vuole commerciare con te
-            </h2>
-            <p>Potete scambiarvi qualsiasi oggetto finché restate adiacenti nel Livello Base.</p>
-            <div class="base-trade-actions">
-                <button id="base-trade-invite-decline" class="base-trade-button secondary" type="button">RIFIUTA</button>
-                <button id="base-trade-invite-accept" class="base-trade-button primary" type="button">ACCETTA</button>
-            </div>
-        </section>
-    </div>
-
-    <div id="base-trade-modal" class="base-trade-overlay" hidden>
-        <section class="base-trade-panel" role="dialog" aria-modal="true" aria-labelledby="base-trade-title">
-            <button id="base-trade-close" class="base-trade-close" type="button" aria-label="Annulla scambio">×</button>
-
-            <div class="base-trade-header">
-                <div class="base-trade-kicker">LIVELLO BASE</div>
-                <h2 id="base-trade-title">SCAMBIO TRA GIOCATORI</h2>
-                <div id="base-trade-status" class="base-trade-status">Preparazione dello scambio...</div>
-            </div>
-
-            <div class="base-trade-grid">
-                <section class="base-trade-side">
-                    <div class="base-trade-side-title">LA TUA OFFERTA</div>
-                    <div id="base-trade-my-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
-                    <div id="base-trade-my-offer" class="base-trade-offer-list"></div>
-
-                    <div class="base-trade-add-box">
-                        <select id="base-trade-item-select" class="base-trade-select" aria-label="Oggetto da offrire"></select>
-                        <input id="base-trade-item-quantity" class="base-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire">
-                        <button id="base-trade-add-item" class="base-trade-button compact" type="button">AGGIUNGI</button>
-                    </div>
-                </section>
-
-                <section class="base-trade-side">
-                    <div id="base-trade-other-name" class="base-trade-side-title">ALTRO GIOCATORE</div>
-                    <div id="base-trade-other-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
-                    <div id="base-trade-other-offer" class="base-trade-offer-list"></div>
-                </section>
-            </div>
-
-            <div class="base-trade-footer">
-                <button id="base-trade-cancel" class="base-trade-button secondary" type="button">ANNULLA SCAMBIO</button>
-                <button id="base-trade-confirm" class="base-trade-button primary" type="button">CONFERMA SCAMBIO</button>
-            </div>
-        </section>
-    </div>
-
     <!-- =====================================================
          SCRIPT PRINCIPALI LIVELLO BASE
     ====================================================== -->
 
     <script src="../components/bacheca.js?v=2"></script>
-    <script src="js/base.js?v=29"></script>
+    <script src="js/base.js?v=32"></script>
     <script src="js/eventi_base.js?v=2"></script>
 
 
