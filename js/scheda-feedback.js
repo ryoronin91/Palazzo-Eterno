@@ -1,13 +1,9 @@
 // ============================================================
 // PALAZZO ETERNO - BUG & SUGGERIMENTI
+// Versione compatibile con scheda/base/index/login
 // ============================================================
 
 (() => {
-
-    const openButton =
-        document.getElementById(
-            "feedback-open-button"
-        );
 
     const modal =
         document.getElementById(
@@ -101,29 +97,38 @@
     }
 
 
-    async function getCharacterName() {
+    async function getFeedbackAuthor() {
 
-        const {
-            data: { session },
-            error: sessionError
-        } =
-            await supabaseClient.auth.getSession();
+        try {
 
-        if (sessionError) {
-            throw sessionError;
-        }
+            const {
+                data: { session },
+                error: sessionError
+            } = await supabaseClient.auth.getSession();
 
-        if (!session?.user) {
-            throw new Error(
-                "Sessione non valida."
-            );
-        }
+            if (sessionError) {
+                console.warn(
+                    "Impossibile leggere la sessione feedback:",
+                    sessionError
+                );
 
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
+                return {
+                    characterName: "Visitatore",
+                    authenticated: false
+                };
+            }
+
+            if (!session?.user) {
+                return {
+                    characterName: "Visitatore",
+                    authenticated: false
+                };
+            }
+
+            const {
+                data,
+                error
+            } = await supabaseClient
                 .from("characters")
                 .select("nome")
                 .eq(
@@ -132,14 +137,47 @@
                 )
                 .maybeSingle();
 
-        if (error) {
-            throw error;
-        }
+            if (error) {
+                console.warn(
+                    "Impossibile leggere il nome del personaggio per il feedback:",
+                    error
+                );
 
-        return (
-            data?.nome ||
-            "Giocatore"
-        );
+                return {
+                    characterName: "Utente autenticato",
+                    authenticated: true
+                };
+            }
+
+            return {
+                characterName:
+                    data?.nome ||
+                    "Utente autenticato",
+                authenticated: true
+            };
+
+        } catch (error) {
+
+            console.warn(
+                "Errore durante l'identificazione dell'autore del feedback:",
+                error
+            );
+
+            return {
+                characterName: "Visitatore",
+                authenticated: false
+            };
+        }
+    }
+
+
+    function getCurrentPage() {
+
+        const pathname =
+            window.location.pathname ||
+            "pagina sconosciuta";
+
+        return pathname;
     }
 
 
@@ -167,25 +205,26 @@
 
         try {
 
-            const characterName =
-                await getCharacterName();
+            const author =
+                await getFeedbackAuthor();
 
             const {
                 data,
                 error
-            } =
-                await supabaseClient.functions.invoke(
-                    "todoist-feedback",
-                    {
-                        body: {
-                            message,
-                            character_name:
-                                characterName,
-                            page:
-                                (window.location.pathname.split("/").pop() || "pagina")
-                        }
+            } = await supabaseClient.functions.invoke(
+                "todoist-feedback",
+                {
+                    body: {
+                        message,
+                        character_name:
+                            author.characterName,
+                        page:
+                            getCurrentPage(),
+                        authenticated:
+                            author.authenticated
                     }
-                );
+                }
+            );
 
             if (error) {
                 throw error;
@@ -233,31 +272,21 @@
     }
 
 
-    // Supporta sia il pulsante statico di scheda.html sia i pulsanti
-    // creati dinamicamente dalla bacheca condivisa.
     document.addEventListener(
         "click",
         (event) => {
-            const trigger = event.target?.closest?.(
-                "#feedback-open-button, [data-feedback-open]"
-            );
 
-            if (!trigger) {
+            const openTrigger =
+                event.target.closest(
+                    "#feedback-open-button, [data-feedback-open]"
+                );
+
+            if (openTrigger) {
+                event.preventDefault();
+                openModal();
                 return;
             }
 
-            openModal();
-        }
-    );
-
-    closeButton?.addEventListener(
-        "click",
-        closeModal
-    );
-
-    modal.addEventListener(
-        "click",
-        (event) => {
             if (
                 event.target?.hasAttribute?.(
                     "data-feedback-close"
@@ -268,10 +297,18 @@
         }
     );
 
+
+    closeButton?.addEventListener(
+        "click",
+        closeModal
+    );
+
+
     sendButton.addEventListener(
         "click",
         sendFeedback
     );
+
 
     document.addEventListener(
         "keydown",
