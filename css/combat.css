@@ -268,19 +268,17 @@
         }
 
 
-        .combat-volume-toggle {
+        .combat-volume-control {
 
-            width: 42px;
+            min-height: 42px;
 
-            height: 42px;
-
-            display: inline-flex;
+            display: flex;
 
             align-items: center;
 
-            justify-content: center;
+            gap: 8px;
 
-            padding: 0;
+            padding: 7px 10px;
 
             border: 1px solid var(--border-light);
 
@@ -293,51 +291,50 @@
                     #1b140e
                 );
 
-            color: var(--gold-light);
-
-            font-size: 20px;
-
-            line-height: 1;
-
-            cursor: pointer;
-
             box-shadow:
                 inset 0 0 0 1px rgba(255, 220, 155, .03),
                 0 3px 10px rgba(0, 0, 0, .28);
 
-            transition:
-                border-color .15s ease,
-                background .15s ease,
-                transform .08s ease,
-                opacity .15s ease;
+        }
+
+
+        .combat-volume-icon {
+
+            width: 24px;
+
+            color: var(--gold-light);
+
+            font-size: 19px;
+
+            line-height: 1;
+
+            text-align: center;
 
         }
 
 
-        .combat-volume-toggle:hover {
+        .combat-volume-slider {
 
-            border-color: #bb8b46;
+            width: 120px;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    #44301a,
-                    #22170f
-                );
+            accent-color: var(--gold);
+
+            cursor: pointer;
 
         }
 
 
-        .combat-volume-toggle:active {
+        .combat-volume-value {
 
-            transform: translateY(1px);
+            width: 38px;
 
-        }
+            color: var(--gold-light);
 
+            font-size: 11px;
 
-        .combat-volume-toggle.muted {
+            font-weight: 700;
 
-            opacity: .62;
+            text-align: right;
 
         }
 

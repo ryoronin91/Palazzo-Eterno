@@ -15,7 +15,7 @@
     </title>
 
 
-<link rel="stylesheet" href="css/combat.css?v=8">
+<link rel="stylesheet" href="css/combat.css?v=9">
 
 
 </head>
@@ -61,16 +61,38 @@
 
             <div class="combat-header-controls">
 
-                <button
-                    id="combat-volume-toggle"
-                    class="combat-volume-toggle"
-                    type="button"
-                    aria-label="Disattiva musica"
-                    aria-pressed="false"
-                    title="Disattiva musica"
+                <div
+                    class="combat-volume-control"
+                    title="Volume musica del combattimento"
                 >
-                    🔊
-                </button>
+
+                    <span
+                        id="combat-volume-icon"
+                        class="combat-volume-icon"
+                        aria-hidden="true"
+                    >
+                        🔉
+                    </span>
+
+                    <input
+                        id="combat-volume-slider"
+                        class="combat-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="35"
+                        aria-label="Volume musica del combattimento"
+                    >
+
+                    <span
+                        id="combat-volume-value"
+                        class="combat-volume-value"
+                    >
+                        35%
+                    </span>
+
+                </div>
 
             </div>
 
@@ -743,7 +765,7 @@
     <script src="js/combat-actions.js?v=59"></script>
     <script src="js/combat-ui.js?v=57"></script>
     <script src="js/combat-loot.js?v=55"></script>
-    <script src="js/combat.js?v=70"></script>
+    <script src="js/combat.js?v=71"></script>
 
 <div
     id="combat-victory-overlay"
