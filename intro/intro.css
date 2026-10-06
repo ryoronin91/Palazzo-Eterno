@@ -132,8 +132,8 @@ body {
     cursor: pointer;
     opacity: 0.92;
     z-index: 5;
-    right: 1.9%;
-    bottom: 13%;
+    right: 1.5%;
+    bottom: 14%;
     padding: 0;
     transition: opacity 150ms ease, transform 150ms ease, text-shadow 150ms ease;
 }
