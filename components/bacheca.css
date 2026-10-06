@@ -1,11 +1,8 @@
 /* =====================================================
    BACHECA CONDIVISA - PALAZZO ETERNO
-   Usata da index.html, login.html e base/base.html
 ====================================================== */
 
-.shared-noticeboard {
-    color: #d5ccbd;
-}
+.shared-noticeboard { color: #d5ccbd; }
 
 .shared-noticeboard[data-mode="public"] {
     margin-top: 26px;
@@ -29,7 +26,27 @@
 .shared-noticeboard-list li { position: relative; margin: 0; padding: 9px 10px 9px 27px; border: 1px solid rgba(149,117,69,.18); border-radius: 6px; background: rgba(255,246,226,.025); color: #d5ccbd; font-size: .88rem; line-height: 1.4; text-align: left; }
 .shared-noticeboard-list li::before { content: "◆"; position: absolute; left: 10px; top: 10px; color: #a87d40; font-size: .62rem; }
 
-/* Compatibilità con la modale già esistente della Base */
+.shared-noticeboard-feedback {
+    display: flex;
+    min-height: 105px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.shared-noticeboard-feedback p {
+    margin: 0;
+    color: #d5ccbd;
+    font-size: .88rem;
+    line-height: 1.5;
+}
+
+.shared-noticeboard-feedback-button {
+    min-width: 210px;
+}
+
 .shared-noticeboard[data-mode="base"] { padding: 0; }
 .shared-noticeboard[data-mode="base"] .shared-noticeboard-title { font-size: 1.25rem; }
 
