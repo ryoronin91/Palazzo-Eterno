@@ -126,13 +126,8 @@ let baseChannel = null;
 let baseRealtimeReady = false;
 
 // Broadcast = movimento immediato.
-// Presence = ingresso/uscita + riallineamento periodico.
-// Evitiamo track() a ogni singolo passo perché genera una raffica
-// di sync Realtime su tutti i client.
-let basePresenceUpdateTimer = null;
+// Presence = ingresso/uscita + riallineamento.
 let baseBroadcastPending = false;
-
-const BASE_PRESENCE_UPDATE_DELAY_MS = 250;
 
 // Giocatori remoti presenti nel Livello Base.
 // La Presence mantiene lo stato, mentre queste Map gestiscono
@@ -2252,11 +2247,6 @@ async function updateBaseInnRestState() {
         baseInnResting =
             false;
 
-        if (basePresenceUpdateTimer) {
-            clearTimeout(basePresenceUpdateTimer);
-            basePresenceUpdateTimer = null;
-        }
-
         stopBaseInnTimer();
 
         baseInnState =
@@ -3280,12 +3270,9 @@ function moveBasePlayer(dx, dy) {
 
     scheduleBasePositionSave();
 
-    // Movimento remoto immediato via Broadcast.
+    // Il movimento multiplayer usa esclusivamente Broadcast.
+    // Presence resta dedicata a ingresso/uscita e riallineamento.
     broadcastBasePlayerState();
-
-    // Presence aggiornata poco dopo come rete di sicurezza,
-    // senza inondare il canale a ogni pressione del tasto.
-    scheduleBasePresenceUpdate();
 
  if (
     typeof checkBaseTeleportEvent ===
@@ -3963,10 +3950,122 @@ async function setupBaseRealtime() {
         },
         () => {
 
-            // Presence serve soprattutto a sapere chi è online
-            // e a riallineare lo stato. Il movimento arriva invece
-            // dal Broadcast, quindi non ribroadcastiamo a ogni sync.
+            // Presence serve solo a sapere chi è online e ad
+            // inizializzare/riallineare i token. Non eliminiamo
+            // giocatori durante un normale sync.
             syncBaseRemotePlayers();
+            renderBaseOnlinePlayers();
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE JOIN
+    // ========================================================
+
+    baseChannel.on(
+        "presence",
+        {
+            event:
+                "join"
+        },
+        ({ newPresences }) => {
+
+            (newPresences || []).forEach(
+                presence => {
+
+                    if (
+                        !presence?.character_id ||
+                        presence.character_id === character.id
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        presence.location &&
+                        presence.location !== "base"
+                    ) {
+                        return;
+                    }
+
+                    updateBaseRemotePlayer(
+                        presence
+                    );
+
+                }
+            );
+
+            renderBaseOnlinePlayers();
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE LEAVE
+    // ========================================================
+
+    baseChannel.on(
+        "presence",
+        {
+            event:
+                "leave"
+        },
+        ({ leftPresences }) => {
+
+            const state =
+                baseChannel.presenceState();
+
+            (leftPresences || []).forEach(
+                presence => {
+
+                    const id =
+                        presence?.character_id;
+
+                    if (
+                        !id ||
+                        id === character.id
+                    ) {
+                        return;
+                    }
+
+                    // Lo stesso PG può avere più Presence aperte.
+                    // Rimuoviamo il token solo quando non ne resta
+                    // nessuna attiva per quel character_id.
+                    const stillOnline =
+                        Object.values(state).some(
+                            presences =>
+                                (presences || []).some(
+                                    item =>
+                                        item?.character_id === id
+                                )
+                        );
+
+                    if (stillOnline) {
+                        return;
+                    }
+
+                    const token =
+                        baseOtherPlayerTokens.get(
+                            id
+                        );
+
+                    if (token) {
+                        token.remove();
+                    }
+
+                    baseOtherPlayerTokens.delete(
+                        id
+                    );
+
+                    baseOtherPlayers.delete(
+                        id
+                    );
+
+                }
+            );
+
             renderBaseOnlinePlayers();
 
         }
@@ -4005,6 +4104,13 @@ async function setupBaseRealtime() {
             ) {
                 return;
             }
+
+            console.log(
+                "[RT BASE] RX base-player-move",
+                data.character_id,
+                data.x,
+                data.y
+            );
 
             updateBaseRemotePlayer(
                 data
@@ -4189,23 +4295,6 @@ function getMyBasePresenceData() {
 }
 
 
-function scheduleBasePresenceUpdate() {
-
-    if (basePresenceUpdateTimer) {
-        clearTimeout(basePresenceUpdateTimer);
-    }
-
-    basePresenceUpdateTimer =
-        setTimeout(
-            () => {
-                basePresenceUpdateTimer = null;
-                updateBasePresence();
-            },
-            BASE_PRESENCE_UPDATE_DELAY_MS
-        );
-}
-
-
 async function updateBasePresence() {
 
     if (
@@ -4257,6 +4346,13 @@ async function broadcastBasePlayerState() {
     }
 
     try {
+
+        console.log(
+            "[RT BASE] TX base-player-move",
+            character.id,
+            basePlayerX,
+            basePlayerY
+        );
 
         await baseChannel.send({
 
@@ -4394,32 +4490,9 @@ function syncBaseRemotePlayers() {
         }
     );
 
-    // Rimuove immediatamente i token di chi ha lasciato
-    // il canale Base o è entrato in un servizio/combat.
-    for (
-        const [
-            characterId,
-            token
-        ] of baseOtherPlayerTokens
-    ) {
+    // I token NON vengono rimossi durante un normale sync Presence.
+    // La rimozione avviene esclusivamente su un vero evento leave.
 
-        if (
-            !onlineIds.has(characterId)
-        ) {
-
-            token.remove();
-
-            baseOtherPlayerTokens.delete(
-                characterId
-            );
-
-            baseOtherPlayers.delete(
-                characterId
-            );
-
-        }
-
-    }
 
 }
 
