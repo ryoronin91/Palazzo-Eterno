@@ -64,7 +64,14 @@ body {
 }
 
 .dialogue-panel {
-    display: none;
+    position: absolute;
+    left: calc(4.5% - 2px);
+    right: calc(4.5% - 2px);
+    top: calc(12% - 2px);
+    bottom: calc(13% - 2px);
+    background: rgba(0, 0, 0, 0.68);
+    border-radius: 6px;
+    z-index: 1;
 }
 
 .dialogue-frame {
@@ -125,9 +132,8 @@ body {
     cursor: pointer;
     opacity: 0.92;
     z-index: 5;
-    right: 1.2%;
-    bottom: 4.8%;
-    transform: none;
+    right: 1.9%;
+    bottom: 7.1%;
     padding: 0;
     transition: opacity 150ms ease, transform 150ms ease, text-shadow 150ms ease;
 }
@@ -153,6 +159,13 @@ body {
         bottom: 8px;
     }
 
+    .dialogue-panel {
+        left: calc(4.5% - 2px);
+        right: calc(4.5% - 2px);
+        top: calc(12% - 2px);
+        bottom: calc(13% - 2px);
+    }
+
     .dialogue-content {
         left: 10%;
         right: 15%;
@@ -171,7 +184,7 @@ body {
     }
 
     .next-button {
-        right: 1.4%;
-        bottom: 4.6%;
+        right: 2.1%;
+        bottom: 6.9%;
     }
 }
