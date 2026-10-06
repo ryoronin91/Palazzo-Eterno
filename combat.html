@@ -15,7 +15,8 @@
     </title>
 
 
-<link rel="stylesheet" href="css/combat.css?v=11">
+<link rel="stylesheet" href="css/combat.css?v=12">
+<link rel="stylesheet" href="css/scheda-feedback.css?v=1">
 
 
 </head>
@@ -59,6 +60,14 @@
             </div>
 
             <div class="combat-header-controls">
+
+                <button
+                    id="feedback-open-button"
+                    class="combat-feedback-button"
+                    type="button"
+                >
+                    BUG &amp; SUGGERIMENTI
+                </button>
 
                 <div class="combat-volume-control">
 
@@ -751,6 +760,50 @@
 
 
     <!-- ============================================================
+         BUG & SUGGERIMENTI
+    ============================================================ -->
+
+    <div id="feedback-modal" class="feedback-modal" hidden>
+
+        <div class="feedback-modal-backdrop" data-feedback-close></div>
+
+        <section
+            class="feedback-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
+        >
+            <button
+                id="feedback-close-button"
+                class="feedback-close-button"
+                type="button"
+                aria-label="Chiudi"
+                title="Chiudi"
+            >×</button>
+
+            <h2 id="feedback-title" class="feedback-title">BUG &amp; SUGGERIMENTI</h2>
+
+            <p class="feedback-description">
+                Hai trovato un problema o hai un'idea per migliorare Palazzo Eterno?
+                Scrivila qui: verrà aggiunta direttamente alla lista delle cose da fare.
+            </p>
+
+            <textarea
+                id="feedback-text"
+                class="feedback-text"
+                maxlength="2000"
+                placeholder="Descrivi il bug o il suggerimento..."
+            ></textarea>
+
+            <div class="feedback-footer">
+                <span id="feedback-status" class="feedback-status" aria-live="polite"></span>
+                <button id="feedback-send-button" class="combat-button" type="button">INVIA</button>
+            </div>
+        </section>
+    </div>
+
+
+    <!-- ============================================================
          SUPABASE
     ============================================================ -->
 
@@ -760,6 +813,7 @@
 
 
     <script src="js/config.js"></script>
+<script src="js/scheda-feedback.js?v=2"></script>
 
 
     <!--
@@ -773,7 +827,7 @@
     <script src="js/combat-actions.js?v=59"></script>
     <script src="js/combat-ui.js?v=57"></script>
     <script src="js/combat-loot.js?v=55"></script>
-    <script src="js/combat.js?v=73"></script>
+    <script src="js/combat.js?v=74"></script>
 
 <div
     id="combat-victory-overlay"

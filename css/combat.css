@@ -265,6 +265,34 @@
 
             justify-content: flex-end;
 
+            gap: 8px;
+
+        }
+
+
+        .combat-feedback-button {
+
+            min-height: 42px;
+            padding: 0 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: linear-gradient(180deg, #312315, #1b140e);
+            color: var(--gold-light);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .45px;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: inset 0 0 0 1px rgba(255, 220, 155, .03), 0 3px 10px rgba(0, 0, 0, .28);
+
+        }
+
+
+        .combat-feedback-button:hover {
+
+            border-color: #bb8b46;
+            background: linear-gradient(180deg, #44301a, #22170f);
+
         }
 
 
@@ -2974,4 +3002,10 @@
 
     font-weight: bold;
     letter-spacing: .12em;
+}
+
+@media (max-width: 760px) {
+    .combat-header-controls { gap: 6px; flex-wrap: wrap; }
+    .combat-feedback-button { min-height: 38px; padding: 0 10px; font-size: 9px; }
+    .combat-volume-button { width: 38px; height: 38px; }
 }
