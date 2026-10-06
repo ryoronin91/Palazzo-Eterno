@@ -284,12 +284,6 @@ if (
 }
 
         // ----------------------------------------------------
-        // SCAMBIO TRA GIOCATORI
-        // ----------------------------------------------------
-
-        setupBaseTradeUi();
-
-        // ----------------------------------------------------
         // PERSONAGGI ONLINE / REALTIME
         // ----------------------------------------------------
 
@@ -2705,6 +2699,10 @@ function setupBaseMovement() {
     document.addEventListener(
         "keydown",
         event => {
+            if (isBaseTradeInteractionOpen()) {
+                return;
+            }
+
             const target =
                 event.target;
 
@@ -3327,8 +3325,6 @@ if (
 // Aggiorna il riposo della Locanda dopo ogni movimento.
 updateBaseInnRestState();
 
-renderBaseTradeNearbyPlayers();
-refreshBaseTradeAdjacencyState();
 
 setMessage(
     `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
@@ -4071,8 +4067,6 @@ async function setupBaseRealtime() {
             );
 
             renderBaseOnlinePlayers();
-            renderBaseTradeNearbyPlayers();
-            refreshBaseTradeAdjacencyState();
 
         }
     );
@@ -4564,9 +4558,6 @@ function updateBaseRemotePlayer(data) {
         data.character_id
     );
 
-    renderBaseTradeNearbyPlayers();
-    refreshBaseTradeAdjacencyState();
-
 }
 
 
@@ -4629,6 +4620,18 @@ function showBaseRemotePlayerToken(
 
         token.appendChild(label);
 
+        token.addEventListener(
+            "click",
+            event => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                openBaseTradeForRemotePlayer(
+                    characterId
+                );
+            }
+        );
+
         map.appendChild(token);
 
         baseOtherPlayerTokens.set(
@@ -4671,6 +4674,11 @@ function showBaseRemotePlayerToken(
     token.classList.toggle(
         "is-in-combat",
         inCombat
+    );
+
+    token.classList.toggle(
+        "trade-target",
+        !inCombat
     );
 
     token.title =
@@ -5597,45 +5605,74 @@ function addBaseChatMessage(
 
 // ============================================================
 // SCAMBIO TRA GIOCATORI - SOLO LIVELLO BASE
-// Interfaccia fissa sotto le statistiche del personaggio.
-// Il click/tap sulla mappa resta sempre dedicato al movimento.
 // ============================================================
 
 let baseTradeCurrentId = null;
 let baseTradeInviteId = null;
 let baseTradeBusy = false;
 let baseTradePollTimer = null;
-let baseTradeSelectedCharacterId = null;
 
 function setupBaseTradeUi() {
+    const modal = document.getElementById("base-trade-modal");
+    const invite = document.getElementById("base-trade-invite");
+
+    document.getElementById("base-trade-close")
+        ?.addEventListener("click", () => cancelCurrentBaseTrade());
+
+    document.getElementById("base-trade-cancel")
+        ?.addEventListener("click", () => cancelCurrentBaseTrade());
+
+    document.getElementById("base-trade-invite-accept")
+        ?.addEventListener("click", acceptBaseTradeInvite);
+
+    document.getElementById("base-trade-invite-decline")
+        ?.addEventListener("click", declineBaseTradeInvite);
+
     document.getElementById("base-trade-add-item")
         ?.addEventListener("click", addSelectedBaseTradeItem);
 
     document.getElementById("base-trade-confirm")
         ?.addEventListener("click", confirmCurrentBaseTrade);
 
-    document.getElementById("base-trade-cancel")
-        ?.addEventListener("click", cancelCurrentBaseTrade);
-
-    document.getElementById("base-trade-accept")
-        ?.addEventListener("click", acceptBaseTradeInvite);
-
-    document.getElementById("base-trade-decline")
-        ?.addEventListener("click", declineBaseTradeInvite);
-
     document.getElementById("base-trade-item-select")
         ?.addEventListener("change", updateBaseTradeQuantityLimit);
 
-    renderBaseTradeNearbyPlayers();
-    resetBaseTradePanel();
+    modal?.addEventListener("click", event => {
+        if (event.target === modal) {
+            return;
+        }
+    });
+
+    invite?.addEventListener("click", event => {
+        if (event.target === invite) {
+            return;
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") {
+            return;
+        }
+
+        if (baseTradeInviteId) {
+            declineBaseTradeInvite();
+        }
+    });
 }
 
 function isBaseTradeInteractionOpen() {
-    return false;
+    return !!(
+        baseTradeCurrentId ||
+        baseTradeInviteId ||
+        !document.getElementById("base-trade-modal")?.hidden ||
+        !document.getElementById("base-trade-invite")?.hidden
+    );
 }
 
 function isBaseTradeAdjacent(player) {
-    if (!player) return false;
+    if (!player) {
+        return false;
+    }
 
     const distance =
         Math.abs(Number(basePlayerX) - Number(player.x)) +
@@ -5644,72 +5681,16 @@ function isBaseTradeAdjacent(player) {
     return distance === 1;
 }
 
-function getAdjacentBaseTradePlayers() {
-    return Array.from(baseOtherPlayers.values())
-        .filter(player => {
-            if (!player?.character_id) return false;
-            if (player.in_combat || player.active_combat_id) return false;
-            return isBaseTradeAdjacent(player);
-        })
-        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
-}
-
-function renderBaseTradeNearbyPlayers() {
-    const container = document.getElementById("base-trade-nearby-players");
-    if (!container) return;
-
-    const players = getAdjacentBaseTradePlayers();
-    container.replaceChildren();
-
-    if (!players.length) {
-        const empty = document.createElement("div");
-        empty.className = "base-trade-inline-empty";
-        empty.textContent = "Nessun giocatore adiacente.";
-        container.appendChild(empty);
+async function openBaseTradeForRemotePlayer(characterId) {
+    if (baseTradeBusy || baseTradeCurrentId || baseTradeInviteId) {
+        setMessage("Hai già uno scambio in corso o in attesa.");
         return;
     }
 
-    players.forEach(player => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "base-trade-nearby-player";
-
-        if (player.character_id === baseTradeSelectedCharacterId) {
-            button.classList.add("selected");
-        }
-
-        const image = document.createElement("img");
-        image.src = "../immagini/token/" + (player.token || "token_1.png");
-        image.alt = player.name || "Personaggio";
-
-        const text = document.createElement("span");
-        const name = document.createElement("strong");
-        name.textContent = player.name || "Avventuriero";
-        const state = document.createElement("small");
-
-        if (baseTradeInviteId && player.character_id === baseTradeSelectedCharacterId) {
-            state.textContent = "Richiesta ricevuta";
-        } else if (baseTradeCurrentId && player.character_id === baseTradeSelectedCharacterId) {
-            state.textContent = "Scambio selezionato";
-        } else {
-            state.textContent = "Adiacente";
-        }
-
-        text.append(name, state);
-        button.append(image, text);
-
-        button.addEventListener("click", () => selectBaseTradePlayer(player.character_id));
-        container.appendChild(button);
-    });
-}
-
-async function selectBaseTradePlayer(characterId) {
-    if (baseTradeBusy) return;
-
     const player = baseOtherPlayers.get(characterId);
-    if (!player || !isBaseTradeAdjacent(player)) {
-        setMessage("Il personaggio non è più adiacente.");
-        renderBaseTradeNearbyPlayers();
+
+    if (!player) {
+        setMessage("Questo personaggio non è più disponibile.");
         return;
     }
 
@@ -5718,63 +5699,12 @@ async function selectBaseTradePlayer(characterId) {
         return;
     }
 
-    // Se esiste già uno scambio con questo giocatore, mostralo.
-    const existing = await findBaseTradeWithCharacter(characterId);
-    if (existing) {
-        baseTradeSelectedCharacterId = characterId;
-
-        if (existing.status === "pending" && existing.character_b_id === character.id) {
-            baseTradeInviteId = existing.id;
-            baseTradeCurrentId = null;
-            showBaseTradePendingInvite(existing);
-        } else {
-            baseTradeInviteId = null;
-            baseTradeCurrentId = existing.id;
-            await refreshBaseTradeState();
-            startBaseTradePolling();
-        }
-
-        renderBaseTradeNearbyPlayers();
-        return;
-    }
-
-    if (baseTradeCurrentId || baseTradeInviteId) {
-        setMessage("Hai già uno scambio in corso. Annullalo prima di iniziarne un altro.");
-        return;
-    }
-
-    await openBaseTradeForRemotePlayer(characterId);
-}
-
-async function findBaseTradeWithCharacter(characterId) {
-    if (!character) return null;
-
-    const { data, error } = await db
-        .from("player_trades")
-        .select("id, character_a_id, character_b_id, status, a_confirmed, b_confirmed")
-        .or(`and(character_a_id.eq.${character.id},character_b_id.eq.${characterId}),and(character_a_id.eq.${characterId},character_b_id.eq.${character.id})`)
-        .in("status", ["pending", "active"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        console.warn("Errore ricerca scambio esistente:", error);
-        return null;
-    }
-
-    return data || null;
-}
-
-async function openBaseTradeForRemotePlayer(characterId) {
-    const player = baseOtherPlayers.get(characterId);
-    if (!player || !isBaseTradeAdjacent(player)) {
+    if (!isBaseTradeAdjacent(player)) {
         setMessage("Devi essere adiacente al personaggio per proporre uno scambio.");
         return;
     }
 
     baseTradeBusy = true;
-    baseTradeSelectedCharacterId = characterId;
 
     try {
         const { data, error } = await db.rpc(
@@ -5782,15 +5712,13 @@ async function openBaseTradeForRemotePlayer(characterId) {
             { p_target_character_id: characterId }
         );
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
 
         baseTradeCurrentId = data;
-        baseTradeInviteId = null;
-
-        setBaseTradePanelEnabled(true);
-        setBaseTradeStatus(`Richiesta inviata a ${player.name}. In attesa che accetti...`);
-        setBaseTradeControlsForStatus("pending-sent");
-        clearBaseTradeOffers();
+        openBaseTradeModal();
+        setBaseTradeStatus(`Richiesta inviata a ${player.name}. In attesa...`);
 
         await sendBaseTradeBroadcast("base-trade-request", {
             trade_id: data,
@@ -5800,62 +5728,83 @@ async function openBaseTradeForRemotePlayer(characterId) {
         });
 
         startBaseTradePolling();
-        renderBaseTradeNearbyPlayers();
     } catch (error) {
         console.error("Errore richiesta scambio:", error);
+        setMessage(error?.message || "Impossibile avviare lo scambio.", true);
         baseTradeCurrentId = null;
-        setBaseTradeStatus(error?.message || "Impossibile avviare lo scambio.", true);
-        setBaseTradeControlsForStatus("idle");
+        closeBaseTradeModal();
     } finally {
         baseTradeBusy = false;
     }
 }
 
 async function sendBaseTradeBroadcast(event, payload) {
-    if (!baseChannel || !baseRealtimeReady) return;
+    if (!baseChannel || !baseRealtimeReady) {
+        return;
+    }
 
     try {
-        await baseChannel.send({ type: "broadcast", event, payload });
+        await baseChannel.send({
+            type: "broadcast",
+            event,
+            payload
+        });
     } catch (error) {
         console.warn("Broadcast scambio non riuscito:", error);
     }
 }
 
 function handleBaseTradeRequestBroadcast(payload) {
-    if (!payload || payload.to_character_id !== character?.id) return;
+    if (!payload || payload.to_character_id !== character?.id) {
+        return;
+    }
+
+    if (baseTradeCurrentId || baseTradeInviteId) {
+        return;
+    }
 
     const remote = baseOtherPlayers.get(payload.from_character_id);
-    if (!remote || !isBaseTradeAdjacent(remote)) return;
 
-    if (baseTradeCurrentId || baseTradeInviteId) return;
+    if (!remote || !isBaseTradeAdjacent(remote)) {
+        return;
+    }
 
     baseTradeInviteId = payload.trade_id;
-    baseTradeSelectedCharacterId = payload.from_character_id;
-    showBaseTradePendingInvite({ id: payload.trade_id });
-    renderBaseTradeNearbyPlayers();
-}
 
-function showBaseTradePendingInvite() {
-    const remote = baseOtherPlayers.get(baseTradeSelectedCharacterId);
-    setBaseTradePanelEnabled(true);
-    setBaseTradeStatus(`${remote?.name || "Un giocatore"} vuole scambiare con te.`);
-    setBaseTradeOtherName(remote?.name || "ALTRO GIOCATORE");
-    setBaseTradeControlsForStatus("pending-received");
-    clearBaseTradeOffers();
+    const name = document.getElementById("base-trade-invite-name");
+    if (name) {
+        name.textContent = payload.from_name || remote.name || "Un giocatore";
+    }
+
+    const invite = document.getElementById("base-trade-invite");
+    if (invite) {
+        invite.hidden = false;
+        document.body.classList.add("base-trade-open");
+    }
 }
 
 async function acceptBaseTradeInvite() {
-    if (!baseTradeInviteId || baseTradeBusy) return;
+    if (!baseTradeInviteId || baseTradeBusy) {
+        return;
+    }
 
     baseTradeBusy = true;
     const tradeId = baseTradeInviteId;
 
     try {
-        const { error } = await db.rpc("accept_player_trade", { p_trade_id: tradeId });
-        if (error) throw error;
+        const { error } = await db.rpc(
+            "accept_player_trade",
+            { p_trade_id: tradeId }
+        );
+
+        if (error) {
+            throw error;
+        }
 
         baseTradeInviteId = null;
+        closeBaseTradeInvite();
         baseTradeCurrentId = tradeId;
+        openBaseTradeModal();
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
@@ -5866,107 +5815,74 @@ async function acceptBaseTradeInvite() {
         startBaseTradePolling();
     } catch (error) {
         console.error("Errore accettazione scambio:", error);
-        setBaseTradeStatus(error?.message || "Impossibile accettare lo scambio.", true);
+        setMessage(error?.message || "Impossibile accettare lo scambio.", true);
     } finally {
         baseTradeBusy = false;
     }
 }
 
 async function declineBaseTradeInvite() {
-    if (!baseTradeInviteId || baseTradeBusy) return;
+    if (!baseTradeInviteId || baseTradeBusy) {
+        return;
+    }
 
     baseTradeBusy = true;
     const tradeId = baseTradeInviteId;
 
     try {
-        const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
-        if (error) throw error;
-
+        await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
-
-        resetBaseTradeState("Richiesta rifiutata.");
     } catch (error) {
         console.warn("Errore rifiuto scambio:", error);
-        setBaseTradeStatus(error?.message || "Impossibile rifiutare la richiesta.", true);
     } finally {
+        baseTradeInviteId = null;
+        closeBaseTradeInvite();
         baseTradeBusy = false;
     }
 }
 
-function setBaseTradePanelEnabled(enabled) {
-    document.getElementById("base-trade-inline-panel")
-        ?.classList.toggle("disabled", !enabled);
-}
-
-function setBaseTradeOtherName(name) {
-    const el = document.getElementById("base-trade-other-name");
-    if (el) el.textContent = name || "ALTRO GIOCATORE";
-}
-
-function setBaseTradeControlsForStatus(status) {
-    const select = document.getElementById("base-trade-item-select");
-    const qty = document.getElementById("base-trade-item-quantity");
-    const add = document.getElementById("base-trade-add-item");
-    const confirm = document.getElementById("base-trade-confirm");
-    const cancel = document.getElementById("base-trade-cancel");
-    const accept = document.getElementById("base-trade-accept");
-    const decline = document.getElementById("base-trade-decline");
-
-    const active = status === "active";
-    const pendingReceived = status === "pending-received";
-    const hasTrade = status !== "idle";
-
-    if (select) select.disabled = !active;
-    if (qty) qty.disabled = !active;
-    if (add) add.disabled = !active;
-    if (confirm) confirm.disabled = !active;
-    if (cancel) cancel.disabled = !hasTrade;
-    if (accept) accept.hidden = !pendingReceived;
-    if (decline) decline.hidden = !pendingReceived;
-
-    if (active) populateBaseTradeInventorySelect();
-}
-
-function clearBaseTradeOffers() {
-    ["base-trade-my-offer", "base-trade-other-offer"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = '<div class="base-trade-empty">Nessun oggetto offerto.</div>';
-        }
-    });
-
-    ["base-trade-my-confirmed", "base-trade-other-confirmed"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = "NON CONFERMATO";
-            el.classList.remove("confirmed");
-        }
-    });
-}
-
-function resetBaseTradePanel() {
-    setBaseTradePanelEnabled(false);
-    setBaseTradeOtherName("ALTRO GIOCATORE");
-    setBaseTradeStatus("Seleziona un giocatore adiacente.");
-    setBaseTradeControlsForStatus("idle");
-    clearBaseTradeOffers();
-
-    const select = document.getElementById("base-trade-item-select");
-    if (select) {
-        select.replaceChildren();
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "Scegli un oggetto...";
-        select.appendChild(option);
+function closeBaseTradeInvite() {
+    const invite = document.getElementById("base-trade-invite");
+    if (invite) {
+        invite.hidden = true;
     }
+
+    if (!baseTradeCurrentId) {
+        document.body.classList.remove("base-trade-open");
+    }
+}
+
+function openBaseTradeModal() {
+    const modal = document.getElementById("base-trade-modal");
+    if (modal) {
+        modal.hidden = false;
+        document.body.classList.add("base-trade-open");
+    }
+
+    populateBaseTradeInventorySelect();
+}
+
+function closeBaseTradeModal() {
+    const modal = document.getElementById("base-trade-modal");
+    if (modal) {
+        modal.hidden = true;
+    }
+
+    if (!baseTradeInviteId) {
+        document.body.classList.remove("base-trade-open");
+    }
+
+    stopBaseTradePolling();
 }
 
 function populateBaseTradeInventorySelect() {
     const select = document.getElementById("base-trade-item-select");
-    if (!select) return;
+    if (!select) {
+        return;
+    }
 
     const previous = select.value;
     select.replaceChildren();
@@ -5983,7 +5899,8 @@ function populateBaseTradeInventorySelect() {
             const option = document.createElement("option");
             option.value = entry.id;
             option.dataset.quantity = String(entry.quantity);
-            option.textContent = `${entry.item.name} ×${entry.quantity}` +
+            option.textContent =
+                `${entry.item.name} ×${entry.quantity}` +
                 (entry.equipped_slot ? ` · equipaggiato (${entry.equipped_slot})` : "");
             select.appendChild(option);
         });
@@ -5998,7 +5915,10 @@ function populateBaseTradeInventorySelect() {
 function updateBaseTradeQuantityLimit() {
     const select = document.getElementById("base-trade-item-select");
     const input = document.getElementById("base-trade-item-quantity");
-    if (!select || !input) return;
+
+    if (!select || !input) {
+        return;
+    }
 
     const option = select.selectedOptions?.[0];
     const entry = characterInventory.find(row => row.id === select.value);
@@ -6011,12 +5931,14 @@ function updateBaseTradeQuantityLimit() {
         input.value = String(entry.quantity);
         input.disabled = true;
     } else {
-        input.disabled = !select.value || !baseTradeCurrentId;
+        input.disabled = !select.value;
     }
 }
 
 async function addSelectedBaseTradeItem() {
-    if (!baseTradeCurrentId || baseTradeBusy) return;
+    if (!baseTradeCurrentId || baseTradeBusy) {
+        return;
+    }
 
     const select = document.getElementById("base-trade-item-select");
     const input = document.getElementById("base-trade-item-quantity");
@@ -6027,6 +5949,7 @@ async function addSelectedBaseTradeItem() {
     }
 
     const quantity = Number(input?.value) || 1;
+
     baseTradeBusy = true;
 
     try {
@@ -6035,12 +5958,16 @@ async function addSelectedBaseTradeItem() {
             p_inventory_id: select.value,
             p_quantity: quantity
         });
-        if (error) throw error;
+
+        if (error) {
+            throw error;
+        }
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: baseTradeCurrentId,
             kind: "changed"
         });
+
         await refreshBaseTradeState();
     } catch (error) {
         console.error("Errore aggiunta oggetto allo scambio:", error);
@@ -6051,19 +5978,26 @@ async function addSelectedBaseTradeItem() {
 }
 
 async function removeBaseTradeItem(tradeItemId) {
-    if (!baseTradeCurrentId || baseTradeBusy) return;
+    if (!baseTradeCurrentId || baseTradeBusy) {
+        return;
+    }
+
     baseTradeBusy = true;
 
     try {
         const { error } = await db.rpc("remove_player_trade_item", {
             p_trade_item_id: tradeItemId
         });
-        if (error) throw error;
+
+        if (error) {
+            throw error;
+        }
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: baseTradeCurrentId,
             kind: "changed"
         });
+
         await refreshBaseTradeState();
     } catch (error) {
         console.error("Errore rimozione oggetto dallo scambio:", error);
@@ -6074,7 +6008,9 @@ async function removeBaseTradeItem(tradeItemId) {
 }
 
 async function refreshBaseTradeState() {
-    if (!baseTradeCurrentId || !character) return;
+    if (!baseTradeCurrentId || !character) {
+        return;
+    }
 
     const { data: trade, error: tradeError } = await db
         .from("player_trades")
@@ -6088,98 +6024,88 @@ async function refreshBaseTradeState() {
     }
 
     if (!trade) {
-        resetBaseTradeState("Scambio non più disponibile.");
+        finishBaseTradeUi("Scambio non più disponibile.");
         return;
     }
 
     if (trade.status === "cancelled") {
-        resetBaseTradeState("Lo scambio è stato annullato.");
+        finishBaseTradeUi("Lo scambio è stato annullato.");
         return;
     }
 
     if (trade.status === "completed") {
         await loadCharacterEquipment();
-        resetBaseTradeState("Scambio completato.");
+        finishBaseTradeUi("Scambio completato.");
         return;
     }
 
-    const otherCharacterId = trade.character_a_id === character.id
-        ? trade.character_b_id
-        : trade.character_a_id;
+    const otherCharacterId =
+        trade.character_a_id === character.id
+            ? trade.character_b_id
+            : trade.character_a_id;
 
-    baseTradeSelectedCharacterId = otherCharacterId;
     const remote = baseOtherPlayers.get(otherCharacterId);
-    setBaseTradeOtherName(remote?.name || "ALTRO GIOCATORE");
-    setBaseTradePanelEnabled(true);
-
-    if (trade.status === "pending") {
-        if (trade.character_b_id === character.id) {
-            baseTradeInviteId = trade.id;
-            baseTradeCurrentId = null;
-            showBaseTradePendingInvite(trade);
-            renderBaseTradeNearbyPlayers();
-            return;
-        }
-
-        setBaseTradeControlsForStatus("pending-sent");
-        setBaseTradeStatus(`Richiesta inviata a ${remote?.name || "giocatore"}. In attesa che accetti...`);
-        renderBaseTradeNearbyPlayers();
-        return;
-    }
-
-    baseTradeInviteId = null;
-    setBaseTradeControlsForStatus("active");
 
     if (remote && !isBaseTradeAdjacent(remote)) {
         setBaseTradeStatus("Vi siete allontanati: riavvicinatevi per confermare.", true);
     }
 
-    const { data: tradeItems, error: itemsError } = await db
-        .from("player_trade_items")
-        .select("id, owner_character_id, inventory_id, quantity")
-        .eq("trade_id", trade.id)
-        .order("created_at", { ascending: true });
+    // I dettagli degli oggetti passano da una RPC server-side.
+    // In questo modo ogni partecipante vede i nomi reali degli oggetti
+    // offerti senza ottenere accesso diretto all'inventario dell'altro PG.
+    const { data: tradeItemDetails, error: itemsError } = await db.rpc(
+        "get_player_trade_items_details",
+        { p_trade_id: baseTradeCurrentId }
+    );
 
     if (itemsError) {
-        console.warn("Errore lettura oggetti scambio:", itemsError);
+        console.warn("Errore lettura dettagli oggetti scambio:", itemsError);
         return;
     }
 
-    const ids = (tradeItems || []).map(row => row.inventory_id);
-    let inventoryRows = [];
+    const tradeItems = (tradeItemDetails || []).map(row => ({
+        id: row.trade_item_id,
+        owner_character_id: row.owner_character_id,
+        inventory_id: row.inventory_id,
+        quantity: row.trade_quantity
+    }));
 
-    if (ids.length) {
-        const { data, error } = await db
-            .from("character_inventory")
-            .select(`
-                id,
-                item_id,
-                quantity,
-                equipped_slot,
-                item:items (id, name, item_type)
-            `)
-            .in("id", ids);
+    const inventoryById = new Map(
+        (tradeItemDetails || []).map(row => [
+            row.inventory_id,
+            {
+                id: row.inventory_id,
+                item_id: row.item_id,
+                quantity: row.inventory_quantity,
+                equipped_slot: row.equipped_slot,
+                item: {
+                    id: row.item_id,
+                    name: row.item_name,
+                    item_type: row.item_type
+                }
+            }
+        ])
+    );
 
-        if (!error) inventoryRows = data || [];
-    }
-
-    const inventoryById = new Map(inventoryRows.map(row => [row.id, row]));
-    renderBaseTradeOffers(trade, tradeItems || [], inventoryById, remote);
-    renderBaseTradeNearbyPlayers();
+    renderBaseTradeOffers(trade, tradeItems, inventoryById, remote);
 }
 
 function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
     const mine = document.getElementById("base-trade-my-offer");
     const theirs = document.getElementById("base-trade-other-offer");
+    const otherName = document.getElementById("base-trade-other-name");
     const confirmButton = document.getElementById("base-trade-confirm");
 
-    setBaseTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+    if (otherName) {
+        otherName.textContent = remote?.name || "ALTRO GIOCATORE";
+    }
 
     const render = (container, ownerId, editable) => {
         if (!container) return;
         container.replaceChildren();
 
         const rows = tradeItems.filter(row => row.owner_character_id === ownerId);
+
         if (!rows.length) {
             const empty = document.createElement("div");
             empty.className = "base-trade-empty";
@@ -6211,8 +6137,15 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
         });
     };
 
-    const myConfirmed = trade.character_a_id === character.id ? trade.a_confirmed : trade.b_confirmed;
-    const otherConfirmed = trade.character_a_id === character.id ? trade.b_confirmed : trade.a_confirmed;
+    const myConfirmed =
+        trade.character_a_id === character.id
+            ? trade.a_confirmed
+            : trade.b_confirmed;
+
+    const otherConfirmed =
+        trade.character_a_id === character.id
+            ? trade.b_confirmed
+            : trade.a_confirmed;
 
     render(mine, character.id, true);
     render(theirs,
@@ -6234,21 +6167,25 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
     }
 
     if (confirmButton) {
-        confirmButton.disabled = !!myConfirmed;
-        confirmButton.textContent = myConfirmed ? "CONFERMATO" : "CONFERMA";
+        confirmButton.disabled = !!myConfirmed || trade.status !== "active";
+        confirmButton.textContent = myConfirmed ? "CONFERMATO" : "CONFERMA SCAMBIO";
     }
 
-    if (myConfirmed && !otherConfirmed) {
+    if (trade.status === "pending") {
+        setBaseTradeStatus("In attesa che l'altro giocatore accetti la richiesta...");
+    } else if (myConfirmed && !otherConfirmed) {
         setBaseTradeStatus("Confermato. In attesa dell'altro giocatore...");
     } else if (!myConfirmed && otherConfirmed) {
         setBaseTradeStatus("L'altro giocatore ha confermato. Controlla l'offerta e conferma.");
-    } else if (!(remote && !isBaseTradeAdjacent(remote))) {
-        setBaseTradeStatus("Aggiungi gli oggetti da offrire e conferma quando sei pronto.");
+    } else {
+        setBaseTradeStatus("Modifica la tua offerta oppure conferma lo scambio.");
     }
 }
 
 async function confirmCurrentBaseTrade() {
-    if (!baseTradeCurrentId || baseTradeBusy) return;
+    if (!baseTradeCurrentId || baseTradeBusy) {
+        return;
+    }
 
     const tradeId = baseTradeCurrentId;
     baseTradeBusy = true;
@@ -6257,7 +6194,10 @@ async function confirmCurrentBaseTrade() {
         const { data, error } = await db.rpc("confirm_player_trade", {
             p_trade_id: tradeId
         });
-        if (error) throw error;
+
+        if (error) {
+            throw error;
+        }
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
@@ -6266,7 +6206,7 @@ async function confirmCurrentBaseTrade() {
 
         if (data?.completed) {
             await loadCharacterEquipment();
-            resetBaseTradeState("Scambio completato.");
+            finishBaseTradeUi("Scambio completato.");
             return;
         }
 
@@ -6281,24 +6221,29 @@ async function confirmCurrentBaseTrade() {
 }
 
 async function cancelCurrentBaseTrade() {
-    const tradeId = baseTradeCurrentId || baseTradeInviteId;
-    if (!tradeId || baseTradeBusy) {
-        resetBaseTradeState();
+    if (!baseTradeCurrentId || baseTradeBusy) {
+        finishBaseTradeUi();
         return;
     }
 
+    const tradeId = baseTradeCurrentId;
     baseTradeBusy = true;
 
     try {
-        const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
-        if (error) throw error;
+        const { error } = await db.rpc("cancel_player_trade", {
+            p_trade_id: tradeId
+        });
+
+        if (error) {
+            throw error;
+        }
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
 
-        resetBaseTradeState("Scambio annullato.");
+        finishBaseTradeUi("Scambio annullato.");
     } catch (error) {
         console.error("Errore annullamento scambio:", error);
         setBaseTradeStatus(error?.message || "Impossibile annullare lo scambio.", true);
@@ -6308,26 +6253,27 @@ async function cancelCurrentBaseTrade() {
 }
 
 function handleBaseTradeUpdateBroadcast(payload) {
-    if (!payload?.trade_id) return;
+    if (!payload || !payload.trade_id) {
+        return;
+    }
+
+    if (baseTradeInviteId === payload.trade_id && payload.kind === "cancelled") {
+        baseTradeInviteId = null;
+        closeBaseTradeInvite();
+        setMessage("La richiesta di scambio è stata annullata.");
+        return;
+    }
+
+    if (baseTradeCurrentId !== payload.trade_id) {
+        return;
+    }
 
     if (payload.kind === "cancelled") {
-        if (payload.trade_id === baseTradeCurrentId || payload.trade_id === baseTradeInviteId) {
-            resetBaseTradeState("Lo scambio è stato annullato dall'altro giocatore.");
-        }
+        finishBaseTradeUi("Lo scambio è stato annullato dall'altro giocatore.");
         return;
     }
 
-    if (payload.trade_id === baseTradeCurrentId) {
-        refreshBaseTradeState();
-        return;
-    }
-
-    if (payload.trade_id === baseTradeInviteId && payload.kind === "accepted") {
-        baseTradeCurrentId = baseTradeInviteId;
-        baseTradeInviteId = null;
-        refreshBaseTradeState();
-        startBaseTradePolling();
-    }
+    refreshBaseTradeState();
 }
 
 function setBaseTradeStatus(text, error = false) {
@@ -6339,7 +6285,9 @@ function setBaseTradeStatus(text, error = false) {
 
 function startBaseTradePolling() {
     stopBaseTradePolling();
-    baseTradePollTimer = window.setInterval(() => refreshBaseTradeState(), 1500);
+    baseTradePollTimer = window.setInterval(() => {
+        refreshBaseTradeState();
+    }, 1500);
 }
 
 function stopBaseTradePolling() {
@@ -6349,33 +6297,23 @@ function stopBaseTradePolling() {
     }
 }
 
-function resetBaseTradeState(message = "") {
+function finishBaseTradeUi(message = "") {
     baseTradeCurrentId = null;
-    baseTradeInviteId = null;
-    baseTradeSelectedCharacterId = null;
-    stopBaseTradePolling();
-    resetBaseTradePanel();
-    renderBaseTradeNearbyPlayers();
-    if (message) setMessage(message);
-}
-
-function refreshBaseTradeAdjacencyState() {
-    if (!baseTradeSelectedCharacterId) return;
-    const remote = baseOtherPlayers.get(baseTradeSelectedCharacterId);
-    if (!remote || !isBaseTradeAdjacent(remote)) {
-        if (baseTradeCurrentId || baseTradeInviteId) {
-            setBaseTradeStatus("Il giocatore non è più adiacente.", true);
-        }
+    closeBaseTradeModal();
+    if (message) {
+        setMessage(message);
     }
 }
 
 async function recoverBaseTradeState() {
-    if (!character) return;
+    if (!character) {
+        return;
+    }
 
     try {
         const { data, error } = await db
             .from("player_trades")
-            .select("id, character_a_id, character_b_id, status, a_confirmed, b_confirmed, created_at")
+            .select("id, character_a_id, character_b_id, status")
             .or(`character_a_id.eq.${character.id},character_b_id.eq.${character.id}`)
             .in("status", ["pending", "active"])
             .order("created_at", { ascending: false })
@@ -6383,26 +6321,15 @@ async function recoverBaseTradeState() {
             .maybeSingle();
 
         if (error || !data) {
-            renderBaseTradeNearbyPlayers();
             return;
         }
 
-        const otherId = data.character_a_id === character.id
-            ? data.character_b_id
-            : data.character_a_id;
-
-        baseTradeSelectedCharacterId = otherId;
-
-        if (data.status === "pending" && data.character_b_id === character.id) {
-            baseTradeInviteId = data.id;
-            showBaseTradePendingInvite(data);
-        } else {
+        if (data.status === "active" || data.character_a_id === character.id) {
             baseTradeCurrentId = data.id;
+            openBaseTradeModal();
             await refreshBaseTradeState();
             startBaseTradePolling();
         }
-
-        renderBaseTradeNearbyPlayers();
     } catch (error) {
         console.warn("Impossibile recuperare uno scambio precedente:", error);
     }
