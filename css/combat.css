@@ -270,15 +270,24 @@
 
         .combat-volume-control {
 
-            min-height: 42px;
+            position: relative;
 
-            display: flex;
+        }
+
+
+        .combat-volume-button {
+
+            width: 42px;
+
+            height: 42px;
+
+            display: inline-flex;
 
             align-items: center;
 
-            gap: 8px;
+            justify-content: center;
 
-            padding: 7px 10px;
+            padding: 0;
 
             border: 1px solid var(--border-light);
 
@@ -295,27 +304,78 @@
                 inset 0 0 0 1px rgba(255, 220, 155, .03),
                 0 3px 10px rgba(0, 0, 0, .28);
 
-        }
-
-
-        .combat-volume-icon {
-
-            width: 24px;
-
             color: var(--gold-light);
 
             font-size: 19px;
 
             line-height: 1;
 
-            text-align: center;
+            cursor: pointer;
+
+        }
+
+
+        .combat-volume-button:hover {
+
+            border-color: #bb8b46;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #44301a,
+                    #22170f
+                );
+
+        }
+
+
+        .combat-volume-popover {
+
+            position: absolute;
+
+            top: calc(100% + 8px);
+
+            right: 0;
+
+            z-index: 200;
+
+            min-width: 190px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            padding: 10px 11px;
+
+            border: 1px solid var(--border-light);
+
+            border-radius: 6px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #211810,
+                    #100d0a
+                );
+
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, .55);
+
+        }
+
+
+        .combat-volume-popover[hidden] {
+
+            display: none;
 
         }
 
 
         .combat-volume-slider {
 
-            width: 120px;
+            width: 125px;
 
             accent-color: var(--gold);
 
@@ -337,7 +397,6 @@
             text-align: right;
 
         }
-
 
 
         /* ============================================================

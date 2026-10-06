@@ -15,7 +15,7 @@
     </title>
 
 
-<link rel="stylesheet" href="css/combat.css?v=9">
+<link rel="stylesheet" href="css/combat.css?v=10">
 
 
 </head>
@@ -58,39 +58,47 @@
 
             </div>
 
-
             <div class="combat-header-controls">
 
-                <div
-                    class="combat-volume-control"
-                    title="Volume musica del combattimento"
-                >
+                <div class="combat-volume-control">
 
-                    <span
-                        id="combat-volume-icon"
-                        class="combat-volume-icon"
-                        aria-hidden="true"
+                    <button
+                        id="combat-volume-button"
+                        class="combat-volume-button"
+                        type="button"
+                        aria-label="Regola volume musica"
+                        aria-expanded="false"
+                        aria-controls="combat-volume-popover"
+                        title="Volume musica: 35%"
                     >
                         🔉
-                    </span>
+                    </button>
 
-                    <input
-                        id="combat-volume-slider"
-                        class="combat-volume-slider"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value="35"
-                        aria-label="Volume musica del combattimento"
+                    <div
+                        id="combat-volume-popover"
+                        class="combat-volume-popover"
+                        hidden
                     >
 
-                    <span
-                        id="combat-volume-value"
-                        class="combat-volume-value"
-                    >
-                        35%
-                    </span>
+                        <input
+                            id="combat-volume-slider"
+                            class="combat-volume-slider"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="35"
+                            aria-label="Volume musica del combattimento"
+                        >
+
+                        <span
+                            id="combat-volume-value"
+                            class="combat-volume-value"
+                        >
+                            35%
+                        </span>
+
+                    </div>
 
                 </div>
 
@@ -765,7 +773,7 @@
     <script src="js/combat-actions.js?v=59"></script>
     <script src="js/combat-ui.js?v=57"></script>
     <script src="js/combat-loot.js?v=55"></script>
-    <script src="js/combat.js?v=71"></script>
+    <script src="js/combat.js?v=72"></script>
 
 <div
     id="combat-victory-overlay"

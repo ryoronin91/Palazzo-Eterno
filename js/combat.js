@@ -5,37 +5,87 @@
 
 let pageBackgroundMusic = null;
 
-const COMBAT_AUDIO_VOLUME_KEY =
-    "palazzo-eterno-combat-audio-volume";
+const COMBAT_MUSIC_VOLUME_KEY =
+    "palazzo-eterno-combat-volume";
 
-const COMBAT_AUDIO_DEFAULT_VOLUME =
-    35;
+let combatMusicVolume =
+    loadCombatMusicVolume();
 
 
-function getCombatAudioVolume() {
+function loadCombatMusicVolume() {
 
-    const savedValue =
-        Number(
+    try {
+
+        const saved =
             localStorage.getItem(
-                COMBAT_AUDIO_VOLUME_KEY
+                COMBAT_MUSIC_VOLUME_KEY
+            );
+
+
+        if (
+            saved === null ||
+            saved === ""
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        const value =
+            Number(
+                saved
+            );
+
+
+        if (
+            !Number.isFinite(
+                value
+            )
+        ) {
+
+            return 0.35;
+
+        }
+
+
+        return Math.max(
+            0,
+            Math.min(
+                1,
+                value
             )
         );
 
 
-    if (
-        Number.isFinite(savedValue)
-        &&
-        savedValue >= 0
-        &&
-        savedValue <= 100
-    ) {
+    } catch (error) {
 
-        return savedValue;
+        return 0.35;
 
     }
 
+}
 
-    return COMBAT_AUDIO_DEFAULT_VOLUME;
+
+function saveCombatMusicVolume(
+    value
+) {
+
+    try {
+
+        localStorage.setItem(
+            COMBAT_MUSIC_VOLUME_KEY,
+            String(
+                value
+            )
+        );
+
+
+    } catch (error) {
+
+        // localStorage potrebbe essere disabilitato.
+
+    }
 
 }
 
@@ -44,14 +94,18 @@ function getCombatVolumeIcon(
     volume
 ) {
 
-    if (volume <= 0) {
+    if (
+        volume <= 0
+    ) {
 
         return "🔇";
 
     }
 
 
-    if (volume < 50) {
+    if (
+        volume < 0.5
+    ) {
 
         return "🔉";
 
@@ -63,7 +117,13 @@ function getCombatVolumeIcon(
 }
 
 
-function updateCombatVolumeControl() {
+function updateCombatVolumeUI() {
+
+    const button =
+        document.getElementById(
+            "combat-volume-button"
+        );
+
 
     const slider =
         document.getElementById(
@@ -71,129 +131,162 @@ function updateCombatVolumeControl() {
         );
 
 
-    const icon =
-        document.getElementById(
-            "combat-volume-icon"
-        );
-
-
-    const valueElement =
+    const value =
         document.getElementById(
             "combat-volume-value"
         );
 
 
-    const volume =
-        getCombatAudioVolume();
+    const percentage =
+        Math.round(
+            combatMusicVolume *
+            100
+        );
+
+
+    if (button) {
+
+        button.textContent =
+            getCombatVolumeIcon(
+                combatMusicVolume
+            );
+
+
+        button.title =
+            `Volume musica: ${percentage}%`;
+
+    }
 
 
     if (slider) {
 
         slider.value =
-            String(volume);
-
-        slider.setAttribute(
-            "aria-valuetext",
-            `${volume}%`
-        );
-
-    }
-
-
-    if (icon) {
-
-        icon.textContent =
-            getCombatVolumeIcon(
-                volume
+            String(
+                percentage
             );
 
     }
 
 
-    if (valueElement) {
+    if (value) {
 
-        valueElement.textContent =
-            `${volume}%`;
-
-    }
-
-}
-
-
-function applyCombatAudioVolume(
-    volume
-) {
-
-    const safeVolume =
-        Math.max(
-            0,
-            Math.min(
-                100,
-                Number(volume) || 0
-            )
-        );
-
-
-    localStorage.setItem(
-        COMBAT_AUDIO_VOLUME_KEY,
-        String(safeVolume)
-    );
-
-
-    if (pageBackgroundMusic) {
-
-        pageBackgroundMusic.volume =
-            safeVolume / 100;
-
-        pageBackgroundMusic.muted =
-            safeVolume <= 0;
+        value.textContent =
+            `${percentage}%`;
 
     }
-
-
-    updateCombatVolumeControl();
 
 }
 
 
 function setupCombatVolumeControl() {
 
+    const control =
+        document.querySelector(
+            ".combat-volume-control"
+        );
+
+
+    const button =
+        document.getElementById(
+            "combat-volume-button"
+        );
+
+
+    const popover =
+        document.getElementById(
+            "combat-volume-popover"
+        );
+
+
     const slider =
         document.getElementById(
             "combat-volume-slider"
         );
 
 
-    if (!slider) {
+    if (
+        !control ||
+        !button ||
+        !popover ||
+        !slider
+    ) {
 
         return;
 
     }
 
 
-    updateCombatVolumeControl();
+    updateCombatVolumeUI();
+
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+
+            const willOpen =
+                popover.hidden === true;
+
+
+            popover.hidden =
+                !willOpen;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                willOpen
+                    ? "true"
+                    : "false"
+            );
+
+        }
+    );
 
 
     slider.addEventListener(
         "input",
         async () => {
 
-            const volume =
-                Number(
-                    slider.value
+            combatMusicVolume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        Number(
+                            slider.value
+                        ) /
+                        100
+                    )
                 );
-
-
-            applyCombatAudioVolume(
-                volume
-            );
 
 
             if (
                 pageBackgroundMusic
-                &&
-                volume > 0
-                &&
+            ) {
+
+                pageBackgroundMusic.volume =
+                    combatMusicVolume;
+
+                pageBackgroundMusic.muted =
+                    combatMusicVolume <= 0;
+
+            }
+
+
+            saveCombatMusicVolume(
+                combatMusicVolume
+            );
+
+
+            updateCombatVolumeUI();
+
+
+            if (
+                pageBackgroundMusic &&
+                combatMusicVolume > 0 &&
                 pageBackgroundMusic.paused
             ) {
 
@@ -209,6 +302,34 @@ function setupCombatVolumeControl() {
                 }
 
             }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                control.contains(
+                    event.target
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            popover.hidden =
+                true;
+
+
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
 
         }
     );
@@ -240,21 +361,17 @@ function startBackgroundMusic(
         true;
 
 
-    const savedVolume =
-        getCombatAudioVolume();
-
-
     pageBackgroundMusic.volume =
-        savedVolume / 100;
+        combatMusicVolume;
 
     pageBackgroundMusic.muted =
-        savedVolume <= 0;
+        combatMusicVolume <= 0;
 
     pageBackgroundMusic.preload =
         "auto";
 
 
-    updateCombatVolumeControl();
+    updateCombatVolumeUI();
 
 
     const tryPlay =
