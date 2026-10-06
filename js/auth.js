@@ -297,7 +297,7 @@ if (loginForm) {
 
 
                 window.location.href =
-                    "personaggio.html";
+                    "intro/intro.html";
 
 
             } catch (error) {
