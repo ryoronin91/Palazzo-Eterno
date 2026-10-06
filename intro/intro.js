@@ -13,7 +13,7 @@ const scenes = [
             "immagini/intro1.png",
         speaker: "Misteriosa figura",
         text:
-            "L'accesso dalle fogne è stato sigillato. Sono arrivato troppo tardi.",
+            "L'accesso dalle fogne è stato sigillato. Sono arrivato troppo tardi..",
         startMusic: true
     },
     {
