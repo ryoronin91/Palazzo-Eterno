@@ -7,6 +7,7 @@
     <title>Palazzo Eterno</title>
 
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="components/bacheca.css?v=1">
 
     <style>
         html,
@@ -31,144 +32,6 @@
         @media (max-width: 820px) {
             body {
                 background-attachment: scroll;
-            }
-        }
-    
-        /* =====================================================
-           BACHECA PUBBLICA
-        ====================================================== */
-
-        .public-noticeboard {
-            margin-top: 26px;
-            padding: 18px;
-            border: 1px solid rgba(188, 145, 72, 0.58);
-            border-radius: 12px;
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(31, 24, 18, 0.92),
-                    rgba(12, 15, 21, 0.96)
-                );
-            box-shadow:
-                0 14px 38px rgba(0, 0, 0, 0.35),
-                inset 0 0 0 1px rgba(255, 225, 160, 0.05);
-        }
-
-        .public-noticeboard-header {
-            margin-bottom: 14px;
-            text-align: center;
-        }
-
-        .public-noticeboard-kicker {
-            margin-bottom: 4px;
-            color: #9f7c48;
-            font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 0.18em;
-        }
-
-        .public-noticeboard-title {
-            margin: 0;
-            color: #e0bc77;
-            font-size: 1.15rem;
-            letter-spacing: 0.08em;
-        }
-
-        .public-noticeboard-tabs {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 7px;
-            margin-bottom: 14px;
-        }
-
-        .public-noticeboard-tab {
-            min-height: 38px;
-            padding: 7px 8px;
-            border: 1px solid rgba(164, 126, 67, 0.42);
-            border-radius: 7px;
-            background: rgba(7, 10, 15, 0.72);
-            color: #a99b83;
-            font: inherit;
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            transition: 140ms ease;
-        }
-
-        .public-noticeboard-tab:hover {
-            border-color: rgba(214, 169, 91, 0.78);
-            color: #e4c27f;
-        }
-
-        .public-noticeboard-tab.active {
-            border-color: #b98a48;
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(87, 58, 31, 0.85),
-                    rgba(43, 31, 24, 0.92)
-                );
-            color: #f1d9a4;
-        }
-
-        .public-noticeboard-content {
-            min-height: 155px;
-            padding: 15px;
-            border: 1px solid rgba(164, 126, 67, 0.28);
-            border-radius: 8px;
-            background: rgba(6, 9, 14, 0.58);
-        }
-
-        .public-noticeboard-content h3 {
-            margin: 0 0 12px;
-            color: #d8b56f;
-            font-size: 0.92rem;
-            letter-spacing: 0.06em;
-        }
-
-        .public-noticeboard-list {
-            display: grid;
-            gap: 8px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .public-noticeboard-list li {
-            position: relative;
-            margin: 0;
-            padding: 9px 10px 9px 27px;
-            border: 1px solid rgba(149, 117, 69, 0.18);
-            border-radius: 6px;
-            background: rgba(255, 246, 226, 0.025);
-            color: #d5ccbd;
-            font-size: 0.88rem;
-            line-height: 1.4;
-            text-align: left;
-        }
-
-        .public-noticeboard-list li::before {
-            content: "◆";
-            position: absolute;
-            left: 10px;
-            top: 10px;
-            color: #a87d40;
-            font-size: 0.62rem;
-        }
-
-        @media (max-width: 620px) {
-            .public-noticeboard {
-                padding: 13px;
-            }
-
-            .public-noticeboard-tabs {
-                grid-template-columns: 1fr;
-            }
-
-            .public-noticeboard-content {
-                min-height: 0;
-                padding: 12px;
             }
         }
 
@@ -198,139 +61,16 @@
                     Crea account
                 </a>
             </div>
-
-            
-            <section class="public-noticeboard" aria-label="Bacheca del Palazzo Eterno">
-                <div class="public-noticeboard-header">
-                    <div class="public-noticeboard-kicker">PALAZZO ETERNO</div>
-                    <h2 class="public-noticeboard-title">BACHECA</h2>
-                </div>
-
-                <div class="public-noticeboard-tabs" role="tablist">
-                    <button
-                        class="public-noticeboard-tab active"
-                        type="button"
-                        data-public-noticeboard-tab="novita"
-                    >
-                        NOVITÀ
-                    </button>
-
-                    <button
-                        class="public-noticeboard-tab"
-                        type="button"
-                        data-public-noticeboard-tab="upgrade"
-                    >
-                        PROSSIMI UPGRADE
-                    </button>
-
-                    <button
-                        class="public-noticeboard-tab"
-                        type="button"
-                        data-public-noticeboard-tab="avvisi"
-                    >
-                        AVVISI
-                    </button>
-                </div>
-
-                <div class="public-noticeboard-content">
-                    <h3 data-public-noticeboard-title>COSA C'È DI NUOVO</h3>
-                    <ul
-                        class="public-noticeboard-list"
-                        data-public-noticeboard-list
-                    ></ul>
-                </div>
-            </section>
+            <div
+                class="shared-noticeboard-host"
+                data-noticeboard-mode="public"
+            ></div>
 
 
         </div>
     </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
-
-    <script>
-        (() => {
-            const content = {
-                novita: {
-                    title: "COSA C'È DI NUOVO",
-                    items: [
-                        "Il Livello Base è ora accessibile dal dungeon.",
-                        "Mano di Scimmia si è trasferito alla Base.",
-                        "Sono iniziati i lavori per i nuovi servizi della Base."
-                    ]
-                },
-
-                upgrade: {
-                    title: "PROSSIMI UPGRADE",
-                    items: [
-                        "Sistema di costruzione e potenziamento dei servizi.",
-                        "Scambio tra giocatori."
-                    ]
-                },
-
-                avvisi: {
-                    title: "AVVISI",
-                    items: [
-                        "Nuovi contenuti verranno aggiunti progressivamente."
-                    ]
-                }
-            };
-
-            const escapeHtml = value =>
-                String(value ?? "")
-                    .replaceAll("&", "&amp;")
-                    .replaceAll("<", "&lt;")
-                    .replaceAll(">", "&gt;")
-                    .replaceAll('"', "&quot;")
-                    .replaceAll("'", "&#039;");
-
-            const render = tabId => {
-                const section = content[tabId];
-
-                if (!section) {
-                    return;
-                }
-
-                const title = document.querySelector(
-                    "[data-public-noticeboard-title]"
-                );
-
-                const list = document.querySelector(
-                    "[data-public-noticeboard-list]"
-                );
-
-                if (title) {
-                    title.textContent = section.title;
-                }
-
-                if (list) {
-                    list.innerHTML = section.items
-                        .map(item => `<li>${escapeHtml(item)}</li>`)
-                        .join("");
-                }
-
-                document
-                    .querySelectorAll("[data-public-noticeboard-tab]")
-                    .forEach(button => {
-                        button.classList.toggle(
-                            "active",
-                            button.dataset.publicNoticeboardTab === tabId
-                        );
-                    });
-            };
-
-            document
-                .querySelectorAll("[data-public-noticeboard-tab]")
-                .forEach(button => {
-                    button.addEventListener("click", () => {
-                        render(
-                            button.dataset.publicNoticeboardTab
-                        );
-                    });
-                });
-
-            render("novita");
-        })();
-    </script>
-
+    <script src="components/bacheca.js?v=1"></script>
 </body>
 </html>

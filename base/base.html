@@ -34,6 +34,8 @@
         href="css/base-services.css?v=7"
     >
 
+    <link rel="stylesheet" href="../components/bacheca.css?v=1">
+
     <style>
         .dungeon-player-coordinates {
             margin-top: 8px;
@@ -971,12 +973,8 @@
 
 
     </main>
-
-
-
-
     <!-- =====================================================
-         BACHECA DELLA BASE
+         BACHECA DELLA BASE - COMPONENTE CONDIVISO
     ====================================================== -->
 
     <div
@@ -990,7 +988,6 @@
             aria-modal="true"
             aria-labelledby="base-noticeboard-title"
         >
-
             <button
                 id="base-noticeboard-close"
                 class="base-noticeboard-close"
@@ -1000,71 +997,21 @@
                 ×
             </button>
 
-            <div class="base-noticeboard-header">
-
-                <div class="base-noticeboard-kicker">
-                    PALAZZO ETERNO
-                </div>
-
-                <h2 id="base-noticeboard-title">
-                    BACHECA DELLA BASE
-                </h2>
-
-            </div>
-
-            <nav
-                class="base-noticeboard-tabs"
-                aria-label="Sezioni bacheca"
-            >
-
-                <button
-                    class="base-noticeboard-tab active"
-                    type="button"
-                    data-base-noticeboard-tab="novita"
-                >
-                    NOVITÀ
-                </button>
-
-                <button
-                    class="base-noticeboard-tab"
-                    type="button"
-                    data-base-noticeboard-tab="upgrade"
-                >
-                    PROSSIMI UPGRADE
-                </button>
-
-                <button
-                    class="base-noticeboard-tab"
-                    type="button"
-                    data-base-noticeboard-tab="avvisi"
-                >
-                    AVVISI
-                </button>
-
-            </nav>
-
-            <div class="base-noticeboard-content">
-
-                <h3 id="base-noticeboard-content-title">
-                    COSA C'È DI NUOVO
-                </h3>
-
-                <ul
-                    id="base-noticeboard-content-list"
-                    class="base-noticeboard-content-list"
-                ></ul>
-
-            </div>
-
+            <div
+                class="shared-noticeboard-host"
+                data-noticeboard-mode="base"
+            ></div>
         </section>
-
     </div>
+
+
 
 
     <!-- =====================================================
          SCRIPT PRINCIPALI LIVELLO BASE
     ====================================================== -->
 
+    <script src="../components/bacheca.js?v=1"></script>
     <script src="js/base.js?v=27"></script>
     <script src="js/eventi_base.js?v=2"></script>
 
