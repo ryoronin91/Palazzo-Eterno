@@ -6,77 +6,27 @@
     <title>Palazzo Eterno — Introduzione</title>
     <link rel="stylesheet" href="intro.css">
 </head>
-
 <body>
-
     <main id="intro-root" class="intro-root is-black">
-
-        <img
-            id="intro-image"
-            class="intro-image"
-            src=""
-            alt=""
-            draggable="false"
-        >
-
+        <img id="intro-image" class="intro-image" src="" alt="" draggable="false">
         <div class="intro-vignette"></div>
 
-        <section
-            id="dialogue-box"
-            class="dialogue-box"
-            aria-live="polite"
-        >
+        <section id="dialogue-box" class="dialogue-box" aria-live="polite">
             <div class="dialogue-panel"></div>
-
-            <img
-                class="dialogue-frame"
-                src="immagini/cornice.png"
-                alt=""
-                draggable="false"
-            >
+            <img class="dialogue-frame" src="immagini/cornice.png" alt="" draggable="false">
 
             <div class="dialogue-content">
-
-                <p
-                    id="dialogue-speaker"
-                    class="dialogue-speaker"
-                ></p>
-
-                <p
-                    id="dialogue-text"
-                    class="dialogue-text"
-                ></p>
-
+                <p id="dialogue-speaker" class="dialogue-speaker"></p>
+                <p id="dialogue-text" class="dialogue-text"></p>
             </div>
 
-            <button
-                id="next-button"
-                class="next-button"
-                type="button"
-                aria-label="Avanti"
-                title="Avanti"
-            >
-                ›
-            </button>
-
+            <button id="next-button" class="next-button" type="button" aria-label="Avanti" title="Avanti">›</button>
         </section>
-
     </main>
 
-    <audio
-        id="intro-music"
-        src="audio/music.mp3"
-        preload="auto"
-        loop
-    ></audio>
-
-    <audio
-        id="intro-sfx1"
-        src="audio/sfx1.mp3"
-        preload="auto"
-    ></audio>
+    <audio id="intro-music" src="audio/music.mp3" preload="auto" loop></audio>
+    <audio id="intro-sfx1" src="audio/sfx1.mp3" preload="auto"></audio>
 
     <script src="intro.js"></script>
-
 </body>
 </html>
