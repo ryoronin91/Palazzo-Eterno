@@ -133,7 +133,7 @@ body {
     opacity: 0.92;
     z-index: 5;
     right: 1.9%;
-    bottom: 19%;
+    bottom: 10%;
     padding: 0;
     transition: opacity 150ms ease, transform 150ms ease, text-shadow 150ms ease;
 }
