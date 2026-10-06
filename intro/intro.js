@@ -119,6 +119,14 @@ function applyScene(index) {
     nextButton.title = scene.final ? 'Continua' : 'Avanti';
 }
 
+function getIntroExitDestination() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("return") === "mano") {
+        return "../base/services/vendor/vendor.html";
+    }
+    return "../personaggio.html";
+}
+
 function goToNextScene() {
     if (transitioning) return;
     const scene = scenes[currentScene];
