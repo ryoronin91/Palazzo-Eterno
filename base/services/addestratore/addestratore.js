@@ -686,6 +686,39 @@ function setupAiChat() {
     });
 }
 
+
+function isPalaceOriginQuestion(message) {
+    const normalized = String(message || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const directPhrases = [
+        "come sono finito qui",
+        "come sono arrivato qui",
+        "perche sono qui",
+        "perche mi trovo qui",
+        "cosa ci faccio qui",
+        "chi mi ha portato qui",
+        "come sono finito nel palazzo",
+        "come sono arrivato nel palazzo",
+        "come sono entrato nel palazzo",
+        "perche sono nel palazzo",
+        "perche mi trovo nel palazzo"
+    ];
+
+    if (directPhrases.some(phrase => normalized.includes(phrase))) return true;
+
+    const asksHow = normalized.includes("come") || normalized.includes("perche") || normalized.includes("chi");
+    const aboutArrival = normalized.includes("finito") || normalized.includes("arrivato") || normalized.includes("portato") || normalized.includes("entrato") || normalized.includes("trovo");
+    const aboutPlace = normalized.includes("qui") || normalized.includes("palazzo");
+
+    return asksHow && aboutArrival && aboutPlace;
+}
+
 async function sendAiMessage() {
     if (aiBusy) return;
 
@@ -698,6 +731,15 @@ async function sendAiMessage() {
     const button = document.getElementById("vendor-ai-send");
     const message = String(input?.value || "").trim().slice(0, 500);
     if (!message || !input || !button) return;
+
+    if (isPalaceOriginQuestion(message)) {
+        input.value = "";
+        const reply = "OH! DOMANDA PROFONDA! Per questa però devi chiedere a Mano di Scimmia!";
+        aiVisitHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+        aiVisitHistory = aiVisitHistory.slice(-12);
+        showDialogue(reply);
+        return;
+    }
 
     aiBusy = true;
     input.disabled = true;
