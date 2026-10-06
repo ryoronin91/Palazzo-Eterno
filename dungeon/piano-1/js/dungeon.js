@@ -3552,9 +3552,9 @@ if (
     // REALTIME SENZA BLOCCARE IL MOVIMENTO
     // --------------------------------------------------------
 
+    // Movimento remoto: solo Broadcast. Presence non viene
+    // riscritta a ogni passo.
     broadcastMyState();
-
-    updateMyPresence();
 
 
     // --------------------------------------------------------
@@ -4993,10 +4993,84 @@ async function setupRealtimeMultiplayer() {
         },
         () => {
 
+            // Presence serve solo a sapere chi è online.
+            // Non ribroadcastiamo e non rimuoviamo token durante sync.
             syncOnlinePlayers();
 
-            broadcastMyState();
+        }
+    );
 
+
+    // ========================================================
+    // PRESENCE JOIN
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        { event: "join" },
+        ({ newPresences }) => {
+
+            (newPresences || []).forEach(
+                presence => {
+                    if (
+                        !presence?.character_id ||
+                        presence.character_id === character.id
+                    ) {
+                        return;
+                    }
+
+                    updateRemotePlayer(presence);
+                }
+            );
+
+            renderDungeonOnlinePlayers();
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE LEAVE
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        { event: "leave" },
+        ({ leftPresences }) => {
+
+            const state = dungeonChannel.presenceState();
+
+            (leftPresences || []).forEach(
+                presence => {
+                    const id = presence?.character_id;
+
+                    if (!id || id === character.id) {
+                        return;
+                    }
+
+                    const stillOnline =
+                        Object.values(state).some(
+                            presences =>
+                                (presences || []).some(
+                                    item => item?.character_id === id
+                                )
+                        );
+
+                    if (stillOnline) {
+                        return;
+                    }
+
+                    const token = otherPlayerTokens.get(id);
+
+                    if (token) {
+                        token.remove();
+                    }
+
+                    otherPlayerTokens.delete(id);
+                    otherPlayers.delete(id);
+                }
+            );
+
+            renderDungeonOnlinePlayers();
         }
     );
 
@@ -5028,6 +5102,8 @@ async function setupRealtimeMultiplayer() {
                 return;
             }
 
+
+            console.log("[RT DUNGEON] RX player-move", data.character_id, data.x, data.y);
 
             updateRemotePlayer(
                 data
@@ -5283,6 +5359,8 @@ async function broadcastMyState() {
 
 
     try {
+
+        console.log("[RT DUNGEON] TX player-move", character.id, playerX, playerY);
 
         await dungeonChannel.send({
 
@@ -5651,39 +5729,8 @@ function syncOnlinePlayers() {
     );
 
 
-    // ========================================================
-    // RIMUOVE TOKEN DEI GIOCATORI USCITI
-    // ========================================================
-
-    for (
-        const [
-            id,
-            token
-        ]
-        of otherPlayerTokens
-    ) {
-
-        if (
-            !onlineIds.has(
-                id
-            )
-        ) {
-
-            token.remove();
-
-
-            otherPlayerTokens.delete(
-                id
-            );
-
-
-            otherPlayers.delete(
-                id
-            );
-
-        }
-
-    }
+    // I token NON vengono rimossi durante un normale sync Presence.
+    // La rimozione avviene esclusivamente su un vero evento leave.
 
 
     // Se Cura è attiva, aggiorniamo
@@ -9665,12 +9712,10 @@ function updateRemoteTokensVisibility() {
         }
 
 
-        // DEBUG REALTIME:
-        // i token remoti restano sempre visibili.
-        // Se così il movimento funziona, il problema è nel filtro
-        // nebbia/visibleCells e non nel canale Supabase.
-        token.style.display =
-            "flex";
+        // DEBUG REALTIME: durante questo test i PG remoti restano
+        // sempre visibili. Quando il movimento sarà stabile,
+        // riattiveremo il filtro della nebbia separatamente.
+        token.style.display = "flex";
 
     }
 
