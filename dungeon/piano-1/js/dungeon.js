@@ -498,14 +498,9 @@ let positionSavePending = false;
 let dungeonChannel = null;
 let realtimeReady = false;
 
-// Il movimento usa Broadcast per la risposta immediata.
-// Presence viene aggiornata con un piccolo debounce: chiamare
-// track() a ogni singolo passo genera troppi sync Realtime e
-// può far sembrare i token remoti bloccati o in ritardo.
 let dungeonPresenceUpdateTimer = null;
-let dungeonBroadcastPending = false;
 
-const DUNGEON_PRESENCE_UPDATE_DELAY_MS = 250;
+const DUNGEON_PRESENCE_UPDATE_DELAY_MS = 180;
 
 
 // ============================================================
@@ -3561,8 +3556,11 @@ if (
     // REALTIME SENZA BLOCCARE IL MOVIMENTO
     // --------------------------------------------------------
 
+    // Broadcast sposta immediatamente il token sugli altri client.
     broadcastMyState();
 
+    // Presence viene aggiornata poco dopo come rete di sicurezza,
+    // senza fare track() a ogni singolo passo.
     scheduleMyPresenceUpdate();
 
 
@@ -5002,9 +5000,124 @@ async function setupRealtimeMultiplayer() {
         },
         () => {
 
-            // Presence serve per ingresso/uscita e riallineamento.
-            // Il movimento vero e proprio arriva dal Broadcast.
+            // Il sync riallinea i giocatori presenti.
+            // Non elimina token e non ribroadcasta lo stato:
+            // durante gli aggiornamenti Presence lo state può
+            // essere temporaneamente incompleto.
             syncOnlinePlayers();
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE JOIN
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "join"
+        },
+        ({ newPresences }) => {
+
+            (newPresences || []).forEach(
+                presence => {
+
+                    if (
+                        !presence ||
+                        !presence.character_id ||
+                        presence.character_id === character.id
+                    ) {
+                        return;
+                    }
+
+                    updateRemotePlayer(
+                        presence
+                    );
+
+                }
+            );
+
+            renderDungeonOnlinePlayers();
+
+        }
+    );
+
+
+    // ========================================================
+    // PRESENCE LEAVE
+    // ========================================================
+
+    dungeonChannel.on(
+        "presence",
+        {
+            event: "leave"
+        },
+        ({ leftPresences }) => {
+
+            const state =
+                dungeonChannel.presenceState();
+
+            (leftPresences || []).forEach(
+                presence => {
+
+                    const id =
+                        presence?.character_id;
+
+                    if (
+                        !id ||
+                        id === character.id
+                    ) {
+                        return;
+                    }
+
+                    let stillOnline = false;
+
+                    Object.values(state).forEach(
+                        presences => {
+
+                            if (
+                                (presences || []).some(
+                                    item =>
+                                        item?.character_id === id
+                                )
+                            ) {
+                                stillOnline = true;
+                            }
+
+                        }
+                    );
+
+                    if (stillOnline) {
+                        return;
+                    }
+
+                    const token =
+                        otherPlayerTokens.get(
+                            id
+                        );
+
+                    if (token) {
+                        token.remove();
+                    }
+
+                    otherPlayerTokens.delete(
+                        id
+                    );
+
+                    otherPlayers.delete(
+                        id
+                    );
+
+                }
+            );
+
+            renderDungeonOnlinePlayers();
+
+            if (healModeActive) {
+                updateHealTargets();
+            }
 
         }
     );
@@ -5155,12 +5268,6 @@ async function setupRealtimeMultiplayer() {
                                 getMyPresenceData()
                             );
 
-                            // Se il giocatore si è mosso mentre il canale
-                            // stava ancora collegandosi, inviamo ora
-                            // immediatamente l'ultima posizione.
-                            if (dungeonBroadcastPending) {
-                                await broadcastMyState();
-                            }
 
                             resolve();
 
@@ -5239,6 +5346,9 @@ active_combat_id:
 in_combat:
     !!character.active_combat_id,
 
+state_version:
+    Date.now(),
+
 online_at:
             new Date()
                 .toISOString()
@@ -5255,17 +5365,24 @@ online_at:
 function scheduleMyPresenceUpdate() {
 
     if (dungeonPresenceUpdateTimer) {
-        clearTimeout(dungeonPresenceUpdateTimer);
+        clearTimeout(
+            dungeonPresenceUpdateTimer
+        );
     }
 
     dungeonPresenceUpdateTimer =
         setTimeout(
             () => {
-                dungeonPresenceUpdateTimer = null;
+
+                dungeonPresenceUpdateTimer =
+                    null;
+
                 updateMyPresence();
+
             },
             DUNGEON_PRESENCE_UPDATE_DELAY_MS
         );
+
 }
 
 
@@ -5305,17 +5422,11 @@ async function updateMyPresence() {
 
 async function broadcastMyState() {
 
-    if (!character) {
-        return;
-    }
-
     if (
         !dungeonChannel ||
-        !realtimeReady
+        !realtimeReady ||
+        !character
     ) {
-        // Conserviamo il fatto che esiste uno stato più recente
-        // da trasmettere appena il canale diventa disponibile.
-        dungeonBroadcastPending = true;
         return;
     }
 
@@ -5357,18 +5468,17 @@ active_combat_id:
     null,
 
 in_combat:
-    !!character.active_combat_id
+    !!character.active_combat_id,
+
+state_version:
+    Date.now()
 
             }
 
         });
 
-        dungeonBroadcastPending = false;
-
 
     } catch (error) {
-
-        dungeonBroadcastPending = true;
 
         console.error(
             "Errore broadcast posizione:",
@@ -5693,39 +5803,10 @@ function syncOnlinePlayers() {
     );
 
 
-    // ========================================================
-    // RIMUOVE TOKEN DEI GIOCATORI USCITI
-    // ========================================================
-
-    for (
-        const [
-            id,
-            token
-        ]
-        of otherPlayerTokens
-    ) {
-
-        if (
-            !onlineIds.has(
-                id
-            )
-        ) {
-
-            token.remove();
-
-
-            otherPlayerTokens.delete(
-                id
-            );
-
-
-            otherPlayers.delete(
-                id
-            );
-
-        }
-
-    }
+    // Non eliminiamo token durante un normale Presence sync.
+    // La rimozione avviene solo sull'evento Presence "leave".
+    // Questo evita che un sync transitorio faccia sparire
+    // giocatori che sono ancora effettivamente online.
 
 
     // Se Cura è attiva, aggiorniamo
@@ -5797,6 +5878,28 @@ function updateRemotePlayer(
         ) || {};
 
 
+    const incomingVersion =
+        Number(
+            data.state_version
+        ) || 0;
+
+    const oldVersion =
+        Number(
+            oldData.state_version
+        ) || 0;
+
+
+    // Un Presence vecchio non deve riportare indietro
+    // un token già aggiornato da un Broadcast più recente.
+    if (
+        incomingVersion > 0 &&
+        oldVersion > 0 &&
+        incomingVersion < oldVersion
+    ) {
+        return;
+    }
+
+
     otherPlayers.set(
     data.character_id,
     {
@@ -5821,6 +5924,10 @@ function updateRemotePlayer(
 
         y:
             y,
+
+        state_version:
+            incomingVersion ||
+            oldVersion,
 
         current_hp:
             data.current_hp !== undefined
@@ -10981,12 +11088,21 @@ window.addEventListener(
 // ============================================================
 
 // ============================================================
-// CLEANUP REALTIME MOVIMENTO
+// CLEANUP REALTIME DUNGEON
 // ============================================================
 
-window.addEventListener("beforeunload", () => {
-    if (dungeonPresenceUpdateTimer) {
-        clearTimeout(dungeonPresenceUpdateTimer);
-        dungeonPresenceUpdateTimer = null;
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (dungeonPresenceUpdateTimer) {
+            clearTimeout(
+                dungeonPresenceUpdateTimer
+            );
+
+            dungeonPresenceUpdateTimer =
+                null;
+        }
+
     }
-});
+);
