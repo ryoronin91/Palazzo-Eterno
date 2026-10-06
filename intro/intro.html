@@ -26,17 +26,28 @@
             class="dialogue-box"
             aria-live="polite"
         >
-            <div class="dialogue-ornament dialogue-ornament-top"></div>
+            <div class="dialogue-panel"></div>
 
-            <p
-                id="dialogue-speaker"
-                class="dialogue-speaker"
-            ></p>
+            <img
+                class="dialogue-frame"
+                src="immagini/cornice.png"
+                alt=""
+                draggable="false"
+            >
 
-            <p
-                id="dialogue-text"
-                class="dialogue-text"
-            ></p>
+            <div class="dialogue-content">
+
+                <p
+                    id="dialogue-speaker"
+                    class="dialogue-speaker"
+                ></p>
+
+                <p
+                    id="dialogue-text"
+                    class="dialogue-text"
+                ></p>
+
+            </div>
 
             <button
                 id="next-button"
@@ -48,7 +59,6 @@
                 ›
             </button>
 
-            <div class="dialogue-ornament dialogue-ornament-bottom"></div>
         </section>
 
     </main>

@@ -1,4 +1,4 @@
-const FADE_MS = 420;
+const FADE_MS = 500;
 
 const scenes = [
     {
@@ -13,7 +13,7 @@ const scenes = [
             "immagini/intro1.png",
         speaker: "Misteriosa figura",
         text:
-            "L'accesso dalle fogne è stato sigillato. Sono arrivato troppo tardi..",
+            "L'accesso dalle fogne è stato sigillato. Sono arrivato troppo tardi.",
         startMusic: true
     },
     {
@@ -69,6 +69,11 @@ const introImage =
         "intro-image"
     );
 
+const dialogueBox =
+    document.getElementById(
+        "dialogue-box"
+    );
+
 const dialogueSpeaker =
     document.getElementById(
         "dialogue-speaker"
@@ -111,6 +116,12 @@ function preloadImages() {
                 scene.image;
         }
     );
+
+    const frame =
+        new Image();
+
+    frame.src =
+        "immagini/cornice.png";
 }
 
 
@@ -216,6 +227,25 @@ function applyScene(index) {
         playSfx1();
     }
 
+    if (scene.final) {
+
+        dialogueBox.classList.add(
+            "is-final"
+        );
+
+        dialogueSpeaker.textContent =
+            "";
+
+        dialogueText.textContent =
+            "";
+
+    } else {
+
+        dialogueBox.classList.remove(
+            "is-final"
+        );
+    }
+
     nextButton.setAttribute(
         "aria-label",
         scene.final
@@ -300,6 +330,7 @@ function goToNextScene() {
 function startIntro() {
 
     preloadImages();
+
     applyScene(0);
 
     nextButton.addEventListener(
