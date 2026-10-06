@@ -125,6 +125,15 @@ let basePositionSavePending = false;
 let baseChannel = null;
 let baseRealtimeReady = false;
 
+// Broadcast = movimento immediato.
+// Presence = ingresso/uscita + riallineamento periodico.
+// Evitiamo track() a ogni singolo passo perché genera una raffica
+// di sync Realtime su tutti i client.
+let basePresenceUpdateTimer = null;
+let baseBroadcastPending = false;
+
+const BASE_PRESENCE_UPDATE_DELAY_MS = 250;
+
 // Giocatori remoti presenti nel Livello Base.
 // La Presence mantiene lo stato, mentre queste Map gestiscono
 // i token realmente renderizzati sulla mappa.
@@ -2242,6 +2251,11 @@ async function updateBaseInnRestState() {
         baseInnResting =
             false;
 
+        if (basePresenceUpdateTimer) {
+            clearTimeout(basePresenceUpdateTimer);
+            basePresenceUpdateTimer = null;
+        }
+
         stopBaseInnTimer();
 
         baseInnState =
@@ -3260,8 +3274,13 @@ function moveBasePlayer(dx, dy) {
     updateBaseCamera();
 
     scheduleBasePositionSave();
-    updateBasePresence();
+
+    // Movimento remoto immediato via Broadcast.
     broadcastBasePlayerState();
+
+    // Presence aggiornata poco dopo come rete di sicurezza,
+    // senza inondare il canale a ogni pressione del tasto.
+    scheduleBasePresenceUpdate();
 
  if (
     typeof checkBaseTeleportEvent ===
@@ -3939,13 +3958,11 @@ async function setupBaseRealtime() {
         },
         () => {
 
+            // Presence serve soprattutto a sapere chi è online
+            // e a riallineare lo stato. Il movimento arriva invece
+            // dal Broadcast, quindi non ribroadcastiamo a ogni sync.
             syncBaseRemotePlayers();
             renderBaseOnlinePlayers();
-
-            // Presence serve soprattutto a sapere chi è online.
-            // Dopo un sync ribroadcastiamo anche la nostra posizione
-            // così gli altri client possono aggiornarci subito.
-            broadcastBasePlayerState();
 
         }
     );
@@ -4049,6 +4066,9 @@ async function setupBaseRealtime() {
                                 getMyBasePresenceData()
                             );
 
+                            // Comunichiamo subito la posizione corrente
+                            // dopo la connessione; se ci siamo mossi durante
+                            // il collegamento, viene inviata l'ultima.
                             await broadcastBasePlayerState();
 
                             syncBaseRemotePlayers();
@@ -4136,6 +4156,23 @@ function getMyBasePresenceData() {
 }
 
 
+function scheduleBasePresenceUpdate() {
+
+    if (basePresenceUpdateTimer) {
+        clearTimeout(basePresenceUpdateTimer);
+    }
+
+    basePresenceUpdateTimer =
+        setTimeout(
+            () => {
+                basePresenceUpdateTimer = null;
+                updateBasePresence();
+            },
+            BASE_PRESENCE_UPDATE_DELAY_MS
+        );
+}
+
+
 async function updateBasePresence() {
 
     if (
@@ -4174,11 +4211,15 @@ async function updateBasePresence() {
 
 async function broadcastBasePlayerState() {
 
+    if (!character) {
+        return;
+    }
+
     if (
         !baseChannel ||
-        !baseRealtimeReady ||
-        !character
+        !baseRealtimeReady
     ) {
+        baseBroadcastPending = true;
         return;
     }
 
@@ -4228,7 +4269,11 @@ async function broadcastBasePlayerState() {
 
         });
 
+        baseBroadcastPending = false;
+
     } catch (error) {
+
+        baseBroadcastPending = true;
 
         console.error(
             "Errore broadcast posizione Base:",

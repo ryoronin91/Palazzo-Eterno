@@ -498,6 +498,15 @@ let positionSavePending = false;
 let dungeonChannel = null;
 let realtimeReady = false;
 
+// Il movimento usa Broadcast per la risposta immediata.
+// Presence viene aggiornata con un piccolo debounce: chiamare
+// track() a ogni singolo passo genera troppi sync Realtime e
+// può far sembrare i token remoti bloccati o in ritardo.
+let dungeonPresenceUpdateTimer = null;
+let dungeonBroadcastPending = false;
+
+const DUNGEON_PRESENCE_UPDATE_DELAY_MS = 250;
+
 
 // ============================================================
 // CHAT PERSISTENTE
@@ -3554,7 +3563,7 @@ if (
 
     broadcastMyState();
 
-    updateMyPresence();
+    scheduleMyPresenceUpdate();
 
 
     // --------------------------------------------------------
@@ -4993,9 +5002,9 @@ async function setupRealtimeMultiplayer() {
         },
         () => {
 
+            // Presence serve per ingresso/uscita e riallineamento.
+            // Il movimento vero e proprio arriva dal Broadcast.
             syncOnlinePlayers();
-
-            broadcastMyState();
 
         }
     );
@@ -5146,6 +5155,12 @@ async function setupRealtimeMultiplayer() {
                                 getMyPresenceData()
                             );
 
+                            // Se il giocatore si è mosso mentre il canale
+                            // stava ancora collegandosi, inviamo ora
+                            // immediatamente l'ultima posizione.
+                            if (dungeonBroadcastPending) {
+                                await broadcastMyState();
+                            }
 
                             resolve();
 
@@ -5237,6 +5252,23 @@ online_at:
 // AGGIORNA PRESENCE
 // ============================================================
 
+function scheduleMyPresenceUpdate() {
+
+    if (dungeonPresenceUpdateTimer) {
+        clearTimeout(dungeonPresenceUpdateTimer);
+    }
+
+    dungeonPresenceUpdateTimer =
+        setTimeout(
+            () => {
+                dungeonPresenceUpdateTimer = null;
+                updateMyPresence();
+            },
+            DUNGEON_PRESENCE_UPDATE_DELAY_MS
+        );
+}
+
+
 async function updateMyPresence() {
 
     if (
@@ -5273,11 +5305,17 @@ async function updateMyPresence() {
 
 async function broadcastMyState() {
 
+    if (!character) {
+        return;
+    }
+
     if (
         !dungeonChannel ||
-        !realtimeReady ||
-        !character
+        !realtimeReady
     ) {
+        // Conserviamo il fatto che esiste uno stato più recente
+        // da trasmettere appena il canale diventa disponibile.
+        dungeonBroadcastPending = true;
         return;
     }
 
@@ -5325,8 +5363,12 @@ in_combat:
 
         });
 
+        dungeonBroadcastPending = false;
+
 
     } catch (error) {
+
+        dungeonBroadcastPending = true;
 
         console.error(
             "Errore broadcast posizione:",
@@ -10937,3 +10979,14 @@ window.addEventListener(
 // ============================================================
 // FINE DUNGEON.JS
 // ============================================================
+
+// ============================================================
+// CLEANUP REALTIME MOVIMENTO
+// ============================================================
+
+window.addEventListener("beforeunload", () => {
+    if (dungeonPresenceUpdateTimer) {
+        clearTimeout(dungeonPresenceUpdateTimer);
+        dungeonPresenceUpdateTimer = null;
+    }
+});
