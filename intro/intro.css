@@ -65,9 +65,9 @@ body {
 
 .dialogue-panel {
     position: absolute;
-    left: calc(4.5% - 2px);
-    right: calc(4.5% - 2px);
-    top: calc(12% - 2px);
+    left: 4.5%;
+    right: 4.5%;
+    top: calc(12% - 4px);
     bottom: calc(13% - 2px);
     background: rgba(0, 0, 0, 0.68);
     border-radius: 6px;
@@ -133,7 +133,7 @@ body {
     opacity: 0.92;
     z-index: 5;
     right: 1.9%;
-    bottom: 7.1%;
+    bottom: 9%;
     padding: 0;
     transition: opacity 150ms ease, transform 150ms ease, text-shadow 150ms ease;
 }
