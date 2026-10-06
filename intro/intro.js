@@ -131,10 +131,32 @@ function goToNextScene() {
     if (transitioning) return;
     const scene = scenes[currentScene];
 
-    if (scene && scene.final) {
-        window.location.href = '../personaggio.html';
-        return;
+    if (
+    scene &&
+    scene.final
+) {
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const returnTo =
+        params.get("return");
+
+    if (returnTo === "mano") {
+
+        window.location.href =
+            "../base/services/vendor/vendor.html";
+
+    } else {
+
+        window.location.href =
+            "../personaggio.html";
     }
+
+    return;
+}
 
     const nextIndex = currentScene + 1;
     if (nextIndex >= scenes.length) return;
