@@ -7,15 +7,14 @@
             items: [
                 "Il Livello Base è ora accessibile dal dungeon.",
                 "Mano di Scimmia si è trasferito alla Base.",
-                "Sono disponibili i servizi della Base.",
-                "Intro narrativa presente in fase di creazione del personaggio."
+                "Sono iniziati i lavori per i nuovi servizi della Base."
             ]
         },
         upgrade: {
             title: "PROSSIMI UPGRADE",
             items: [
-                "Scambio tra giocatori.",
-                "Azione di cambio equipaggiamento nel combat."
+                "Sistema di costruzione e potenziamento dei servizi.",
+                "Scambio tra giocatori."
             ]
         },
         feedback: {
@@ -137,6 +136,14 @@
         const body = host.querySelector("[data-noticeboard-body]");
         const tabs = [...host.querySelectorAll("[data-noticeboard-tab]")];
 
+        const openFeedbackModal = () => {
+            const modal = document.getElementById("feedback-modal");
+            if (!modal) return;
+            modal.hidden = false;
+            document.body.classList.add("feedback-modal-open");
+            setTimeout(() => document.getElementById("feedback-text")?.focus(), 0);
+        };
+
         const render = tabId => {
             const section = CONTENT[tabId];
             if (!section) return;
@@ -148,12 +155,14 @@
                     <div class="shared-noticeboard-feedback">
                         <p>${escapeHtml(section.description)}</p>
                         <button
-                            id="feedback-open-button"
                             class="button secondary shared-noticeboard-feedback-button"
                             type="button"
+                            data-feedback-open
                         >BUG &amp; SUGGERIMENTI</button>
                     </div>
                 `;
+
+                body.querySelector("[data-feedback-open]")?.addEventListener("click", openFeedbackModal);
             } else {
                 body.innerHTML = `
                     <ul class="shared-noticeboard-list">
@@ -176,4 +185,24 @@
 
     document.querySelectorAll(".shared-noticeboard-host").forEach(initHost);
     ensureFeedbackAssets();
+
+    // Apertura/chiusura della modale gestita anche qui perché il pulsante
+    // BUG & SUGGERIMENTI viene creato dinamicamente quando si apre la tab.
+    document.addEventListener("click", event => {
+        const modal = document.getElementById("feedback-modal");
+        if (!modal) return;
+
+        if (event.target.closest("#feedback-close-button, [data-feedback-close]")) {
+            modal.hidden = true;
+            document.body.classList.remove("feedback-modal-open");
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        const modal = document.getElementById("feedback-modal");
+        if (!modal || modal.hidden) return;
+        modal.hidden = true;
+        document.body.classList.remove("feedback-modal-open");
+    });
 })();
