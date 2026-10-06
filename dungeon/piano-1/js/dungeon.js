@@ -498,10 +498,6 @@ let positionSavePending = false;
 let dungeonChannel = null;
 let realtimeReady = false;
 
-let dungeonPresenceUpdateTimer = null;
-
-const DUNGEON_PRESENCE_UPDATE_DELAY_MS = 180;
-
 
 // ============================================================
 // CHAT PERSISTENTE
@@ -3556,12 +3552,9 @@ if (
     // REALTIME SENZA BLOCCARE IL MOVIMENTO
     // --------------------------------------------------------
 
-    // Broadcast sposta immediatamente il token sugli altri client.
     broadcastMyState();
 
-    // Presence viene aggiornata poco dopo come rete di sicurezza,
-    // senza fare track() a ogni singolo passo.
-    scheduleMyPresenceUpdate();
+    updateMyPresence();
 
 
     // --------------------------------------------------------
@@ -5000,124 +4993,9 @@ async function setupRealtimeMultiplayer() {
         },
         () => {
 
-            // Il sync riallinea i giocatori presenti.
-            // Non elimina token e non ribroadcasta lo stato:
-            // durante gli aggiornamenti Presence lo state può
-            // essere temporaneamente incompleto.
             syncOnlinePlayers();
 
-        }
-    );
-
-
-    // ========================================================
-    // PRESENCE JOIN
-    // ========================================================
-
-    dungeonChannel.on(
-        "presence",
-        {
-            event: "join"
-        },
-        ({ newPresences }) => {
-
-            (newPresences || []).forEach(
-                presence => {
-
-                    if (
-                        !presence ||
-                        !presence.character_id ||
-                        presence.character_id === character.id
-                    ) {
-                        return;
-                    }
-
-                    updateRemotePlayer(
-                        presence
-                    );
-
-                }
-            );
-
-            renderDungeonOnlinePlayers();
-
-        }
-    );
-
-
-    // ========================================================
-    // PRESENCE LEAVE
-    // ========================================================
-
-    dungeonChannel.on(
-        "presence",
-        {
-            event: "leave"
-        },
-        ({ leftPresences }) => {
-
-            const state =
-                dungeonChannel.presenceState();
-
-            (leftPresences || []).forEach(
-                presence => {
-
-                    const id =
-                        presence?.character_id;
-
-                    if (
-                        !id ||
-                        id === character.id
-                    ) {
-                        return;
-                    }
-
-                    let stillOnline = false;
-
-                    Object.values(state).forEach(
-                        presences => {
-
-                            if (
-                                (presences || []).some(
-                                    item =>
-                                        item?.character_id === id
-                                )
-                            ) {
-                                stillOnline = true;
-                            }
-
-                        }
-                    );
-
-                    if (stillOnline) {
-                        return;
-                    }
-
-                    const token =
-                        otherPlayerTokens.get(
-                            id
-                        );
-
-                    if (token) {
-                        token.remove();
-                    }
-
-                    otherPlayerTokens.delete(
-                        id
-                    );
-
-                    otherPlayers.delete(
-                        id
-                    );
-
-                }
-            );
-
-            renderDungeonOnlinePlayers();
-
-            if (healModeActive) {
-                updateHealTargets();
-            }
+            broadcastMyState();
 
         }
     );
@@ -5346,9 +5224,6 @@ active_combat_id:
 in_combat:
     !!character.active_combat_id,
 
-state_version:
-    Date.now(),
-
 online_at:
             new Date()
                 .toISOString()
@@ -5361,30 +5236,6 @@ online_at:
 // ============================================================
 // AGGIORNA PRESENCE
 // ============================================================
-
-function scheduleMyPresenceUpdate() {
-
-    if (dungeonPresenceUpdateTimer) {
-        clearTimeout(
-            dungeonPresenceUpdateTimer
-        );
-    }
-
-    dungeonPresenceUpdateTimer =
-        setTimeout(
-            () => {
-
-                dungeonPresenceUpdateTimer =
-                    null;
-
-                updateMyPresence();
-
-            },
-            DUNGEON_PRESENCE_UPDATE_DELAY_MS
-        );
-
-}
-
 
 async function updateMyPresence() {
 
@@ -5468,10 +5319,7 @@ active_combat_id:
     null,
 
 in_combat:
-    !!character.active_combat_id,
-
-state_version:
-    Date.now()
+    !!character.active_combat_id
 
             }
 
@@ -5803,10 +5651,39 @@ function syncOnlinePlayers() {
     );
 
 
-    // Non eliminiamo token durante un normale Presence sync.
-    // La rimozione avviene solo sull'evento Presence "leave".
-    // Questo evita che un sync transitorio faccia sparire
-    // giocatori che sono ancora effettivamente online.
+    // ========================================================
+    // RIMUOVE TOKEN DEI GIOCATORI USCITI
+    // ========================================================
+
+    for (
+        const [
+            id,
+            token
+        ]
+        of otherPlayerTokens
+    ) {
+
+        if (
+            !onlineIds.has(
+                id
+            )
+        ) {
+
+            token.remove();
+
+
+            otherPlayerTokens.delete(
+                id
+            );
+
+
+            otherPlayers.delete(
+                id
+            );
+
+        }
+
+    }
 
 
     // Se Cura è attiva, aggiorniamo
@@ -5878,28 +5755,6 @@ function updateRemotePlayer(
         ) || {};
 
 
-    const incomingVersion =
-        Number(
-            data.state_version
-        ) || 0;
-
-    const oldVersion =
-        Number(
-            oldData.state_version
-        ) || 0;
-
-
-    // Un Presence vecchio non deve riportare indietro
-    // un token già aggiornato da un Broadcast più recente.
-    if (
-        incomingVersion > 0 &&
-        oldVersion > 0 &&
-        incomingVersion < oldVersion
-    ) {
-        return;
-    }
-
-
     otherPlayers.set(
     data.character_id,
     {
@@ -5924,10 +5779,6 @@ function updateRemotePlayer(
 
         y:
             y,
-
-        state_version:
-            incomingVersion ||
-            oldVersion,
 
         current_hp:
             data.current_hp !== undefined
@@ -9814,13 +9665,12 @@ function updateRemoteTokensVisibility() {
         }
 
 
+        // DEBUG REALTIME:
+        // i token remoti restano sempre visibili.
+        // Se così il movimento funziona, il problema è nel filtro
+        // nebbia/visibleCells e non nel canale Supabase.
         token.style.display =
-            isCellCurrentlyVisible(
-                player.x,
-                player.y
-            )
-                ? "flex"
-                : "none";
+            "flex";
 
     }
 
@@ -11086,23 +10936,3 @@ window.addEventListener(
 // ============================================================
 // FINE DUNGEON.JS
 // ============================================================
-
-// ============================================================
-// CLEANUP REALTIME DUNGEON
-// ============================================================
-
-window.addEventListener(
-    "beforeunload",
-    () => {
-
-        if (dungeonPresenceUpdateTimer) {
-            clearTimeout(
-                dungeonPresenceUpdateTimer
-            );
-
-            dungeonPresenceUpdateTimer =
-                null;
-        }
-
-    }
-);
