@@ -8404,6 +8404,23 @@ async function tryConsumeTemporalCoinAfterDamage() {
         "La Moneta Temporale si frantuma: il tempo si riavvolge e torni al massimo di PF e PM."
     );
 
+// ============================================================
+// RIPRISTINO MOVIMENTO DOPO MONETA TEMPORALE
+// ============================================================
+
+eventLocked = false;
+
+movementQueue.length = 0;
+
+movementQueueRunning = false;
+
+// Evita che un elemento del popup appena chiuso
+// mantenga inutilmente il focus.
+if (
+    document.activeElement instanceof HTMLElement
+) {
+    document.activeElement.blur();
+}
 
     return true;
 
