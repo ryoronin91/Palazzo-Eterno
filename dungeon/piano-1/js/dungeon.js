@@ -693,10 +693,18 @@ document.addEventListener(
 
 
             // ------------------------------------------------
+            // SCAMBIO TRA GIOCATORI
+            // ------------------------------------------------
+
+            setupDungeonTradeUi();
+
+
+            // ------------------------------------------------
             // MULTIPLAYER
             // ------------------------------------------------
 
             await setupRealtimeMultiplayer();
+            await recoverDungeonTradeState();
 
 
             // ------------------------------------------------
@@ -3580,6 +3588,9 @@ if (
     // riscritta a ogni passo.
     broadcastMyState();
 
+    renderDungeonTradeNearbyPlayers();
+    refreshDungeonTradeAdjacencyState();
+
 
     // --------------------------------------------------------
     // SALVATAGGIO DATABASE DEBOUNCED
@@ -5020,6 +5031,8 @@ async function setupRealtimeMultiplayer() {
             // Presence serve solo a sapere chi è online.
             // Non ribroadcastiamo e non rimuoviamo token durante sync.
             syncOnlinePlayers();
+            renderDungeonTradeNearbyPlayers();
+            refreshDungeonTradeAdjacencyState();
 
         }
     );
@@ -5095,6 +5108,8 @@ async function setupRealtimeMultiplayer() {
             );
 
             renderDungeonOnlinePlayers();
+            renderDungeonTradeNearbyPlayers();
+            refreshDungeonTradeAdjacencyState();
         }
     );
 
@@ -5133,6 +5148,27 @@ async function setupRealtimeMultiplayer() {
                 data
             );
 
+        }
+    );
+
+
+    // ========================================================
+    // SCAMBIO TRA GIOCATORI
+    // ========================================================
+
+    dungeonChannel.on(
+        "broadcast",
+        { event: "dungeon-trade-request" },
+        message => {
+            handleDungeonTradeRequestBroadcast(message?.payload);
+        }
+    );
+
+    dungeonChannel.on(
+        "broadcast",
+        { event: "dungeon-trade-update" },
+        message => {
+            handleDungeonTradeUpdateBroadcast(message?.payload);
         }
     );
 
@@ -5877,6 +5913,9 @@ function updateRemotePlayer(
 updateRemoteTokensVisibility();
 
     renderDungeonOnlinePlayers();
+
+    renderDungeonTradeNearbyPlayers();
+    refreshDungeonTradeAdjacencyState();
 
     if (healModeActive) {
 
@@ -9850,6 +9889,827 @@ function fogCellKey(
     return `${x},${y}`;
 
 }
+
+// ============================================================
+// SCAMBIO TRA GIOCATORI - DUNGEON
+// Interfaccia fissa sotto le statistiche del personaggio.
+// Il click/tap sulla mappa resta sempre dedicato al movimento.
+// ============================================================
+
+let dungeonTradeCurrentId = null;
+let dungeonTradeInviteId = null;
+let dungeonTradeBusy = false;
+let dungeonTradePollTimer = null;
+let dungeonTradeSelectedCharacterId = null;
+
+function setupDungeonTradeUi() {
+    document.getElementById("dungeon-trade-add-item")
+        ?.addEventListener("click", addSelectedDungeonTradeItem);
+
+    document.getElementById("dungeon-trade-confirm")
+        ?.addEventListener("click", confirmCurrentDungeonTrade);
+
+    document.getElementById("dungeon-trade-cancel")
+        ?.addEventListener("click", cancelCurrentDungeonTrade);
+
+    document.getElementById("dungeon-trade-accept")
+        ?.addEventListener("click", acceptDungeonTradeInvite);
+
+    document.getElementById("dungeon-trade-decline")
+        ?.addEventListener("click", declineDungeonTradeInvite);
+
+    document.getElementById("dungeon-trade-item-select")
+        ?.addEventListener("change", updateDungeonTradeQuantityLimit);
+
+    renderDungeonTradeNearbyPlayers();
+    resetDungeonTradePanel();
+}
+
+function isDungeonTradeInteractionOpen() {
+    return false;
+}
+
+function isDungeonTradeAdjacent(player) {
+    if (!player) return false;
+
+    const distance =
+        Math.abs(Number(playerX) - Number(player.x)) +
+        Math.abs(Number(playerY) - Number(player.y));
+
+    return distance === 1;
+}
+
+function getAdjacentDungeonTradePlayers() {
+    return Array.from(otherPlayers.values())
+        .filter(player => {
+            if (!player?.character_id) return false;
+            if (player.in_combat || player.active_combat_id) return false;
+            return isDungeonTradeAdjacent(player);
+        })
+        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
+}
+
+function renderDungeonTradeNearbyPlayers() {
+    const container = document.getElementById("dungeon-trade-nearby-players");
+    if (!container) return;
+
+    const players = getAdjacentDungeonTradePlayers();
+    container.replaceChildren();
+
+    if (!players.length) {
+        const empty = document.createElement("div");
+        empty.className = "dungeon-trade-inline-empty";
+        empty.textContent = "Nessun giocatore adiacente.";
+        container.appendChild(empty);
+        return;
+    }
+
+    players.forEach(player => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "dungeon-trade-nearby-player";
+
+        if (player.character_id === dungeonTradeSelectedCharacterId) {
+            button.classList.add("selected");
+        }
+
+        const image = document.createElement("img");
+        image.src = "../../immagini/token/" + (player.token || "token_1.png");
+        image.alt = player.name || "Personaggio";
+
+        const text = document.createElement("span");
+        const name = document.createElement("strong");
+        name.textContent = player.name || "Avventuriero";
+        const state = document.createElement("small");
+
+        if (dungeonTradeInviteId && player.character_id === dungeonTradeSelectedCharacterId) {
+            state.textContent = "Richiesta ricevuta";
+        } else if (dungeonTradeCurrentId && player.character_id === dungeonTradeSelectedCharacterId) {
+            state.textContent = "Scambio selezionato";
+        } else {
+            state.textContent = "Adiacente";
+        }
+
+        text.append(name, state);
+        button.append(image, text);
+
+        button.addEventListener("click", () => selectDungeonTradePlayer(player.character_id));
+        container.appendChild(button);
+    });
+}
+
+async function selectDungeonTradePlayer(characterId) {
+    if (dungeonTradeBusy) return;
+
+    const player = otherPlayers.get(characterId);
+    if (!player || !isDungeonTradeAdjacent(player)) {
+        setMessage("Il personaggio non è più adiacente.");
+        renderDungeonTradeNearbyPlayers();
+        return;
+    }
+
+    if (player.in_combat || player.active_combat_id) {
+        setMessage("Non puoi scambiare con un personaggio in combattimento.");
+        return;
+    }
+
+    // Se esiste già uno scambio con questo giocatore, mostralo.
+    const existing = await findDungeonTradeWithCharacter(characterId);
+    if (existing) {
+        dungeonTradeSelectedCharacterId = characterId;
+
+        if (existing.status === "pending" && existing.character_b_id === character.id) {
+            dungeonTradeInviteId = existing.id;
+            dungeonTradeCurrentId = null;
+            showDungeonTradePendingInvite(existing);
+        } else {
+            dungeonTradeInviteId = null;
+            dungeonTradeCurrentId = existing.id;
+            await refreshDungeonTradeState();
+            startDungeonTradePolling();
+        }
+
+        renderDungeonTradeNearbyPlayers();
+        return;
+    }
+
+    if (dungeonTradeCurrentId || dungeonTradeInviteId) {
+        setMessage("Hai già uno scambio in corso. Annullalo prima di iniziarne un altro.");
+        return;
+    }
+
+    await openDungeonTradeForRemotePlayer(characterId);
+}
+
+async function findDungeonTradeWithCharacter(characterId) {
+    if (!character) return null;
+
+    const { data, error } = await db
+        .from("player_trades")
+        .select("id, character_a_id, character_b_id, status, a_confirmed, b_confirmed")
+        .or(`and(character_a_id.eq.${character.id},character_b_id.eq.${characterId}),and(character_a_id.eq.${characterId},character_b_id.eq.${character.id})`)
+        .in("status", ["pending", "active"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        console.warn("Errore ricerca scambio esistente:", error);
+        return null;
+    }
+
+    return data || null;
+}
+
+async function openDungeonTradeForRemotePlayer(characterId) {
+    const player = otherPlayers.get(characterId);
+    if (!player || !isDungeonTradeAdjacent(player)) {
+        setMessage("Devi essere adiacente al personaggio per proporre uno scambio.");
+        return;
+    }
+
+    dungeonTradeBusy = true;
+    dungeonTradeSelectedCharacterId = characterId;
+
+    try {
+        const { data, error } = await db.rpc(
+            "create_player_trade",
+            { p_target_character_id: characterId }
+        );
+
+        if (error) throw error;
+
+        dungeonTradeCurrentId = data;
+        dungeonTradeInviteId = null;
+
+        setDungeonTradePanelEnabled(true);
+        setDungeonTradeStatus(`Richiesta inviata a ${player.name}. In attesa che accetti...`);
+        setDungeonTradeControlsForStatus("pending-sent");
+        clearDungeonTradeOffers();
+
+        await sendDungeonTradeBroadcast("dungeon-trade-request", {
+            trade_id: data,
+            from_character_id: character.id,
+            from_name: character.nome || "Avventuriero",
+            to_character_id: characterId
+        });
+
+        startDungeonTradePolling();
+        renderDungeonTradeNearbyPlayers();
+    } catch (error) {
+        console.error("Errore richiesta scambio:", error);
+        dungeonTradeCurrentId = null;
+        setDungeonTradeStatus(error?.message || "Impossibile avviare lo scambio.", true);
+        setDungeonTradeControlsForStatus("idle");
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+async function sendDungeonTradeBroadcast(event, payload) {
+    if (!dungeonChannel || !realtimeReady) return;
+
+    try {
+        await dungeonChannel.send({ type: "broadcast", event, payload });
+    } catch (error) {
+        console.warn("Broadcast scambio non riuscito:", error);
+    }
+}
+
+function handleDungeonTradeRequestBroadcast(payload) {
+    if (!payload || payload.to_character_id !== character?.id) return;
+
+    const remote = otherPlayers.get(payload.from_character_id);
+    if (!remote || !isDungeonTradeAdjacent(remote)) return;
+
+    if (dungeonTradeCurrentId || dungeonTradeInviteId) return;
+
+    dungeonTradeInviteId = payload.trade_id;
+    dungeonTradeSelectedCharacterId = payload.from_character_id;
+    showDungeonTradePendingInvite({ id: payload.trade_id });
+    renderDungeonTradeNearbyPlayers();
+}
+
+function showDungeonTradePendingInvite() {
+    const remote = otherPlayers.get(dungeonTradeSelectedCharacterId);
+    setDungeonTradePanelEnabled(true);
+    setDungeonTradeStatus(`${remote?.name || "Un giocatore"} vuole scambiare con te.`);
+    setDungeonTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+    setDungeonTradeControlsForStatus("pending-received");
+    clearDungeonTradeOffers();
+}
+
+async function acceptDungeonTradeInvite() {
+    if (!dungeonTradeInviteId || dungeonTradeBusy) return;
+
+    dungeonTradeBusy = true;
+    const tradeId = dungeonTradeInviteId;
+
+    try {
+        const { error } = await db.rpc("accept_player_trade", { p_trade_id: tradeId });
+        if (error) throw error;
+
+        dungeonTradeInviteId = null;
+        dungeonTradeCurrentId = tradeId;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: tradeId,
+            kind: "accepted"
+        });
+
+        await refreshDungeonTradeState();
+        startDungeonTradePolling();
+    } catch (error) {
+        console.error("Errore accettazione scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile accettare lo scambio.", true);
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+async function declineDungeonTradeInvite() {
+    if (!dungeonTradeInviteId || dungeonTradeBusy) return;
+
+    dungeonTradeBusy = true;
+    const tradeId = dungeonTradeInviteId;
+
+    try {
+        const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
+        if (error) throw error;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: tradeId,
+            kind: "cancelled"
+        });
+
+        resetDungeonTradeState("Richiesta rifiutata.");
+    } catch (error) {
+        console.warn("Errore rifiuto scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile rifiutare la richiesta.", true);
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+function setDungeonTradePanelEnabled(enabled) {
+    document.getElementById("dungeon-trade-inline-panel")
+        ?.classList.toggle("disabled", !enabled);
+}
+
+function setDungeonTradeOtherName(name) {
+    const el = document.getElementById("dungeon-trade-other-name");
+    if (el) el.textContent = name || "ALTRO GIOCATORE";
+}
+
+function setDungeonTradeControlsForStatus(status) {
+    const select = document.getElementById("dungeon-trade-item-select");
+    const qty = document.getElementById("dungeon-trade-item-quantity");
+    const add = document.getElementById("dungeon-trade-add-item");
+    const confirm = document.getElementById("dungeon-trade-confirm");
+    const cancel = document.getElementById("dungeon-trade-cancel");
+    const accept = document.getElementById("dungeon-trade-accept");
+    const decline = document.getElementById("dungeon-trade-decline");
+
+    const active = status === "active";
+    const pendingReceived = status === "pending-received";
+    const hasTrade = status !== "idle";
+
+    if (select) select.disabled = !active;
+    if (qty) qty.disabled = !active;
+    if (add) add.disabled = !active;
+    if (confirm) confirm.disabled = !active;
+    if (cancel) cancel.disabled = !hasTrade;
+    if (accept) accept.hidden = !pendingReceived;
+    if (decline) decline.hidden = !pendingReceived;
+
+    if (active) populateDungeonTradeInventorySelect();
+}
+
+function clearDungeonTradeOffers() {
+    ["dungeon-trade-my-offer", "dungeon-trade-other-offer"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '<div class="dungeon-trade-empty">Nessun oggetto offerto.</div>';
+        }
+    });
+
+    ["dungeon-trade-my-confirmed", "dungeon-trade-other-confirmed"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = "NON CONFERMATO";
+            el.classList.remove("confirmed");
+        }
+    });
+}
+
+function resetDungeonTradePanel() {
+    setDungeonTradePanelEnabled(false);
+    setDungeonTradeOtherName("ALTRO GIOCATORE");
+    setDungeonTradeStatus("Seleziona un giocatore adiacente.");
+    setDungeonTradeControlsForStatus("idle");
+    clearDungeonTradeOffers();
+
+    const select = document.getElementById("dungeon-trade-item-select");
+    if (select) {
+        select.replaceChildren();
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Scegli un oggetto...";
+        select.appendChild(option);
+    }
+}
+
+function populateDungeonTradeInventorySelect() {
+    const select = document.getElementById("dungeon-trade-item-select");
+    if (!select) return;
+
+    const previous = select.value;
+    select.replaceChildren();
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Scegli un oggetto...";
+    select.appendChild(placeholder);
+
+    characterInventory
+        .filter(entry => entry?.item && Number(entry.quantity) > 0)
+        .sort((a, b) => String(a.item.name).localeCompare(String(b.item.name), "it"))
+        .forEach(entry => {
+            const option = document.createElement("option");
+            option.value = entry.id;
+            option.dataset.quantity = String(entry.quantity);
+            option.textContent = `${entry.item.name} ×${entry.quantity}` +
+                (entry.equipped_slot ? ` · equipaggiato (${entry.equipped_slot})` : "");
+            select.appendChild(option);
+        });
+
+    if ([...select.options].some(option => option.value === previous)) {
+        select.value = previous;
+    }
+
+    updateDungeonTradeQuantityLimit();
+}
+
+function updateDungeonTradeQuantityLimit() {
+    const select = document.getElementById("dungeon-trade-item-select");
+    const input = document.getElementById("dungeon-trade-item-quantity");
+    if (!select || !input) return;
+
+    const option = select.selectedOptions?.[0];
+    const entry = characterInventory.find(row => row.id === select.value);
+    const max = Number(option?.dataset?.quantity) || 1;
+
+    input.max = String(max);
+    input.value = String(Math.min(Math.max(1, Number(input.value) || 1), max));
+
+    if (entry?.equipped_slot) {
+        input.value = String(entry.quantity);
+        input.disabled = true;
+    } else {
+        input.disabled = !select.value || !dungeonTradeCurrentId;
+    }
+}
+
+async function addSelectedDungeonTradeItem() {
+    if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
+
+    const select = document.getElementById("dungeon-trade-item-select");
+    const input = document.getElementById("dungeon-trade-item-quantity");
+
+    if (!select?.value) {
+        setDungeonTradeStatus("Scegli prima un oggetto da offrire.", true);
+        return;
+    }
+
+    const quantity = Number(input?.value) || 1;
+    dungeonTradeBusy = true;
+
+    try {
+        const { error } = await db.rpc("add_player_trade_item", {
+            p_trade_id: dungeonTradeCurrentId,
+            p_inventory_id: select.value,
+            p_quantity: quantity
+        });
+        if (error) throw error;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: dungeonTradeCurrentId,
+            kind: "changed"
+        });
+        await refreshDungeonTradeState();
+    } catch (error) {
+        console.error("Errore aggiunta oggetto allo scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile aggiungere l'oggetto.", true);
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+async function removeDungeonTradeItem(tradeItemId) {
+    if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
+    dungeonTradeBusy = true;
+
+    try {
+        const { error } = await db.rpc("remove_player_trade_item", {
+            p_trade_item_id: tradeItemId
+        });
+        if (error) throw error;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: dungeonTradeCurrentId,
+            kind: "changed"
+        });
+        await refreshDungeonTradeState();
+    } catch (error) {
+        console.error("Errore rimozione oggetto dallo scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile rimuovere l'oggetto.", true);
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+async function refreshDungeonTradeState() {
+    if (!dungeonTradeCurrentId || !character) return;
+
+    const { data: trade, error: tradeError } = await db
+        .from("player_trades")
+        .select("id, character_a_id, character_b_id, status, a_confirmed, b_confirmed")
+        .eq("id", dungeonTradeCurrentId)
+        .maybeSingle();
+
+    if (tradeError) {
+        console.warn("Errore lettura scambio:", tradeError);
+        return;
+    }
+
+    if (!trade) {
+        resetDungeonTradeState("Scambio non più disponibile.");
+        return;
+    }
+
+    if (trade.status === "cancelled") {
+        resetDungeonTradeState("Lo scambio è stato annullato.");
+        return;
+    }
+
+    if (trade.status === "completed") {
+        await loadCharacterEquipment();
+        resetDungeonTradeState("Scambio completato.");
+        return;
+    }
+
+    const otherCharacterId = trade.character_a_id === character.id
+        ? trade.character_b_id
+        : trade.character_a_id;
+
+    dungeonTradeSelectedCharacterId = otherCharacterId;
+    const remote = otherPlayers.get(otherCharacterId);
+    setDungeonTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+    setDungeonTradePanelEnabled(true);
+
+    if (trade.status === "pending") {
+        if (trade.character_b_id === character.id) {
+            dungeonTradeInviteId = trade.id;
+            dungeonTradeCurrentId = null;
+            showDungeonTradePendingInvite(trade);
+            renderDungeonTradeNearbyPlayers();
+            return;
+        }
+
+        setDungeonTradeControlsForStatus("pending-sent");
+        setDungeonTradeStatus(`Richiesta inviata a ${remote?.name || "giocatore"}. In attesa che accetti...`);
+        renderDungeonTradeNearbyPlayers();
+        return;
+    }
+
+    dungeonTradeInviteId = null;
+    setDungeonTradeControlsForStatus("active");
+
+    if (remote && !isDungeonTradeAdjacent(remote)) {
+        setDungeonTradeStatus("Vi siete allontanati: riavvicinatevi per confermare.", true);
+    }
+
+    // Dettagli offerta via RPC server-side: il partecipante vede i nomi
+    // reali senza ottenere accesso diretto all'inventario dell'altro PG.
+    const { data: tradeItemDetails, error: itemsError } = await db.rpc(
+        "get_player_trade_items_details",
+        { p_trade_id: trade.id }
+    );
+
+    if (itemsError) {
+        console.warn("Errore lettura dettagli oggetti scambio:", itemsError);
+        return;
+    }
+
+    const tradeItems = (tradeItemDetails || []).map(row => ({
+        id: row.trade_item_id,
+        owner_character_id: row.owner_character_id,
+        inventory_id: row.inventory_id,
+        quantity: row.trade_quantity
+    }));
+
+    const inventoryById = new Map(
+        (tradeItemDetails || []).map(row => [
+            row.inventory_id,
+            {
+                id: row.inventory_id,
+                item_id: row.item_id,
+                quantity: row.inventory_quantity,
+                equipped_slot: row.equipped_slot,
+                item: {
+                    id: row.item_id,
+                    name: row.item_name,
+                    item_type: row.item_type
+                }
+            }
+        ])
+    );
+
+    renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote);
+    renderDungeonTradeNearbyPlayers();
+}
+
+function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
+    const mine = document.getElementById("dungeon-trade-my-offer");
+    const theirs = document.getElementById("dungeon-trade-other-offer");
+    const confirmButton = document.getElementById("dungeon-trade-confirm");
+
+    setDungeonTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+
+    const render = (container, ownerId, editable) => {
+        if (!container) return;
+        container.replaceChildren();
+
+        const rows = tradeItems.filter(row => row.owner_character_id === ownerId);
+        if (!rows.length) {
+            const empty = document.createElement("div");
+            empty.className = "dungeon-trade-empty";
+            empty.textContent = "Nessun oggetto offerto.";
+            container.appendChild(empty);
+            return;
+        }
+
+        rows.forEach(row => {
+            const inv = inventoryById.get(row.inventory_id);
+            const card = document.createElement("div");
+            card.className = "dungeon-trade-offer-row";
+
+            const label = document.createElement("span");
+            label.textContent = `${inv?.item?.name || "Oggetto"} ×${row.quantity}`;
+            card.appendChild(label);
+
+            if (editable) {
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "dungeon-trade-remove";
+                remove.textContent = "×";
+                remove.title = "Rimuovi dall'offerta";
+                remove.addEventListener("click", () => removeDungeonTradeItem(row.id));
+                card.appendChild(remove);
+            }
+
+            container.appendChild(card);
+        });
+    };
+
+    const myConfirmed = trade.character_a_id === character.id ? trade.a_confirmed : trade.b_confirmed;
+    const otherConfirmed = trade.character_a_id === character.id ? trade.b_confirmed : trade.a_confirmed;
+
+    render(mine, character.id, true);
+    render(theirs,
+        trade.character_a_id === character.id ? trade.character_b_id : trade.character_a_id,
+        false
+    );
+
+    const myState = document.getElementById("dungeon-trade-my-confirmed");
+    const otherState = document.getElementById("dungeon-trade-other-confirmed");
+
+    if (myState) {
+        myState.textContent = myConfirmed ? "CONFERMATO ✓" : "NON CONFERMATO";
+        myState.classList.toggle("confirmed", !!myConfirmed);
+    }
+
+    if (otherState) {
+        otherState.textContent = otherConfirmed ? "CONFERMATO ✓" : "NON CONFERMATO";
+        otherState.classList.toggle("confirmed", !!otherConfirmed);
+    }
+
+    if (confirmButton) {
+        confirmButton.disabled = !!myConfirmed;
+        confirmButton.textContent = myConfirmed ? "CONFERMATO" : "CONFERMA";
+    }
+
+    if (myConfirmed && !otherConfirmed) {
+        setDungeonTradeStatus("Confermato. In attesa dell'altro giocatore...");
+    } else if (!myConfirmed && otherConfirmed) {
+        setDungeonTradeStatus("L'altro giocatore ha confermato. Controlla l'offerta e conferma.");
+    } else if (!(remote && !isDungeonTradeAdjacent(remote))) {
+        setDungeonTradeStatus("Aggiungi gli oggetti da offrire e conferma quando sei pronto.");
+    }
+}
+
+async function confirmCurrentDungeonTrade() {
+    if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
+
+    const tradeId = dungeonTradeCurrentId;
+    dungeonTradeBusy = true;
+
+    try {
+        const { data, error } = await db.rpc("confirm_player_trade", {
+            p_trade_id: tradeId
+        });
+        if (error) throw error;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: tradeId,
+            kind: data?.completed ? "completed" : "confirmed"
+        });
+
+        if (data?.completed) {
+            await loadCharacterEquipment();
+            resetDungeonTradeState("Scambio completato.");
+            return;
+        }
+
+        await refreshDungeonTradeState();
+    } catch (error) {
+        console.error("Errore conferma scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile confermare lo scambio.", true);
+        await refreshDungeonTradeState();
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+async function cancelCurrentDungeonTrade() {
+    const tradeId = dungeonTradeCurrentId || dungeonTradeInviteId;
+    if (!tradeId || dungeonTradeBusy) {
+        resetDungeonTradeState();
+        return;
+    }
+
+    dungeonTradeBusy = true;
+
+    try {
+        const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
+        if (error) throw error;
+
+        await sendDungeonTradeBroadcast("dungeon-trade-update", {
+            trade_id: tradeId,
+            kind: "cancelled"
+        });
+
+        resetDungeonTradeState("Scambio annullato.");
+    } catch (error) {
+        console.error("Errore annullamento scambio:", error);
+        setDungeonTradeStatus(error?.message || "Impossibile annullare lo scambio.", true);
+    } finally {
+        dungeonTradeBusy = false;
+    }
+}
+
+function handleDungeonTradeUpdateBroadcast(payload) {
+    if (!payload?.trade_id) return;
+
+    if (payload.kind === "cancelled") {
+        if (payload.trade_id === dungeonTradeCurrentId || payload.trade_id === dungeonTradeInviteId) {
+            resetDungeonTradeState("Lo scambio è stato annullato dall'altro giocatore.");
+        }
+        return;
+    }
+
+    if (payload.trade_id === dungeonTradeCurrentId) {
+        refreshDungeonTradeState();
+        return;
+    }
+
+    if (payload.trade_id === dungeonTradeInviteId && payload.kind === "accepted") {
+        dungeonTradeCurrentId = dungeonTradeInviteId;
+        dungeonTradeInviteId = null;
+        refreshDungeonTradeState();
+        startDungeonTradePolling();
+    }
+}
+
+function setDungeonTradeStatus(text, error = false) {
+    const status = document.getElementById("dungeon-trade-status");
+    if (!status) return;
+    status.textContent = text || "";
+    status.classList.toggle("error", !!error);
+}
+
+function startDungeonTradePolling() {
+    stopDungeonTradePolling();
+    dungeonTradePollTimer = window.setInterval(() => refreshDungeonTradeState(), 1500);
+}
+
+function stopDungeonTradePolling() {
+    if (dungeonTradePollTimer) {
+        clearInterval(dungeonTradePollTimer);
+        dungeonTradePollTimer = null;
+    }
+}
+
+function resetDungeonTradeState(message = "") {
+    dungeonTradeCurrentId = null;
+    dungeonTradeInviteId = null;
+    dungeonTradeSelectedCharacterId = null;
+    stopDungeonTradePolling();
+    resetDungeonTradePanel();
+    renderDungeonTradeNearbyPlayers();
+    if (message) setMessage(message);
+}
+
+function refreshDungeonTradeAdjacencyState() {
+    if (!dungeonTradeSelectedCharacterId) return;
+    const remote = otherPlayers.get(dungeonTradeSelectedCharacterId);
+    if (!remote || !isDungeonTradeAdjacent(remote)) {
+        if (dungeonTradeCurrentId || dungeonTradeInviteId) {
+            setDungeonTradeStatus("Il giocatore non è più adiacente.", true);
+        }
+    }
+}
+
+async function recoverDungeonTradeState() {
+    if (!character) return;
+
+    try {
+        const { data, error } = await db
+            .from("player_trades")
+            .select("id, character_a_id, character_b_id, status, a_confirmed, b_confirmed, created_at")
+            .or(`character_a_id.eq.${character.id},character_b_id.eq.${character.id}`)
+            .in("status", ["pending", "active"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error || !data) {
+            renderDungeonTradeNearbyPlayers();
+            return;
+        }
+
+        const otherId = data.character_a_id === character.id
+            ? data.character_b_id
+            : data.character_a_id;
+
+        dungeonTradeSelectedCharacterId = otherId;
+
+        if (data.status === "pending" && data.character_b_id === character.id) {
+            dungeonTradeInviteId = data.id;
+            showDungeonTradePendingInvite(data);
+        } else {
+            dungeonTradeCurrentId = data.id;
+            await refreshDungeonTradeState();
+            startDungeonTradePolling();
+        }
+
+        renderDungeonTradeNearbyPlayers();
+    } catch (error) {
+        console.warn("Impossibile recuperare uno scambio precedente:", error);
+    }
+}
+
+
 
 // ============================================================
 // NOTE
