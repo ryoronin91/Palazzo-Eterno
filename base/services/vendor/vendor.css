@@ -2036,3 +2036,38 @@ input {
             auto;
     }
 }
+
+
+/* ============================================================
+   VENDOR - ACQUISTO MULTIPLO x1 / x5 / x10
+============================================================ */
+
+.vendor-buy-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.vendor-buy-group .vendor-buy-button {
+    min-width: 36px;
+    padding: 7px 6px;
+}
+
+.vendor-buy-group .vendor-buy-button:disabled {
+    opacity: 0.34;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1050px) {
+    .vendor-buy-group {
+        gap: 3px;
+    }
+
+    .vendor-buy-group .vendor-buy-button {
+        min-width: 32px;
+        padding-left: 5px;
+        padding-right: 5px;
+        font-size: 9px;
+    }
+}

@@ -798,16 +798,45 @@ function renderVendorItems() {
                                     ${price}
                                 </div>
 
-                                <button
-                                    class="merchant-button vendor-buy-button"
-                                    type="button"
-                                    data-buy-item-id="${escapeVendorHtml(
-                                        row.item.id
-                                    )}"
-                                    data-buy-price="${price}"
-                                >
-                                    COMPRA
-                                </button>
+                                <div class="vendor-buy-group">
+
+                                    <button
+                                        class="merchant-button vendor-buy-button"
+                                        type="button"
+                                        data-buy-item-id="${escapeVendorHtml(
+                                            row.item.id
+                                        )}"
+                                        data-buy-price="${price}"
+                                        data-buy-quantity="1"
+                                    >
+                                        ×1
+                                    </button>
+
+                                    <button
+                                        class="merchant-button vendor-buy-button"
+                                        type="button"
+                                        data-buy-item-id="${escapeVendorHtml(
+                                            row.item.id
+                                        )}"
+                                        data-buy-price="${price}"
+                                        data-buy-quantity="5"
+                                    >
+                                        ×5
+                                    </button>
+
+                                    <button
+                                        class="merchant-button vendor-buy-button"
+                                        type="button"
+                                        data-buy-item-id="${escapeVendorHtml(
+                                            row.item.id
+                                        )}"
+                                        data-buy-price="${price}"
+                                        data-buy-quantity="10"
+                                    >
+                                        ×10
+                                    </button>
+
+                                </div>
 
                             </article>
                         `;
@@ -818,6 +847,49 @@ function renderVendorItems() {
 
     container.innerHTML =
         html;
+
+    const goldEntry =
+        characterInventory.find(
+            entry =>
+                entry?.item?.id ===
+                "moneta_oro"
+        );
+
+    const gold =
+        Math.max(
+            0,
+            Number(
+                goldEntry?.quantity
+            ) || 0
+        );
+
+    container
+        .querySelectorAll(
+            ".vendor-buy-button"
+        )
+        .forEach(
+            button => {
+                const price =
+                    Math.max(
+                        0,
+                        Number(
+                            button.dataset.buyPrice
+                        ) || 0
+                    );
+
+                const quantity =
+                    Math.max(
+                        1,
+                        Number(
+                            button.dataset.buyQuantity
+                        ) || 1
+                    );
+
+                button.disabled =
+                    gold <
+                    price * quantity;
+            }
+        );
 }
 
 function getVendorInventoryItemIcon(
@@ -1573,21 +1645,52 @@ async function buyVendorItem(
     const itemId =
         button.dataset.buyItemId;
 
-    const price =
-        Number(
-            button.dataset.buyPrice
-        ) || 0;
+    const unitPrice =
+        Math.max(
+            0,
+            Number(
+                button.dataset.buyPrice
+            ) || 0
+        );
+
+    const buyQuantity =
+        Math.max(
+            1,
+            Math.floor(
+                Number(
+                    button.dataset.buyQuantity
+                ) || 1
+            )
+        );
 
     if (!itemId) {
         return;
     }
 
+    const totalPrice =
+        unitPrice *
+        buyQuantity;
+
+    const row =
+        button.closest(
+            ".vendor-stock-item"
+        );
+
+    const rowButtons =
+        row?.querySelectorAll(
+            ".vendor-buy-button"
+        ) || [];
+
     const originalText =
         button.textContent;
 
     try {
-        button.disabled =
-            true;
+        rowButtons.forEach(
+            currentButton => {
+                currentButton.disabled =
+                    true;
+            }
+        );
 
         button.textContent =
             "...";
@@ -1603,7 +1706,10 @@ async function buyVendorItem(
                         VENDOR_ID,
 
                     p_item_id:
-                        itemId
+                        itemId,
+
+                    p_quantity:
+                        buyQuantity
                 }
             );
 
@@ -1612,6 +1718,7 @@ async function buyVendorItem(
         }
 
         await refreshVendorInventory();
+        renderVendorItems();
 
         const item =
             vendorItems.find(
@@ -1625,7 +1732,9 @@ async function buyVendorItem(
             itemId;
 
         const tradeReply =
-            `Affare fatto. ${itemName} è tuo per ${price} monete d'oro.`;
+            buyQuantity === 1
+                ? `Affare fatto. ${itemName} è tuo per ${totalPrice} monete d'oro.`
+                : `Affare fatto. ${buyQuantity} × ${itemName} sono tuoi per ${totalPrice} monete d'oro.`;
 
         setVendorDialogue(
             tradeReply
@@ -1637,7 +1746,7 @@ async function buyVendorItem(
                     "user",
 
                 content:
-                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato ${itemName} per ${price} monete d'oro.`
+                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato ${buyQuantity} × ${itemName} per ${totalPrice} monete d'oro.`
             },
             {
                 role:
@@ -1670,11 +1779,10 @@ async function buyVendorItem(
         );
 
     } finally {
-        button.disabled =
-            false;
-
-        button.textContent =
-            originalText;
+        if (button?.isConnected) {
+            button.textContent =
+                originalText;
+        }
     }
 }
 
