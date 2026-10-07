@@ -413,8 +413,15 @@ async function refreshTrainingState() {
 function renderTraining() {
     if (!state) return;
 
+    const spent = Math.max(0, Number(state.training_points_spent) || 0);
+    const trainingCap = Math.max(0, Number(state.training_cap) || 27);
+    const maxTrainingPoints = Math.max(trainingCap, Number(state.max_training_points) || 164);
+    const serviceLevel = Math.max(1, Math.min(6, Number(state.service_level) || 1));
+    const nextLevelPoints = Math.max(0, Number(state.next_level_points) || 0);
+
     setText("score", String(state.score ?? 0));
-    setText("spent", String(state.training_points_spent ?? 0));
+    setText("spent", String(spent));
+    setText("training-cap", String(trainingCap));
     updateGoldHeader();
 
     const nextTraining = state.next_training;
@@ -427,8 +434,28 @@ function renderTraining() {
                 Score richiesto: <strong>${nextTraining.required_score}</strong><br>
                 Costo: <strong>${nextTraining.gold_cost} oro</strong>
             </div>`;
+    } else if (spent >= maxTrainingPoints) {
+        nextBox.innerHTML = `
+            <div class="next-box">
+                <strong>ALLENAMENTO COMPLETATO</strong><br>
+                Hai acquistato tutti i ${maxTrainingPoints} punti disponibili.
+            </div>`;
+    } else if (spent >= trainingCap) {
+        const unlockText = serviceLevel < 6
+            ? `Potenzia l'Addestratore al LV ${serviceLevel + 1} per sbloccare altri ${nextLevelPoints || 27} punti.`
+            : "Hai raggiunto il limite previsto per questo livello del servizio.";
+
+        nextBox.innerHTML = `
+            <div class="next-box">
+                <strong>LIMITE LV ${serviceLevel} RAGGIUNTO</strong><br>
+                Hai utilizzato tutti i ${trainingCap} punti sbloccati.<br>
+                ${unlockText}
+            </div>`;
     } else {
-        nextBox.innerHTML = `<div class="next-box"><strong>ALLENAMENTO COMPLETATO</strong><br>Hai acquistato tutti i 164 punti disponibili.</div>`;
+        nextBox.innerHTML = `
+            <div class="next-box">
+                <strong>ALLENAMENTO NON DISPONIBILE</strong>
+            </div>`;
     }
 
     const statsBox = document.getElementById("stats");
