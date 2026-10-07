@@ -1124,8 +1124,15 @@ function renderCombatEntityList(
                     entity.current_pm ?? 0
                 }/${
                     entity.max_pm ?? 0
-                } · MOV ${
-                    entity.movement_remaining ?? 0
+                }${
+                    entity.entity_type ===
+                    "enemy"
+
+                        ? ""
+
+                        : ` · MOV ${
+                            entity.movement_remaining ?? 0
+                        }`
                 }`;
 
 
