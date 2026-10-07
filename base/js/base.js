@@ -166,6 +166,11 @@ let characterInventory = [];
 let characterAbilities = [];
 let baseActionsReady = false;
 
+// Cura usa la stessa RPC del dungeon.
+let baseHealModeActive = false;
+let baseHealRangeElements = [];
+let baseHealInProgress = false;
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -505,6 +510,32 @@ function hasBaseAbility(abilityId) {
     );
 }
 
+function getBaseHealAbilityEntry() {
+    return characterAbilities.find(
+        entry =>
+            entry.ability_id === "cura" ||
+            entry.ability?.id === "cura"
+    ) || null;
+}
+
+function getBaseHealPmCost() {
+    return Math.max(
+        0,
+        Number(
+            getBaseHealAbilityEntry()?.ability?.pm_cost
+        ) || 2
+    );
+}
+
+function updateBaseHealCostLabel() {
+    const button = document.getElementById("dungeon-heal-button");
+    const label = button?.querySelector("small");
+
+    if (label) {
+        label.textContent = `${getBaseHealPmCost()} PM`;
+    }
+}
+
 function updateBaseAbilityVisibility() {
     const healButton =
         document.getElementById("dungeon-heal-button");
@@ -514,6 +545,7 @@ function updateBaseAbilityVisibility() {
             hasBaseAbility("cura") ? "" : "none";
     }
 
+    updateBaseHealCostLabel();
     updateBaseActionAvailability();
 }
 
@@ -538,12 +570,16 @@ function setupBaseActions() {
         document.getElementById("dungeon-mana-potion-button");
 
     if (healButton) {
-        healButton.addEventListener("click", async () => {
+        healButton.addEventListener("click", () => {
             if (healButton.disabled) {
                 return;
             }
 
-            await useBaseHeal();
+            if (baseHealModeActive) {
+                deactivateBaseHealMode();
+            } else {
+                activateBaseHealMode();
+            }
         });
     }
 
@@ -553,6 +589,7 @@ function setupBaseActions() {
                 return;
             }
 
+            deactivateBaseHealMode();
             await useBasePotion("health");
         });
     }
@@ -563,6 +600,7 @@ function setupBaseActions() {
                 return;
             }
 
+            deactivateBaseHealMode();
             await useBasePotion("mana");
         });
     }
@@ -628,10 +666,12 @@ function updateBaseActionAvailability() {
         document.getElementById("dungeon-heal-button");
 
     if (healButton) {
+        const healPmCost = getBaseHealPmCost();
+
         healButton.disabled =
             !hasBaseAbility("cura") ||
-            currentPM < 2 ||
-            currentPF >= stats.maxHealth;
+            currentPM < healPmCost ||
+            baseHealInProgress;
     }
 
     const healthButton =
@@ -752,67 +792,255 @@ async function useBasePotion(type) {
     }
 }
 
-async function useBaseHeal() {
+// ============================================================
+// CURA CON TARGETING - RPC CONDIVISA CON IL DUNGEON
+// ============================================================
+
+function activateBaseHealMode() {
     if (!character || !hasBaseAbility("cura")) {
         setMessage("Il personaggio non conosce Cura.");
         return;
     }
 
     const stats = getCalculatedStats();
-
-    const currentPF =
-        character.current_hp === null ||
-        character.current_hp === undefined
-            ? stats.maxHealth
-            : Number(character.current_hp);
-
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
             ? stats.maxMana
             : Number(character.current_pm);
 
-    if (currentPF >= stats.maxHealth) {
-        setMessage("Hai già tutti i PF.");
-        return;
-    }
+    const pmCost = getBaseHealPmCost();
 
-    if (currentPM < 2) {
+    if (currentPM < pmCost) {
         setMessage("Non hai abbastanza PM per usare Cura.");
         return;
     }
 
-    const level = Number(character.livello) || 1;
-    const healAmount = stats.intelligenza + level;
-    const newPF = Math.min(stats.maxHealth, currentPF + healAmount);
-    const newPM = Math.max(0, currentPM - 2);
+    baseHealModeActive = true;
+
+    const button = document.getElementById("dungeon-heal-button");
+    button?.classList.add("active");
+
+    renderBaseHealRange();
+    updateBaseHealTargets();
+
+    setMessage(
+        "CURA: scegli te stesso o un alleato in una delle 8 caselle adiacenti."
+    );
+}
+
+function deactivateBaseHealMode() {
+    baseHealModeActive = false;
+
+    const button = document.getElementById("dungeon-heal-button");
+    button?.classList.remove("active");
+
+    clearBaseHealRange();
+    clearBaseHealTargets();
+}
+
+function renderBaseHealRange() {
+    clearBaseHealRange();
+
+    if (!baseHealModeActive) {
+        return;
+    }
+
+    const map = document.getElementById("dungeon-map");
+    if (!map) {
+        return;
+    }
+
+    const rect = map.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+        return;
+    }
+
+    const cellWidth = rect.width / BASE_MAP_COLUMNS;
+    const cellHeight = rect.height / BASE_MAP_ROWS;
+
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            const x = Number(basePlayerX) + dx;
+            const y = Number(basePlayerY) + dy;
+
+            if (
+                x < 0 ||
+                y < 0 ||
+                x >= BASE_MAP_COLUMNS ||
+                y >= BASE_MAP_ROWS
+            ) {
+                continue;
+            }
+
+            const element = document.createElement("div");
+            element.className = "dungeon-heal-range-cell";
+            element.style.left = `${x * cellWidth}px`;
+            element.style.top = `${y * cellHeight}px`;
+            element.style.width = `${cellWidth}px`;
+            element.style.height = `${cellHeight}px`;
+
+            map.appendChild(element);
+            baseHealRangeElements.push(element);
+        }
+    }
+}
+
+function clearBaseHealRange() {
+    baseHealRangeElements.forEach(element => element.remove());
+    baseHealRangeElements = [];
+}
+
+function isInBaseHealRange(x, y) {
+    const dx = Math.abs(Number(x) - Number(basePlayerX));
+    const dy = Math.abs(Number(y) - Number(basePlayerY));
+
+    return dx <= 1 && dy <= 1;
+}
+
+function updateBaseHealTargets() {
+    clearBaseHealTargets();
+
+    if (!baseHealModeActive) {
+        return;
+    }
+
+    if (basePlayerToken) {
+        basePlayerToken.classList.add("heal-target");
+        basePlayerToken.style.pointerEvents = "auto";
+    }
+
+    baseOtherPlayers.forEach(player => {
+        if (!isInBaseHealRange(player.x, player.y)) {
+            return;
+        }
+
+        if (player.in_combat || player.active_combat_id) {
+            return;
+        }
+
+        const token = baseOtherPlayerTokens.get(player.character_id);
+        if (!token) {
+            return;
+        }
+
+        token.classList.add("heal-target");
+        token.style.pointerEvents = "auto";
+    });
+}
+
+function clearBaseHealTargets() {
+    if (basePlayerToken) {
+        basePlayerToken.classList.remove("heal-target");
+        basePlayerToken.style.pointerEvents = "";
+    }
+
+    baseOtherPlayerTokens.forEach(token => {
+        token.classList.remove("heal-target");
+        token.style.pointerEvents = "";
+    });
+}
+
+async function castBaseHealOnCharacter(
+    targetCharacterId,
+    targetName = "Alleato"
+) {
+    if (
+        !baseHealModeActive ||
+        baseHealInProgress ||
+        !character
+    ) {
+        return;
+    }
+
+    if (targetCharacterId !== character.id) {
+        const target = baseOtherPlayers.get(targetCharacterId);
+
+        if (!target || !isInBaseHealRange(target.x, target.y)) {
+            setMessage("Il bersaglio è fuori dal raggio di Cura.");
+            return;
+        }
+
+        if (target.in_combat || target.active_combat_id) {
+            setMessage("Non puoi curare un personaggio impegnato in combattimento.");
+            return;
+        }
+    }
+
+    baseHealInProgress = true;
+    updateBaseActionAvailability();
 
     try {
-        const { error } = await db
-            .from("characters")
-            .update({
-                current_hp: newPF,
-                current_pm: newPM
-            })
-            .eq("id", character.id);
+        // La RPC verifica anche il range usando le coordinate salvate.
+        // Forziamo quindi il salvataggio dell'ultima posizione locale.
+        if (basePositionSaveTimer) {
+            clearTimeout(basePositionSaveTimer);
+            basePositionSaveTimer = null;
+        }
+        basePositionSavePending = false;
+        await flushBasePositionSave();
+
+        const { data, error } = await db.rpc(
+            "use_heal",
+            {
+                p_target_character_id: targetCharacterId,
+                p_context: "base"
+            }
+        );
 
         if (error) {
             throw error;
         }
 
-        character.current_hp = newPF;
-        character.current_pm = newPM;
+        const result = data || {};
+
+        character.current_pm = Number(result.caster_current_pm);
+
+        if (targetCharacterId === character.id) {
+            character.current_hp = Number(result.target_current_hp);
+        }
 
         updateCharacterPanel();
-        updateBaseActionAvailability();
         await updateBasePresence();
 
-        setMessage(
-            `Usi Cura e recuperi ${newPF - currentPF} PF. (-2 PM)`
-        );
+        if (baseChannel && baseRealtimeReady) {
+            await baseChannel.send({
+                type: "broadcast",
+                event: "player-healed",
+                payload: {
+                    caster_character_id: character.id,
+                    caster_name: character.nome || "Avventuriero",
+                    target_character_id: targetCharacterId,
+                    target_name: result.target_name || targetName,
+                    healed_amount: Number(result.healed_amount) || 0,
+                    new_hp: Number(result.target_current_hp) || 0
+                }
+            });
+        }
+
+        const healedAmount = Number(result.healed_amount) || 0;
+
+        if (targetCharacterId === character.id) {
+            setMessage(
+                `Usi Cura su te stesso e recuperi ${healedAmount} PF. (-${result.pm_cost ?? getBaseHealPmCost()} PM)`
+            );
+        } else {
+            setMessage(
+                `Curi ${result.target_name || targetName} di ${healedAmount} PF.`
+            );
+        }
+
+        deactivateBaseHealMode();
+
     } catch (error) {
         console.error("Errore Cura nella Base:", error);
-        setMessage("Non è stato possibile usare Cura.", true);
+        setMessage(
+            error?.message || "Non è stato possibile usare Cura.",
+            true
+        );
+    } finally {
+        baseHealInProgress = false;
+        updateBaseActionAvailability();
     }
 }
 
@@ -1251,6 +1479,24 @@ async function initializeBasePlayer() {
         image.draggable = false;
 
         basePlayerToken.appendChild(image);
+
+        basePlayerToken.addEventListener(
+            "click",
+            async event => {
+                if (!baseHealModeActive) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                await castBaseHealOnCharacter(
+                    character.id,
+                    character.nome || "Avventuriero"
+                );
+            }
+        );
+
         map.appendChild(basePlayerToken);
     }
 
@@ -2764,6 +3010,10 @@ function setupBaseMovement() {
         map.addEventListener(
             "click",
             event => {
+                if (baseHealModeActive) {
+                    return;
+                }
+
                 const rect =
                     map.getBoundingClientRect();
 
@@ -2821,6 +3071,11 @@ function setupBaseMovement() {
             positionBaseStaticDecorations();
             positionBasePlayerToken();
             positionAllBaseRemotePlayerTokens();
+
+            if (baseHealModeActive) {
+                renderBaseHealRange();
+                updateBaseHealTargets();
+            }
         }
     );
 }
@@ -3038,6 +3293,10 @@ function isBasePassageBlocked(
 // ============================================================
 
 function moveBasePlayer(dx, dy) {
+    if (baseHealModeActive) {
+        deactivateBaseHealMode();
+    }
+
     const newX =
         basePlayerX + dx;
 
@@ -4126,6 +4385,41 @@ async function setupBaseRealtime() {
     );
 
 
+    // ========================================================
+    // CURA REMOTA
+    // ========================================================
+
+    baseChannel.on(
+        "broadcast",
+        {
+            event:
+                "player-healed"
+        },
+        message => {
+            const data = message?.payload;
+
+            if (!data) {
+                return;
+            }
+
+            if (
+                data.target_character_id === character?.id &&
+                data.caster_character_id !== character?.id
+            ) {
+                character.current_hp = Number(data.new_hp);
+                updateCharacterPanel();
+                updateBaseActionAvailability();
+
+                setMessage(
+                    `${data.caster_name || "Un alleato"} ti ha curato di ${Number(data.healed_amount) || 0} PF.`
+                );
+
+                updateBasePresence();
+            }
+        }
+    );
+
+
     baseChannel.on(
         "broadcast",
         {
@@ -4567,6 +4861,10 @@ function updateBaseRemotePlayer(data) {
     renderBaseTradeNearbyPlayers();
     refreshBaseTradeAdjacencyState();
 
+    if (baseHealModeActive) {
+        updateBaseHealTargets();
+    }
+
 }
 
 
@@ -4628,6 +4926,30 @@ function showBaseRemotePlayerToken(
             "other-player-name";
 
         token.appendChild(label);
+
+        token.addEventListener(
+            "click",
+            async event => {
+                if (!baseHealModeActive) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const currentTarget =
+                    baseOtherPlayers.get(characterId);
+
+                if (!currentTarget) {
+                    return;
+                }
+
+                await castBaseHealOnCharacter(
+                    characterId,
+                    currentTarget.name || "Alleato"
+                );
+            }
+        );
 
         map.appendChild(token);
 

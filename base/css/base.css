@@ -4572,3 +4572,18 @@ body.base-trade-open {
         max-height: 90px;
     }
 }
+
+
+/* ============================================================
+   CURA MULTIPLAYER LIVELLO BASE - OVERRIDE FINALE
+   ============================================================ */
+
+.other-player-token.heal-target {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.base-player-token.heal-target {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}

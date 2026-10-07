@@ -1531,6 +1531,49 @@ function hasDungeonAbility(
 }
 
 
+function getDungeonHealAbilityEntry() {
+
+    return characterAbilities.find(
+        entry =>
+            entry.ability_id === "cura" ||
+            entry.ability?.id === "cura"
+    ) || null;
+
+}
+
+
+function getDungeonHealPmCost() {
+
+    return Math.max(
+        0,
+        Number(
+            getDungeonHealAbilityEntry()?.ability?.pm_cost
+        ) || 2
+    );
+
+}
+
+
+function updateDungeonHealCostLabel() {
+
+    const button =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+    const label =
+        button?.querySelector(
+            "small"
+        );
+
+    if (label) {
+        label.textContent =
+            `${getDungeonHealPmCost()} PM`;
+    }
+
+}
+
+
 // ============================================================
 // VISIBILITÀ ABILITÀ DUNGEON
 // ============================================================
@@ -1551,6 +1594,8 @@ function updateDungeonAbilityVisibility() {
                 : "none";
 
     }
+
+    updateDungeonHealCostLabel();
 
 }
 
@@ -3529,6 +3574,13 @@ async function performMovement(
 
 
     updateFogOfWar();
+
+    // Se Cura è attiva, il reticolo e i bersagli devono seguire
+    // immediatamente la nuova posizione del personaggio.
+    if (healModeActive) {
+        renderHealRange();
+        updateHealTargets();
+    }
 
     // Registra la casella calpestata. Il salvataggio è idempotente:
     // tornare sulla stessa casella non incrementa il progresso.
@@ -6242,10 +6294,9 @@ function updateDungeonActionAvailability() {
 
     if (healButton) {
 
-        // Cura costa 2 PM.
-
         healButton.disabled =
-            currentPM < 2;
+            !hasDungeonAbility("cura") ||
+            currentPM < getDungeonHealPmCost();
 
     }
 
@@ -6700,7 +6751,7 @@ function activateHealMode() {
 
 
     if (
-        currentPM < 2
+        currentPM < getDungeonHealPmCost()
     ) {
 
         setMessage(
@@ -7099,42 +7150,9 @@ async function castHealOnSelf() {
         return;
     }
 
-
-    const stats =
-        getDungeonCalculatedStats();
-
-
-    const currentPF =
-        character.current_hp === null ||
-        character.current_hp === undefined
-
-            ? stats.maxHealth
-
-            : Number(
-                character.current_hp
-            );
-
-
-    if (
-        currentPF >=
-        stats.maxHealth
-    ) {
-
-        setMessage(
-            "Hai già tutti i PF."
-        );
-
-        return;
-
-    }
-
-
     await executeHeal(
         character.id,
-        character.nome ||
-        "Avventuriero",
-        currentPF,
-        stats.maxHealth,
+        character.nome || "Avventuriero",
         true
     );
 
@@ -7153,23 +7171,17 @@ async function castHealOnCharacter(
         return;
     }
 
-
     const target =
         otherPlayers.get(
             targetCharacterId
         );
 
-
     if (!target) {
-
         setMessage(
             "Il bersaglio non è più disponibile."
         );
-
         return;
-
     }
-
 
     if (
         !isInHealRange(
@@ -7177,202 +7189,38 @@ async function castHealOnCharacter(
             target.y
         )
     ) {
-
         setMessage(
             "Il bersaglio è fuori dal raggio di Cura."
         );
-
         return;
-
     }
 
-
-    // --------------------------------------------------------
-    // LEGGIAMO IL PG DAL DATABASE
-    //
-    // Non ci fidiamo dei PF presenti nella Presence:
-    // per una cura multiplayer vogliamo il dato attuale.
-    // --------------------------------------------------------
-
-    try {
-
-        const {
-            data: targetCharacter,
-            error
-        } =
-            await db
-                .from("characters")
-                .select(`
-                    id,
-                    nome,
-                    current_hp,
-                    costituzione
-                `)
-                .eq(
-                    "id",
-                    targetCharacterId
-                )
-                .maybeSingle();
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        if (!targetCharacter) {
-
-            setMessage(
-                "Il bersaglio non è più disponibile."
-            );
-
-            return;
-
-        }
-
-
-        // Per il bersaglio remoto il massimo PF preciso
-        // può dipendere dall'equipaggiamento.
-        // Recuperiamo quindi anche il suo equipaggiamento.
-
-        const {
-            data: targetInventory,
-            error: inventoryError
-        } =
-            await db
-                .from("character_inventory")
-                .select(`
-                    equipped_slot,
-
-                    item:items (
-                        costituzione_bonus
-                    )
-                `)
-                .eq(
-                    "character_id",
-                    targetCharacterId
-                )
-                .not(
-                    "equipped_slot",
-                    "is",
-                    null
-                );
-
-
-        if (inventoryError) {
-
-            throw inventoryError;
-
-        }
-
-
-        let constitutionBonus =
-            0;
-
-
-        (
-            targetInventory ||
-            []
-        ).forEach(
-            entry => {
-
-                constitutionBonus +=
-                    Number(
-                        entry.item?.costituzione_bonus
-                    ) || 0;
-
-            }
-        );
-
-
-        const effectiveConstitution =
-            Math.max(
-                1,
-                Math.min(
-                    30,
-                    (
-                        Number(
-                            targetCharacter.costituzione
-                        ) || 1
-                    )
-                    +
-                    constitutionBonus
-                )
-            );
-
-
-        const targetMaxHealth =
-            Math.ceil(
-                5 *
-                effectiveConstitution /
-                2
-            );
-
-
-        const targetCurrentHealth =
-            targetCharacter.current_hp === null ||
-            targetCharacter.current_hp === undefined
-
-                ? targetMaxHealth
-
-                : Number(
-                    targetCharacter.current_hp
-                );
-
-
-        if (
-            targetCurrentHealth >=
-            targetMaxHealth
-        ) {
-
-            setMessage(
-                `${targetCharacter.nome || "Il bersaglio"} ha già tutti i PF.`
-            );
-
-            return;
-
-        }
-
-
-        await executeHeal(
-            targetCharacterId,
-            targetCharacter.nome ||
-            target.name ||
-            "Alleato",
-            targetCurrentHealth,
-            targetMaxHealth,
-            false
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Errore lettura bersaglio Cura:",
-            error
-        );
-
-
+    if (
+        target.in_combat ||
+        target.active_combat_id
+    ) {
         setMessage(
-            "Non è stato possibile curare il bersaglio."
+            "Non puoi curare un personaggio impegnato in combattimento."
         );
-
+        return;
     }
+
+    await executeHeal(
+        targetCharacterId,
+        target.name || "Alleato",
+        false
+    );
 
 }
 
 
 // ============================================================
-// ESEGUE CURA
+// ESEGUE CURA TRAMITE RPC UNICA
 // ============================================================
 
 async function executeHeal(
     targetCharacterId,
     targetName,
-    targetCurrentHealth,
-    targetMaxHealth,
     selfTarget
 ) {
 
@@ -7380,186 +7228,64 @@ async function executeHeal(
         return;
     }
 
-
-    const stats =
-        getDungeonCalculatedStats();
-
-
-    const currentMana =
-        character.current_pm === null ||
-        character.current_pm === undefined
-
-            ? stats.maxMana
-
-            : Number(
-                character.current_pm
-            );
-
-
-    if (
-        currentMana < 2
-    ) {
-
-        setMessage(
-            "Non hai abbastanza PM per usare Cura."
-        );
-
-
-        deactivateHealMode();
-
-        return;
-
-    }
-
-
-    // ========================================================
-    // FORMULA UFFICIALE
-    //
-    // Cura = INT effettiva + Livello
-    // ========================================================
-
-    const level =
-        Number(
-            character.livello
-        ) || 1;
-
-
-    const healAmount =
-        stats.intelligenza +
-        level;
-
-
-    const newHealth =
-        Math.min(
-            targetMaxHealth,
-            targetCurrentHealth +
-            healAmount
-        );
-
-
-    const actualHeal =
-        newHealth -
-        targetCurrentHealth;
-
-
-    if (
-        actualHeal <= 0
-    ) {
-
-        setMessage(
-            `${targetName} ha già tutti i PF.`
-        );
-
-        return;
-
-    }
-
-
-    // Blocchiamo soltanto l'evento Cura,
-    // non per il normale movimento.
-
-    eventLocked =
-        true;
-
-
-    movementQueue.length =
-        0;
-
+    eventLocked = true;
+    movementQueue.length = 0;
 
     try {
 
-        // ----------------------------------------------------
-        // 1. AGGIORNA BERSAGLIO
-        // ----------------------------------------------------
+        // La RPC verifica il range con le coordinate persistite.
+        // Salviamo subito l'ultima posizione prima di lanciare Cura.
+        if (positionSaveTimer) {
+            clearTimeout(positionSaveTimer);
+            positionSaveTimer = null;
+        }
+        positionSavePending = false;
+        await flushPositionSave();
 
         const {
-            error: healError
+            data,
+            error
         } =
-            await db
-                .from("characters")
-                .update({
+            await db.rpc(
+                "use_heal",
+                {
+                    p_target_character_id:
+                        targetCharacterId,
 
-                    current_hp:
-                        newHealth
-
-                })
-                .eq(
-                    "id",
-                    targetCharacterId
-                );
-
-
-        if (healError) {
-
-            throw healError;
-
-        }
-
-
-        // ----------------------------------------------------
-        // 2. SPENDE 2 PM
-        // ----------------------------------------------------
-
-        const newMana =
-            Math.max(
-                0,
-                currentMana - 2
+                    p_context:
+                        "dungeon"
+                }
             );
 
-
-        const {
-            error: manaError
-        } =
-            await db
-                .from("characters")
-                .update({
-
-                    current_pm:
-                        newMana
-
-                })
-                .eq(
-                    "id",
-                    character.id
-                );
-
-
-        if (manaError) {
-
-            throw manaError;
-
+        if (error) {
+            throw error;
         }
 
+        const result =
+            data || {};
 
         character.current_pm =
-            newMana;
-
-
-        // ----------------------------------------------------
-        // SE ABBIAMO CURATO NOI STESSI
-        // ----------------------------------------------------
+            Number(
+                result.caster_current_pm
+            );
 
         if (selfTarget) {
-
             character.current_hp =
-                newHealth;
-
+                Number(
+                    result.target_current_hp
+                );
         }
-
 
         updateCharacterPanel();
 
-
-        // ----------------------------------------------------
-        // BROADCAST CURA
-        // ----------------------------------------------------
-
+        // La RPC è la fonte di verità; il broadcast serve solo
+        // ad aggiornare subito il client del bersaglio remoto.
         if (
             dungeonChannel &&
             realtimeReady
         ) {
 
-            dungeonChannel.send({
+            await dungeonChannel.send({
 
                 type:
                     "broadcast",
@@ -7580,13 +7306,18 @@ async function executeHeal(
                         targetCharacterId,
 
                     target_name:
+                        result.target_name ||
                         targetName,
 
                     healed_amount:
-                        actualHeal,
+                        Number(
+                            result.healed_amount
+                        ) || 0,
 
                     new_hp:
-                        newHealth
+                        Number(
+                            result.target_current_hp
+                        ) || 0
 
                 }
 
@@ -7594,9 +7325,12 @@ async function executeHeal(
 
         }
 
+        await updateMyPresence();
 
-        updateMyPresence();
-
+        const actualHeal =
+            Number(
+                result.healed_amount
+            ) || 0;
 
         if (selfTarget) {
 
@@ -7607,14 +7341,12 @@ async function executeHeal(
         } else {
 
             setMessage(
-                `Curi ${targetName} di ${actualHeal} PF.`
+                `Curi ${result.target_name || targetName} di ${actualHeal} PF.`
             );
 
         }
 
-
         deactivateHealMode();
-
 
     } catch (error) {
 
@@ -7623,16 +7355,15 @@ async function executeHeal(
             error
         );
 
-
         setMessage(
+            error?.message ||
             "Non è stato possibile completare Cura."
         );
 
-
     } finally {
 
-        eventLocked =
-            false;
+        eventLocked = false;
+        updateDungeonActionAvailability();
 
     }
 
