@@ -883,6 +883,9 @@ if (
                 await setupCombatChat();
 
 
+                await setupCombatLogSync();
+
+
                 await updateCombatTurnUI();
 
 
@@ -4257,6 +4260,16 @@ window.addEventListener(
         stopCombatStateLoop();
 
         cleanupCombatChat();
+
+
+        if (
+            typeof cleanupCombatLogSync ===
+            "function"
+        ) {
+
+            cleanupCombatLogSync();
+
+        }
 
 
         clearCombatRangeCells();

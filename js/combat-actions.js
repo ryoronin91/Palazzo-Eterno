@@ -849,7 +849,7 @@ async function performBasicAttack(
 
         if (!data.hit) {
 
-            addCombatLog(
+            addSharedCombatLog(
                 `${data.attacker_name} attacca ${data.target_name}: `
                 +
                 `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
@@ -901,7 +901,7 @@ async function performBasicAttack(
         }
 
 
-        addCombatLog(
+        addSharedCombatLog(
             text
         );
 
@@ -1008,7 +1008,7 @@ async function performFireBolt(
 
         if (!data.hit) {
 
-            addCombatLog(
+            addSharedCombatLog(
                 `${data.attacker_name} usa Dardo di Fuoco contro ${data.target_name}: `
                 +
                 `1d10 (${data.roll}) + ATT ${data.attack} = ${data.total} `
@@ -1066,7 +1066,7 @@ async function performFireBolt(
         }
 
 
-        addCombatLog(
+        addSharedCombatLog(
             text
         );
 
@@ -1167,7 +1167,7 @@ async function performHeal(
         renderCombat();
 
 
-        addCombatLog(
+        addSharedCombatLog(
             `${data.caster_name} usa Cura su ${data.target_name}: `
             +
             `+${data.heal_amount} PF `
@@ -1284,7 +1284,7 @@ async function performCombatBuff(
         renderCombat();
 
 
-        addCombatLog(
+        addSharedCombatLog(
             `${abilityName} applicata con successo.`
         );
 
@@ -1393,13 +1393,13 @@ async function performPushPull(
             data?.moved
         ) {
 
-            addCombatLog(
+            addSharedCombatLog(
                 `${data.ability_name} sposta ${data.target_name} da (${data.old_x}, ${data.old_y}) a (${data.new_x}, ${data.new_y}).`
             );
 
         } else {
 
-            addCombatLog(
+            addSharedCombatLog(
                 `${data.ability_name} colpisce ${data.target_name}, ma non può spostarlo: la casella di destinazione è bloccata.`
             );
 
@@ -1487,7 +1487,7 @@ async function performGiornoPaga() {
         renderCombat();
 
 
-        addCombatLog(
+        addSharedCombatLog(
             `${data.character_name} usa GIORNO PAGA! `
             +
             `L'oro dell'incontro sarà raddoppiato. `
@@ -2214,7 +2214,7 @@ async function performAggro(
         }
 
 
-        addCombatLog(
+        addSharedCombatLog(
             `${data.caster_name} usa AGGRO su ${data.target_name}: `
             +
             `il Goblin lo prenderà di mira nel suo prossimo turno.`
@@ -2345,7 +2345,7 @@ async function useCombatInventoryItem(
             data
         ) {
 
-            addCombatLog(
+            addSharedCombatLog(
                 `${data.item_name} utilizzata. `
                 +
                 `PF ${data.current_hp}/${data.max_hp} `
