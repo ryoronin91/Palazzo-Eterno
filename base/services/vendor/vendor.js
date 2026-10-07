@@ -1625,6 +1625,10 @@ async function refreshVendorInventory() {
     updateVendorPlayerInventoryHeader();
 
     renderVendorCharacterInventory();
+
+    // Ricalcola subito quali acquisti sono disponibili
+    // in base al nuovo saldo di monete.
+    renderVendorItems();
 }
 
 // ============================================================
