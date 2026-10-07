@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/dungeon.css?v=24"
+        href="css/dungeon.css?v=25"
     >
 
     <style>
@@ -710,6 +710,56 @@
                     </div>
 
 
+
+
+                    <!-- =====================================
+                         SCAMBIO TRA GIOCATORI
+                    ====================================== -->
+
+                    <section class="dungeon-trade-inline-section">
+                        <div class="quick-section-title">GIOCATORI VICINI</div>
+                        <div id="dungeon-trade-nearby-players" class="dungeon-trade-nearby-list">
+                            <div class="dungeon-trade-inline-empty">Nessun giocatore adiacente.</div>
+                        </div>
+                    </section>
+
+                    <section class="dungeon-trade-inline-section">
+                        <div class="quick-section-title">SCAMBIO</div>
+
+                        <div id="dungeon-trade-inline-panel" class="dungeon-trade-inline-panel disabled">
+                            <div id="dungeon-trade-status" class="dungeon-trade-inline-status">
+                                Seleziona un giocatore adiacente.
+                            </div>
+
+                            <div class="dungeon-trade-inline-grid">
+                                <div class="dungeon-trade-inline-side">
+                                    <div class="dungeon-trade-inline-side-title">LA TUA OFFERTA</div>
+                                    <div id="dungeon-trade-my-confirmed" class="dungeon-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="dungeon-trade-my-offer" class="dungeon-trade-offer-list"></div>
+                                </div>
+
+                                <div class="dungeon-trade-inline-side">
+                                    <div id="dungeon-trade-other-name" class="dungeon-trade-inline-side-title">ALTRO GIOCATORE</div>
+                                    <div id="dungeon-trade-other-confirmed" class="dungeon-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="dungeon-trade-other-offer" class="dungeon-trade-offer-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="dungeon-trade-add-box">
+                                <select id="dungeon-trade-item-select" class="dungeon-trade-select" aria-label="Oggetto da offrire" disabled></select>
+                                <input id="dungeon-trade-item-quantity" class="dungeon-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire" disabled>
+                                <button id="dungeon-trade-add-item" class="dungeon-trade-button compact" type="button" disabled>AGGIUNGI</button>
+                            </div>
+
+                            <div class="dungeon-trade-inline-actions">
+                                <button id="dungeon-trade-decline" class="dungeon-trade-button secondary" type="button" hidden>RIFIUTA</button>
+                                <button id="dungeon-trade-accept" class="dungeon-trade-button primary" type="button" hidden>ACCETTA</button>
+                                <button id="dungeon-trade-cancel" class="dungeon-trade-button secondary" type="button" disabled>ANNULLA</button>
+                                <button id="dungeon-trade-confirm" class="dungeon-trade-button primary" type="button" disabled>CONFERMA</button>
+                            </div>
+                        </div>
+                    </section>
+
                     <!--
                         Manteniamo questo elemento nascosto
                         per compatibilità con eventuale codice
@@ -965,7 +1015,7 @@
          SCRIPT
     ====================================================== -->
 
-    <script src="js/dungeon.js?v=49"></script>
+    <script src="js/dungeon.js?v=50"></script>
 
     <script src="js/eventi.js?v=16"></script>
 
