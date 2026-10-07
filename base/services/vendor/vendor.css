@@ -2071,3 +2071,22 @@ input {
         font-size: 9px;
     }
 }
+
+
+/* ============================================================
+   VENDOR - NOMI OGGETTI COMPLETI
+   Evita il taglio con "..." nella merce disponibile.
+============================================================ */
+
+.vendor-stock-name {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    padding: 6px 0;
+}
+
+.vendor-stock-item {
+    min-height: 72px;
+}
