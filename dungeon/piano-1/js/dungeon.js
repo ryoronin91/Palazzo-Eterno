@@ -550,6 +550,13 @@ let healRangeElements = [];
 
 
 // ============================================================
+// GIORNO PAGA - FUORI COMBATTIMENTO
+// ============================================================
+
+let dungeonGiornoPagaInProgress = false;
+
+
+// ============================================================
 // REFRESH
 // ============================================================
 
@@ -690,6 +697,9 @@ document.addEventListener(
             // ------------------------------------------------
 
             setupDungeonActions();
+
+            // Giorno Paga è un'azione autonoma: non modifica Cura.
+            setupDungeonGiornoPagaAction();
 
 
             // ------------------------------------------------
@@ -1529,6 +1539,330 @@ function hasDungeonAbility(
             entry.ability_id === abilityId ||
             entry.ability?.id === abilityId
     );
+
+}
+
+
+// ============================================================
+// GIORNO PAGA - PULSANTE FUORI COMBATTIMENTO
+// ============================================================
+//
+// Il pulsante viene CLONATO graficamente da Cura per mantenere
+// lo stesso stile, ma è completamente indipendente:
+// - non modifica il pulsante Cura;
+// - non usa il targeting di Cura;
+// - si applica automaticamente al personaggio che lo lancia.
+// ============================================================
+
+function getDungeonGiornoPagaAbilityEntry() {
+
+    return characterAbilities.find(
+        entry =>
+            entry.ability_id === "giorno_paga" ||
+            entry.ability?.id === "giorno_paga"
+    ) || null;
+
+}
+
+
+function getDungeonGiornoPagaPmCost() {
+
+    return Math.max(
+        0,
+        Number(
+            getDungeonGiornoPagaAbilityEntry()?.ability?.pm_cost
+        ) || 3
+    );
+
+}
+
+
+function ensureDungeonGiornoPagaButton() {
+
+    const existingButton =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
+
+    if (existingButton) {
+        return existingButton;
+    }
+
+    const healButton =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+    if (!healButton) {
+        return null;
+    }
+
+    // cloneNode NON copia gli event listener: il comportamento di Cura
+    // rimane quindi totalmente separato da Giorno Paga.
+    const button =
+        healButton.cloneNode(true);
+
+    button.id =
+        "dungeon-giorno-paga-button";
+
+    button.dataset.action =
+        "giorno-paga";
+
+    button.disabled =
+        true;
+
+    button.classList.remove(
+        "active"
+    );
+
+    const icon =
+        button.querySelector(
+            ".action-card-icon"
+        );
+
+    const title =
+        button.querySelector(
+            "strong"
+        );
+
+    const cost =
+        button.querySelector(
+            "small"
+        );
+
+    if (icon) {
+        icon.textContent = "¤";
+    }
+
+    if (title) {
+        title.textContent = "GIORNO PAGA";
+    }
+
+    if (cost) {
+        cost.textContent =
+            `${getDungeonGiornoPagaPmCost()} PM`;
+    }
+
+    button.style.display =
+        "none";
+
+    healButton.insertAdjacentElement(
+        "afterend",
+        button
+    );
+
+    return button;
+
+}
+
+
+function updateDungeonGiornoPagaVisibility() {
+
+    const button =
+        ensureDungeonGiornoPagaButton();
+
+    if (!button) {
+        return;
+    }
+
+    button.style.display =
+        hasDungeonAbility("giorno_paga")
+            ? ""
+            : "none";
+
+    const cost =
+        button.querySelector(
+            "small"
+        );
+
+    if (cost) {
+        cost.textContent =
+            `${getDungeonGiornoPagaPmCost()} PM`;
+    }
+
+}
+
+
+function updateDungeonGiornoPagaAvailability() {
+
+    const button =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
+
+    if (
+        !button ||
+        !character
+    ) {
+        return;
+    }
+
+    const stats =
+        getDungeonCalculatedStats();
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+    button.disabled =
+        !hasDungeonAbility("giorno_paga") ||
+        currentPM < getDungeonGiornoPagaPmCost() ||
+        dungeonGiornoPagaInProgress;
+
+}
+
+
+function setupDungeonGiornoPagaAction() {
+
+    const button =
+        ensureDungeonGiornoPagaButton();
+
+    if (!button) {
+        return;
+    }
+
+    if (
+        button.dataset.giornoPagaReady !==
+        "1"
+    ) {
+
+        button.dataset.giornoPagaReady =
+            "1";
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                if (
+                    button.disabled ||
+                    dungeonGiornoPagaInProgress
+                ) {
+                    return;
+                }
+
+                // Se il giocatore aveva aperto il targeting di Cura,
+                // lo chiudiamo usando la funzione già esistente.
+                // Non viene modificata alcuna logica di Cura.
+                if (healModeActive) {
+                    deactivateHealMode();
+                }
+
+                await castDungeonGiornoPaga();
+
+            }
+        );
+
+    }
+
+    updateDungeonGiornoPagaVisibility();
+    updateDungeonGiornoPagaAvailability();
+
+}
+
+
+async function castDungeonGiornoPaga() {
+
+    if (
+        !character ||
+        !hasDungeonAbility("giorno_paga") ||
+        dungeonGiornoPagaInProgress
+    ) {
+        return;
+    }
+
+    const stats =
+        getDungeonCalculatedStats();
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+
+            ? stats.maxMana
+
+            : Number(
+                character.current_pm
+            );
+
+    const pmCost =
+        getDungeonGiornoPagaPmCost();
+
+    if (currentPM < pmCost) {
+
+        setMessage(
+            "Non hai abbastanza PM per usare Giorno Paga."
+        );
+
+        updateDungeonGiornoPagaAvailability();
+
+        return;
+    }
+
+    dungeonGiornoPagaInProgress =
+        true;
+
+    updateDungeonGiornoPagaAvailability();
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await db.rpc(
+                "cast_giorno_paga_outside_combat",
+                {
+                    p_character_id:
+                        character.id
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        if (
+            data?.current_pm !==
+            undefined
+        ) {
+            character.current_pm =
+                Number(
+                    data.current_pm
+                );
+        }
+
+        updateCharacterPanel();
+
+        setMessage(
+            `Usi GIORNO PAGA! L'oro del prossimo incontro sarà raddoppiato. (-${data?.pm_cost ?? pmCost} PM)`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Errore Giorno Paga fuori combattimento:",
+            error
+        );
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile usare Giorno Paga."
+        );
+
+    } finally {
+
+        dungeonGiornoPagaInProgress =
+            false;
+
+        updateDungeonGiornoPagaVisibility();
+        updateDungeonGiornoPagaAvailability();
+
+    }
 
 }
 
@@ -6314,6 +6648,10 @@ function updateDungeonActionAvailability() {
             currentPM >= stats.maxMana;
 
     }
+
+
+    // Giorno Paga è gestito separatamente da Cura.
+    updateDungeonGiornoPagaAvailability();
 
 }
 

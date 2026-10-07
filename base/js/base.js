@@ -171,6 +171,9 @@ let baseHealModeActive = false;
 let baseHealRangeElements = [];
 let baseHealInProgress = false;
 
+// Giorno Paga fuori combattimento è indipendente da Cura.
+let baseGiornoPagaInProgress = false;
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -185,6 +188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         updateCharacterPanel();
         setupBaseActions();
+        setupBaseGiornoPagaAction();
         updateBaseConsumables();
         updateBaseAbilityVisibility();
 
@@ -536,6 +540,281 @@ function updateBaseHealCostLabel() {
     }
 }
 
+// ============================================================
+// GIORNO PAGA - FUORI COMBATTIMENTO
+// ============================================================
+//
+// Il pulsante viene clonato graficamente da Cura ma non condivide
+// nessun listener o targeting con Cura.
+// ============================================================
+
+function getBaseGiornoPagaAbilityEntry() {
+    return characterAbilities.find(
+        entry =>
+            entry.ability_id === "giorno_paga" ||
+            entry.ability?.id === "giorno_paga"
+    ) || null;
+}
+
+function getBaseGiornoPagaPmCost() {
+    return Math.max(
+        0,
+        Number(
+            getBaseGiornoPagaAbilityEntry()?.ability?.pm_cost
+        ) || 3
+    );
+}
+
+function ensureBaseGiornoPagaButton() {
+    const existing =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
+
+    if (existing) {
+        return existing;
+    }
+
+    const healButton =
+        document.getElementById(
+            "dungeon-heal-button"
+        );
+
+    if (!healButton) {
+        return null;
+    }
+
+    // cloneNode non copia gli event listener del pulsante Cura.
+    const button =
+        healButton.cloneNode(true);
+
+    button.id =
+        "dungeon-giorno-paga-button";
+
+    button.dataset.action =
+        "giorno-paga";
+
+    button.disabled =
+        true;
+
+    button.classList.remove(
+        "active"
+    );
+
+    const icon =
+        button.querySelector(
+            ".action-card-icon"
+        );
+
+    const title =
+        button.querySelector(
+            "strong"
+        );
+
+    const cost =
+        button.querySelector(
+            "small"
+        );
+
+    if (icon) {
+        icon.textContent = "¤";
+    }
+
+    if (title) {
+        title.textContent = "GIORNO PAGA";
+    }
+
+    if (cost) {
+        cost.textContent =
+            `${getBaseGiornoPagaPmCost()} PM`;
+    }
+
+    button.style.display =
+        "none";
+
+    healButton.insertAdjacentElement(
+        "afterend",
+        button
+    );
+
+    return button;
+}
+
+function updateBaseGiornoPagaVisibility() {
+    const button =
+        ensureBaseGiornoPagaButton();
+
+    if (!button) {
+        return;
+    }
+
+    button.style.display =
+        hasBaseAbility("giorno_paga")
+            ? ""
+            : "none";
+
+    const cost =
+        button.querySelector(
+            "small"
+        );
+
+    if (cost) {
+        cost.textContent =
+            `${getBaseGiornoPagaPmCost()} PM`;
+    }
+}
+
+function updateBaseGiornoPagaAvailability() {
+    const button =
+        document.getElementById(
+            "dungeon-giorno-paga-button"
+        );
+
+    if (!button || !character) {
+        return;
+    }
+
+    const stats =
+        getCalculatedStats();
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+            ? stats.maxMana
+            : Number(character.current_pm);
+
+    button.disabled =
+        !hasBaseAbility("giorno_paga") ||
+        currentPM < getBaseGiornoPagaPmCost() ||
+        baseGiornoPagaInProgress;
+}
+
+function setupBaseGiornoPagaAction() {
+    const button =
+        ensureBaseGiornoPagaButton();
+
+    if (!button) {
+        return;
+    }
+
+    if (
+        button.dataset.giornoPagaReady !==
+        "1"
+    ) {
+        button.dataset.giornoPagaReady =
+            "1";
+
+        button.addEventListener(
+            "click",
+            async () => {
+                if (
+                    button.disabled ||
+                    baseGiornoPagaInProgress
+                ) {
+                    return;
+                }
+
+                // Chiude solo un eventuale targeting Cura già aperto.
+                // La logica e il pulsante Cura restano invariati.
+                if (baseHealModeActive) {
+                    deactivateBaseHealMode();
+                }
+
+                await castBaseGiornoPaga();
+            }
+        );
+    }
+
+    updateBaseGiornoPagaVisibility();
+    updateBaseGiornoPagaAvailability();
+}
+
+async function castBaseGiornoPaga() {
+    if (
+        !character ||
+        !hasBaseAbility("giorno_paga") ||
+        baseGiornoPagaInProgress
+    ) {
+        return;
+    }
+
+    const stats =
+        getCalculatedStats();
+
+    const currentPM =
+        character.current_pm === null ||
+        character.current_pm === undefined
+            ? stats.maxMana
+            : Number(character.current_pm);
+
+    const pmCost =
+        getBaseGiornoPagaPmCost();
+
+    if (currentPM < pmCost) {
+        setMessage(
+            "Non hai abbastanza PM per usare Giorno Paga."
+        );
+        updateBaseGiornoPagaAvailability();
+        return;
+    }
+
+    baseGiornoPagaInProgress =
+        true;
+
+    updateBaseGiornoPagaAvailability();
+
+    try {
+        const {
+            data,
+            error
+        } = await db.rpc(
+            "cast_giorno_paga_outside_combat",
+            {
+                p_character_id:
+                    character.id
+            }
+        );
+
+        if (error) {
+            throw error;
+        }
+
+        if (
+            data?.current_pm !==
+            undefined
+        ) {
+            character.current_pm =
+                Number(data.current_pm);
+        }
+
+        updateCharacterPanel();
+        updateBaseActionAvailability();
+
+        setMessage(
+            `Usi GIORNO PAGA! L'oro del prossimo incontro sarà raddoppiato. (-${data?.pm_cost ?? pmCost} PM)`
+        );
+
+    } catch (error) {
+        console.error(
+            "Errore Giorno Paga fuori combattimento nella Base:",
+            error
+        );
+
+        setMessage(
+            error?.message ||
+            "Non è stato possibile usare Giorno Paga.",
+            true
+        );
+    } finally {
+        baseGiornoPagaInProgress =
+            false;
+
+        updateBaseGiornoPagaVisibility();
+        updateBaseGiornoPagaAvailability();
+    }
+}
+
+
 function updateBaseAbilityVisibility() {
     const healButton =
         document.getElementById("dungeon-heal-button");
@@ -691,7 +970,11 @@ function updateBaseActionAvailability() {
             !findBasePotion("mana") ||
             currentPM >= stats.maxMana;
     }
+
+    // Giorno Paga è gestito separatamente da Cura.
+    updateBaseGiornoPagaAvailability();
 }
+
 
 async function useBasePotion(type) {
     const potion = findBasePotion(type);
