@@ -1710,6 +1710,16 @@ async function sellVendorItem(
         row?.dataset
             ?.itemId;
 
+    const sellQuantity =
+        Math.max(
+            1,
+            Math.floor(
+                Number(
+                    button.dataset.sellQuantity
+                ) || 1
+            )
+        );
+
     const inventoryEntry =
         characterInventory.find(
             entry =>
@@ -1721,6 +1731,25 @@ async function sellVendorItem(
                 )
         );
 
+    const ownedQuantity =
+        Math.max(
+            0,
+            Number(
+                inventoryEntry?.quantity
+            ) || 0
+        );
+
+    if (
+        ownedQuantity <
+        sellQuantity
+    ) {
+        setVendorDialogue(
+            `Non ne hai abbastanza. Ne possiedi ${ownedQuantity}.`
+        );
+
+        return;
+    }
+
     const itemName =
         inventoryEntry
             ?.item
@@ -1730,7 +1759,7 @@ async function sellVendorItem(
         ||
         "Oggetto";
 
-    const sellPrice =
+    const unitSellPrice =
         Math.max(
             0,
             Number(
@@ -1740,12 +1769,25 @@ async function sellVendorItem(
             ) || 0
         );
 
+    const totalSellPrice =
+        unitSellPrice *
+        sellQuantity;
+
     const originalText =
         button.textContent;
 
+    const rowButtons =
+        row?.querySelectorAll(
+            ".player-item-sell-button"
+        ) || [];
+
     try {
-        button.disabled =
-            true;
+        rowButtons.forEach(
+            currentButton => {
+                currentButton.disabled =
+                    true;
+            }
+        );
 
         button.textContent =
             "...";
@@ -1760,7 +1802,10 @@ async function sellVendorItem(
                     p_inventory_id:
                         String(
                             inventoryId
-                        )
+                        ),
+
+                    p_quantity:
+                        sellQuantity
                 }
             );
 
@@ -1771,7 +1816,9 @@ async function sellVendorItem(
         await refreshVendorInventory();
 
         const tradeReply =
-            `Prendo ${itemName}. Ti darò ${sellPrice} monete d'oro.`;
+            sellQuantity === 1
+                ? `Prendo ${itemName}. Ti darò ${totalSellPrice} monete d'oro.`
+                : `Prendo ${sellQuantity} × ${itemName}. Ti darò ${totalSellPrice} monete d'oro.`;
 
         setVendorDialogue(
             tradeReply
@@ -1783,7 +1830,7 @@ async function sellVendorItem(
                     "user",
 
                 content:
-                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha venduto ${itemName} per ${sellPrice} monete d'oro.`
+                    `[EVENTO DI GIOCO CONFERMATO] Il PG ha venduto ${sellQuantity} × ${itemName} per ${totalSellPrice} monete d'oro.`
             },
             {
                 role:
@@ -1815,12 +1862,27 @@ async function sellVendorItem(
             "Non posso acquistare questo oggetto."
         );
 
-    } finally {
-        button.disabled =
-            false;
+        rowButtons.forEach(
+            currentButton => {
+                const quantity =
+                    Math.max(
+                        1,
+                        Number(
+                            currentButton.dataset.sellQuantity
+                        ) || 1
+                    );
 
-        button.textContent =
-            originalText;
+                currentButton.disabled =
+                    ownedQuantity <
+                    quantity;
+            }
+        );
+
+    } finally {
+        if (button?.isConnected) {
+            button.textContent =
+                originalText;
+        }
     }
 }
 
@@ -1994,6 +2056,37 @@ function renderVendorCharacterInventory() {
                             ) || 0
                         );
 
+                    const quantity =
+                        Math.max(
+                            0,
+                            Number(
+                                entry.quantity
+                            ) || 0
+                        );
+
+                    const sellDisabled =
+                        entry.equipped_slot
+                            ? "disabled"
+                            : "";
+
+                    const sell5Disabled =
+                        (
+                            entry.equipped_slot
+                            ||
+                            quantity < 5
+                        )
+                            ? "disabled"
+                            : "";
+
+                    const sell10Disabled =
+                        (
+                            entry.equipped_slot
+                            ||
+                            quantity < 10
+                        )
+                            ? "disabled"
+                            : "";
+
                     return `
                         <article
                             class="player-item"
@@ -2006,9 +2099,7 @@ function renderVendorCharacterInventory() {
                         >
 
                             <div class="player-item-quantity">
-                                ×${Number(
-                                    entry.quantity
-                                ) || 0}
+                                ×${quantity}
                             </div>
 
                             <div class="player-item-center">
@@ -2030,15 +2121,45 @@ function renderVendorCharacterInventory() {
                                     ${value}
                                 </div>
 
-                                <button
-                                    class="player-item-sell-button"
-                                    type="button"
-                                    data-sell-item-id="${escapeVendorHtml(
-                                        entry.item.id
-                                    )}"
-                                >
-                                    VENDI
-                                </button>
+                                <div class="player-item-sell-group">
+
+                                    <button
+                                        class="player-item-sell-button"
+                                        type="button"
+                                        data-sell-item-id="${escapeVendorHtml(
+                                            entry.item.id
+                                        )}"
+                                        data-sell-quantity="1"
+                                        ${sellDisabled}
+                                    >
+                                        ×1
+                                    </button>
+
+                                    <button
+                                        class="player-item-sell-button"
+                                        type="button"
+                                        data-sell-item-id="${escapeVendorHtml(
+                                            entry.item.id
+                                        )}"
+                                        data-sell-quantity="5"
+                                        ${sell5Disabled}
+                                    >
+                                        ×5
+                                    </button>
+
+                                    <button
+                                        class="player-item-sell-button"
+                                        type="button"
+                                        data-sell-item-id="${escapeVendorHtml(
+                                            entry.item.id
+                                        )}"
+                                        data-sell-quantity="10"
+                                        ${sell10Disabled}
+                                    >
+                                        ×10
+                                    </button>
+
+                                </div>
 
                             </div>
 

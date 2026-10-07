@@ -1976,3 +1976,63 @@ input {
 
 }
 
+
+
+/* ============================================================
+   VENDOR - VENDITA MULTIPLA x1 / x5 / x10
+============================================================ */
+
+.player-item-sell-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.player-item-sell-group .player-item-sell-button {
+    min-width: 36px;
+    padding: 7px 6px;
+}
+
+.player-item-sell-group .player-item-sell-button:disabled {
+    opacity: 0.34;
+    cursor: not-allowed;
+    border-color: rgba(111, 88, 49, 0.55);
+    color: rgba(238, 231, 215, 0.52);
+}
+
+.player-item-sell-group .player-item-sell-button:disabled:hover {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(198, 164, 92, 0.10),
+            rgba(198, 164, 92, 0.025)
+        );
+    border-color: rgba(111, 88, 49, 0.55);
+    color: rgba(238, 231, 215, 0.52);
+}
+
+@media (max-width: 1050px) {
+    .player-item-actions {
+        gap: 5px;
+    }
+
+    .player-item-sell-group {
+        gap: 3px;
+    }
+
+    .player-item-sell-group .player-item-sell-button {
+        min-width: 32px;
+        padding-left: 5px;
+        padding-right: 5px;
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 560px) {
+    .player-item {
+        grid-template-columns:
+            32px
+            minmax(0, 1fr)
+            auto;
+    }
+}
