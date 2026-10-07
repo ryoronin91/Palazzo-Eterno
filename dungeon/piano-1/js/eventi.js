@@ -64,6 +64,11 @@ const DUNGEON_COMBAT_EVENTS = [
 
     {
         id: "PVP1",
+
+        // Evento conservato ma temporaneamente disattivato.
+        // Per riattivarlo basta riportare enabled a true.
+        enabled: false,
+
         x: 1,
         y: 14,
         type: "pvp",
@@ -120,6 +125,16 @@ function isDungeonCombatEventAvailable(
 ) {
 
     if (!combatEvent) {
+
+        return false;
+
+    }
+
+
+    if (
+        combatEvent.enabled ===
+        false
+    ) {
 
         return false;
 
