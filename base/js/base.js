@@ -180,7 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         setMessage("Caricamento del Livello Base...");
 
         startBackgroundMusic(
-            "../../music/base.mp3"
+            "../music/base.mp3"
         );
 
 
@@ -4044,6 +4044,76 @@ let baseVolume =
     loadBaseVolume();
 
 let baseMusic = null;
+
+function startBackgroundMusic(src) {
+    try {
+        if (baseMusic) {
+            baseMusic.pause();
+            baseMusic = null;
+        }
+
+        baseMusic = new Audio(src);
+
+        baseMusic.loop = true;
+        baseMusic.preload = "auto";
+        baseMusic.volume = baseVolume;
+
+        const tryPlay = () => {
+            if (!baseMusic) {
+                return;
+            }
+
+            baseMusic
+                .play()
+                .catch(error => {
+                    console.log(
+                        "Autoplay musica Base bloccato dal browser:",
+                        error
+                    );
+                });
+        };
+
+        tryPlay();
+
+        // Se il browser blocca l'autoplay,
+        // parte al primo input dell'utente.
+        const resumeMusic = () => {
+            if (!baseMusic) {
+                return;
+            }
+
+            baseMusic
+                .play()
+                .catch(() => {});
+
+            document.removeEventListener(
+                "pointerdown",
+                resumeMusic
+            );
+
+            document.removeEventListener(
+                "keydown",
+                resumeMusic
+            );
+        };
+
+        document.addEventListener(
+            "pointerdown",
+            resumeMusic
+        );
+
+        document.addEventListener(
+            "keydown",
+            resumeMusic
+        );
+
+    } catch (error) {
+        console.warn(
+            "Impossibile inizializzare la musica della Base:",
+            error
+        );
+    }
+}
 
 function loadBaseVolume() {
     try {
