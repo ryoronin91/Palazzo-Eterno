@@ -89,7 +89,7 @@ document.addEventListener(
     async () => {
 
         startBackgroundMusic(
-            "../../../music/vendor.mp3"
+            "../../../music/locanda.mp3"
         );
 
         setupVolumeControl();
