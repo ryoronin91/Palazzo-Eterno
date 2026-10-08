@@ -85,7 +85,7 @@ document.addEventListener(
     async () => {
 
         startBackgroundMusic(
-            "../../../music/vendor.mp3"
+            "../../../music/runografo.mp3"
         );
 
         setupVolumeControl();
