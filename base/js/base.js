@@ -179,6 +179,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         setMessage("Caricamento del Livello Base...");
 
+        startBackgroundMusic(
+            "../../music/base.mp3"
+        );
+
+
         setupBaseVolumeControl();
 
         await loadBaseMapDefinition();
