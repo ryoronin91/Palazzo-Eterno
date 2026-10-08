@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupMaintenanceForm();
     setupUpgradeContributions();
     setupVolumeControl();
-    startBackgroundMusic("../../../music/vendor.mp3");
+    startBackgroundMusic("../../../music/addestratore.mp3");
 
     try {
         await refreshServiceState(true);
