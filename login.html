@@ -8,7 +8,8 @@
     <title>Accedi - Palazzo Eterno</title>
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="components/bacheca.css?v=3">
+    <link rel="stylesheet" href="components/bacheca.css?v=16">
+    <link rel="stylesheet" href="css/scheda-feedback.css?v=16">
 
     <style>
         html,
@@ -34,6 +35,15 @@
             body {
                 background-attachment: scroll;
             }
+        }
+
+        /* Login e bacheca sono due riquadri distinti. */
+        .home > .shared-noticeboard-host {
+            margin-top: 34px;
+        }
+
+        .home > .shared-noticeboard-host .public-noticeboard {
+            margin-top: 0;
         }
 
     </style>
@@ -125,7 +135,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js?v=4"></script>
-    <script src="components/bacheca.js?v=4"></script>
+    <script src="components/bacheca.js?v=16"></script>
+    <script src="js/scheda-feedback.js?v=16"></script>
 </body>
 
 </html>

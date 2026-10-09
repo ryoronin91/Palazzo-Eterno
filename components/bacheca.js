@@ -20,6 +20,32 @@
 
     let content = { ...fallback };
 
+    function ensureFeedbackModal() {
+        if (document.getElementById("feedback-modal")) return;
+
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+            <div id="feedback-modal" class="feedback-modal" hidden>
+                <div class="feedback-modal-backdrop" data-feedback-close></div>
+                <section class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+                    <button id="feedback-close-button" class="feedback-close-button" type="button" aria-label="Chiudi" title="Chiudi">×</button>
+                    <h2 id="feedback-title" class="feedback-title">BUG &amp; SUGGERIMENTI</h2>
+                    <p class="feedback-description">
+                        Hai trovato un problema o hai un'idea per migliorare Palazzo Eterno?
+                        Scrivila qui: verrà aggiunta direttamente alla lista delle cose da fare.
+                    </p>
+                    <textarea id="feedback-text" class="feedback-text" maxlength="2000" placeholder="Descrivi il bug o il suggerimento..."></textarea>
+                    <div class="feedback-footer">
+                        <span id="feedback-status" class="feedback-status" aria-live="polite"></span>
+                        <button id="feedback-send-button" class="button" type="button">INVIA</button>
+                    </div>
+                </section>
+            </div>`;
+
+        const modal = wrapper.firstElementChild;
+        if (modal) document.body.appendChild(modal);
+    }
+
     async function loadRemoteContent() {
         if (typeof supabaseClient === "undefined") return;
         try {
@@ -54,6 +80,11 @@
             <div class="${cls}-content shared-noticeboard-content">
                 <h3 data-noticeboard-title></h3>
                 <ul class="${cls}-content-list public-noticeboard-list shared-noticeboard-list" data-noticeboard-list></ul>
+            </div>
+            <div class="shared-noticeboard-feedback-actions">
+                <button type="button" class="button secondary shared-noticeboard-feedback-button" data-feedback-open>
+                    SEGNALA BUG / INVIA SUGGERIMENTO
+                </button>
             </div>`;
     }
 
@@ -72,6 +103,7 @@
     }
 
     async function init() {
+        ensureFeedbackModal();
         await loadRemoteContent();
         document.querySelectorAll(".shared-noticeboard-host").forEach(host => {
             const mode = host.dataset.noticeboardMode || "public";
