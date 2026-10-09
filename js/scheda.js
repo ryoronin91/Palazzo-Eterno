@@ -614,7 +614,7 @@ async function loadSheetLeaderboard() {
         container.innerHTML =
             `
                 <div class="sheet-leaderboard-empty">
-                    Classifica non disponibile.
+                    Top 5 non disponibile: verificare la SQL Risonanza V3.
                 </div>
             `;
 
@@ -711,6 +711,12 @@ async function loadSheetResonanceProfile() {
 
     if (!character || (!valueElement && !honorsElement)) return;
 
+    // Valore memorizzato: immediatamente disponibile dalla scheda.
+    const storedScore = Number(character?.score);
+    if (valueElement && Number.isFinite(storedScore)) {
+        valueElement.textContent = storedScore.toLocaleString('it-IT');
+    }
+
     try {
         const { data, error } = await db.rpc("get_my_resonance_profile");
         if (error) throw error;
@@ -726,7 +732,9 @@ async function loadSheetResonanceProfile() {
         renderSheetHonors(Array.isArray(data.boss_badges) ? data.boss_badges : []);
     } catch (error) {
         console.warn("Impossibile caricare la Risonanza:", error);
-        if (valueElement) valueElement.textContent = "Non disponibile";
+        if (valueElement && !Number.isFinite(storedScore)) {
+            valueElement.textContent = 'Non disponibile';
+        }
         if (honorsElement) {
             honorsElement.textContent = "Onorificenze non disponibili.";
         }

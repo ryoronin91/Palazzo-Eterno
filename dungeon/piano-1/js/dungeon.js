@@ -762,18 +762,24 @@ document.addEventListener(
 // Risonanza personale: stesso calcolo della scheda e della Top 5.
 // Un errore RPC non interrompe il caricamento o i movimenti.
 async function loadDungeonResonanceScore() {
-    const value = document.getElementById("character-resonance");
+    const value = document.getElementById('character-resonance');
     if (!value || !character) return;
+    // characters.score è disponibile già nel personaggio caricato:
+    // non lasciare il punteggio vuoto per un errore RPC.
+    const savedScore = Number(character.score);
+    value.textContent = Number.isFinite(savedScore)
+        ? `✧ Risonanza: ${savedScore.toLocaleString('it-IT')}`
+        : '✧ Risonanza: —';
     try {
-        const {data, error} = await db.rpc("get_my_resonance_profile");
+        const { data, error } = await db.rpc('get_my_resonance_profile');
         if (error) throw error;
         const score = Number(data?.score);
-        value.textContent = Number.isFinite(score)
-            ? `✧ Risonanza: ${score.toLocaleString("it-IT")}`
-            : "✧ Risonanza: —";
+        if (data && Number.isFinite(score)) {
+            value.textContent = `✧ Risonanza: ${score.toLocaleString('it-IT')}`;
+        }
     } catch (error) {
-        console.warn("Risonanza personale non disponibile:", error);
-        value.textContent = "✧ Risonanza: —";
+        // Mantiene il valore locale; segnala la causa in Console.
+        console.warn('[RISONANZA] RPC profilo non disponibile, valore salvato mostrato:', error);
     }
 }
 
@@ -830,7 +836,7 @@ async function loadDungeonLeaderboard() {
         container.innerHTML =
             `
                 <div class="dungeon-leaderboard-empty">
-                    Classifica non disponibile.
+                    Top 5 non disponibile: verificare la SQL Risonanza V3.
                 </div>
             `;
 
@@ -11048,128 +11054,21 @@ function setupNotes() {
 // ============================================================
 
 function syncDungeonChatHeightWithMap() {
-
-    const socialColumn =
-        document.querySelector(
-            ".dungeon-social-column"
-        );
-
-    const chatPanel =
-        document.querySelector(
-            ".dungeon-chat-panel"
-        );
-
-    const mapFrame =
-        document.querySelector(
-            ".dungeon-map-frame"
-        );
-
-    const messages =
-        document.getElementById(
-            "floor-chat-messages"
-        );
-
-    const controls =
-        document.querySelector(
-            ".floor-chat-controls"
-        );
-
-    if (
-        !socialColumn ||
-        !chatPanel ||
-        !mapFrame ||
-        !messages
-    ) {
-
+    // V3: in una colonna ci sono due pannelli affiancati sopra la TOP 5.
+    // La vecchia funzione assegnava l'altezza della mappa al solo contenitore
+    // Chat/Online e spingeva la classifica fuori dall'impaginazione.
+    const side = document.querySelector('.dungeon-chat-column');
+    const map = document.querySelector('.dungeon-map-frame');
+    if (!side || !map) return;
+    if (window.innerWidth <= 1050) {
+        side.style.height = '';
+        side.style.maxHeight = '';
         return;
     }
-
-    if (
-        window.innerWidth <=
-        1050
-    ) {
-
-        socialColumn.style.height =
-            "";
-
-        socialColumn.style.maxHeight =
-            "";
-
-        chatPanel.style.height =
-            "";
-
-        chatPanel.style.maxHeight =
-            "";
-
-        chatPanel.style.minHeight =
-            "";
-
-        return;
-    }
-
-    const mapHeight =
-        mapFrame
-            .getBoundingClientRect()
-            .height;
-
-    if (
-        !Number.isFinite(mapHeight) ||
-        mapHeight <= 0
-    ) {
-
-        return;
-    }
-
-    socialColumn.style.height =
-        `${mapHeight}px`;
-
-    socialColumn.style.maxHeight =
-        `${mapHeight}px`;
-
-    chatPanel.style.flex =
-        "1 1 auto";
-
-    chatPanel.style.height =
-        "auto";
-
-    chatPanel.style.minHeight =
-        "0";
-
-    chatPanel.style.maxHeight =
-        "none";
-
-    chatPanel.style.display =
-        "flex";
-
-    chatPanel.style.flexDirection =
-        "column";
-
-    chatPanel.style.overflow =
-        "hidden";
-
-    messages.style.flex =
-        "1 1 auto";
-
-    messages.style.minHeight =
-        "0";
-
-    messages.style.height =
-        "auto";
-
-    messages.style.maxHeight =
-        "none";
-
-    messages.style.overflowY =
-        "auto";
-
-    messages.style.overflowX =
-        "hidden";
-
-    if (controls) {
-
-        controls.style.flex =
-            "0 0 auto";
-    }
+    const mapHeight = map.getBoundingClientRect().height;
+    if (!Number.isFinite(mapHeight) || mapHeight <= 0) return;
+    side.style.height = `${mapHeight}px`;
+    side.style.maxHeight = `${mapHeight}px`;
 }
 
 
