@@ -26,11 +26,7 @@
 
     <link
         rel="stylesheet"
-<<<<<<< HEAD
-        href="css/base.css?v=5"
-=======
         href="css/base.css?v=29"
->>>>>>> 9f9eaf7 (Aggiorna le versioni dei file base.css e base.js)
     >
 
     <link
@@ -38,7 +34,7 @@
         href="css/base-services.css?v=7"
     >
 
-    <link rel="stylesheet" href="../components/bacheca.css?v=3">
+    <link rel="stylesheet" href="../components/bacheca.css?v=1">
 
     <style>
         .dungeon-player-coordinates {
@@ -189,57 +185,21 @@
 
             <!-- =============================================
                  SINISTRA
-                 CHAT
+                 CHAT + ONLINE + TOP 5
             ============================================== -->
 
             <aside class="dungeon-chat-column">
 
 
                 <!-- =============================================
-                     CADUTI DEL PALAZZO
+                     RISONANZA · TOP 5
                 ============================================== -->
 
-                <section class="dungeon-panel dungeon-leaderboard-panel">
-
-                    <div class="dungeon-panel-title">
-                        CADUTI DEL PALAZZO
-                    </div>
-
-                    <div
-                        id="dungeon-leaderboard-list"
-                        class="dungeon-leaderboard-list"
-                    >
-                        <div class="dungeon-leaderboard-empty">
-                            Caricamento classifica...
-                        </div>
-                    </div>
-
-                </section>
 
 
                 <!-- =============================================
-                     ONLINE + CHAT
+                     ONLINE + TOP 5
                 ============================================== -->
-
-                <div class="dungeon-social-column">
-
-
-                    <section class="dungeon-panel dungeon-online-panel">
-
-                        <div class="dungeon-panel-title">
-                            PERSONAGGI ONLINE
-                        </div>
-
-                        <div
-                            id="dungeon-online-list"
-                            class="dungeon-online-list"
-                        >
-                            <div class="dungeon-online-empty">
-                                Connessione...
-                            </div>
-                        </div>
-
-                    </section>
 
 
                     <section class="dungeon-panel dungeon-chat-panel">
@@ -295,6 +255,46 @@
 
 
                     </section>
+
+                <div class="dungeon-social-column">
+
+
+                    <section class="dungeon-panel dungeon-online-panel">
+
+                        <div class="dungeon-panel-title">
+                            PERSONAGGI ONLINE
+                        </div>
+
+                        <div
+                            id="dungeon-online-list"
+                            class="dungeon-online-list"
+                        >
+                            <div class="dungeon-online-empty">
+                                Connessione...
+                            </div>
+                        </div>
+
+                    </section>
+
+
+                <section class="dungeon-panel dungeon-leaderboard-panel">
+
+                    <div class="dungeon-panel-title">
+                        RISONANZA · TOP 5
+                    </div>
+
+                    <div
+                        id="dungeon-leaderboard-list"
+                        class="dungeon-leaderboard-list"
+                    >
+                        <div class="dungeon-leaderboard-empty">
+                            Caricamento classifica...
+                        </div>
+                    </div>
+
+                </section>
+
+
 
 
                 </div>
@@ -413,11 +413,14 @@
 
                     <!-- NOME -->
 
-                    <div
+                    <div class="dungeon-character-heading">
+                        <div
                         id="character-name"
                         class="dungeon-character-name"
                     >
                         PERSONAGGIO
+                    </div>
+                        <span id="character-resonance" class="dungeon-character-resonance" aria-label="Risonanza personale">✧ Risonanza: —</span>
                     </div>
 
 
@@ -724,6 +727,54 @@
                     </div>
 
 
+                    <!-- =====================================
+                         SCAMBIO TRA GIOCATORI
+                    ====================================== -->
+
+                    <section class="base-trade-inline-section">
+                        <div class="quick-section-title">GIOCATORI VICINI</div>
+                        <div id="base-trade-nearby-players" class="base-trade-nearby-list">
+                            <div class="base-trade-inline-empty">Nessun giocatore adiacente.</div>
+                        </div>
+                    </section>
+
+                    <section class="base-trade-inline-section">
+                        <div class="quick-section-title">SCAMBIO</div>
+
+                        <div id="base-trade-inline-panel" class="base-trade-inline-panel disabled">
+                            <div id="base-trade-status" class="base-trade-inline-status">
+                                Seleziona un giocatore adiacente.
+                            </div>
+
+                            <div class="base-trade-inline-grid">
+                                <div class="base-trade-inline-side">
+                                    <div class="base-trade-inline-side-title">LA TUA OFFERTA</div>
+                                    <div id="base-trade-my-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="base-trade-my-offer" class="base-trade-offer-list"></div>
+                                </div>
+
+                                <div class="base-trade-inline-side">
+                                    <div id="base-trade-other-name" class="base-trade-inline-side-title">ALTRO GIOCATORE</div>
+                                    <div id="base-trade-other-confirmed" class="base-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="base-trade-other-offer" class="base-trade-offer-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="base-trade-add-box">
+                                <select id="base-trade-item-select" class="base-trade-select" aria-label="Oggetto da offrire" disabled></select>
+                                <input id="base-trade-item-quantity" class="base-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire" disabled>
+                                <button id="base-trade-add-item" class="base-trade-button compact" type="button" disabled>AGGIUNGI</button>
+                            </div>
+
+                            <div class="base-trade-inline-actions">
+                                <button id="base-trade-decline" class="base-trade-button secondary" type="button" hidden>RIFIUTA</button>
+                                <button id="base-trade-accept" class="base-trade-button primary" type="button" hidden>ACCETTA</button>
+                                <button id="base-trade-cancel" class="base-trade-button secondary" type="button" disabled>ANNULLA</button>
+                                <button id="base-trade-confirm" class="base-trade-button primary" type="button" disabled>CONFERMA</button>
+                            </div>
+                        </div>
+                    </section>
+
                     <!--
                         Manteniamo questo elemento nascosto
                         per compatibilità con eventuale codice
@@ -1011,17 +1062,17 @@
 
 
 
+
+    <!-- =====================================================
+         SCAMBIO TRA GIOCATORI - SOLO LIVELLO BASE
+    ====================================================== -->
+
     <!-- =====================================================
          SCRIPT PRINCIPALI LIVELLO BASE
     ====================================================== -->
 
-<<<<<<< HEAD
-    <script src="../components/bacheca.js?v=4"></script>
-    <script src="js/base.js?v=27"></script>
-=======
     <script src="../components/bacheca.js?v=2"></script>
     <script src="js/base.js?v=41"></script>
->>>>>>> 9f9eaf7 (Aggiorna le versioni dei file base.css e base.js)
     <script src="js/eventi_base.js?v=2"></script>
 
 
@@ -1046,6 +1097,31 @@
         src="js/services/base-services.js?v=10"
     ></script>
 
+
+    <!-- BASE · sincronizzazione altezza sidebar con cornice mappa.
+         Isolata in questa pagina; non modifica lo script di Dungeon. -->
+    <script>
+    (() => {
+        "use strict";
+        const sidebar = document.querySelector('.dungeon-layout > .dungeon-chat-column');
+        const mapFrame = document.querySelector('.dungeon-map-column .dungeon-map-frame');
+        if (!sidebar || !mapFrame) return;
+
+        function updateSidebarHeight() {
+            const height = mapFrame.getBoundingClientRect().height;
+            if (Number.isFinite(height) && height > 0) {
+                sidebar.style.setProperty('--palazzo-map-panel-height', `${height}px`);
+            }
+        }
+
+        updateSidebarHeight();
+        window.addEventListener('resize', updateSidebarHeight, { passive: true });
+        window.addEventListener('load', updateSidebarHeight, { once: true });
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(updateSidebarHeight).observe(mapFrame);
+        }
+    })();
+    </script>
 
 </body>
 

@@ -4760,3 +4760,39 @@ body.base-trade-open {
         max-height: none !important;
     }
 }
+
+
+/* ============================================================
+   BASE · RISONANZA HOTFIX V5
+   Chat a tutta altezza | Online sopra + Top 5 sotto | Mappa
+   Altezza fissata dallo script in base/base.html.
+   ============================================================ */
+.dungeon-layout > .dungeon-chat-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    height: var(--palazzo-map-panel-height, 550px);
+    min-height: 0;
+    align-self: start;
+}
+.dungeon-layout > .dungeon-chat-column > .dungeon-chat-panel {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0 !important;
+    overflow: hidden;
+}
+.dungeon-layout > .dungeon-chat-column > .dungeon-social-column {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-rows: minmax(0, 3fr) minmax(0, 7fr);
+    min-height: 0 !important;
+    max-height: none !important;
+}
+.dungeon-layout > .dungeon-chat-column .floor-chat-messages,
+.dungeon-layout > .dungeon-chat-column .dungeon-online-list,
+.dungeon-layout > .dungeon-chat-column .dungeon-leaderboard-list {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
