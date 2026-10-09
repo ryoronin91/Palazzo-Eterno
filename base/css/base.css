@@ -4587,3 +4587,68 @@ body.base-trade-open {
     pointer-events: auto !important;
     cursor: pointer !important;
 }
+
+/* ============================================================
+   RISONANZA V2 | Scambio Chat / Top 5 e schede con stemmi sotto
+   ============================================================ */
+/* Invertiamo i due pannelli in desktop e mobile senza spostare
+   i loro ID o i listener JS collegati a chat e realtime. */
+.dungeon-chat-column > .dungeon-social-column { order: 1; }
+.dungeon-chat-column > .dungeon-leaderboard-panel { order: 2; }
+
+.dungeon-leaderboard-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    padding: 11px 7px 12px;
+    min-height: 0;
+    border-bottom: 1px solid rgba(177, 138, 77, 0.30);
+}
+.dungeon-leaderboard-main {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    align-items: baseline;
+    gap: 6px;
+}
+.dungeon-leaderboard-position { font-size: 12px; text-align: left; }
+.dungeon-leaderboard-name { font-size: 12px; min-width: 0; }
+.dungeon-leaderboard-score { font-size: 12px; text-align: right; white-space: nowrap; }
+.dungeon-leaderboard-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 22px;
+    padding-left: 2px;
+    gap: 5px;
+}
+.dungeon-leaderboard-no-badges { color: #857a68; font-size: 9px; font-style: italic; }
+.dungeon-leaderboard-badge-wrap,
+.dungeon-leaderboard-badge { width: 22px; height: 22px; }
+.dungeon-leaderboard-badge-wrap { flex: 0 0 22px; }
+.dungeon-leaderboard-badge-fallback { font-size: 17px; }
+
+.dungeon-character-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 9px;
+    row-gap: 3px;
+    margin-bottom: 8px;
+}
+.dungeon-character-heading .dungeon-character-name { margin-bottom: 0; min-height: 0; }
+.dungeon-character-resonance {
+    color: #d4af67;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+@media (max-width: 760px) {
+    .dungeon-leaderboard-row { grid-template-columns: none; gap: 5px; padding: 8px 4px; }
+    .dungeon-leaderboard-main { grid-template-columns: auto minmax(0,1fr) auto; }
+    .dungeon-leaderboard-name, .dungeon-leaderboard-position,
+    .dungeon-leaderboard-score { font-size: 10px; grid-column: auto; }
+    .dungeon-character-resonance { font-size: 10px; }
+}

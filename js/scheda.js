@@ -627,182 +627,42 @@ async function loadSheetLeaderboard() {
 // RENDER LEADERBOARD
 // ============================================================
 
-function renderSheetLeaderboard(
-    rows
-) {
-
-    const container =
-        document.getElementById(
-            "sheet-leaderboard-list"
-        );
-
-
-    if (!container) {
-
+function renderSheetLeaderboard(rows) {
+    const container = document.getElementById("sheet-leaderboard-list");
+    if (!container) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+        container.innerHTML = '<div class="sheet-leaderboard-empty">Nessun personaggio vivo in classifica.</div>';
         return;
-
     }
-
-
-    if (
-        !Array.isArray(rows) ||
-        rows.length === 0
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="sheet-leaderboard-empty">
-                    Nessun personaggio vivo in classifica.
-                </div>
-            `;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        rows
-            .map(
-                row => {
-
-                    const position =
-                        Number(
-                            row.posizione
-                        ) || 0;
-
-
-                    const score =
-                        Number(
-                            row.score
-                        ) || 0;
-
-
-                    const name =
-                        escapeSheetLeaderboardHtml(
-                            row.character_name ||
-                            "Avventuriero"
-                        );
-
-
-                    const badges =
-                        Array.isArray(
-                            row.boss_badges
-                        )
-                            ? row.boss_badges
-                            : [];
-
-
-                    const badgesHtml =
-                        badges
-                            .map(
-                                badge => {
-
-                                    const badgeName =
-                                        escapeSheetLeaderboardHtml(
-                                            badge?.badge_name ||
-                                            badge?.display_name ||
-                                            "Boss sconfitto"
-                                        );
-
-                                    const iconPath =
-                                        escapeSheetLeaderboardHtml(
-                                            badge?.icon_path ||
-                                            ""
-                                        );
-
-                                    const floorNumber =
-                                        Number(
-                                            badge?.floor_number
-                                        ) || 0;
-
-                                    const title =
-                                        floorNumber > 0
-                                            ? `${badgeName} · Piano ${floorNumber}`
-                                            : badgeName;
-
-
-                                    if (!iconPath) {
-
-                                        return `
-                                            <span
-                                                class="sheet-leaderboard-badge sheet-leaderboard-badge-fallback"
-                                                title="${title}"
-                                                aria-label="${title}"
-                                            >
-                                                🛡
-                                            </span>
-                                        `;
-
-                                    }
-
-
-                                    return `
-                                        <span
-                                            class="sheet-leaderboard-badge-wrap"
-                                            title="${title}"
-                                        >
-                                            <img
-                                                class="sheet-leaderboard-badge"
-                                                src="${iconPath}"
-                                                alt="${badgeName}"
-                                                loading="lazy"
-                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
-                                            >
-                                            <span
-                                                class="sheet-leaderboard-badge sheet-leaderboard-badge-fallback"
-                                                aria-hidden="true"
-                                                style="display:none"
-                                            >
-                                                🛡
-                                            </span>
-                                        </span>
-                                    `;
-
-                                }
-                            )
-                            .join("");
-
-
-                    return `
-                        <div class="sheet-leaderboard-row">
-
-                            <div class="sheet-leaderboard-position">
-                                #${position}
-                            </div>
-
-                            <div class="sheet-leaderboard-identity">
-
-                                <div
-                                    class="sheet-leaderboard-name"
-                                    title="${name}"
-                                >
-                                    ${name}
-                                </div>
-
-                                ${
-                                    badgesHtml
-                                        ? `
-                                            <div class="sheet-leaderboard-badges">
-                                                ${badgesHtml}
-                                            </div>
-                                        `
-                                        : ""
-                                }
-
-                            </div>
-
-                            <div class="sheet-leaderboard-score">
-                                ${score}
-                            </div>
-
-                        </div>
-                    `;
-
-                }
-            )
-            .join("");
-
+    container.innerHTML = rows.map(row => {
+        const position = Number(row.posizione) || 0;
+        const score = Number(row.score) || 0;
+        const name = escapeSheetLeaderboardHtml(row.character_name || "Avventuriero");
+        const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
+        const badgesHtml = badges.map(badge => {
+            const badgeName = escapeSheetLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
+            const bossId = String(badge?.boss_id || "");
+            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
+            const rawPath = String(badge?.icon_path || "").trim();
+            const iconPath = escapeSheetLeaderboardHtml(goblin ? "immagini/stemmi/boss_goblin.png" : rawPath);
+            const floorNumber = Number(badge?.floor_number) || 0;
+            const title = escapeSheetLeaderboardHtml(floorNumber > 0 ? `${badge?.badge_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || "Boss sconfitto");
+            if (!iconPath) return `<span class="sheet-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
+            return `<span class="sheet-leaderboard-badge-wrap" title="${title}">
+                <img class="sheet-leaderboard-badge" src="${iconPath}" alt="${badgeName}" loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                <span class="sheet-leaderboard-badge sheet-leaderboard-badge-fallback" style="display:none" aria-hidden="true">🛡</span>
+            </span>`;
+        }).join("");
+        return `<div class="sheet-leaderboard-row">
+            <div class="sheet-leaderboard-main">
+                <span class="sheet-leaderboard-position">#${position}</span>
+                <span class="sheet-leaderboard-name" title="${name}">${name}</span>
+                <span class="sheet-leaderboard-score">${score.toLocaleString("it-IT")}</span>
+            </div>
+            <div class="sheet-leaderboard-badges">${badgesHtml || '<span class="sheet-leaderboard-no-badges">Nessuna onorificenza</span>'}</div>
+        </div>`;
+    }).join("");
 }
 
 
@@ -899,7 +759,10 @@ function renderSheetHonors(badges) {
         fallback.textContent = "🛡";
         fallback.setAttribute("aria-hidden", "true");
 
-        const imagePath = String(badge?.icon_path || "").trim();
+        const bossInfo = String(badge?.boss_id || "") + " " + String(badge?.badge_name || "");
+        const imagePath = /goblin/i.test(bossInfo)
+            ? "immagini/stemmi/boss_goblin.png"
+            : String(badge?.icon_path || "").trim();
         if (imagePath) {
             const image = document.createElement("img");
             image.alt = "";

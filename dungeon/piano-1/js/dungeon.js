@@ -624,7 +624,7 @@ document.addEventListener(
             // RISONANZA · TOP 5
             // ------------------------------------------------
 
-            await loadDungeonLeaderboard();
+            await Promise.allSettled([loadDungeonLeaderboard(), loadDungeonResonanceScore()]);
 
 
             // ------------------------------------------------
@@ -724,7 +724,10 @@ document.addEventListener(
             startDungeonCharacterRefresh();
 
             // Ricarica la Top 5 anche se i giocatori restano online.
-            window.setInterval(loadDungeonLeaderboard, 90000);
+            window.setInterval(() => {
+                loadDungeonLeaderboard();
+                loadDungeonResonanceScore();
+            }, 90000);
 
 
             setMessage(
@@ -755,6 +758,24 @@ document.addEventListener(
 // ============================================================
 // RISONANZA · TOP 5
 // ============================================================
+
+// Risonanza personale: stesso calcolo della scheda e della Top 5.
+// Un errore RPC non interrompe il caricamento o i movimenti.
+async function loadDungeonResonanceScore() {
+    const value = document.getElementById("character-resonance");
+    if (!value || !character) return;
+    try {
+        const {data, error} = await db.rpc("get_my_resonance_profile");
+        if (error) throw error;
+        const score = Number(data?.score);
+        value.textContent = Number.isFinite(score)
+            ? `✧ Risonanza: ${score.toLocaleString("it-IT")}`
+            : "✧ Risonanza: —";
+    } catch (error) {
+        console.warn("Risonanza personale non disponibile:", error);
+        value.textContent = "✧ Risonanza: —";
+    }
+}
 
 async function loadDungeonLeaderboard() {
 
@@ -822,192 +843,46 @@ async function loadDungeonLeaderboard() {
 // RENDER RISONANZA · TOP 5
 // ============================================================
 
-function renderDungeonLeaderboard(
-    rows
-) {
-
-    const container =
-        document.getElementById(
-            "dungeon-leaderboard-list"
-        );
-
-
-    if (!container) {
-
+function renderDungeonLeaderboard(rows) {
+    const container = document.getElementById("dungeon-leaderboard-list");
+    if (!container) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+        container.innerHTML = '<div class="dungeon-leaderboard-empty">Nessun personaggio vivo in classifica.</div>';
         return;
-
     }
 
-
-    if (
-        !Array.isArray(rows) ||
-        rows.length === 0
-    ) {
-
-        container.innerHTML =
-            `
-                <div class="dungeon-leaderboard-empty">
-                    Nessun personaggio vivo in classifica.
-                </div>
-            `;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        rows
-            .map(
-                row => {
-
-                    const position =
-                        Number(
-                            row.posizione
-                        ) || 0;
-
-
-                    const score =
-                        Number(
-                            row.score
-                        ) || 0;
-
-
-                    const name =
-                        escapeDungeonLeaderboardHtml(
-                            row.character_name ||
-                            "Avventuriero"
-                        );
-
-
-                    const badges =
-                        Array.isArray(
-                            row.boss_badges
-                        )
-                            ? row.boss_badges
-                            : [];
-
-
-                    const badgesHtml =
-                        badges
-                            .map(
-                                badge => {
-
-                                    const badgeName =
-                                        escapeDungeonLeaderboardHtml(
-                                            badge?.badge_name ||
-                                            badge?.display_name ||
-                                            "Boss sconfitto"
-                                        );
-
-                                    const rawIconPath =
-                                        badge?.icon_path ||
-                                        "";
-
-                                    const resolvedIconPath =
-
-                                    rawIconPath.startsWith("immagini/")
-                                            ? "../../" + rawIconPath
-                                            : rawIconPath;
-
-                                    const iconPath =
-                                        escapeDungeonLeaderboardHtml(
-                                            resolvedIconPath
-                                        );
-                            
-
-                                    const floorNumber =
-                                        Number(
-                                            badge?.floor_number
-                                        ) || 0;
-
-                                    const title =
-                                        floorNumber > 0
-                                            ? `${badgeName} · Piano ${floorNumber}`
-                                            : badgeName;
-
-
-                                    if (!iconPath) {
-
-                                        return `
-                                            <span
-                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
-                                                title="${title}"
-                                                aria-label="${title}"
-                                            >
-                                                🛡
-                                            </span>
-                                        `;
-
-                                    }
-
-
-                                    return `
-                                        <span
-                                            class="dungeon-leaderboard-badge-wrap"
-                                            title="${title}"
-                                        >
-                                            <img
-                                                class="dungeon-leaderboard-badge"
-                                                src="${iconPath}"
-                                                alt="${badgeName}"
-                                                loading="lazy"
-                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
-                                            >
-                                            <span
-                                                class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback"
-                                                aria-hidden="true"
-                                                style="display:none"
-                                            >
-                                                🛡
-                                            </span>
-                                        </span>
-                                    `;
-
-                                }
-                            )
-                            .join("");
-
-
-                    return `
-                        <div class="dungeon-leaderboard-row">
-
-                            <div class="dungeon-leaderboard-position">
-                                #${position}
-                            </div>
-
-                            <div class="dungeon-leaderboard-identity">
-
-                                <div
-                                    class="dungeon-leaderboard-name"
-                                    title="${name}"
-                                >
-                                    ${name}
-                                </div>
-
-                                ${
-                                    badgesHtml
-                                        ? `
-                                            <div class="dungeon-leaderboard-badges">
-                                                ${badgesHtml}
-                                            </div>
-                                        `
-                                        : ""
-                                }
-
-                            </div>
-
-                            <div class="dungeon-leaderboard-score">
-                                ${score}
-                            </div>
-
-                        </div>
-                    `;
-
-                }
-            )
-            .join("");
-
+    container.innerHTML = rows.map(row => {
+        const position = Number(row.posizione) || 0;
+        const score = Number(row.score) || 0;
+        const name = escapeDungeonLeaderboardHtml(row.character_name || "Avventuriero");
+        const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
+        const badgesHtml = badges.map(badge => {
+            const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
+            const bossId = String(badge?.boss_id || "");
+            const rawPath = String(badge?.icon_path || "").trim();
+            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
+            // Ogni pagina parte da una cartella differente rispetto alla root.
+            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
+                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            const iconPath = escapeDungeonLeaderboardHtml(path);
+            const floorNumber = Number(badge?.floor_number) || 0;
+            const title = escapeDungeonLeaderboardHtml(floorNumber > 0 ? `${badge?.badge_name || badge?.display_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || badge?.display_name || "Boss sconfitto");
+            if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
+            return `<span class="dungeon-leaderboard-badge-wrap" title="${title}">
+                <img class="dungeon-leaderboard-badge" src="${iconPath}" alt="${badgeName}" loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                <span class="dungeon-leaderboard-badge dungeon-leaderboard-badge-fallback" style="display:none" aria-hidden="true">🛡</span>
+            </span>`;
+        }).join("");
+        return `<div class="dungeon-leaderboard-row">
+            <div class="dungeon-leaderboard-main">
+                <span class="dungeon-leaderboard-position">#${position}</span>
+                <span class="dungeon-leaderboard-name" title="${name}">${name}</span>
+                <span class="dungeon-leaderboard-score">${score.toLocaleString("it-IT")}</span>
+            </div>
+            <div class="dungeon-leaderboard-badges">${badgesHtml || '<span class="dungeon-leaderboard-no-badges">Nessuna onorificenza</span>'}</div>
+        </div>`;
+    }).join("");
 }
 
 
