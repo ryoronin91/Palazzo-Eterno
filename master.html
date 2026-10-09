@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=7"
+        href="css/master.css?v=10"
     >
 <style>
 
@@ -230,6 +230,14 @@
             </div>
 
             <div class="master-header-actions">
+
+                <button
+                    id="master-control-center-button"
+                    type="button"
+                    class="button"
+                >
+                    CENTRO DI CONTROLLO
+                </button>
 
                 <a
                     href="scheda.html"
@@ -470,6 +478,132 @@
             </div>
 
         </section>
+
+
+
+
+        <!-- ==================================================
+             CENTRO DI CONTROLLO MASTER
+        =================================================== -->
+        <div id="master-control-center" class="master-modal master-control-center-modal" hidden>
+            <div class="master-modal-backdrop" data-close-control-center></div>
+
+            <section class="master-control-center" role="dialog" aria-modal="true" aria-labelledby="master-control-center-title">
+                <button id="master-control-center-close" class="master-modal-close" type="button" aria-label="Chiudi centro di controllo">×</button>
+
+                <div class="master-control-center-head">
+                    <div>
+                        <span class="master-label">GESTIONE PALAZZO</span>
+                        <h2 id="master-control-center-title">CENTRO DI CONTROLLO</h2>
+                        <p>Stato operativo del gioco e strumenti Master.</p>
+                    </div>
+                    <button id="master-control-refresh" type="button" class="button secondary">AGGIORNA DATI</button>
+                </div>
+
+                <nav class="master-control-tabs" aria-label="Sezioni centro di controllo">
+                    <button type="button" class="master-control-tab is-active" data-master-control-tab="overview">PANORAMICA</button>
+                    <button type="button" class="master-control-tab" data-master-control-tab="players">GIOCATORI</button>
+                    <button type="button" class="master-control-tab" data-master-control-tab="services">VENDOR / SERVIZI</button>
+                    <button type="button" class="master-control-tab" data-master-control-tab="bacheca">BACHECA</button>
+                </nav>
+
+                <div class="master-control-body">
+                    <section class="master-control-pane is-active" data-master-control-pane="overview">
+                        <div class="master-control-summary-grid">
+                            <article class="master-control-card">
+                                <span class="panel-label">GIOCATORI</span>
+                                <strong id="master-control-player-count">-</strong>
+                                <small id="master-control-player-detail">Caricamento...</small>
+                            </article>
+                            <article class="master-control-card">
+                                <span class="panel-label">COMBATTIMENTI</span>
+                                <strong id="master-control-combat-count">-</strong>
+                                <small id="master-control-combat-detail">Caricamento...</small>
+                            </article>
+                            <article class="master-control-card">
+                                <span class="panel-label">BOSS</span>
+                                <strong id="master-control-boss-state">-</strong>
+                                <small id="master-control-boss-detail">Caricamento...</small>
+                            </article>
+                            <article class="master-control-card">
+                                <span class="panel-label">OGGETTI UNICI</span>
+                                <strong id="master-control-unique-count">-</strong>
+                                <small id="master-control-unique-detail">Caricamento...</small>
+                            </article>
+                        </div>
+
+                        <div class="master-control-grid two-columns">
+                            <article class="master-control-section">
+                                <div class="master-control-section-head"><h3>COOLDOWN</h3></div>
+                                <div id="master-control-cooldowns" class="master-control-list"><div class="master-control-empty">Caricamento...</div></div>
+                            </article>
+
+                            <article class="master-control-section">
+                                <div class="master-control-section-head"><h3>OGGETTI UNICI</h3></div>
+                                <div id="master-control-unique-items" class="master-control-list"><div class="master-control-empty">Caricamento...</div></div>
+                            </article>
+
+                            <article class="master-control-section">
+                                <div class="master-control-section-head"><h3>COMBATTIMENTI ATTIVI</h3></div>
+                                <div id="master-control-combats" class="master-control-list"><div class="master-control-empty">Caricamento...</div></div>
+                            </article>
+
+                            <article class="master-control-section">
+                                <div class="master-control-section-head"><h3>PASSWORD BOSS</h3></div>
+                                <div class="master-control-feature-value">
+                                    <strong id="master-control-boss-password">-</strong>
+                                    <span id="master-control-boss-password-expiry">Caricamento...</span>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="master-control-pane" data-master-control-pane="players">
+                        <div class="master-control-section-head">
+                            <div><span class="panel-label">ROSTER</span><h3>TUTTI I GIOCATORI</h3></div>
+                        </div>
+                        <div id="master-control-players" class="master-control-list master-control-player-grid"></div>
+                    </section>
+
+                    <section class="master-control-pane" data-master-control-pane="services">
+                        <div class="master-control-section-head">
+                            <div><span class="panel-label">BASE</span><h3>VENDOR E SERVIZI</h3></div>
+                        </div>
+                        <div id="master-control-services" class="master-control-list master-control-services-grid"><div class="master-control-empty">Caricamento...</div></div>
+                    </section>
+
+                    <section class="master-control-pane" data-master-control-pane="bacheca">
+                        <div class="master-control-section-head">
+                            <div>
+                                <span class="panel-label">COMUNICAZIONI PUBBLICHE</span>
+                                <h3>MODIFICA BACHECA</h3>
+                                <p>Una riga = una voce. L'ordine delle righe è l'ordine mostrato ai giocatori.</p>
+                            </div>
+                        </div>
+
+                        <div class="master-noticeboard-editor-grid">
+                            <label class="master-noticeboard-editor">
+                                <span>NOVITÀ</span>
+                                <textarea id="master-noticeboard-novita" rows="10" placeholder="Una voce per riga"></textarea>
+                            </label>
+                            <label class="master-noticeboard-editor">
+                                <span>PROSSIMI UPGRADE</span>
+                                <textarea id="master-noticeboard-upgrade" rows="10" placeholder="Una voce per riga"></textarea>
+                            </label>
+                            <label class="master-noticeboard-editor">
+                                <span>AVVISI</span>
+                                <textarea id="master-noticeboard-avvisi" rows="10" placeholder="Una voce per riga"></textarea>
+                            </label>
+                        </div>
+
+                        <div class="master-noticeboard-actions">
+                            <span id="master-noticeboard-feedback"></span>
+                            <button id="master-noticeboard-save" type="button" class="button">SALVA BACHECA</button>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </div>
 
 
         <!-- ==================================================
@@ -719,7 +853,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=9"></script>
+    <script src="js/master.js?v=12"></script>
 
 
 </body>

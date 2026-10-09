@@ -1,57 +1,15 @@
-/* =====================================================
-   BACHECA CONDIVISA - PALAZZO ETERNO
-====================================================== */
-
-.shared-noticeboard { color: #d5ccbd; }
-
-.shared-noticeboard[data-mode="public"] {
-    margin-top: 26px;
-    padding: 18px;
-    border: 1px solid rgba(188, 145, 72, 0.58);
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(31, 24, 18, 0.92), rgba(12, 15, 21, 0.96));
-    box-shadow: 0 14px 38px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,225,160,.05);
-}
-
-.shared-noticeboard-header { margin-bottom: 14px; text-align: center; }
-.shared-noticeboard-kicker { margin-bottom: 4px; color: #9f7c48; font-size: .7rem; font-weight: 800; letter-spacing: .18em; }
-.shared-noticeboard-title { margin: 0; color: #e0bc77; font-size: 1.15rem; letter-spacing: .08em; }
-.shared-noticeboard-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-bottom: 14px; }
-.shared-noticeboard-tab { min-height: 38px; padding: 7px 8px; border: 1px solid rgba(164,126,67,.42); border-radius: 7px; background: rgba(7,10,15,.72); color: #a99b83; font: inherit; font-size: .72rem; font-weight: 800; letter-spacing: .05em; cursor: pointer; transition: 140ms ease; }
-.shared-noticeboard-tab:hover { border-color: rgba(214,169,91,.78); color: #e4c27f; }
-.shared-noticeboard-tab.active { border-color: #b98a48; background: linear-gradient(180deg,rgba(87,58,31,.85),rgba(43,31,24,.92)); color: #f1d9a4; }
-.shared-noticeboard-content { min-height: 155px; padding: 15px; border: 1px solid rgba(164,126,67,.28); border-radius: 8px; background: rgba(6,9,14,.58); }
-.shared-noticeboard-content h3 { margin: 0 0 12px; color: #d8b56f; font-size: .92rem; letter-spacing: .06em; }
-.shared-noticeboard-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.shared-noticeboard-list li { position: relative; margin: 0; padding: 9px 10px 9px 27px; border: 1px solid rgba(149,117,69,.18); border-radius: 6px; background: rgba(255,246,226,.025); color: #d5ccbd; font-size: .88rem; line-height: 1.4; text-align: left; }
-.shared-noticeboard-list li::before { content: "◆"; position: absolute; left: 10px; top: 10px; color: #a87d40; font-size: .62rem; }
-
-.shared-noticeboard-feedback {
-    display: flex;
-    min-height: 105px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    text-align: center;
-}
-
-.shared-noticeboard-feedback p {
-    margin: 0;
-    color: #d5ccbd;
-    font-size: .88rem;
-    line-height: 1.5;
-}
-
-.shared-noticeboard-feedback-button {
-    min-width: 210px;
-}
-
-.shared-noticeboard[data-mode="base"] { padding: 0; }
-.shared-noticeboard[data-mode="base"] .shared-noticeboard-title { font-size: 1.25rem; }
-
-@media (max-width: 620px) {
-    .shared-noticeboard[data-mode="public"] { padding: 13px; }
-    .shared-noticeboard-tabs { grid-template-columns: 1fr; }
-    .shared-noticeboard-content { min-height: 0; padding: 12px; }
-}
+.shared-noticeboard-host { width:100%; }
+.public-noticeboard { margin-top:26px; padding:18px; border:1px solid rgba(188,145,72,.58); border-radius:12px; background:linear-gradient(180deg,rgba(31,24,18,.92),rgba(12,15,21,.96)); box-shadow:0 14px 38px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,225,160,.05); }
+.shared-noticeboard-header { margin-bottom:14px; text-align:center; }
+.shared-noticeboard-kicker { margin-bottom:4px; color:#9f7c48; font-size:.7rem; font-weight:800; letter-spacing:.18em; }
+.shared-noticeboard-title { margin:0; color:#e0bc77; font-size:1.15rem; letter-spacing:.08em; }
+.shared-noticeboard-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:14px; }
+.shared-noticeboard-tab { min-height:38px; padding:7px 8px; border:1px solid rgba(164,126,67,.42); border-radius:7px; background:rgba(7,10,15,.72); color:#a99b83; font:inherit; font-size:.72rem; font-weight:800; letter-spacing:.05em; cursor:pointer; }
+.shared-noticeboard-tab:hover { border-color:rgba(214,169,91,.78); color:#e4c27f; }
+.shared-noticeboard-tab.active { border-color:#b98a48; background:linear-gradient(180deg,rgba(87,58,31,.85),rgba(43,31,24,.92)); color:#f1d9a4; }
+.shared-noticeboard-content { min-height:155px; padding:15px; border:1px solid rgba(164,126,67,.28); border-radius:8px; background:rgba(6,9,14,.58); }
+.shared-noticeboard-content h3 { margin:0 0 12px; color:#d8b56f; font-size:.92rem; letter-spacing:.06em; }
+.shared-noticeboard-list { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
+.shared-noticeboard-list li { position:relative; margin:0; padding:9px 10px 9px 27px; border:1px solid rgba(149,117,69,.18); border-radius:6px; background:rgba(255,246,226,.025); color:#d5ccbd; font-size:.88rem; line-height:1.4; text-align:left; }
+.shared-noticeboard-list li::before { content:"◆"; position:absolute; left:10px; top:10px; color:#a87d40; font-size:.62rem; }
+@media(max-width:620px){ .public-noticeboard{padding:13px} .shared-noticeboard-tabs{grid-template-columns:1fr} .shared-noticeboard-content{min-height:0;padding:12px} }

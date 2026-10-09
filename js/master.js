@@ -7258,3 +7258,333 @@ window.addEventListener(
 
     }
 );
+
+
+// ============================================================
+// CENTRO DI CONTROLLO MASTER v12
+// Bacheca + riepilogo operativo + servizi/vendor
+// ============================================================
+
+const MASTER_NOTICEBOARD_SECTIONS = ["novita", "upgrade", "avvisi"];
+const MASTER_UNIQUE_ITEMS = [
+    { item_id: "dito_scimmia", label: "Dito di Scimmia" }
+];
+
+let masterControlServices = [];
+let masterControlUniqueState = [];
+
+window.addEventListener("DOMContentLoaded", () => {
+    setupMasterControlCenter();
+});
+
+function setupMasterControlCenter() {
+    const modal = document.getElementById("master-control-center");
+    const open = document.getElementById("master-control-center-button");
+    const close = document.getElementById("master-control-center-close");
+    const refresh = document.getElementById("master-control-refresh");
+    const saveNoticeboard = document.getElementById("master-noticeboard-save");
+
+    if (!modal || !open) return;
+
+    const closeModal = () => {
+        modal.hidden = true;
+        document.body.style.overflow = "";
+    };
+
+    open.addEventListener("click", async () => {
+        modal.hidden = false;
+        document.body.style.overflow = "hidden";
+        await loadMasterControlCenter();
+    });
+
+    close?.addEventListener("click", closeModal);
+    modal.querySelectorAll("[data-close-control-center]").forEach(el => el.addEventListener("click", closeModal));
+    refresh?.addEventListener("click", loadMasterControlCenter);
+    saveNoticeboard?.addEventListener("click", saveMasterNoticeboard);
+
+    document.querySelectorAll("[data-master-control-tab]").forEach(button => {
+        button.addEventListener("click", () => setMasterControlTab(button.dataset.masterControlTab));
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !modal.hidden) closeModal();
+    });
+}
+
+function setMasterControlTab(tab) {
+    document.querySelectorAll("[data-master-control-tab]").forEach(button => {
+        button.classList.toggle("is-active", button.dataset.masterControlTab === tab);
+    });
+    document.querySelectorAll("[data-master-control-pane]").forEach(pane => {
+        pane.classList.toggle("is-active", pane.dataset.masterControlPane === tab);
+    });
+}
+
+async function loadMasterControlCenter() {
+    const button = document.getElementById("master-control-refresh");
+    if (button) button.disabled = true;
+
+    try {
+        // Prima aggiorna le sorgenti già usate dalla dashboard.
+        await loadActiveMasterCombats();
+        await Promise.all([
+            loadAllMasterCharacters(),
+            loadMasterBossPassword(),
+            loadMasterCooldownStates(),
+            loadMasterTrapStates(),
+            loadMasterControlServices(),
+            loadMasterUniqueItems(),
+            loadMasterNoticeboardEditor()
+        ]);
+        renderMasterControlOverview();
+        renderMasterControlPlayers();
+        renderMasterControlServices();
+        renderMasterControlUniqueItems();
+        renderMasterControlCombats();
+        renderMasterControlCooldowns();
+        syncMasterControlBossPassword();
+    } catch (error) {
+        console.error("Errore Centro di Controllo Master:", error);
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+async function loadMasterControlServices() {
+    const { data, error } = await db
+        .from("base_services")
+        .select("*")
+        .order("display_name", { ascending: true });
+
+    if (error) {
+        console.error("Errore servizi Master:", error);
+        masterControlServices = [];
+        return;
+    }
+    masterControlServices = Array.isArray(data) ? data : [];
+}
+
+async function loadMasterUniqueItems() {
+    const ids = MASTER_UNIQUE_ITEMS.map(item => item.item_id);
+    const { data, error } = await db
+        .from("character_inventory")
+        .select("character_id, item_id, quantity")
+        .in("item_id", ids);
+
+    if (error) {
+        console.error("Errore oggetti unici Master:", error);
+        masterControlUniqueState = [];
+        return;
+    }
+
+    masterControlUniqueState = MASTER_UNIQUE_ITEMS.map(definition => {
+        const holdings = (data || []).filter(row =>
+            row.item_id === definition.item_id && (Number(row.quantity) || 0) > 0
+        );
+        const owners = holdings.map(row => ({
+            character_id: row.character_id,
+            quantity: Number(row.quantity) || 0,
+            name: allMasterPlayers.get(row.character_id)?.nome || row.character_id
+        }));
+        return { ...definition, available: owners.length === 0, owners };
+    });
+}
+
+function renderMasterControlOverview() {
+    const players = Array.from(allMasterPlayers.values());
+    const online = players.filter(p => p.online).length;
+    const combats = Array.from(activeMasterCombats.values());
+    const uniqueOwned = masterControlUniqueState.filter(item => !item.available).length;
+
+    setText("master-control-player-count", String(players.length));
+    setText("master-control-player-detail", `${online} online · ${players.length - online} offline`);
+    setText("master-control-combat-count", String(combats.length));
+    setText("master-control-combat-detail", combats.length ? "Sessioni waiting / active" : "Nessun combattimento in corso");
+
+    const bossCooldown = masterBossState.available === false;
+    setText("master-control-boss-state", bossCooldown ? "COOLDOWN" : "DISPONIBILE");
+    setText("master-control-boss-detail", bossCooldown ? (formatMasterCooldown(masterBossState.cooldown_until) || "Cooldown attivo") : "Goblin Boss affrontabile");
+
+    setText("master-control-unique-count", `${uniqueOwned}/${MASTER_UNIQUE_ITEMS.length}`);
+    setText("master-control-unique-detail", uniqueOwned ? "Oggetti attualmente posseduti" : "Tutti disponibili");
+}
+
+function renderMasterControlPlayers() {
+    const container = document.getElementById("master-control-players");
+    if (!container) return;
+    const players = Array.from(allMasterPlayers.values()).sort((a,b) => String(a.nome||"").localeCompare(String(b.nome||""), "it"));
+    container.innerHTML = "";
+    if (!players.length) {
+        container.innerHTML = '<div class="master-control-empty">Nessun personaggio nel piano selezionato.</div>';
+        return;
+    }
+    players.forEach(player => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "master-control-row";
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+        const title = document.createElement("strong");
+        title.textContent = player.nome || "Avventuriero";
+        const meta = document.createElement("small");
+        meta.textContent = `LV ${Number(player.livello)||1} · SCORE ${Number(player.score)||0} · X ${Number(player.x)||0} Y ${Number(player.y)||0}${player.active_combat_id ? " · COMBAT" : ""}`;
+        const state = document.createElement("span");
+        state.className = `master-control-state ${player.online ? "master-control-good" : ""}`;
+        state.textContent = player.online ? "ONLINE" : "OFFLINE";
+        info.append(title, meta); row.append(info, state);
+        row.addEventListener("click", () => openCharacterSheet(player.character_id));
+        container.appendChild(row);
+    });
+}
+
+function renderMasterControlServices() {
+    const container = document.getElementById("master-control-services");
+    if (!container) return;
+    container.innerHTML = "";
+    if (!masterControlServices.length) {
+        container.innerHTML = '<div class="master-control-empty">Nessun servizio trovato in base_services.</div>';
+        return;
+    }
+    masterControlServices.forEach(service => {
+        const row = document.createElement("div"); row.className = "master-control-row";
+        const info = document.createElement("div"); info.className = "master-control-row-main";
+        const title = document.createElement("strong"); title.textContent = service.display_name || service.service_key || "Servizio";
+        const meta = document.createElement("small");
+        const parts = [`LV ${Number(service.current_level)||1}`];
+        if (service.maintenance_seconds != null) parts.push(`manutenzione ${service.maintenance_seconds}s`);
+        if (service.construction_seconds != null) parts.push(`costruzione ${service.construction_seconds}s`);
+        meta.textContent = parts.join(" · ");
+        const state = document.createElement("span"); state.className = "master-control-state";
+        state.textContent = String(service.status || "SCONOSCIUTO").toUpperCase();
+        const normalized = String(service.status || "").toLowerCase();
+        if (normalized === "active") state.classList.add("master-control-good");
+        if (normalized === "building" || normalized === "maintenance") state.classList.add("master-control-warn");
+        info.append(title, meta); row.append(info, state); container.appendChild(row);
+    });
+}
+
+function renderMasterControlUniqueItems() {
+    const container = document.getElementById("master-control-unique-items");
+    if (!container) return;
+    container.innerHTML = "";
+    masterControlUniqueState.forEach(item => {
+        const row = document.createElement("div"); row.className = "master-control-row";
+        const info = document.createElement("div"); info.className = "master-control-row-main";
+        const title = document.createElement("strong"); title.textContent = item.label;
+        const meta = document.createElement("small");
+        meta.textContent = item.available ? "Nessun personaggio lo possiede." : item.owners.map(owner => `${owner.name}${owner.quantity > 1 ? ` ×${owner.quantity}` : ""}`).join(", ");
+        const state = document.createElement("span"); state.className = `master-control-state ${item.available ? "master-control-good" : "master-control-warn"}`;
+        state.textContent = item.available ? "DISPONIBILE" : "IN POSSESSO";
+        info.append(title, meta); row.append(info, state); container.appendChild(row);
+    });
+}
+
+function renderMasterControlCombats() {
+    const container = document.getElementById("master-control-combats");
+    if (!container) return;
+    const combats = Array.from(activeMasterCombats.values());
+    container.innerHTML = "";
+    if (!combats.length) { container.innerHTML = '<div class="master-control-empty">Nessun combattimento attivo.</div>'; return; }
+    combats.forEach(combat => {
+        const row = document.createElement("div"); row.className = "master-control-row";
+        const info = document.createElement("div"); info.className = "master-control-row-main";
+        const title = document.createElement("strong"); title.textContent = String(combat.encounter_id || "COMBAT").toUpperCase();
+        const participants = Array.from(allMasterPlayers.values()).filter(p => p.active_combat_id === combat.id).map(p => p.nome);
+        const meta = document.createElement("small"); meta.textContent = `${combat.status || "active"} · Round ${Number(combat.round_number)||1}${participants.length ? ` · ${participants.join(", ")}` : ""}`;
+        const watch = document.createElement("button"); watch.type="button"; watch.className="button master-combat-watch"; watch.textContent="OSSERVA"; watch.addEventListener("click",()=>openMasterCombat(combat.id));
+        info.append(title,meta); row.append(info,watch); container.appendChild(row);
+    });
+}
+
+function renderMasterControlCooldowns() {
+    const container = document.getElementById("master-control-cooldowns");
+    if (!container) return;
+    const items = [];
+    items.push({ label:"Goblin Boss", available: masterBossState.available !== false, until: masterBossState.cooldown_until });
+    for (const event of MASTER_BASE_COMBAT_EVENTS) {
+        const state = masterBaseCombatStates[event.state_key] || {};
+        items.push({ label:event.label, available: state.available !== false, until: state.cooldown_until });
+    }
+    Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coords,event]) => {
+        if (event.type !== "trap") return;
+        const state = masterTrapStates.get(event.id);
+        items.push({ label:`Trappola ${event.id} · ${coords}`, available: !isMasterTrapCooldownActive(state), until: state?.disabled_until });
+    });
+    container.innerHTML="";
+    items.forEach(item=>{
+        const row=document.createElement("div"); row.className="master-control-row";
+        const info=document.createElement("div"); info.className="master-control-row-main";
+        const title=document.createElement("strong"); title.textContent=item.label;
+        const meta=document.createElement("small"); meta.textContent=item.available ? "Pronto / disponibile" : `Fine: ${formatMasterDateTime(item.until)}`;
+        const state=document.createElement("span"); state.className=`master-control-state ${item.available ? "master-control-good" : "master-control-warn"}`;
+        state.textContent=item.available ? "PRONTO" : (formatMasterCooldown(item.until)||"COOLDOWN");
+        info.append(title,meta); row.append(info,state); container.appendChild(row);
+    });
+}
+
+function syncMasterControlBossPassword() {
+    const password = document.getElementById("master-boss-password")?.textContent || "-";
+    const expiry = document.getElementById("master-boss-password-expiry")?.textContent || "";
+    setText("master-control-boss-password", password);
+    setText("master-control-boss-password-expiry", expiry);
+}
+
+function formatMasterDateTime(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("it-IT", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+async function loadMasterNoticeboardEditor() {
+    const feedback = document.getElementById("master-noticeboard-feedback");
+    const { data, error } = await db
+        .from("noticeboard_entries")
+        .select("id, section, content, sort_order, active")
+        .eq("active", true)
+        .order("sort_order", { ascending: true });
+
+    if (error) {
+        console.error("Errore caricamento bacheca Master:", error);
+        if (feedback) feedback.textContent = "Bacheca non disponibile: esegui prima lo SQL incluso nel pacchetto.";
+        return;
+    }
+
+    MASTER_NOTICEBOARD_SECTIONS.forEach(section => {
+        const textarea = document.getElementById(`master-noticeboard-${section}`);
+        if (!textarea) return;
+        textarea.value = (data || []).filter(row => row.section === section).map(row => row.content).join("\n");
+    });
+    if (feedback) feedback.textContent = "";
+}
+
+async function saveMasterNoticeboard() {
+    const button = document.getElementById("master-noticeboard-save");
+    const feedback = document.getElementById("master-noticeboard-feedback");
+    if (button) button.disabled = true;
+    if (feedback) feedback.textContent = "Salvataggio...";
+
+    try {
+        const rows = [];
+        MASTER_NOTICEBOARD_SECTIONS.forEach(section => {
+            const value = document.getElementById(`master-noticeboard-${section}`)?.value || "";
+            value.split(/\r?\n/).map(v => v.trim()).filter(Boolean).forEach((content, index) => {
+                rows.push({ section, content, sort_order:index, active:true });
+            });
+        });
+
+        const { error: deleteError } = await db.from("noticeboard_entries").delete().in("section", MASTER_NOTICEBOARD_SECTIONS);
+        if (deleteError) throw deleteError;
+        if (rows.length) {
+            const { error: insertError } = await db.from("noticeboard_entries").insert(rows);
+            if (insertError) throw insertError;
+        }
+
+        if (feedback) feedback.textContent = "Bacheca aggiornata. Le tre pagine leggeranno questi contenuti al prossimo caricamento.";
+    } catch (error) {
+        console.error("Errore salvataggio bacheca:", error);
+        if (feedback) feedback.textContent = `Errore: ${error.message || "salvataggio non riuscito"}`;
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
