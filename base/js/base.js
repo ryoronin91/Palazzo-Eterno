@@ -179,12 +179,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         setMessage("Caricamento del Livello Base...");
 
-        startBackgroundMusic(
-            "../music/base.mp3"
-        );
-
-
-        setupBaseVolumeControl();
+        // L'audio e' opzionale: un errore non deve bloccare il gioco.
+        try {
+            setupBaseVolumeControl();
+            startBackgroundMusic("../music/base.mp3");
+        } catch (audioError) {
+            console.warn("Audio Base non disponibile:", audioError);
+        }
 
         await loadBaseMapDefinition();
         await loadCharacter();
@@ -4046,72 +4047,37 @@ let baseVolume =
 let baseMusic = null;
 
 function startBackgroundMusic(src) {
+    if (!src || baseMusic) return;
+
     try {
-        if (baseMusic) {
-            baseMusic.pause();
-            baseMusic = null;
-        }
-
-        baseMusic = new Audio(src);
-
-        baseMusic.loop = true;
-        baseMusic.preload = "auto";
-        baseMusic.volume = baseVolume;
+        const audio = new Audio(src);
+        audio.loop = true;
+        audio.preload = "auto";
+        audio.volume = baseVolume;
+        baseMusic = audio;
 
         const tryPlay = () => {
-            if (!baseMusic) {
-                return;
+            try {
+                const playback = audio.play();
+                if (playback && typeof playback.catch === "function") {
+                    playback.catch(() => {
+                        // Autoplay bloccato o file assente: il gioco continua.
+                    });
+                }
+            } catch (error) {
+                console.warn("Riproduzione musica Base non disponibile:", error);
             }
-
-            baseMusic
-                .play()
-                .catch(error => {
-                    console.log(
-                        "Autoplay musica Base bloccato dal browser:",
-                        error
-                    );
-                });
         };
 
         tryPlay();
 
-        // Se il browser blocca l'autoplay,
-        // parte al primo input dell'utente.
-        const resumeMusic = () => {
-            if (!baseMusic) {
-                return;
-            }
-
-            baseMusic
-                .play()
-                .catch(() => {});
-
-            document.removeEventListener(
-                "pointerdown",
-                resumeMusic
-            );
-
-            document.removeEventListener(
-                "keydown",
-                resumeMusic
-            );
-        };
-
-        document.addEventListener(
-            "pointerdown",
-            resumeMusic
-        );
-
-        document.addEventListener(
-            "keydown",
-            resumeMusic
-        );
-
+        // I browser possono richiedere una prima interazione.
+        // Utilizziamo lo stesso comportamento del Dungeon.
+        document.addEventListener("pointerdown", tryPlay, { once: true });
+        document.addEventListener("keydown", tryPlay, { once: true });
     } catch (error) {
-        console.warn(
-            "Impossibile inizializzare la musica della Base:",
-            error
-        );
+        baseMusic = null;
+        console.warn("Impossibile inizializzare la musica Base:", error);
     }
 }
 
@@ -4121,6 +4087,11 @@ function loadBaseVolume() {
             localStorage.getItem(
                 BASE_VOLUME_KEY
             );
+
+        // Come nel Dungeon: nessuna preferenza salvata = 35%, non 0%.
+        if (saved === null || saved === "") {
+            return 0.35;
+        }
 
         const value =
             Number(saved);
@@ -4184,6 +4155,7 @@ function setupBaseVolumeControl() {
 
         button.textContent =
             volumeIcon(baseVolume);
+        button.title = `Volume musica: ${percentage}%`;
 
         slider.value =
             String(percentage);
