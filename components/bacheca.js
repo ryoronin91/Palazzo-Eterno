@@ -15,7 +15,7 @@
     const titles = {
         novita: "COSA C'È DI NUOVO",
         upgrade: "PROSSIMI UPGRADE",
-        avvisi: "AVVISI"
+        avvisi: "BUG & SUGGERIMENTI"
     };
 
     let content = { ...fallback };
@@ -49,7 +49,7 @@
             <nav class="${cls}-tabs shared-noticeboard-tabs" aria-label="Sezioni bacheca">
                 <button class="${cls}-tab shared-noticeboard-tab active" type="button" data-noticeboard-tab="novita">NOVITÀ</button>
                 <button class="${cls}-tab shared-noticeboard-tab" type="button" data-noticeboard-tab="upgrade">PROSSIMI UPGRADE</button>
-                <button class="${cls}-tab shared-noticeboard-tab" type="button" data-noticeboard-tab="avvisi">AVVISI</button>
+                <button class="${cls}-tab shared-noticeboard-tab" type="button" data-noticeboard-tab="avvisi">BUG & SUGGERIMENTI</button>
             </nav>
             <div class="${cls}-content shared-noticeboard-content">
                 <h3 data-noticeboard-title></h3>

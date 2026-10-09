@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/master.css?v=10"
+        href="css/master.css?v=13"
     >
 <style>
 
@@ -497,7 +497,10 @@
                         <h2 id="master-control-center-title">CENTRO DI CONTROLLO</h2>
                         <p>Stato operativo del gioco e strumenti Master.</p>
                     </div>
-                    <button id="master-control-refresh" type="button" class="button secondary">AGGIORNA DATI</button>
+                    <div class="master-control-refresh-wrap">
+                        <span id="master-control-refresh-status" class="master-control-refresh-status" aria-live="polite"></span>
+                        <button id="master-control-refresh" type="button" class="button secondary">AGGIORNA DATI</button>
+                    </div>
                 </div>
 
                 <nav class="master-control-tabs" aria-label="Sezioni centro di controllo">
@@ -591,7 +594,7 @@
                                 <textarea id="master-noticeboard-upgrade" rows="10" placeholder="Una voce per riga"></textarea>
                             </label>
                             <label class="master-noticeboard-editor">
-                                <span>AVVISI</span>
+                                <span>BUG &amp; SUGGERIMENTI</span>
                                 <textarea id="master-noticeboard-avvisi" rows="10" placeholder="Una voce per riga"></textarea>
                             </label>
                         </div>
@@ -853,7 +856,7 @@
          MASTER
     ======================================================= -->
 
-    <script src="js/master.js?v=12"></script>
+    <script src="js/master.js?v=13"></script>
 
 
 </body>

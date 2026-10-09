@@ -1892,3 +1892,29 @@
 .master-control-bad { color:#ff9999 !important; }
 @media (max-width:900px){ .master-control-summary-grid{grid-template-columns:repeat(2,1fr)} .master-control-grid.two-columns,.master-control-player-grid,.master-control-services-grid{grid-template-columns:1fr} .master-noticeboard-editor-grid{grid-template-columns:1fr} }
 @media (max-width:600px){ .master-control-center{width:calc(100% - 12px); max-height:calc(100vh - 12px); margin:6px auto} .master-control-center-head{align-items:stretch; flex-direction:column; padding:18px 16px 12px} .master-control-body{padding:10px} .master-control-summary-grid{grid-template-columns:1fr 1fr} .master-header-actions{flex-wrap:wrap} }
+
+
+/* ============================================================
+   CENTRO DI CONTROLLO - FIX v13
+   ============================================================ */
+.master-control-refresh-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.master-control-refresh-status {
+    min-height: 1em;
+    font-size: 0.68rem;
+    opacity: 0.7;
+    text-align: right;
+}
+.master-control-refresh-status.is-ok { color: #82eba0; opacity: 1; }
+.master-control-refresh-status.is-error { color: #ff9999; opacity: 1; }
+.master-control-empty.is-error { color: #ffb0b0; opacity: 0.9; }
+@media (max-width: 760px) {
+    .master-control-refresh-wrap { width: 100%; justify-content: stretch; }
+    .master-control-refresh-wrap .button { flex: 0 0 auto; }
+    .master-control-refresh-status { flex: 1 1 auto; text-align: left; }
+}

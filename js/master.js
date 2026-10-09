@@ -7588,3 +7588,468 @@ async function saveMasterNoticeboard() {
         if (button) button.disabled = false;
     }
 }
+
+
+// ============================================================
+// CENTRO DI CONTROLLO MASTER v13 - FIX OPERATIVI
+// - roster globale indipendente dal piano visualizzato
+// - refresh con feedback visibile
+// - cooldown di TUTTI i combat noti
+// - diagnostica base_services / RLS
+// ============================================================
+
+let masterControlAllPlayers = [];
+let masterControlServicesError = null;
+let masterControlRegularCombatStates = new Map();
+
+function setMasterControlRefreshStatus(text, type = "") {
+    const element = document.getElementById("master-control-refresh-status");
+    if (!element) return;
+    element.textContent = text || "";
+    element.classList.toggle("is-ok", type === "ok");
+    element.classList.toggle("is-error", type === "error");
+}
+
+async function loadMasterControlAllPlayers() {
+    const { data, error } = await db
+        .from("characters")
+        .select(`
+            id,
+            user_id,
+            nome,
+            livello,
+            token,
+            forza,
+            resistenza,
+            costituzione,
+            intelligenza,
+            destrezza,
+            fortuna,
+            current_hp,
+            current_pm,
+            dungeon_x,
+            dungeon_y,
+            base_x,
+            base_y,
+            current_location,
+            active_combat_id
+        `)
+        .order("nome", { ascending: true });
+
+    if (error) {
+        console.error("Errore roster globale Master:", error);
+        masterControlAllPlayers = [];
+        throw error;
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    const ids = rows.map(row => row.id).filter(Boolean);
+
+    const scoreMap = new Map();
+    await Promise.all(ids.map(async characterId => {
+        try {
+            const { data: score, error: scoreError } = await db.rpc(
+                "get_character_final_score",
+                { p_character_id: characterId }
+            );
+            if (scoreError) throw scoreError;
+            scoreMap.set(characterId, Number(score) || 0);
+        } catch (error) {
+            console.warn("Score non disponibile nel roster Master:", characterId, error);
+            scoreMap.set(characterId, 0);
+        }
+    }));
+
+    masterControlAllPlayers = rows.map(character => {
+        const presence = onlinePlayers.get(character.id);
+        const cached = allMasterPlayers.get(character.id);
+        return {
+            ...character,
+            character_id: character.id,
+            nome: presence?.nome || presence?.name || character.nome || "Avventuriero",
+            token: presence?.token || character.token || "token_1.png",
+            online: onlinePlayers.has(character.id),
+            score: scoreMap.get(character.id) || 0,
+            x: character.current_location === "base"
+                ? Number(character.base_x) || 0
+                : Number(character.dungeon_x) || 0,
+            y: character.current_location === "base"
+                ? Number(character.base_y) || 0
+                : Number(character.dungeon_y) || 0,
+            active_combat_id: presence?.active_combat_id ?? cached?.active_combat_id ?? character.active_combat_id ?? null
+        };
+    });
+}
+
+async function loadMasterControlServices() {
+    masterControlServicesError = null;
+
+    const { data, error } = await db
+        .from("base_services")
+        .select("*")
+        .order("service_key", { ascending: true });
+
+    if (error) {
+        console.error("Errore servizi Master:", error);
+        masterControlServices = [];
+        masterControlServicesError = error;
+        return;
+    }
+
+    masterControlServices = Array.isArray(data) ? data : [];
+}
+
+async function loadMasterControlRegularCombatCooldowns() {
+    const encounterIds = MASTER_COMBAT_EVENTS
+        .filter(event => event.type !== "boss")
+        .map(event => event.encounter_id);
+
+    masterControlRegularCombatStates.clear();
+
+    try {
+        const { data, error } = await db
+            .from("combat_sessions")
+            .select("*")
+            .in("encounter_id", encounterIds);
+
+        if (error) throw error;
+
+        const rows = Array.isArray(data) ? data : [];
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        for (const encounterId of encounterIds) {
+            const sessions = rows
+                .filter(row => row.encounter_id === encounterId)
+                .sort((a, b) => getMasterCombatSessionTimestamp(b) - getMasterCombatSessionTimestamp(a));
+
+            const active = sessions.find(row => ["waiting", "active"].includes(String(row.status || "").toLowerCase()));
+            if (active) {
+                masterControlRegularCombatStates.set(encounterId, {
+                    state: "active",
+                    available: false,
+                    active: true,
+                    until: null,
+                    source: active
+                });
+                continue;
+            }
+
+            const latest = sessions[0] || null;
+            if (!latest) {
+                masterControlRegularCombatStates.set(encounterId, {
+                    state: "ready",
+                    available: true,
+                    active: false,
+                    until: null
+                });
+                continue;
+            }
+
+            let until = latest.cooldown_until || latest.disabled_until || null;
+            if (!until) {
+                const finishedAt = getMasterCombatSessionTimestamp(latest);
+                if (finishedAt > 0) until = new Date(finishedAt + fiveMinutes).toISOString();
+            }
+
+            const untilMs = until ? new Date(until).getTime() : 0;
+            const cooldown = Number.isFinite(untilMs) && untilMs > now;
+
+            masterControlRegularCombatStates.set(encounterId, {
+                state: cooldown ? "cooldown" : "ready",
+                available: !cooldown,
+                active: false,
+                until: cooldown ? until : null,
+                source: latest
+            });
+        }
+    } catch (error) {
+        console.error("Errore cooldown combat Piano 1 Master:", error);
+        for (const encounterId of encounterIds) {
+            masterControlRegularCombatStates.set(encounterId, {
+                state: "unknown",
+                available: null,
+                active: false,
+                until: null,
+                error
+            });
+        }
+    }
+}
+
+function getMasterCombatSessionTimestamp(row) {
+    if (!row) return 0;
+    const candidates = [
+        row.cooldown_started_at,
+        row.completed_at,
+        row.ended_at,
+        row.finished_at,
+        row.updated_at,
+        row.created_at
+    ];
+    for (const value of candidates) {
+        if (!value) continue;
+        const time = new Date(value).getTime();
+        if (Number.isFinite(time)) return time;
+    }
+    return 0;
+}
+
+async function loadMasterControlCenter() {
+    const button = document.getElementById("master-control-refresh");
+    if (button) button.disabled = true;
+    setMasterControlRefreshStatus("Aggiornamento in corso…");
+
+    try {
+        await loadActiveMasterCombats();
+
+        await Promise.all([
+            loadAllMasterCharacters(),
+            loadMasterControlAllPlayers(),
+            loadMasterBossPassword(),
+            loadMasterCooldownStates(),
+            loadMasterTrapStates(),
+            loadMasterControlRegularCombatCooldowns(),
+            loadMasterControlServices(),
+            loadMasterUniqueItems(),
+            loadMasterNoticeboardEditor()
+        ]);
+
+        // Ricarica gli oggetti unici dopo il roster globale, così i nomi dei possessori
+        // possono essere risolti anche se il PG è su un altro piano.
+        await loadMasterUniqueItems();
+
+        renderMasterControlOverview();
+        renderMasterControlPlayers();
+        renderMasterControlServices();
+        renderMasterControlUniqueItems();
+        renderMasterControlCombats();
+        renderMasterControlCooldowns();
+        syncMasterControlBossPassword();
+
+        setMasterControlRefreshStatus(
+            `Aggiornato alle ${new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`,
+            "ok"
+        );
+    } catch (error) {
+        console.error("Errore Centro di Controllo Master:", error);
+        setMasterControlRefreshStatus(
+            `Aggiornamento incompleto: ${error?.message || "errore sconosciuto"}`,
+            "error"
+        );
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+async function loadMasterUniqueItems() {
+    const ids = MASTER_UNIQUE_ITEMS.map(item => item.item_id);
+    const { data, error } = await db
+        .from("character_inventory")
+        .select("character_id, item_id, quantity")
+        .in("item_id", ids);
+
+    if (error) {
+        console.error("Errore oggetti unici Master:", error);
+        masterControlUniqueState = [];
+        return;
+    }
+
+    const globalPlayers = new Map(masterControlAllPlayers.map(player => [player.character_id, player]));
+
+    masterControlUniqueState = MASTER_UNIQUE_ITEMS.map(definition => {
+        const holdings = (data || []).filter(row =>
+            row.item_id === definition.item_id && (Number(row.quantity) || 0) > 0
+        );
+        const owners = holdings.map(row => ({
+            character_id: row.character_id,
+            quantity: Number(row.quantity) || 0,
+            name: globalPlayers.get(row.character_id)?.nome || allMasterPlayers.get(row.character_id)?.nome || row.character_id
+        }));
+        return { ...definition, available: owners.length === 0, owners };
+    });
+}
+
+function renderMasterControlOverview() {
+    const players = masterControlAllPlayers;
+    const online = players.filter(p => p.online).length;
+    const combats = Array.from(activeMasterCombats.values());
+    const uniqueOwned = masterControlUniqueState.filter(item => !item.available).length;
+
+    setText("master-control-player-count", String(players.length));
+    setText("master-control-player-detail", `${online} online · ${players.length - online} offline`);
+    setText("master-control-combat-count", String(combats.length));
+    setText("master-control-combat-detail", combats.length ? "Sessioni waiting / active" : "Nessun combattimento in corso");
+
+    const bossCooldown = masterBossState.available === false;
+    setText("master-control-boss-state", bossCooldown ? "COOLDOWN" : "DISPONIBILE");
+    setText("master-control-boss-detail", bossCooldown ? (formatMasterCooldown(masterBossState.cooldown_until) || "Cooldown attivo") : "Goblin Boss affrontabile");
+
+    setText("master-control-unique-count", `${uniqueOwned}/${MASTER_UNIQUE_ITEMS.length}`);
+    setText("master-control-unique-detail", uniqueOwned ? "Oggetti attualmente posseduti" : "Tutti disponibili");
+}
+
+function renderMasterControlPlayers() {
+    const container = document.getElementById("master-control-players");
+    if (!container) return;
+
+    const players = [...masterControlAllPlayers].sort((a,b) => String(a.nome||"").localeCompare(String(b.nome||""), "it"));
+    container.innerHTML = "";
+
+    if (!players.length) {
+        container.innerHTML = '<div class="master-control-empty">Nessun personaggio trovato nel database.</div>';
+        return;
+    }
+
+    players.forEach(player => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "master-control-row";
+
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+
+        const title = document.createElement("strong");
+        title.textContent = player.nome || "Avventuriero";
+
+        const meta = document.createElement("small");
+        const location = String(player.current_location || "dungeon").toUpperCase();
+        meta.textContent = `LV ${Number(player.livello)||1} · SCORE ${Number(player.score)||0} · ${location} · X ${Number(player.x)||0} Y ${Number(player.y)||0}${player.active_combat_id ? " · COMBAT" : ""}`;
+
+        const state = document.createElement("span");
+        state.className = `master-control-state ${player.online ? "master-control-good" : ""}`;
+        state.textContent = player.online ? "ONLINE" : "OFFLINE";
+
+        info.append(title, meta);
+        row.append(info, state);
+        row.addEventListener("click", () => openCharacterSheet(player.character_id));
+        container.appendChild(row);
+    });
+}
+
+function renderMasterControlServices() {
+    const container = document.getElementById("master-control-services");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (masterControlServicesError) {
+        container.innerHTML = `<div class="master-control-empty is-error">Impossibile leggere base_services: ${String(masterControlServicesError.message || masterControlServicesError)}. Esegui la patch SQL inclusa nello ZIP per consentire la lettura al ruolo Master.</div>`;
+        return;
+    }
+
+    if (!masterControlServices.length) {
+        container.innerHTML = '<div class="master-control-empty">base_services è leggibile ma non restituisce righe. Se i servizi esistono nel DB, controlla le policy RLS con la patch SQL inclusa.</div>';
+        return;
+    }
+
+    masterControlServices.forEach(service => {
+        const row = document.createElement("div");
+        row.className = "master-control-row";
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+        const title = document.createElement("strong");
+        title.textContent = service.display_name || service.service_key || service.id || "Servizio";
+        const meta = document.createElement("small");
+        const parts = [];
+        if (service.current_level != null) parts.push(`LV ${Number(service.current_level)||1}`);
+        if (service.maintenance_seconds != null) parts.push(`manutenzione ${service.maintenance_seconds}s`);
+        if (service.construction_seconds != null) parts.push(`costruzione ${service.construction_seconds}s`);
+        if (service.build_started_at) parts.push(`inizio ${formatMasterDateTime(service.build_started_at)}`);
+        if (service.maintenance_started_at) parts.push(`manut. ${formatMasterDateTime(service.maintenance_started_at)}`);
+        meta.textContent = parts.join(" · ") || "Dati servizio disponibili";
+        const state = document.createElement("span");
+        state.className = "master-control-state";
+        state.textContent = String(service.status || "SCONOSCIUTO").toUpperCase();
+        const normalized = String(service.status || "").toLowerCase();
+        if (normalized === "active") state.classList.add("master-control-good");
+        if (["building", "maintenance", "unbuilt"].includes(normalized)) state.classList.add("master-control-warn");
+        info.append(title, meta);
+        row.append(info, state);
+        container.appendChild(row);
+    });
+}
+
+function renderMasterControlCooldowns() {
+    const container = document.getElementById("master-control-cooldowns");
+    if (!container) return;
+
+    const items = [];
+
+    // Tutti i combattimenti standard del Piano 1.
+    for (const event of MASTER_COMBAT_EVENTS.filter(entry => entry.type !== "boss")) {
+        const current = masterControlRegularCombatStates.get(event.encounter_id) || {};
+        items.push({
+            label: `${event.id} · ${event.encounter_id}`,
+            available: current.available,
+            active: current.active,
+            until: current.until,
+            unknown: current.state === "unknown"
+        });
+    }
+
+    // Boss con RPC dedicata.
+    items.push({
+        label: "Goblin Boss",
+        available: masterBossState.available !== false,
+        active: !!getActiveCombatForEncounter("combat_boss"),
+        until: masterBossState.cooldown_until
+    });
+
+    // Combat della Base.
+    for (const event of MASTER_BASE_COMBAT_EVENTS) {
+        const state = masterBaseCombatStates[event.state_key] || {};
+        items.push({
+            label: event.label,
+            available: state.available !== false,
+            active: !!getActiveCombatForEncounter(event.encounter_id),
+            until: state.cooldown_until
+        });
+    }
+
+    // Trappole, tenute nello stesso pannello perché sono cooldown operativi.
+    Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coords,event]) => {
+        if (event.type !== "trap") return;
+        const state = masterTrapStates.get(event.id);
+        items.push({
+            label: `Trappola ${event.id} · ${coords}`,
+            available: !isMasterTrapCooldownActive(state),
+            active: false,
+            until: state?.disabled_until
+        });
+    });
+
+    container.innerHTML = "";
+
+    items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "master-control-row";
+
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+
+        const title = document.createElement("strong");
+        title.textContent = item.label;
+
+        const meta = document.createElement("small");
+        if (item.active) meta.textContent = "Combattimento attualmente in corso";
+        else if (item.unknown) meta.textContent = "Stato cooldown non leggibile da combat_sessions";
+        else if (item.available) meta.textContent = "Pronto / disponibile";
+        else meta.textContent = `Fine: ${formatMasterDateTime(item.until)}`;
+
+        const state = document.createElement("span");
+        if (item.active) {
+            state.className = "master-control-state master-control-warn";
+            state.textContent = "IN CORSO";
+        } else if (item.unknown) {
+            state.className = "master-control-state";
+            state.textContent = "N/D";
+        } else {
+            state.className = `master-control-state ${item.available ? "master-control-good" : "master-control-warn"}`;
+            state.textContent = item.available ? "PRONTO" : (formatMasterCooldown(item.until) || "COOLDOWN");
+        }
+
+        info.append(title, meta);
+        row.append(info, state);
+        container.appendChild(row);
+    });
+}
