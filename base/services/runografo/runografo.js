@@ -680,7 +680,6 @@ async function buyRunografoItem(
 
         updateInventoryHeader();
 
-        renderCharacterInventory();
 
         const item =
             runografoItems.find(
