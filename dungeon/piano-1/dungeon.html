@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/dungeon.css?v=27"
+        href="css/dungeon.css?v=28"
     >
 
     <style>
@@ -177,7 +177,7 @@
 
             <!-- =============================================
                  SINISTRA
-                 CHAT
+                 CHAT + ONLINE + TOP 5
             ============================================== -->
 
             <aside class="dungeon-chat-column">
@@ -187,47 +187,11 @@
                      RISONANZA · TOP 5
                 ============================================== -->
 
-                <section class="dungeon-panel dungeon-leaderboard-panel">
-
-                    <div class="dungeon-panel-title">
-                        RISONANZA · TOP 5
-                    </div>
-
-                    <div
-                        id="dungeon-leaderboard-list"
-                        class="dungeon-leaderboard-list"
-                    >
-                        <div class="dungeon-leaderboard-empty">
-                            Caricamento classifica...
-                        </div>
-                    </div>
-
-                </section>
 
 
                 <!-- =============================================
-                     ONLINE + CHAT
+                     ONLINE + TOP 5
                 ============================================== -->
-
-                <div class="dungeon-social-column">
-
-
-                    <section class="dungeon-panel dungeon-online-panel">
-
-                        <div class="dungeon-panel-title">
-                            PERSONAGGI ONLINE
-                        </div>
-
-                        <div
-                            id="dungeon-online-list"
-                            class="dungeon-online-list"
-                        >
-                            <div class="dungeon-online-empty">
-                                Connessione...
-                            </div>
-                        </div>
-
-                    </section>
 
 
                     <section class="dungeon-panel dungeon-chat-panel">
@@ -281,6 +245,46 @@
 
 
                     </section>
+
+                <div class="dungeon-social-column">
+
+
+                    <section class="dungeon-panel dungeon-online-panel">
+
+                        <div class="dungeon-panel-title">
+                            PERSONAGGI ONLINE
+                        </div>
+
+                        <div
+                            id="dungeon-online-list"
+                            class="dungeon-online-list"
+                        >
+                            <div class="dungeon-online-empty">
+                                Connessione...
+                            </div>
+                        </div>
+
+                    </section>
+
+
+                <section class="dungeon-panel dungeon-leaderboard-panel">
+
+                    <div class="dungeon-panel-title">
+                        RISONANZA · TOP 5
+                    </div>
+
+                    <div
+                        id="dungeon-leaderboard-list"
+                        class="dungeon-leaderboard-list"
+                    >
+                        <div class="dungeon-leaderboard-empty">
+                            Caricamento classifica...
+                        </div>
+                    </div>
+
+                </section>
+
+
 
 
                 </div>
@@ -1021,6 +1025,8 @@
     <script src="js/dungeon.js?v=55"></script>
 
     <script src="js/eventi.js?v=16"></script>
+
+    <script src="../../js/map-sidebar-layout.js?v=1"></script>
 
 </body>
 
