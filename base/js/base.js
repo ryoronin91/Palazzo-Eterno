@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateBaseAbilityVisibility();
 
         // ----------------------------------------------------
-        // CADUTI DEL PALAZZO
+        // RISONANZA · TOP 5
         // ----------------------------------------------------
 
         await loadBaseLeaderboard();
@@ -314,6 +314,9 @@ if (
         setMessage(
             "Livello Base caricato."
         );
+
+        // La Top 5 si aggiorna senza bloccare il movimento.
+        window.setInterval(loadBaseLeaderboard, 90000);
     } catch (error) {
         console.error("Errore avvio Livello Base:", error);
         setMessage(
@@ -4237,7 +4240,7 @@ function setupBaseVolumeControl() {
 
 
 // ============================================================
-// CADUTI DEL PALAZZO
+// RISONANZA · TOP 5
 // ============================================================
 
 async function loadBaseLeaderboard() {
@@ -4262,10 +4265,10 @@ async function loadBaseLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_dead_characters_leaderboard_with_badges",
+                "get_living_characters_leaderboard_with_badges",
                 {
                     p_limit:
-                        20
+                        5
                 }
             );
 
@@ -4285,7 +4288,7 @@ async function loadBaseLeaderboard() {
     } catch (error) {
 
         console.error(
-            "Errore caricamento Caduti del Palazzo:",
+            "Errore caricamento Top 5 Risonanza:",
             error
         );
 
@@ -4327,7 +4330,7 @@ function renderBaseLeaderboard(
         container.innerHTML =
             `
                 <div class="dungeon-leaderboard-empty">
-                    Nessun caduto registrato.
+                    Nessun personaggio vivo in classifica.
                 </div>
             `;
 

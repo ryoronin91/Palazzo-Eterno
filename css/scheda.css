@@ -2045,3 +2045,86 @@ body {
         font-size: 12px;
     }
 }
+
+/* ============================================================
+   RISONANZA / ONORIFICENZE - PALAZZO ETERNO
+   ============================================================ */
+.sheet-resonance-grid {
+    display: grid;
+    grid-template-columns: minmax(190px, .7fr) minmax(0, 1.3fr);
+    gap: 14px;
+    margin: 0 0 26px;
+}
+.sheet-resonance-card,
+.sheet-honors-card {
+    min-width: 0;
+    padding: 18px 20px;
+    border: 1px solid rgba(184,138,59,.38);
+    border-radius: 12px;
+    background: linear-gradient(135deg,rgba(63,43,20,.35),rgba(13,13,13,.9));
+}
+.sheet-resonance-kicker {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .11em;
+    color: #d4af67;
+}
+.sheet-resonance-value {
+    margin: 10px 0 5px;
+    color: #f2db9e;
+    font-size: clamp(28px,4vw,42px);
+    font-weight: 900;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+.sheet-resonance-description {
+    margin: 6px 0 0;
+    color: #a9a196;
+    font-size: 11px;
+    line-height: 1.5;
+}
+.sheet-honors-card .sheet-section-title {
+    margin-bottom: 10px;
+}
+.sheet-honors-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+    gap: 8px;
+}
+.sheet-honors-empty {
+    color: #a9a196;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.sheet-honor {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(184,138,59,.2);
+    border-radius: 8px;
+    background: rgba(0,0,0,.25);
+}
+.sheet-honor-emblem {
+    flex: 0 0 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+}
+.sheet-honor-emblem img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+.sheet-honor-fallback { font-size: 27px; color: #d4af67; }
+.sheet-honor-copy { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.sheet-honor-copy strong { color: #eee2cf; font-size: 12px; overflow-wrap: anywhere; }
+.sheet-honor-copy span { color: #a9a196; font-size: 10px; }
+@media (max-width: 650px) {
+    .sheet-resonance-grid { grid-template-columns: 1fr; }
+    .sheet-resonance-card, .sheet-honors-card { padding: 14px; }
+}

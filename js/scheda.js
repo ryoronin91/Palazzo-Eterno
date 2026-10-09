@@ -502,7 +502,12 @@ document.addEventListener(
 
             await loadCharacter();
 
-            await loadSheetLeaderboard();
+            // RPC indipendenti: un errore nella classifica o negli
+            // stemmi non impedisce di usare la scheda personaggio.
+            await Promise.allSettled([
+                loadSheetLeaderboard(),
+                loadSheetResonanceProfile()
+            ]);
 
             ensureInventoryInterface();
 
@@ -524,6 +529,12 @@ document.addEventListener(
             updateMasterEntryButton();
 
             setupEvents();
+
+            // Stato pubblico e profilo personale aggiornati periodicamente.
+            window.setInterval(() => {
+                loadSheetLeaderboard();
+                loadSheetResonanceProfile();
+            }, 90000);
 
 
         } catch (error) {
@@ -547,7 +558,7 @@ document.addEventListener(
 
 
 // ============================================================
-// CADUTI DEL PALAZZO
+// RISONANZA · TOP 5
 // ============================================================
 
 async function loadSheetLeaderboard() {
@@ -572,10 +583,10 @@ async function loadSheetLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_dead_characters_leaderboard_with_badges",
+                "get_living_characters_leaderboard_with_badges",
                 {
                     p_limit:
-                        20
+                        5
                 }
             );
 
@@ -595,7 +606,7 @@ async function loadSheetLeaderboard() {
     } catch (error) {
 
         console.error(
-            "Errore caricamento Caduti del Palazzo:",
+            "Errore caricamento Top 5 Risonanza:",
             error
         );
 
@@ -641,7 +652,7 @@ function renderSheetLeaderboard(
         container.innerHTML =
             `
                 <div class="sheet-leaderboard-empty">
-                    Nessun caduto registrato.
+                    Nessun personaggio vivo in classifica.
                 </div>
             `;
 
@@ -829,6 +840,106 @@ function escapeSheetLeaderboardHtml(
 
 }
 
+
+// ============================================================
+// RISONANZA E ONORIFICENZE PERSONALI
+// ============================================================
+
+async function loadSheetResonanceProfile() {
+    const valueElement = document.getElementById("sheet-resonance-value");
+    const honorsElement = document.getElementById("sheet-honors-list");
+
+    if (!character || (!valueElement && !honorsElement)) return;
+
+    try {
+        const { data, error } = await db.rpc("get_my_resonance_profile");
+        if (error) throw error;
+        if (!data) throw new Error("Profilo Risonanza non disponibile.");
+
+        if (valueElement) {
+            const score = Number(data.score);
+            valueElement.textContent = Number.isFinite(score)
+                ? score.toLocaleString("it-IT")
+                : "—";
+        }
+
+        renderSheetHonors(Array.isArray(data.boss_badges) ? data.boss_badges : []);
+    } catch (error) {
+        console.warn("Impossibile caricare la Risonanza:", error);
+        if (valueElement) valueElement.textContent = "Non disponibile";
+        if (honorsElement) {
+            honorsElement.textContent = "Onorificenze non disponibili.";
+        }
+    }
+}
+
+function renderSheetHonors(badges) {
+    const container = document.getElementById("sheet-honors-list");
+    if (!container) return;
+
+    container.replaceChildren();
+
+    if (!badges.length) {
+        const empty = document.createElement("div");
+        empty.className = "sheet-honors-empty";
+        empty.textContent = "Nessuna onorificenza ancora conquistata.";
+        container.appendChild(empty);
+        return;
+    }
+
+    for (const badge of badges) {
+        const item = document.createElement("div");
+        item.className = "sheet-honor";
+
+        const emblem = document.createElement("div");
+        emblem.className = "sheet-honor-emblem";
+
+        const fallback = document.createElement("span");
+        fallback.className = "sheet-honor-fallback";
+        fallback.textContent = "🛡";
+        fallback.setAttribute("aria-hidden", "true");
+
+        const imagePath = String(badge?.icon_path || "").trim();
+        if (imagePath) {
+            const image = document.createElement("img");
+            image.alt = "";
+            image.loading = "lazy";
+            image.src = imagePath;
+            image.addEventListener("error", () => {
+                image.remove();
+                fallback.hidden = false;
+            }, { once: true });
+            fallback.hidden = true;
+            emblem.appendChild(image);
+        }
+        emblem.appendChild(fallback);
+
+        const copy = document.createElement("div");
+        copy.className = "sheet-honor-copy";
+        const name = document.createElement("strong");
+        name.textContent = badge?.badge_name || badge?.display_name || "Boss sconfitto";
+        copy.appendChild(name);
+
+        const details = [];
+        const floor = Number(badge?.floor_number);
+        if (Number.isFinite(floor) && floor > 0) {
+            details.push(`Piano ${floor}`);
+        }
+        if (badge?.defeated_at) {
+            const date = new Date(badge.defeated_at);
+            if (!Number.isNaN(date.getTime())) {
+                details.push(date.toLocaleDateString("it-IT"));
+            }
+        }
+        if (details.length) {
+            const subtitle = document.createElement("span");
+            subtitle.textContent = details.join(" · ");
+            copy.appendChild(subtitle);
+        }
+        item.append(emblem, copy);
+        container.appendChild(item);
+    }
+}
 
 // ============================================================
 // AUTENTICAZIONE
@@ -3814,6 +3925,9 @@ async function refreshCharacterAndInventory() {
     displayCharacter();
 
     displayInventory();
+
+    // Rileggiamo il valore calcolato, senza bloccare l'inventario.
+    loadSheetResonanceProfile();
 
 }
 

@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/scheda.css?v=2"
+        href="css/scheda.css?v=3"
     >
 
     <link
@@ -38,7 +38,7 @@
         <aside class="sheet-leaderboard">
 
             <div class="sheet-leaderboard-title">
-                CADUTI DEL PALAZZO
+                RISONANZA · TOP 5
             </div>
 
             <div
@@ -193,6 +193,27 @@
 
             </section>
 
+
+            <!-- =================================================
+                 RISONANZA E ONORIFICENZE
+                 I valori vengono letti dalle RPC Supabase.
+            ================================================= -->
+
+            <section class="sheet-resonance-grid" aria-label="Risonanza e Onorificenze">
+                <div class="sheet-resonance-card">
+                    <div class="sheet-resonance-kicker">LA TUA RISONANZA</div>
+                    <div id="sheet-resonance-value" class="sheet-resonance-value" aria-live="polite">—</div>
+                    <p class="sheet-resonance-description">
+                        L'eco delle tue imprese attraversa le sale del Palazzo.
+                    </p>
+                </div>
+                <div class="sheet-honors-card">
+                    <h2 class="sheet-section-title">Onorificenze</h2>
+                    <div id="sheet-honors-list" class="sheet-honors-list" aria-live="polite">
+                        <div class="sheet-honors-empty">Caricamento riconoscimenti...</div>
+                    </div>
+                </div>
+            </section>
 
             <!-- =================================================
                  TRE COLONNE
@@ -764,7 +785,7 @@
 
     <script src="js/config.js"></script>
 
-    <script src="js/scheda.js?v=15"></script>
+    <script src="js/scheda.js?v=16"></script>
 
     <script src="js/scheda-feedback.js?v=1"></script>
 

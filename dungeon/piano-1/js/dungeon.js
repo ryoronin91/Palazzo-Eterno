@@ -621,7 +621,7 @@ document.addEventListener(
 
 
             // ------------------------------------------------
-            // CADUTI DEL PALAZZO
+            // RISONANZA · TOP 5
             // ------------------------------------------------
 
             await loadDungeonLeaderboard();
@@ -723,6 +723,9 @@ document.addEventListener(
 
             startDungeonCharacterRefresh();
 
+            // Ricarica la Top 5 anche se i giocatori restano online.
+            window.setInterval(loadDungeonLeaderboard, 90000);
+
 
             setMessage(
                 "Usa WASD, le frecce o clicca una casella adiacente."
@@ -750,7 +753,7 @@ document.addEventListener(
 
 
 // ============================================================
-// CADUTI DEL PALAZZO
+// RISONANZA · TOP 5
 // ============================================================
 
 async function loadDungeonLeaderboard() {
@@ -775,10 +778,10 @@ async function loadDungeonLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_dead_characters_leaderboard_with_badges",
+                "get_living_characters_leaderboard_with_badges",
                 {
                     p_limit:
-                        20
+                        5
                 }
             );
 
@@ -798,7 +801,7 @@ async function loadDungeonLeaderboard() {
     } catch (error) {
 
         console.error(
-            "Errore caricamento Caduti del Palazzo:",
+            "Errore caricamento Top 5 Risonanza:",
             error
         );
 
@@ -816,7 +819,7 @@ async function loadDungeonLeaderboard() {
 
 
 // ============================================================
-// RENDER CADUTI DEL PALAZZO
+// RENDER RISONANZA · TOP 5
 // ============================================================
 
 function renderDungeonLeaderboard(
@@ -844,7 +847,7 @@ function renderDungeonLeaderboard(
         container.innerHTML =
             `
                 <div class="dungeon-leaderboard-empty">
-                    Nessun caduto registrato.
+                    Nessun personaggio vivo in classifica.
                 </div>
             `;
 
