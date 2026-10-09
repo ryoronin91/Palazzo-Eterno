@@ -3826,7 +3826,9 @@ async function performMovement(
     // --------------------------------------------------------
 
     if (
-        isBossRoomGateCell(
+        isRestrictedBossGateEntry(
+            playerX,
+            playerY,
             newX,
             newY
         )
@@ -4138,6 +4140,17 @@ const BOSS_ROOM_GATE_CELLS = [
     { x: 19, y: 16 },
     { x: 16, y: 17 }
 ];
+
+// Solo questi due attraversamenti dall'esterno verso l'interno
+// richiedono la password. Il percorso inverso è sempre libero.
+function isRestrictedBossGateEntry(fromX, fromY, toX, toY) {
+    return (
+        (Number(fromX) === 19 && Number(fromY) === 15 &&
+         Number(toX) === 19 && Number(toY) === 16) ||
+        (Number(fromX) === 15 && Number(fromY) === 17 &&
+         Number(toX) === 16 && Number(toY) === 17)
+    );
+}
 
 let bossRoomAccessUnlocked =
     false;
@@ -5095,23 +5108,8 @@ function canMoveTo(
     }
 
 
-    // --------------------------------------------------------
-    // VARCHI STANZA BOSS
-    // --------------------------------------------------------
-
-    if (
-        isBossRoomGateCell(
-            visibleX,
-            visibleY
-        )
-        &&
-        !hasBossRoomAccess()
-    ) {
-
-        return false;
-
-    }
-
+    // Il varco è percorribile: il controllo della password
+    // avviene soltanto sugli specifici ingressi in performMovement.
 
     // --------------------------------------------------------
     // TOKEN EVENTO COMBAT
