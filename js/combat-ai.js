@@ -684,6 +684,123 @@ async function runEnemyAI(
     try {
 
         // ====================================================
+        // BERSERK DI PUZZACINTA — IA TATTICA SERVER-SIDE
+        // ====================================================
+        // Incontro isolato: non modifica l'IA dei normali Goblin.
+        // Il server decide percorso senza spuntoni, catena e fase.
+        if (monsterType === "goblin_berserk") {
+
+            const {
+                data: berserkData,
+                error: berserkError
+            } = await db.rpc(
+                "run_berserk_turn",
+                { p_combat_id: combatId }
+            );
+
+            if (berserkError) {
+                throw berserkError;
+            }
+
+            if (berserkData?.executed === true) {
+
+                const bossName =
+                    berserkData.enemy_name || "Berserk";
+
+                if (Number(berserkData.phase) === 2) {
+                    addCombatLog(
+                        `${bossName} è in FURIA! Agisce due volte in questo turno.`
+                    );
+                }
+
+                if (berserkData.move?.escaped_spikes) {
+                    addCombatLog(
+                        `${bossName} si allontana rapidamente dagli spuntoni!`
+                    );
+                } else if (Number(berserkData.move?.steps) > 0) {
+                    addCombatLog(
+                        `${bossName} avanza per ${berserkData.move.steps} caselle evitando gli spuntoni.`
+                    );
+                }
+
+                for (const action of berserkData.actions || []) {
+
+                    if (action?.executed !== true) {
+                        continue;
+                    }
+
+                    if (action.type === "chain") {
+                        const verb = action.ability === "attrazione"
+                            ? "attira"
+                            : "respinge";
+
+                        let line =
+                            `${bossName} usa ${action.ability}: ${verb} ${action.target_name}!`;
+
+                        if (action.on_spikes) {
+                            line += ` Il bersaglio finisce sugli spuntoni: ` +
+                                `${Number(action.spike_damage) || 0} danni ` +
+                                `· PF ${action.target_hp}.`;
+                        } else {
+                            line += " Lo avvicina agli spuntoni.";
+                        }
+
+                        if (action.target_dead) {
+                            line += ` ${action.target_name} è sconfitto!`;
+                        }
+
+                        addCombatLog(line);
+                    }
+
+                    if (action.type === "melee") {
+                        let line =
+                            `${action.attacker_name || bossName} attacca ` +
+                            `${action.target_name}: ` +
+                            `1d10 (${action.roll}) + ATT ${action.attack} = ${action.total} ` +
+                            `contro DIF ${action.defense}. `;
+
+                        line += action.hit
+                            ? `${action.damage} danni · PF ${action.target_hp}/${action.target_max_hp}.`
+                            : "MANCATO.";
+
+                        if (action.target_dead) {
+                            line += ` ${action.target_name} è sconfitto!`;
+                        }
+                        addCombatLog(line);
+                    }
+                }
+            }
+
+            await loadCombatSession();
+            await loadCombatEntities();
+            lastCombatEntitiesSnapshot = createCombatSnapshot();
+            renderCombat();
+
+            // Se l'ultima azione ha causato la vittoria/sconfitta,
+            // non bisogna forzare il passaggio a un nuovo turno.
+            if (combatSession?.status === "active") {
+                const {
+                    error: endError
+                } = await db.rpc("finish_enemy_turn", {
+                    p_combat_id: combatId,
+                    p_enemy_entity_id: currentEntity.id,
+                    p_round_number: Number(berserkData?.round ?? combatSession.round_number)
+                });
+
+                if (endError) {
+                    throw endError;
+                }
+
+                await loadCombatSession();
+                await loadCombatEntities();
+                lastCombatEntitiesSnapshot = createCombatSnapshot();
+                renderCombat();
+            }
+
+            return;
+        }
+
+        // ====================================================
         // AGGRO
         // ====================================================
 
