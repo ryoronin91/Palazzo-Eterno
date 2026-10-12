@@ -2158,6 +2158,12 @@ function setupCombatActions() {
     );
 
 
+    const equipmentButton = document.getElementById("combat-action-equipment");
+    equipmentButton?.addEventListener("click", () => {
+        if (canChangeCombatEquipment()) openCombatEquipmentPanel();
+    });
+
+
     // ========================================================
     // PASSA TURNO
     // ========================================================
@@ -2777,7 +2783,7 @@ function closeCombatDrawer() {
         container.innerHTML =
             `
                 <div class="combat-drawer-placeholder">
-                    Seleziona ABILITÀ oppure ZAINO.
+                    Seleziona ABILITÀ, EQUIPAGGIAMENTO oppure ZAINO.
                 </div>
             `;
 
@@ -2956,6 +2962,10 @@ function updateActionButtons() {
     }
 
 
+    const equipmentButton = document.getElementById("combat-action-equipment");
+    if (equipmentButton) equipmentButton.disabled = !actionAvailable;
+
+
     // ========================================================
     // PASSA
     // ========================================================
@@ -2993,6 +3003,8 @@ function updateActionButtons() {
 
     }
 
+
+    if (activeDrawer === "equipment") updateCombatEquipmentPanelAvailability();
 
     updateTurnResourceIndicators();
 
