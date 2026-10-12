@@ -1,0 +1,308 @@
+PALAZZO ETERNO
+GUIDA RAPIDA — AGGIUNGERE UN NUOVO NPC CON SERVIZIO
+
+1. IDENTITÀ E CHIAVI TECNICHE
+Definire sempre:
+- service_key
+- npc_id
+- vendor_id
+- nome NPC
+- ruolo
+- coordinate NPC
+- area del servizio
+- pagina del servizio
+
+Esempio:
+service_key = addestratore
+npc_id = npc_coda_d_orso
+vendor_id = vendor_addestratore
+pagina = base/services/addestratore/addestratore.html
+
+2. CREARE IL SERVIZIO NEL DATABASE
+Inserire una riga in base_services con:
+- service_key
+- display_name
+- status = unbuilt
+- construction_seconds
+- maintenance_seconds
+- current_level = 1
+
+Creare in base_service_upgrades i target 2, 3, 4, 5, 6.
+I livelli non ancora progettati vanno lasciati enabled = false.
+
+3. DEFINIRE I REQUISITI DI COSTRUZIONE
+Inserire i materiali in base_service_requirements.
+
+Esempio:
+1000 moneta_oro
+10 materiale_x
+5 materiale_y
+
+I contributi iniziano con contributed_quantity = 0.
+
+IMPORTANTE:
+base_service_requirements = costruzione / manutenzione
+base_service_upgrade_requirements = requisiti per i level-up
+
+4. CONFIGURARE GLI UPGRADE
+Per ogni livello realmente disponibile usare:
+- base_service_upgrades
+- base_service_upgrade_requirements
+
+Regola:
+si può contribuire soltanto al livello successivo.
+
+Livello massimo servizio: LV6.
+
+5. AGGIUNGERE IL SERVIZIO IN services.json
+Esempio:
+
+{
+    "id": "addestratore",
+    "name": "Addestratore",
+    "description": "...",
+    "area": {
+        "x": 0,
+        "y": 0,
+        "width": 3,
+        "height": 2
+    },
+    "npc": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "image": "../immagini/eventi/coda_orso.png",
+        "alt": "Coda d'Orso",
+        "zIndex": 13
+    }
+}
+
+base-services.js gestisce già:
+UNBUILT → popup costruzione
+BUILDING → avanzamento costruzione + NPC nascosto
+ACTIVE → NPC visibile + popup costruzione chiuso
+
+Non duplicare tutta la logica di costruzione per ogni servizio.
+
+6. AGGIUNGERE LA GRAFICA ALLA BASE
+In base.js, dentro BASE_STATIC_DECORATIONS, aggiungere l'elemento grafico del servizio.
+
+Convenzione:
+servizioX.png = non costruito / cantiere
+servizio.png = costruito
+
+In base-services.js fare lo switch:
+UNBUILT / BUILDING → servizioX.png
+ACTIVE → servizio.png
+
+7. GESTIRE LA COLLISIONE CON L'NPC
+In base.js aggiungere:
+- coordinate NPC
+- pagina servizio
+- flag di ingresso
+- funzione per riconoscere la casella NPC
+- funzione per verificare se il servizio è ACTIVE
+- funzione di ingresso nel servizio
+
+Dentro moveBasePlayer():
+se il PG tenta di entrare nella casella NPC e il servizio è ACTIVE:
+- non si sovrappone al token
+- salva base_x/base_y
+- apre la pagina del servizio
+
+Se il servizio non è ACTIVE, la casella NPC resta libera.
+
+8. CREARE LA PAGINA DEL SERVIZIO
+Usare il Runografo come template:
+
+base/services/NOME/
+- NOME.html
+- NOME.css
+- NOME.js
+
+Struttura consigliata:
+
+SINISTRA
+- oro del PG
+- autonomia
+- alimenta riserva
+- livello
+- requisiti upgrade
+- contributi
+
+CENTRO
+- NPC
+- dialogo IA
+- volume
+- esci
+
+DESTRA
+- funzione specifica del servizio
+
+Addestratore:
+- statistiche
+- costo
+- requisiti
+- potenziamento
+
+Quest Giver:
+- quest disponibili
+- requisiti
+- progresso
+- ricompense
+- ritira premio
+
+9. MANTENERE current_location = base
+Per i servizi interni alla Base, current_location resta "base".
+
+Non creare valori come:
+runografo
+locanda
+addestratore
+
+se il database non li prevede.
+
+Prima del redirect salvare:
+base_x
+base_y
+
+10. CREARE LA LOGICA SERVER-SIDE SPECIFICA
+Le azioni importanti devono passare da RPC Supabase.
+
+La pagina JS non deve decidere autonomamente:
+- costi
+- ricompense
+- requisiti
+- modifiche statistiche
+- cure
+- premi
+
+Locanda:
+- enter_inn()
+- leave_inn()
+- inn_regeneration_tick()
+- buy_inn_hot_meal()
+
+Addestratore, probabili RPC:
+- get_training_state()
+- train_character_stat()
+
+Verifiche server:
+- utente autenticato
+- personaggio corretto
+- servizio ACTIVE
+- score sufficiente
+- statistica valida
+- costi
+- limiti
+
+Quest Giver, probabili RPC:
+- get_available_quests()
+- accept_quest()
+- claim_quest_reward()
+
+Il server deve verificare realmente i requisiti prima di consegnare premi.
+
+11. CREARE IL PROFILO IA
+Per ogni NPC creare:
+- png_nome_npc.txt
+- npc_nome_npc.json
+
+Seguire la struttura di:
+- Mano di Scimmia
+- Occhio di Lince
+- Fegato d'Oca
+
+Definire:
+- identità
+- aspetto
+- personalità
+- modo di parlare
+- conoscenze
+- limiti
+- servizio
+- commercio
+- rapporti familiari
+- memoria
+- informazioni che può conoscere sul PG
+- hard limits
+- sample lines
+- prompt_core
+
+Tutti gli NPC principali della Base sono cugini.
+
+12. REGISTRARE L'NPC IN npc_ai_profiles
+Inserire:
+- npc_id
+- display_name
+- profile JSON
+- base_prompt
+- active = true
+
+Conviene copiare il base_prompt da un NPC già funzionante.
+La Edge Function vendor-ai resta condivisa.
+
+13. COLLEGARE LA PAGINA ALLA EDGE FUNCTION IA
+Nel JS:
+const NPC_AI_ID = "npc_coda_d_orso";
+
+Poi chiamare vendor-ai passando:
+- npc_id
+- message
+- history
+
+Non creare una nuova Edge Function per ogni NPC.
+
+14. PREPARARE IMMAGINI E PERCORSI
+Convenzione consigliata:
+immagini/eventi/coda_orso.png
+immagini/vendor/coda_orso.png
+
+Controllare sempre i 404 dalla console.
+GitHub Pages distingue maiuscole/minuscole.
+
+CHECKLIST FINALE
+
+[ ] nome / npc_id / vendor_id
+[ ] service_key
+[ ] coordinate area
+[ ] coordinate NPC
+[ ] immagini placeholder + costruita
+[ ] base_services
+[ ] requisiti costruzione
+[ ] upgrade LV2-LV6
+[ ] services.json
+[ ] base.js
+[ ] base-services.js se serve cambio grafico specifico
+[ ] cartella services/NOME/
+[ ] RPC specifiche
+[ ] TXT NPC
+[ ] JSON NPC
+[ ] npc_ai_profiles
+[ ] IA vendor-ai
+[ ] test UNBUILT
+[ ] test contributi
+[ ] test BUILDING
+[ ] test ACTIVE
+[ ] test collisione NPC
+[ ] test pagina servizio
+[ ] test funzione specifica
+[ ] test manutenzione
+[ ] test upgrade
+[ ] test IA
+
+FILOSOFIA GENERALE
+
+Costruzione e manutenzione:
+GENERICHE E CONDIVISE
+
+Pagina e meccanica:
+SPECIFICHE PER IL SERVIZIO
+
+IA:
+EDGE FUNCTION CONDIVISA + PROFILO NPC SEPARATO
+
+Questa struttura permette di aggiungere rapidamente nuovi servizi come
+Addestratore / Coda d'Orso e Quest Giver / Dente di Castoro senza
+ricostruire ogni volta tutta l'architettura.
