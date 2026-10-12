@@ -1576,6 +1576,11 @@ document.addEventListener(
                         "recipe_only",
                         false
                     )
+                    // Ricompensa esclusiva del Goblin Berserk: non è un'arma iniziale.
+                    .neq(
+                        "id",
+                        "ascia_berserk"
+                    )
                     .order(
                         "item_type",
                         {
