@@ -120,7 +120,7 @@ async function askQuestion(event) {
 function setupVolume() {
     let volume = .35;
     try { const saved = localStorage.getItem(VOLUME_KEY); if (saved !== null) { const stored = Number(saved); if (Number.isFinite(stored)) volume = Math.min(1, Math.max(0, stored)); } } catch (_) {}
-    music = new Audio("../../../music/dungeon.mp3");
+    music = new Audio("../../../music/puzzacinta.mp3");
     music.loop = true;
     music.volume = volume;
     const button = $("rare-volume");
