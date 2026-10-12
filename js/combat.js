@@ -1284,11 +1284,42 @@ async function loadCombatSession() {
         data;
 
     // Arena dedicata a Berserk: stesso layout, solo fondale differente.
-    const map = document.getElementById("combat-map");
-    if (map && data?.encounter_id === "combat_rare_puzzacinta") {
-        map.style.backgroundImage = 'url("immagini/combat/combat_rare_1.png")';
-    } else if (map) {
-        map.style.backgroundImage = "";
+    const map =
+        document.getElementById(
+            "combat-map"
+        );
+
+
+    if (map) {
+
+        map.dataset.gridInsetLeft = "0";
+        map.dataset.gridInsetRight = "0";
+        map.dataset.gridInsetTop = "0";
+        map.dataset.gridInsetBottom = "0";
+
+
+        if (
+            data?.encounter_id ===
+            "combat_rare_puzzacinta"
+        ) {
+
+            map.style.backgroundImage =
+                'url("immagini/combat/combat_rare_1.png")';
+
+            // La mappa rara ha una cornice decorativa interna:
+            // la griglia giocabile parte leggermente più dentro.
+            // I valori sono espressi come frazioni della mappa.
+            map.dataset.gridInsetLeft = "0.033";
+            map.dataset.gridInsetRight = "0.033";
+            map.dataset.gridInsetTop = "0.033";
+            map.dataset.gridInsetBottom = "0.033";
+
+        } else {
+
+            map.style.backgroundImage = "";
+
+        }
+
     }
 
 }
@@ -3956,60 +3987,26 @@ function setupCombatMobileMovement() {
             }
 
 
-            const rect =
-                map.getBoundingClientRect();
+            const targetCell =
+                getCombatGridCoordinatesFromPointer(
+                    event.clientX,
+                    event.clientY
+                );
 
 
-            if (
-                rect.width <= 0 ||
-                rect.height <= 0
-            ) {
+            if (!targetCell) {
 
                 return;
 
             }
-
-
-            const cellWidth =
-                rect.width /
-                COMBAT_COLUMNS;
-
-
-            const cellHeight =
-                rect.height /
-                COMBAT_ROWS;
 
 
             const targetX =
-                Math.floor(
-                    (
-                        event.clientX -
-                        rect.left
-                    ) /
-                    cellWidth
-                );
+                targetCell.x;
 
 
             const targetY =
-                Math.floor(
-                    (
-                        event.clientY -
-                        rect.top
-                    ) /
-                    cellHeight
-                );
-
-
-            if (
-                targetX < 0 ||
-                targetX >= COMBAT_COLUMNS ||
-                targetY < 0 ||
-                targetY >= COMBAT_ROWS
-            ) {
-
-                return;
-
-            }
+                targetCell.y;
 
 
             const playerX =

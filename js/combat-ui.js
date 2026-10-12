@@ -47,18 +47,21 @@ function renderCombatTokens() {
     }
 
 
-    const rect =
-        map.getBoundingClientRect();
+    const metrics =
+        getCombatMapGridMetrics();
 
 
-    const cellWidth =
-        rect.width /
-        COMBAT_COLUMNS;
+    if (!metrics) {
+
+        return;
+
+    }
 
 
-    const cellHeight =
-        rect.height /
-        COMBAT_ROWS;
+    const {
+        cellWidth,
+        cellHeight
+    } = metrics;
 
 
     const activeEntityIds =
@@ -218,34 +221,28 @@ function renderCombatTokens() {
             // POSIZIONE
             // =================================================
 
+            const pixelPosition =
+                getCombatGridPixelPosition(
+                    entity.x,
+                    entity.y,
+                    size,
+                    size
+                );
+
+
+            if (!pixelPosition) {
+
+                return;
+
+            }
+
+
             token.style.left =
-                `${
-                    (
-                        Number(
-                            entity.x
-                        ) +
-                        0.5
-                    )
-                    *
-                    cellWidth
-                    -
-                    size / 2
-                }px`;
+                `${pixelPosition.left}px`;
 
 
             token.style.top =
-                `${
-                    (
-                        Number(
-                            entity.y
-                        ) +
-                        0.5
-                    )
-                    *
-                    cellHeight
-                    -
-                    size / 2
-                }px`;
+                `${pixelPosition.top}px`;
 
         }
     );

@@ -6,6 +6,245 @@
 
 
 // ============================================================
+// METRICHE GRIGLIA MAPPA COMBAT
+// ============================================================
+//
+// Alcune arene (come quella di Berserk) usano un bordo decorativo
+// interno all'immagine di sfondo. In questi casi la griglia logica
+// non coincide con l'intera superficie del contenitore.
+//
+// I valori di inset vengono salvati come frazioni 0..1 nel dataset
+// di #combat-map e valgono rispetto alla dimensione interna della
+// mappa (clientWidth / clientHeight).
+// ============================================================
+
+function getCombatMapGridMetrics() {
+
+    const map =
+        document.getElementById(
+            "combat-map"
+        );
+
+
+    if (!map) {
+
+        return null;
+
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    const width =
+        map.clientWidth;
+
+
+    const height =
+        map.clientHeight;
+
+
+    if (
+        width <= 0 ||
+        height <= 0
+    ) {
+
+        return null;
+
+    }
+
+
+    const clampInset = value =>
+        Math.max(
+            0,
+            Math.min(
+                0.45,
+                Number(value) || 0
+            )
+        );
+
+
+    const leftInsetRatio =
+        clampInset(
+            map.dataset.gridInsetLeft
+        );
+
+
+    const rightInsetRatio =
+        clampInset(
+            map.dataset.gridInsetRight
+        );
+
+
+    const topInsetRatio =
+        clampInset(
+            map.dataset.gridInsetTop
+        );
+
+
+    const bottomInsetRatio =
+        clampInset(
+            map.dataset.gridInsetBottom
+        );
+
+
+    const leftInset =
+        width * leftInsetRatio;
+
+
+    const rightInset =
+        width * rightInsetRatio;
+
+
+    const topInset =
+        height * topInsetRatio;
+
+
+    const bottomInset =
+        height * bottomInsetRatio;
+
+
+    const gridWidth =
+        Math.max(
+            1,
+            width - leftInset - rightInset
+        );
+
+
+    const gridHeight =
+        Math.max(
+            1,
+            height - topInset - bottomInset
+        );
+
+
+    return {
+        map,
+        rect,
+        width,
+        height,
+        originLeft: rect.left + map.clientLeft,
+        originTop: rect.top + map.clientTop,
+        leftInset,
+        rightInset,
+        topInset,
+        bottomInset,
+        gridWidth,
+        gridHeight,
+        cellWidth: gridWidth / COMBAT_COLUMNS,
+        cellHeight: gridHeight / COMBAT_ROWS
+    };
+
+}
+
+
+function getCombatGridPixelPosition(
+    x,
+    y,
+    elementWidth = 0,
+    elementHeight = elementWidth
+) {
+
+    const metrics =
+        getCombatMapGridMetrics();
+
+
+    if (!metrics) {
+
+        return null;
+
+    }
+
+
+    return {
+        left:
+            metrics.leftInset +
+            (
+                Number(x) +
+                0.5
+            )
+            *
+            metrics.cellWidth -
+            elementWidth / 2,
+
+        top:
+            metrics.topInset +
+            (
+                Number(y) +
+                0.5
+            )
+            *
+            metrics.cellHeight -
+            elementHeight / 2
+    };
+
+}
+
+
+function getCombatGridCoordinatesFromPointer(
+    clientX,
+    clientY
+) {
+
+    const metrics =
+        getCombatMapGridMetrics();
+
+
+    if (!metrics) {
+
+        return null;
+
+    }
+
+
+    const localX =
+        clientX -
+        metrics.originLeft;
+
+
+    const localY =
+        clientY -
+        metrics.originTop;
+
+
+    const relativeX =
+        localX -
+        metrics.leftInset;
+
+
+    const relativeY =
+        localY -
+        metrics.topInset;
+
+
+    if (
+        relativeX < 0 ||
+        relativeY < 0 ||
+        relativeX >= metrics.gridWidth ||
+        relativeY >= metrics.gridHeight
+    ) {
+
+        return null;
+
+    }
+
+
+    return {
+        x: Math.floor(
+            relativeX /
+            metrics.cellWidth
+        ),
+        y: Math.floor(
+            relativeY /
+            metrics.cellHeight
+        )
+    };
+
+}
+
+
+// ============================================================
 // PORTATA MODALITÀ ATTUALE
 // ============================================================
 
@@ -183,18 +422,23 @@ function renderCombatRangeCells() {
     }
 
 
-    const rect =
-        map.getBoundingClientRect();
+    const metrics =
+        getCombatMapGridMetrics();
 
 
-    const cellWidth =
-        rect.width /
-        COMBAT_COLUMNS;
+    if (!metrics) {
+
+        return;
+
+    }
 
 
-    const cellHeight =
-        rect.height /
-        COMBAT_ROWS;
+    const {
+        cellWidth,
+        cellHeight,
+        leftInset,
+        topInset
+    } = metrics;
 
 
     const playerX =
@@ -269,11 +513,17 @@ function renderCombatRangeCells() {
 
 
             cell.style.left =
-                `${x * cellWidth}px`;
+                `${
+                    leftInset +
+                    x * cellWidth
+                }px`;
 
 
             cell.style.top =
-                `${y * cellHeight}px`;
+                `${
+                    topInset +
+                    y * cellHeight
+                }px`;
 
 
             cell.style.width =
