@@ -10,6 +10,7 @@ let channel = null;
 let refreshTimer = null;
 let music = null;
 let autoStartedFight = false;
+let transitionPending = false;
 let room = null;
 let joinedRunId = null;
 let roomBusy = false;
@@ -27,6 +28,20 @@ function appendBubble(name, message, type) {
     $("rare-messages").appendChild(row);
     $("rare-messages").scrollTop = $("rare-messages").scrollHeight;
 }
+function setTransition(title, textMessage) {
+    const overlay = $("rare-transition");
+    if (!overlay) return;
+    $("rare-transition-title").textContent = title;
+    $("rare-transition-text").textContent = textMessage;
+    overlay.hidden = false;
+}
+function roleLabel(status) {
+    if (status === "active") return "Interrogatore";
+    if (status === "waiting") return "Spettatore in coda";
+    if (status === "selected") return "Prescelto per la Rare Fight";
+    if (status === "timeout") return "Espulso per timeout";
+    return "Spettatore";
+}
 function render() {
     const visible = state?.visible === true;
     const phase = state?.phase || "hidden";
@@ -40,6 +55,11 @@ function render() {
     $("rare-question").disabled = !canAsk;
     $("rare-send").disabled = !canAsk;
     $("rare-fight").hidden = true; // Ingresso selettivo automatico, mai libero.
+    if (phase === "dialogue") {
+        const overlay = $("rare-transition");
+        if (overlay) overlay.hidden = true;
+        transitionPending = false;
+    }
     [...$("rare-pips").children].forEach((el, i) => el.classList.toggle("remaining", i < remaining));
     const rows = Array.isArray(state?.questions) ? state.questions : [];
     const log = $("rare-messages");
@@ -203,17 +223,35 @@ async function refreshRoom() {
     room=data;
     renderRoom();
     render();
-    if (["berserk_ready","combat_active"].includes(state.phase)) {
-      if (room.my_status === "selected" && !autoStartedFight) {
-        autoStartedFight=true;
-        await enterFight();
-      } else if (room.my_status!=="selected") {
-        window.location.replace(DUNGEON_URL);
+    if (["berserk_ready","combat_active"].includes(state.phase) && !transitionPending) {
+      transitionPending = true;
+      if (room.my_status === "selected") {
+        setTransition(
+          "Puzzacinta fugge nell'ombra",
+          "Dal buio alle sue spalle risuona un pesante trascinarsi di catene... Sei tra i prescelti che affronteranno Berserk."
+        );
+        notify("Berserk irrompe nella stanza. Preparati allo scontro.");
+        setTimeout(async () => {
+          if (!autoStartedFight) {
+            autoStartedFight = true;
+            await enterFight();
+          }
+        }, 2300);
+      } else {
+        setTransition(
+          "L'ombra si spezza",
+          "La creaturina svanisce e una bestia prende il suo posto. Non sei tra i cinque selezionati: verrai ricondotto al dungeon."
+        );
+        setTimeout(() => window.location.replace(DUNGEON_URL), 2600);
       }
     }
     if (room.my_status==="timeout") {
       notify("I tuoi cinque minuti sono scaduti. Hai lasciato il posto al prossimo avventuriero.");
-      setTimeout(()=>window.location.replace(DUNGEON_URL),1200);
+      setTransition(
+        "Il tuo tempo è scaduto",
+        "Puzzacinta ti scaccia dalla stanza e il turno passa al prossimo avventuriero in coda."
+      );
+      setTimeout(()=>window.location.replace(DUNGEON_URL),1800);
     }
   }catch(err){console.error("Stanza Puzzacinta:",err);notify(err.message||"Impossibile entrare nella stanza.");}
   finally{roomBusy=false;}
@@ -227,8 +265,16 @@ function updateRoomClock() {
 function renderRoom() {
   $("rare-room").hidden=false;
   const myRole=room?.my_status;
+  const participants = room?.participants || [];
+  const current = participants.find(p => p.status === "active");
+  const waiting = participants.filter(p => p.status === "waiting");
+  const myIndex = participants.findIndex(p => p.character_id === player?.id || p.id === player?.id || p.name === player?.name);
   $("rare-room-role").textContent=myRole==="active"?"IL TUO TURNO — INTERROGATORE":myRole==="waiting"?"SPETTATORE — IN CODA":myRole==="selected"?"SELEZIONATO PER LA RARE FIGHT":"STANZA DI PUZZACINTA";
-  $("rare-room-players").textContent=(room?.participants||[]).map(p=>`${p.name} (${p.status==="active"?"interrogatore":p.status==="selected"?"combattente":"in attesa"})`).join(" · ");
+  $("rare-room-count").textContent=`${participants.length} presenti`;
+  $("rare-room-players").textContent=participants.map(p=>`${p.name} (${p.status==="active"?"interrogatore":p.status==="selected"?"combattente":p.status==="timeout"?"uscito":"in attesa"})`).join(" · ");
+  $("rare-my-role").textContent = roleLabel(myRole);
+  $("rare-current-speaker").textContent = current?.name || "Nessuno";
+  $("rare-queue-position").textContent = myRole === "active" ? "È il tuo turno" : myRole === "waiting" ? `#${Math.max(1, waiting.findIndex(p => (p.character_id === player?.id || p.id === player?.id || p.name === player?.name)) + 1)}` : myRole === "selected" ? "Combattente" : "—";
   const log=$("rare-room-chat");
   const nearBottom=log.scrollHeight-log.scrollTop-log.clientHeight<60;
   log.replaceChildren();

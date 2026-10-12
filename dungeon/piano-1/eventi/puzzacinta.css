@@ -1,14 +1,183 @@
-:root{color-scheme:dark;--gold:#d3b576;--paper:#eee4d0;--panel:rgba(11,12,16,.91);--edge:rgba(209,167,99,.46)}
-*{box-sizing:border-box}html{min-height:100%;background:#080a0c}body{margin:0;color:var(--paper);font-family:Georgia,"Times New Roman",serif;min-height:100vh;background:linear-gradient(rgba(3,6,8,.57),rgba(3,6,8,.84)),url("immagini/puzzacinta_sfondo.png") center/cover fixed}
-button,input{font:inherit}button{cursor:pointer;border:1px solid var(--edge);color:var(--paper);background:rgba(35,32,28,.86);border-radius:5px;transition:background .2s}button:hover:not(:disabled){background:#594324}button:disabled{opacity:.45;cursor:not-allowed}
-.rare-page{min-height:100vh;padding:18px;display:grid;place-items:center}.rare-stage{width:min(1060px,100%);position:relative;border:1px solid rgba(222,177,99,.55);border-radius:12px;box-shadow:0 18px 70px rgba(0,0,0,.8);background:linear-gradient(145deg,rgba(17,20,25,.85),rgba(8,10,13,.92));overflow:hidden}.rare-actions{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:flex-start;justify-content:space-between;z-index:4}.rare-actions button{padding:10px 14px;font-size:13px;letter-spacing:.06em}.volume-wrap{position:relative}.volume-wrap button{min-width:45px}#rare-volume-controls{position:absolute;right:0;top:48px;padding:12px;background:#151517;border:1px solid var(--edge);border-radius:7px;min-width:175px;display:flex;align-items:center;gap:8px}#rare-volume-controls[hidden]{display:none!important}#rare-volume-slider{width:112px;accent-color:var(--gold)}#rare-volume-label{font-size:12px}.rare-heading{text-align:center;padding:66px 12px 0}.rare-eyebrow{font:700 11px Arial,sans-serif;letter-spacing:.25em;color:var(--gold)}h1{letter-spacing:.14em;font-size:clamp(27px,5vw,46px);color:#ebd2a0;margin:8px 0 4px}.rare-heading p{font-size:15px;color:#c9b7a2;margin:0 0 8px;font-style:italic}.rare-art{height:clamp(175px,28vw,300px);display:flex;justify-content:center;align-items:center;overflow:hidden}.rare-art img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 26px rgba(0,0,0,.9))}.rare-chat{position:relative;margin:0 auto 22px;padding:18px;width:calc(100% - 38px);max-width:850px;background:var(--panel);border:1px solid var(--edge);border-radius:9px;box-shadow:0 10px 32px #000a}.rare-chat-head{display:flex;justify-content:space-between;gap:15px;align-items:center}.rare-chat-head strong{display:block;color:var(--gold);letter-spacing:.13em;font-size:15px}.rare-chat-head span{display:block;color:#b9b0a4;margin-top:5px;font-size:12px}.rare-counter{display:flex;gap:8px;align-items:center}.rare-counter b{font:700 30px Arial,sans-serif;color:var(--gold)}.rare-counter small{font:700 10px Arial,sans-serif;letter-spacing:.05em;max-width:65px}.rare-question-pips{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:13px 0}.rare-question-pips i{height:6px;background:#4d4335;border-radius:9px}.rare-question-pips i.remaining{background:#a78a59}.rare-messages{height:210px;overflow-y:auto;border:1px solid #453824;background:rgba(5,6,8,.86);border-radius:5px;padding:14px;scrollbar-color:#705631 #161516}.rare-empty{color:#9e9589;font-style:italic}.rare-bubble{margin:0 0 12px}.rare-bubble strong{color:var(--gold);display:block;font:700 11px Arial,sans-serif;letter-spacing:.06em;margin-bottom:5px}.rare-bubble p{margin:0;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}.rare-bubble.player{text-align:right}.rare-bubble.player strong{color:#9bbad4}.rare-notice{font-size:12px;color:#e2c892;min-height:25px;padding:6px 0 3px}.rare-form{display:flex;gap:8px}.rare-form input{flex:1;min-width:0;padding:12px;background:#161617;border:1px solid #78654a;border-radius:5px;color:#f9f4e8}.rare-form button,.rare-fight button{padding:12px 18px;font:bold 13px Arial,sans-serif;letter-spacing:.08em;border-color:#b38b48;background:linear-gradient(#634729,#32261d)}.rare-fight{margin-top:8px;text-align:center;padding:14px;border:1px solid #9b462c;background:rgba(55,12,8,.5);border-radius:5px}.rare-fight[hidden]{display:none}.rare-fight strong{color:#f0a484;letter-spacing:.1em}.rare-fight p{margin:8px;font-style:italic}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-@media(max-width:650px){.rare-page{padding:0}.rare-stage{border-radius:0;min-height:100vh}.rare-actions{top:10px;left:10px;right:10px}.rare-heading{padding-top:76px}.rare-heading p{font-size:13px;padding:0 14px}.rare-chat{width:calc(100% - 18px);padding:12px;margin-bottom:10px}.rare-messages{height:235px}.rare-form button{padding:12px 9px}.rare-chat-head strong{font-size:12px}}
-/* Multiplayer rare room */
-.rare-room { margin-top:14px; padding:14px; border:1px solid #82704d; background:rgba(7,8,10,.84); border-radius:10px; color:#f4e8cd; }
-.rare-room-header {display:flex; flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
-.rare-room-players {font-size:.88rem;opacity:.85;margin:6px 0 12px;overflow-wrap:anywhere}
-.rare-room-chat {max-height:200px;min-height:72px;overflow-y:auto;background:rgba(0,0,0,.32);padding:8px;border-radius:6px;font-size:.9rem}
-.rare-room-chat p {margin:.25rem 0}
-.rare-room-form {display:flex;gap:8px;margin-top:10px}
-.rare-room-form input {flex:1;min-width:0;padding:10px;border-radius:6px}
-.rare-room-form button {padding:8px 14px;cursor:pointer}
+:root{
+  color-scheme:dark;
+  --gold:#d3b576;
+  --gold-soft:#f0d9a7;
+  --paper:#eee4d0;
+  --panel:rgba(11,12,16,.92);
+  --edge:rgba(209,167,99,.46);
+  --deep:#080a0c;
+  --muted:#b9b0a4;
+  --accent:#9b462c;
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--deep)}
+body{
+  margin:0;
+  color:var(--paper);
+  font-family:Georgia,"Times New Roman",serif;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top, rgba(92,54,21,.22), transparent 36%),
+    linear-gradient(rgba(3,6,8,.62),rgba(3,6,8,.88)),
+    url("immagini/puzzacinta_sfondo.png") center/cover fixed;
+}
+button,input{font:inherit}
+button{
+  cursor:pointer;
+  border:1px solid var(--edge);
+  color:var(--paper);
+  background:rgba(35,32,28,.86);
+  border-radius:8px;
+  transition:background .2s, transform .15s, border-color .2s;
+}
+button:hover:not(:disabled){background:#594324;border-color:#d6b476;transform:translateY(-1px)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.rare-page{min-height:100vh;padding:18px;display:grid;place-items:center}
+.rare-stage{
+  width:min(1280px,100%);
+  position:relative;
+  border:1px solid rgba(222,177,99,.55);
+  border-radius:18px;
+  box-shadow:0 18px 70px rgba(0,0,0,.8);
+  background:linear-gradient(145deg,rgba(17,20,25,.88),rgba(8,10,13,.95));
+  overflow:hidden;
+}
+.rare-stage::before{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(212,167,89,.06), transparent 18%, transparent 82%, rgba(212,167,89,.05));
+  pointer-events:none;
+}
+.rare-actions{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:flex-start;justify-content:space-between;z-index:4}
+.rare-actions button{padding:10px 14px;font-size:13px;letter-spacing:.06em}
+.volume-wrap{position:relative}.volume-wrap button{min-width:45px}
+#rare-volume-controls{position:absolute;right:0;top:48px;padding:12px;background:#151517;border:1px solid var(--edge);border-radius:7px;min-width:175px;display:flex;align-items:center;gap:8px;z-index:4}
+#rare-volume-controls[hidden]{display:none!important}#rare-volume-slider{width:112px;accent-color:var(--gold)}#rare-volume-label{font-size:12px}
+
+.rare-heading{text-align:center;padding:68px 18px 10px;position:relative;z-index:1}
+.rare-eyebrow{font:700 11px Arial,sans-serif;letter-spacing:.25em;color:var(--gold)}
+.rare-heading h1{letter-spacing:.14em;font-size:clamp(28px,4vw,48px);color:#ebd2a0;margin:8px 0 4px}
+.rare-heading p{font-size:15px;color:#c9b7a2;margin:0 0 8px;font-style:italic}
+
+.rare-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(300px,.95fr);
+  gap:20px;
+  padding:12px 18px 22px;
+  align-items:start;
+}
+.rare-main-panel{display:grid;gap:18px;min-width:0}
+
+.rare-art-panel{
+  display:grid;
+  grid-template-columns:minmax(250px,.9fr) minmax(260px,1.1fr);
+  gap:18px;
+  align-items:center;
+  border:1px solid var(--edge);
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(16,19,25,.96), rgba(7,8,11,.88));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 32px rgba(0,0,0,.3);
+  padding:20px;
+}
+.rare-art-copy h2{margin:4px 0 10px;color:var(--gold-soft);font-size:clamp(24px,3vw,36px)}
+.rare-art-copy p{margin:0;color:#d7cbb8;line-height:1.6;font-size:15px}
+.rare-kicker{display:inline-block;font:700 11px Arial,sans-serif;letter-spacing:.17em;color:var(--gold);text-transform:uppercase}
+.rare-art{height:clamp(235px,32vw,360px);display:flex;justify-content:center;align-items:center;overflow:hidden;border-radius:10px;background:radial-gradient(circle at center, rgba(255,211,153,.06), transparent 62%)}
+.rare-art img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 28px rgba(0,0,0,.86))}
+
+.rare-chat{
+  position:relative;
+  padding:18px;
+  width:100%;
+  background:var(--panel);
+  border:1px solid var(--edge);
+  border-radius:14px;
+  box-shadow:0 10px 32px #000a;
+}
+.rare-chat-head{display:flex;justify-content:space-between;gap:15px;align-items:center}
+.rare-chat-head strong{display:block;color:var(--gold);letter-spacing:.13em;font-size:15px}
+.rare-chat-head span{display:block;color:var(--muted);margin-top:5px;font-size:12px}
+.rare-counter{display:flex;gap:8px;align-items:center}
+.rare-counter b{font:700 32px Arial,sans-serif;color:var(--gold)}
+.rare-counter small{font:700 10px Arial,sans-serif;letter-spacing:.08em;max-width:65px;text-align:left}
+
+.rare-info-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 12px}
+.rare-info-box{padding:10px 12px;border:1px solid rgba(211,181,118,.2);background:rgba(255,255,255,.03);border-radius:10px;min-width:0}
+.rare-info-box span{display:block;font:700 10px Arial,sans-serif;letter-spacing:.12em;color:#b7a98d;text-transform:uppercase;margin-bottom:5px}
+.rare-info-box b{display:block;color:#f0e2c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.rare-question-pips{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0 14px}
+.rare-question-pips i{height:8px;background:#4d4335;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.rare-question-pips i.remaining{background:linear-gradient(90deg,#907141,#cfad70)}
+
+.rare-messages{height:278px;overflow-y:auto;border:1px solid #453824;background:rgba(5,6,8,.86);border-radius:10px;padding:14px;scrollbar-color:#705631 #161516}
+.rare-empty{color:#9e9589;font-style:italic}
+.rare-bubble{margin:0 0 14px;padding:10px 12px;border:1px solid rgba(128,99,58,.16);background:rgba(255,255,255,.02);border-radius:10px}
+.rare-bubble strong{color:var(--gold);display:block;font:700 11px Arial,sans-serif;letter-spacing:.08em;margin-bottom:5px}
+.rare-bubble p{margin:0;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.rare-bubble.player{text-align:right;background:rgba(72,88,107,.18)}
+.rare-bubble.player strong{color:#9bbad4}
+
+.rare-notice{font-size:12px;color:#e2c892;min-height:25px;padding:8px 0 4px}
+.rare-form{display:flex;gap:8px}
+.rare-form input,.rare-room-form input{flex:1;min-width:0;padding:12px;background:#161617;border:1px solid #78654a;border-radius:8px;color:#f9f4e8}
+.rare-form button,.rare-fight button,.rare-room-form button{padding:12px 18px;font:bold 13px Arial,sans-serif;letter-spacing:.08em;border-color:#b38b48;background:linear-gradient(#634729,#32261d)}
+
+.rare-fight{margin-top:12px;text-align:center;padding:14px;border:1px solid #9b462c;background:rgba(55,12,8,.5);border-radius:10px}.rare-fight[hidden]{display:none}.rare-fight strong{color:#f0a484;letter-spacing:.1em}.rare-fight p{margin:8px;font-style:italic}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+
+/* Multiplayer room */
+.rare-room {
+  padding:16px;
+  border:1px solid #82704d;
+  background:rgba(7,8,10,.84);
+  border-radius:14px;
+  color:#f4e8cd;
+  display:grid;
+  gap:12px;
+  min-width:0;
+}
+.rare-room-header {display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.rare-room-header strong{display:block;color:var(--gold-soft);font-size:16px;letter-spacing:.03em}
+.rare-room-header small{display:block;margin-top:4px;color:#b7a98d}
+#rare-room-clock{font:700 28px Arial,sans-serif;color:var(--gold)}
+.rare-room-players{font-size:.9rem;line-height:1.5;color:#e7dcc4;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);padding:10px;border-radius:10px;overflow-wrap:anywhere}
+.rare-room-chat-block{display:grid;gap:8px}
+.rare-room-chat{max-height:312px;min-height:190px;overflow-y:auto;background:rgba(0,0,0,.32);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.05);font-size:.92rem}
+.rare-room-chat p{margin:.25rem 0;line-height:1.45}
+.rare-room-chat strong{color:#d6bf91}
+.rare-room-form{display:flex;gap:8px}
+
+/* Transition overlay */
+.rare-transition{position:absolute;inset:0;background:rgba(4,4,7,.84);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:8;padding:20px}
+.rare-transition[hidden]{display:none!important}
+.rare-transition-card{width:min(720px,100%);display:grid;grid-template-columns:220px 1fr;gap:18px;padding:22px;border-radius:16px;border:1px solid rgba(189,92,64,.65);background:linear-gradient(135deg, rgba(30,9,7,.94), rgba(9,8,11,.97));box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.rare-transition-art{width:100%;height:220px;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.8))}
+.rare-transition-copy h2{margin:6px 0 10px;font-size:clamp(25px,3vw,38px);color:#f0c0aa}
+.rare-transition-copy p{margin:0;color:#e6d8c9;line-height:1.65}
+
+@media(max-width:1080px){
+  .rare-layout{grid-template-columns:1fr}
+  .rare-room{order:3}
+  .rare-transition-card{grid-template-columns:1fr; text-align:center}
+  .rare-transition-art{max-width:240px;justify-self:center}
+}
+@media(max-width:760px){
+  .rare-page{padding:0}
+  .rare-stage{border-radius:0;min-height:100vh}
+  .rare-actions{top:10px;left:10px;right:10px}
+  .rare-heading{padding-top:78px}
+  .rare-heading p{font-size:13px;padding:0 14px}
+  .rare-layout{padding:12px 10px 14px;gap:12px}
+  .rare-art-panel{grid-template-columns:1fr;padding:14px}
+  .rare-art{height:220px}
+  .rare-chat{padding:12px}
+  .rare-info-strip{grid-template-columns:1fr}
+  .rare-messages{height:235px}
+  .rare-form{flex-direction:column}
+  .rare-form button,.rare-room-form button{padding:12px 10px}
+  .rare-chat-head strong{font-size:12px}
+  .rare-room-chat{min-height:150px;max-height:220px}
+  #rare-room-clock{font-size:24px}
+}
