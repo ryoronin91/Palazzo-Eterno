@@ -1566,20 +1566,15 @@ document.addEventListener(
                         equip_slot,
                         hand_rule,
                         gold_value,
-                        recipe_only
+                        available_at_creation
                     `)
                     .neq(
                         "equip_slot",
                         "none"
                     )
                     .eq(
-                        "recipe_only",
-                        false
-                    )
-                    // Ricompensa esclusiva del Goblin Berserk: non è un'arma iniziale.
-                    .neq(
-                        "id",
-                        "ascia_berserk"
+                        "available_at_creation",
+                        true
                     )
                     .order(
                         "item_type",
