@@ -13,6 +13,8 @@ let autoStartedFight = false;
 let transitionPending = false;
 let room = null;
 let joinedRunId = null;
+let enteredAfterTimeout = false;
+let timeoutRedirectScheduled = false;
 let roomBusy = false;
 let lastRoomTick = 0;
 
@@ -214,9 +216,12 @@ async function refreshRoom() {
   roomBusy=true;
   try {
     if (joinedRunId !== state.run_id) {
-      const {error:joinError}=await db.rpc("puzzacinta_join_room",{p_run_id:state.run_id});
+      const {data:joinData,error:joinError}=await db.rpc("puzzacinta_join_room",{p_run_id:state.run_id});
       if (joinError) throw joinError;
       joinedRunId=state.run_id;
+      // Chi rientra DOPO il timeout può assistere, ma non ottiene un altro turno.
+      enteredAfterTimeout = joinData?.status === "timeout";
+      timeoutRedirectScheduled = false;
     }
     const {data,error}=await db.rpc("puzzacinta_room_state",{p_run_id:state.run_id});
     if(error) throw error;
@@ -245,13 +250,17 @@ async function refreshRoom() {
         setTimeout(() => window.location.replace(DUNGEON_URL), 2600);
       }
     }
-    if (room.my_status==="timeout") {
-      notify("I tuoi cinque minuti sono scaduti. Hai lasciato il posto al prossimo avventuriero.");
-      setTransition(
-        "Il tuo tempo è scaduto",
-        "Puzzacinta ti scaccia dalla stanza e il turno passa al prossimo avventuriero in coda."
-      );
-      setTimeout(()=>window.location.replace(DUNGEON_URL),1800);
+    if (room.my_status === "timeout") {
+      if (enteredAfterTimeout) {
+        // La penalità rimane: nessuna nuova domanda, nessun nuovo turno.
+        notify("Hai già esaurito il turno: puoi assistere come spettatore e usare la chat.");
+      } else if (!timeoutRedirectScheduled) {
+        // Espulsione una sola volta, al primo timeout effettivo.
+        timeoutRedirectScheduled = true;
+        notify("I tuoi cinque minuti sono scaduti. Hai lasciato il posto al prossimo avventuriero.");
+        setTransition("Il tuo tempo è scaduto", "Puzzacinta ti scaccia dalla stanza e il turno passa al prossimo avventuriero in coda.");
+        setTimeout(() => window.location.replace(DUNGEON_URL),1800);
+      }
     }
   }catch(err){console.error("Stanza Puzzacinta:",err);notify(err.message||"Impossibile entrare nella stanza.");}
   finally{roomBusy=false;}
@@ -269,7 +278,7 @@ function renderRoom() {
   const current = participants.find(p => p.status === "active");
   const waiting = participants.filter(p => p.status === "waiting");
   const myIndex = participants.findIndex(p => p.character_id === player?.id || p.id === player?.id || p.name === player?.name);
-  $("rare-room-role").textContent=myRole==="active"?"IL TUO TURNO — INTERROGATORE":myRole==="waiting"?"SPETTATORE — IN CODA":myRole==="selected"?"SELEZIONATO PER LA RARE FIGHT":"STANZA DI PUZZACINTA";
+  $("rare-room-role").textContent=myRole === "timeout" ? "SPETTATORE — TURNO ESAURITO" : myRole==="active"?"IL TUO TURNO — INTERROGATORE":myRole==="waiting"?"SPETTATORE — IN CODA":myRole==="selected"?"SELEZIONATO PER LA RARE FIGHT":"STANZA DI PUZZACINTA";
   $("rare-room-count").textContent=`${participants.length} presenti`;
   $("rare-room-players").textContent=participants.map(p=>`${p.name} (${p.status==="active"?"interrogatore":p.status==="selected"?"combattente":p.status==="timeout"?"uscito":"in attesa"})`).join(" · ");
   $("rare-my-role").textContent = roleLabel(myRole);
