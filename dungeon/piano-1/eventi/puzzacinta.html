@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Palazzo Eterno — Puzzacinta</title>
-  <link rel="stylesheet" href="puzzacinta.css?v=1">
+  <link rel="stylesheet" href="puzzacinta.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../../js/config.js?v=10"></script>
 </head>
@@ -48,8 +48,18 @@
           <button id="rare-fight-enter" type="button">⚔ AFFRONTA BERSERK</button>
         </div>
       </section>
+      <section class="rare-room" id="rare-room" hidden aria-label="Stanza multiplayer">
+        <div class="rare-room-header"><strong id="rare-room-role">Stanza di Puzzacinta</strong><span id="rare-room-clock">--:--</span></div>
+        <div id="rare-room-players" class="rare-room-players"></div>
+        <strong>Chat tra avventurieri</strong>
+        <div id="rare-room-chat" class="rare-room-chat" role="log" aria-live="polite"></div>
+        <form id="rare-room-form" class="rare-room-form" autocomplete="off">
+          <input id="rare-room-message" type="text" maxlength="350" placeholder="Parla agli altri giocatori..." aria-label="Messaggio nella stanza">
+          <button type="submit">INVIA</button>
+        </form>
+      </section>
     </section>
   </main>
-  <script src="puzzacinta.js?v=2"></script>
+  <script src="puzzacinta.js?v=4"></script>
 </body>
 </html>

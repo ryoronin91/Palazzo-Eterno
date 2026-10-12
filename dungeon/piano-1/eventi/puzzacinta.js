@@ -10,6 +10,10 @@ let channel = null;
 let refreshTimer = null;
 let music = null;
 let autoStartedFight = false;
+let room = null;
+let joinedRunId = null;
+let roomBusy = false;
+let lastRoomTick = 0;
 
 function notify(message) { $("rare-notice").textContent = message || ""; }
 function appendBubble(name, message, type) {
@@ -32,10 +36,10 @@ function render() {
         phase === "dialogue" ? "Le domande sono condivise tra tutti i giocatori." :
         phase === "berserk_ready" ? "Puzzacinta è fuggito. Berserk è apparso!" :
         "La Rare Fight è iniziata.";
-    const canAsk = visible && phase === "dialogue" && remaining > 0 && !sending;
+    const canAsk = visible && phase === "dialogue" && remaining > 0 && !sending && room?.my_status === "active" && new Date(room.turn_deadline).getTime() > Date.now();
     $("rare-question").disabled = !canAsk;
     $("rare-send").disabled = !canAsk;
-    $("rare-fight").hidden = !visible || !["berserk_ready", "combat_active"].includes(phase);
+    $("rare-fight").hidden = true; // Ingresso selettivo automatico, mai libero.
     [...$("rare-pips").children].forEach((el, i) => el.classList.toggle("remaining", i < remaining));
     const rows = Array.isArray(state?.questions) ? state.questions : [];
     const log = $("rare-messages");
@@ -66,7 +70,7 @@ async function refreshState({ silent = false } = {}) {
     }
 }
 async function enterFight() {
-    if (!state?.visible || !["berserk_ready", "combat_active"].includes(state.phase) || !player?.id) return;
+    if (!state?.visible || !["berserk_ready", "combat_active"].includes(state.phase) || !player?.id || room?.my_status !== "selected") return;
     const button = $("rare-fight-enter");
     button.disabled = true;
     notify("Berserk ti ha individuato. Preparazione dello scontro...");
@@ -81,12 +85,13 @@ async function enterFight() {
         console.error("Ingresso Rare Fight:", error);
         notify(error.message || "Non è stato possibile entrare nella Rare Fight.");
         button.disabled = false;
+        autoStartedFight = false;
         await refreshState({ silent: true });
     }
 }
 async function askQuestion(event) {
     event.preventDefault();
-    if (sending || !state?.visible || state.phase !== "dialogue") return;
+    if (sending || !state?.visible || state.phase !== "dialogue" || room?.my_status !== "active") return;
     const question = $("rare-question").value.trim();
     if (question.length < 2 || question.length > 500) { notify("Scrivi una domanda tra 2 e 500 caratteri."); return; }
     sending = true;
@@ -102,12 +107,7 @@ async function askQuestion(event) {
         $("rare-question").value = "";
         await refreshState({ silent: true });
         notify(data.transformed ? "Puzzacinta fugge! Berserk irrompe nella stanza!" : "Puzzacinta ha risposto.");
-        if (data.transformed && !autoStartedFight) {
-            autoStartedFight = true;
-            // Dopo la quinta risposta, chi ha posto la domanda entra in combattimento.
-            // Gli altri giocatori vedono il token Berserk e possono unirsi.
-            setTimeout(enterFight, 2600);
-        }
+        if (data.transformed) await refreshRoom();
     } catch (error) {
         console.warn("Errore domanda rara", error);
         notify(error.message || "Domanda non riuscita; il tentativo non è stato consumato.");
@@ -144,7 +144,11 @@ function setupVolume() {
     document.addEventListener("pointerdown", tryMusic, { once: true });
 }
 document.addEventListener("DOMContentLoaded", async () => {
-    $("rare-exit").addEventListener("click", () => { window.location.href = DUNGEON_URL; });
+    $("rare-exit").addEventListener("click", async () => {
+        if (joinedRunId) await db.rpc("puzzacinta_leave_room", {p_run_id:joinedRunId}).catch(()=>{});
+        window.location.href = DUNGEON_URL;
+    });
+    $("rare-room-form").addEventListener("submit", sendRoomMessage);
     $("rare-fight-enter").addEventListener("click", enterFight);
     $("rare-question-form").addEventListener("submit", askQuestion);
     setupVolume();
@@ -161,7 +165,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (player.current_location !== "dungeon") { window.location.replace(DUNGEON_URL); return; }
     await refreshState();
-    refreshTimer = setInterval(() => { if (!sending) refreshState({ silent: true }); }, 30000);
+    await refreshRoom();
+    refreshTimer = setInterval(async () => {
+       if (!sending && !roomBusy) { await refreshState({ silent: true }); await refreshRoom(); }
+       updateRoomClock();
+    }, 3000);
     channel = db.channel("puzzacinta-dialogue")
         .on("postgres_changes", { event: "*", schema: "public", table: "dungeon_rare_event_runs" },
             () => { if (!sending) refreshState({ silent: true }); })
@@ -172,3 +180,65 @@ window.addEventListener("beforeunload", () => {
     if (channel) db.removeChannel(channel);
     if (music) { music.pause(); music = null; }
 });
+
+async function refreshRoom() {
+  if (roomBusy || !state?.visible || !state.run_id || !player?.id) return;
+  roomBusy=true;
+  try {
+    if (joinedRunId !== state.run_id) {
+      const {error:joinError}=await db.rpc("puzzacinta_join_room",{p_run_id:state.run_id});
+      if (joinError) throw joinError;
+      joinedRunId=state.run_id;
+    }
+    const {data,error}=await db.rpc("puzzacinta_room_state",{p_run_id:state.run_id});
+    if(error) throw error;
+    room=data;
+    renderRoom();
+    render();
+    if (["berserk_ready","combat_active"].includes(state.phase)) {
+      if (room.my_status === "selected" && !autoStartedFight) {
+        autoStartedFight=true;
+        await enterFight();
+      } else if (room.my_status!=="selected") {
+        window.location.replace(DUNGEON_URL);
+      }
+    }
+    if (room.my_status==="timeout") {
+      notify("I tuoi cinque minuti sono scaduti. Hai lasciato il posto al prossimo avventuriero.");
+      setTimeout(()=>window.location.replace(DUNGEON_URL),1200);
+    }
+  }catch(err){console.error("Stanza Puzzacinta:",err);notify(err.message||"Impossibile entrare nella stanza.");}
+  finally{roomBusy=false;}
+}
+function updateRoomClock() {
+  const target = $("rare-room-clock");
+  if (!room?.turn_deadline) {target.textContent="In attesa";return;}
+  const seconds=Math.max(0,Math.ceil((new Date(room.turn_deadline).getTime()-Date.now())/1000));
+  target.textContent=`${String(Math.floor(seconds/60)).padStart(2,"0")}:${String(seconds%60).padStart(2,"0")}`;
+}
+function renderRoom() {
+  $("rare-room").hidden=false;
+  const myRole=room?.my_status;
+  $("rare-room-role").textContent=myRole==="active"?"IL TUO TURNO — INTERROGATORE":myRole==="waiting"?"SPETTATORE — IN CODA":myRole==="selected"?"SELEZIONATO PER LA RARE FIGHT":"STANZA DI PUZZACINTA";
+  $("rare-room-players").textContent=(room?.participants||[]).map(p=>`${p.name} (${p.status==="active"?"interrogatore":p.status==="selected"?"combattente":"in attesa"})`).join(" · ");
+  const log=$("rare-room-chat");
+  const nearBottom=log.scrollHeight-log.scrollTop-log.clientHeight<60;
+  log.replaceChildren();
+  for(const row of room?.messages||[]){
+    const p=document.createElement("p");
+    const strong=document.createElement("strong");strong.textContent=`${row.name}: `;
+    p.append(strong,document.createTextNode(row.message)); log.appendChild(p);
+  }
+  if(nearBottom) log.scrollTop=log.scrollHeight;
+  updateRoomClock();
+}
+async function sendRoomMessage(event){
+  event.preventDefault();
+  if(!joinedRunId)return;
+  const input=$("rare-room-message");const msg=input.value.trim();
+  if(!msg)return;
+  const {error}=await db.rpc("puzzacinta_send_room_message",{p_run_id:joinedRunId,p_message:msg});
+  if(error){notify(error.message);return;}
+  input.value="";
+  await refreshRoom();
+}
