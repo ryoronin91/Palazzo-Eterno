@@ -2162,37 +2162,68 @@ body {
 .sheet-leaderboard-badge-fallback { font-size: 17px; }
 
 /* ============================================================
-   PORTAFOGLIO ORO · SCHEDA PERSONAGGIO
+   RISONANZA NELL'IDENTITA' E PORTAFOGLIO ORO
    ============================================================ */
-.character-gold-wallet {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    width: fit-content;
-    max-width: 100%;
-    margin-top: 13px;
-    padding: 8px 13px;
-    box-sizing: border-box;
-    border: 1px solid rgba(212, 175, 103, .55);
-    border-radius: 9px;
-    background: linear-gradient(120deg, rgba(124, 85, 28, .25), rgba(23, 18, 12, .75));
-    box-shadow: inset 0 1px 0 rgba(255, 225, 142, .08);
-    color: #f1d389;
+.sheet-identity-resonance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 3px;
+    padding: 9px 16px;
+    border-left: 2px solid rgba(184,138,59,.45);
+    min-width: 95px;
+}
+.sheet-identity-resonance-label,
+.sheet-gold-kicker {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    color: #d4af67;
+}
+.sheet-identity-resonance-number {
+    font-size: clamp(23px, 3vw, 34px);
+    font-weight: 900;
+    line-height: 1.15;
+    color: #f2db9e;
     font-variant-numeric: tabular-nums;
 }
-.character-gold-icon { font-size: 21px; line-height: 1; }
-.character-gold-amount {
-    font-size: 19px;
+.sheet-gold-card {
+    min-width: 0;
+    padding: 18px 20px;
+    border: 1px solid rgba(184,138,59,.38);
+    border-radius: 12px;
+    background: linear-gradient(135deg,rgba(63,43,20,.35),rgba(13,13,13,.9));
+}
+.sheet-gold-total {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin: 10px 0 5px;
+    color: #f2db9e;
+    font-size: clamp(28px,4vw,42px);
+    line-height: 1.1;
     font-weight: 900;
-    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
 }
-.character-gold-unit {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: .06em;
-    opacity: .78;
+.sheet-gold-unit { font-size: 15px; letter-spacing: .06em; color: #d4af67; }
+/* Moneta CSS: nessuna emoji, nessun font esterno richiesto. */
+.sheet-gold-coin {
+    display: inline-block;
+    box-sizing: border-box;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 50%;
+    border: 3px solid #f2d477;
+    background: radial-gradient(circle at 30% 26%, #ffedac 0%, #e5b948 35%, #bd8627 72%, #81501b 100%);
+    box-shadow: inset 0 0 0 2px #9b6a23, inset 0 0 0 5px rgba(255,239,164,.38), 0 2px 8px rgba(0,0,0,.45);
 }
+.sheet-gold-description { margin: 6px 0 0; color: #a9a196; font-size: 11px; line-height: 1.5; }
 @media (max-width: 650px) {
-    .character-gold-wallet { margin-top: 10px; padding: 7px 11px; }
-    .character-gold-amount { font-size: 17px; }
+    .identity-section { flex-wrap: wrap; }
+    .sheet-identity-resonance { min-width: 0; padding: 6px 10px; }
+    .sheet-gold-card { padding: 14px; }
+    .sheet-gold-coin { width: 25px; height: 25px; flex-basis: 25px; }
 }

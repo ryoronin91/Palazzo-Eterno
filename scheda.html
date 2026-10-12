@@ -172,6 +172,11 @@
                 </div>
 
 
+                <div class="sheet-identity-resonance" aria-label="Risonanza del personaggio">
+                    <span class="sheet-identity-resonance-label">RISONANZA</span>
+                    <span id="sheet-resonance-value" class="sheet-identity-resonance-number" aria-live="polite">—</span>
+                </div>
+
                 <div class="identity-info">
 
                     <h1
@@ -189,17 +194,6 @@
                         Livello 1
                     </div>
 
-                    <div
-                        id="character-gold-wallet"
-                        class="character-gold-wallet"
-                        role="status"
-                        aria-label="Monete d’oro possedute"
-                    >
-                        <span class="character-gold-icon" aria-hidden="true">🪙</span>
-                        <span class="character-gold-amount" id="character-gold-amount">—</span>
-                        <span class="character-gold-unit">MO</span>
-                    </div>
-
                 </div>
 
             </section>
@@ -211,12 +205,14 @@
             ================================================= -->
 
             <section class="sheet-resonance-grid" aria-label="Risonanza e Onorificenze">
-                <div class="sheet-resonance-card">
-                    <div class="sheet-resonance-kicker">LA TUA RISONANZA</div>
-                    <div id="sheet-resonance-value" class="sheet-resonance-value" aria-live="polite">—</div>
-                    <p class="sheet-resonance-description">
-                        L'eco delle tue imprese attraversa le sale del Palazzo.
-                    </p>
+                <div class="sheet-gold-card" aria-label="Portafoglio del personaggio">
+                    <div class="sheet-gold-kicker">MONETE D'ORO</div>
+                    <div class="sheet-gold-total" aria-live="polite">
+                        <span class="sheet-gold-coin" aria-hidden="true"></span>
+                        <span id="character-gold-balance">—</span>
+                        <span class="sheet-gold-unit">MO</span>
+                    </div>
+                    <p class="sheet-gold-description">Il tuo oro a disposizione nel Palazzo.</p>
                 </div>
                 <div class="sheet-honors-card">
                     <h2 class="sheet-section-title">Onorificenze</h2>

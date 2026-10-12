@@ -2281,27 +2281,20 @@ function ensureInventoryInterface() {
 
 
 // ============================================================
-// PORTAFOGLIO MONETE D'ORO
-// Il saldo current_gold è sincronizzato lato database con
-// gli stack moneta_oro ancora usati dalle RPC di gioco.
+// PORTAFOGLIO ORO: il DB sincronizza current_gold con l'inventario
+// durante la fase di compatibilita' delle RPC esistenti.
 // ============================================================
-function displayGoldWallet() {
-    const amount = document.getElementById("character-gold-amount");
-    if (!amount) return;
-
-    // Compatibilità con ambienti non ancora migrati.
-    const inventoryGold = characterInventory
+function displayGoldBalance() {
+    const target = document.getElementById("character-gold-balance");
+    if (!target) return;
+    const fromInventory = characterInventory
         .filter(entry => entry.item_id === "moneta_oro")
         .reduce((total, entry) => total + (Number(entry.quantity) || 0), 0);
-
-    const databaseGold = character?.current_gold;
-    const gold = databaseGold !== null && databaseGold !== undefined
-        ? Number(databaseGold)
-        : inventoryGold;
-
-    amount.textContent = Number.isFinite(gold)
-        ? Math.max(0, gold).toLocaleString("it-IT")
-        : "—";
+    const databaseBalance = Number(character?.current_gold);
+    const value = character?.current_gold != null && Number.isFinite(databaseBalance)
+        ? databaseBalance
+        : fromInventory;
+    target.textContent = Math.max(0, value).toLocaleString("it-IT");
 }
 
 // ============================================================
@@ -2312,9 +2305,9 @@ function displayInventory() {
 
     calculateEquipmentBonuses();
 
-    displayEquipment();
+    displayGoldBalance();
 
-    displayGoldWallet();
+    displayEquipment();
 
     displayBackpack();
 
