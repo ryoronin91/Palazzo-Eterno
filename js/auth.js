@@ -111,7 +111,7 @@ if (registerForm) {
 
 
                 message.textContent =
-                    "Account creato! Controlla la tua email per confermare la registrazione.";
+                    "Account creato con successo! Ora puoi effettuare il login.";
 
 
                 registerForm.reset();
