@@ -2227,3 +2227,104 @@ body {
     .sheet-gold-card { padding: 14px; }
     .sheet-gold-coin { width: 25px; height: 25px; flex-basis: 25px; }
 }
+
+
+/* ============================================================
+   ORO E RISONANZA · Layout scheda v6
+   Risonanza: al fianco del nome; oro: riquadro sotto l'identità.
+   ============================================================ */
+.identity-section {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.sheet-identity-resonance {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 145px;
+    min-height: 78px;
+    gap: 8px;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    border: 1px solid rgba(184,138,59,.55);
+    border-radius: 10px;
+    background: linear-gradient(145deg,rgba(74,49,17,.35),rgba(14,12,10,.85));
+    box-shadow: inset 0 1px 0 rgba(255,220,130,.08);
+}
+.sheet-identity-resonance-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: .12em;
+    font-weight: 900;
+    line-height: 1.25;
+    color: #d4af67;
+}
+.sheet-identity-resonance-number {
+    display: block;
+    font-size: clamp(24px,3vw,34px);
+    font-weight: 900;
+    line-height: 1;
+    color: #f2db9e;
+    font-variant-numeric: tabular-nums;
+}
+.sheet-resonance-grid {
+    display: grid;
+    grid-template-columns: minmax(190px,.7fr) minmax(0,1.3fr);
+    align-items: stretch;
+    gap: 14px;
+    margin: 0 0 26px;
+}
+.sheet-gold-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 18px 20px;
+    border: 1px solid rgba(184,138,59,.45);
+    border-radius: 12px;
+    background: linear-gradient(135deg,rgba(63,43,20,.35),rgba(13,13,13,.9));
+    box-sizing: border-box;
+}
+.sheet-gold-kicker {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .11em;
+    color: #d4af67;
+}
+.sheet-gold-total {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0 5px;
+    font-size: clamp(28px,4vw,42px);
+    font-weight: 900;
+    line-height: 1.1;
+    color: #f2db9e;
+    font-variant-numeric: tabular-nums;
+}
+.sheet-gold-unit { font-size: 15px; letter-spacing: .06em; color: #d4af67; }
+.sheet-gold-coin {
+    display: inline-block;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 3px solid #ffde7a;
+    background: radial-gradient(circle at 30% 25%,#fff0aa 0%,#e7b743 40%,#b57a1d 75%,#724512 100%);
+    box-shadow: inset 0 0 0 2px #96641c,inset 0 0 0 5px rgba(255,234,143,.5),0 2px 8px rgba(0,0,0,.5);
+}
+.sheet-gold-description { margin: 6px 0 0; color: #a9a196; font-size: 11px; line-height: 1.5; }
+@media (max-width: 650px) {
+    .identity-section { gap: 10px; }
+    .sheet-identity-resonance { min-width: 115px; min-height: 68px; padding: 10px 12px; }
+    .sheet-resonance-grid { grid-template-columns: 1fr; }
+    .sheet-gold-card { padding: 14px; }
+    .sheet-gold-coin { width: 26px; height: 26px; flex-basis: 26px; }
+}

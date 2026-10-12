@@ -1747,13 +1747,13 @@ function displayCharacter() {
     );
 
 
+    // Livello reale, letto da public.characters.livello tramite loadCharacter().
+    const characterLevel = Number(character.livello);
     setText(
         "character-level",
-        `Livello ${
-            Number(
-                character.livello
-            ) || 1
-        }`
+        Number.isInteger(characterLevel) && characterLevel > 0
+            ? `Livello ${characterLevel}`
+            : "Livello non disponibile"
     );
 
 
