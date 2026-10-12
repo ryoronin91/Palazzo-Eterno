@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palazzo Eterno — Puzzacinta</title>
+  <link rel="stylesheet" href="puzzacinta.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../../js/config.js?v=10"></script>
+</head>
+<body>
+  <main class="rare-page">
+    <section class="rare-stage" aria-label="Puzzacinta">
+      <div class="rare-actions">
+        <button id="rare-exit" type="button">← TORNA AL DUNGEON</button>
+        <div class="volume-wrap">
+          <button id="rare-volume" type="button" aria-label="Volume musica" aria-expanded="false">🔉</button>
+          <div id="rare-volume-controls" hidden>
+            <input id="rare-volume-slider" type="range" min="0" max="100" step="5" value="35" aria-label="Volume musica">
+            <span id="rare-volume-label">35%</span>
+          </div>
+        </div>
+      </div>
+      <header class="rare-heading">
+        <span class="rare-eyebrow">PALAZZO ETERNO · INCONTRO RARO</span>
+        <h1>PUZZACINTA</h1>
+        <p>«Cinque domande, viandante… poi sarà meglio correre.»</p>
+      </header>
+      <div class="rare-art"><img src="immagini/puzzacinta_evento.png" alt="Puzzacinta, figura incappucciata nel dungeon"></div>
+      <section class="rare-chat" aria-label="Dialogo con Puzzacinta">
+        <div class="rare-chat-head">
+          <div><strong>LE CINQUE DOMANDE</strong><span id="rare-status">Controllo apparizione…</span></div>
+          <div class="rare-counter"><b id="rare-remaining">–</b><small>RIMASTE</small></div>
+        </div>
+        <div class="rare-question-pips" id="rare-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="rare-messages" id="rare-messages" role="log" aria-live="polite" aria-relevant="additions text">
+          <p class="rare-empty">Nella penombra qualcuno trattiene una risata…</p>
+        </div>
+        <div class="rare-notice" id="rare-notice" role="status"></div>
+        <form id="rare-question-form" class="rare-form" autocomplete="off">
+          <label class="sr-only" for="rare-question">Fai una domanda a Puzzacinta</label>
+          <input type="text" id="rare-question" minlength="2" maxlength="500" placeholder="Che cosa vuoi chiedere a Puzzacinta?" disabled>
+          <button id="rare-send" type="submit" disabled>CHIEDI</button>
+        </form>
+        <div class="rare-fight" id="rare-fight" hidden>
+          <strong>PUZZACINTA È FUGGITO!</strong>
+          <p>Un ruggito rompe il silenzio. Berserk ti ha trovato.</p>
+          <button id="rare-fight-enter" type="button">⚔ AFFRONTA BERSERK</button>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="puzzacinta.js?v=1"></script>
+</body>
+</html>

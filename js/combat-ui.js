@@ -380,11 +380,11 @@ function renderEnemyTokenContent(
 
 
     image.src =
-        entity.enemy_id
-
-            ? `immagini/nemici/${entity.enemy_id}.png`
-
-            : "immagini/nemici/goblin.png";
+        entity.enemy_id === "goblin_berserk"
+            ? "immagini/nemici/berserk.png"
+            : entity.enemy_id
+                ? `immagini/nemici/${entity.enemy_id}.png`
+                : "immagini/nemici/goblin.png";
 
 
     token.appendChild(

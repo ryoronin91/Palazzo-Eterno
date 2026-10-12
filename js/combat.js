@@ -730,7 +730,8 @@ document.addEventListener(
 
             startBackgroundMusic(
                 combatSession?.encounter_id ===
-                    "combat_boss"
+                    "combat_boss" ||
+                combatSession?.encounter_id === "combat_rare_puzzacinta"
 
                     ? "music/boss.mp3"
 
@@ -1281,6 +1282,14 @@ async function loadCombatSession() {
 
     combatSession =
         data;
+
+    // Arena dedicata a Berserk: stesso layout, solo fondale differente.
+    const map = document.getElementById("combat-map");
+    if (map && data?.encounter_id === "combat_rare_puzzacinta") {
+        map.style.backgroundImage = 'url("immagini/combat/combat_rare_1.png")';
+    } else if (map) {
+        map.style.backgroundImage = "";
+    }
 
 }
 

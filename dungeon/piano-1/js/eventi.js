@@ -13,6 +13,15 @@ console.log(
 // ============================================================
 
 const DUNGEON_COMBAT_EVENTS = [
+    // Evento raro globale: la disponibilità è decisa dal server.
+    {
+        id: "PUZZACINTA1",
+        x: 2,
+        y: 12,
+        type: "rare",
+        encounter_id: "combat_rare_puzzacinta",
+        token: "../../immagini/eventi/puzzacinta.png"
+    },
 
     {
         id: "C1",
@@ -94,6 +103,99 @@ const DUNGEON_COMBAT_EVENTS = [
 //
 // ============================================================
 
+// Evento Puzzacinta: tutti gli utenti del piano vedono lo stesso ciclo.
+let rareEventState = null;
+let rareEventRefreshInterval = null;
+let rareEventChannel = null;
+
+function rareEventImage() {
+    return rareEventState?.phase === "dialogue"
+        ? "../../immagini/eventi/puzzacinta.png"
+        : "../../immagini/eventi/berserk.png";
+}
+
+async function refreshRareEventState() {
+    try {
+        const previousRun = rareEventState?.run_id;
+        const previousPhase = rareEventState?.phase;
+        const { data, error } = await db.rpc("get_puzzacinta_state");
+        if (error) throw error;
+        rareEventState = data || { visible: false, phase: "hidden" };
+        renderCombatEvents();
+
+        if (pendingCombatEvent?.type === "rare" &&
+            (previousRun !== rareEventState.run_id || previousPhase !== rareEventState.phase || !rareEventState.visible)) {
+            closeCombatPrompt();
+            nearbyCombatEventId = null;
+        }
+        if ((previousRun !== rareEventState.run_id || previousPhase !== rareEventState.phase) &&
+            playerX !== null && playerY !== null && !eventLocked &&
+            typeof checkNearbyCombatEvents === "function") {
+            nearbyCombatEventId = null;
+            checkNearbyCombatEvents();
+        }
+        return rareEventState;
+    } catch (error) {
+        console.warn("Evento Puzzacinta non disponibile:", error);
+        rareEventState = { visible: false, phase: "hidden" };
+        renderCombatEvents();
+        return rareEventState;
+    }
+}
+
+function startRareEventRefresh() {
+    if (rareEventRefreshInterval) clearInterval(rareEventRefreshInterval);
+    // Il polling serve anche al passaggio tra una fascia e la successiva.
+    rareEventRefreshInterval = setInterval(refreshRareEventState, 30000);
+    if (rareEventChannel) db.removeChannel(rareEventChannel);
+    rareEventChannel = db.channel("puzzacinta-floor1")
+        .on("postgres_changes", {
+            event: "*", schema: "public", table: "dungeon_rare_event_runs"
+        }, refreshRareEventState)
+        .subscribe();
+}
+
+function openPuzzacintaPrompt(combatEvent) {
+    if (combatPromptOpen) return;
+    combatPromptOpen = true;
+    pendingCombatEvent = combatEvent;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const overlay = document.createElement("div");
+    overlay.id = "combat-event-overlay";
+    overlay.className = "combat-event-overlay";
+    overlay.innerHTML = `
+        <div class="combat-event-modal" role="dialog" aria-modal="true" aria-label="Puzzacinta">
+            <div class="combat-event-icon">✧</div>
+            <h2>PUZZACINTA</h2>
+            <p>Una figura gobba e incappucciata sussurra nell'ombra.</p>
+            <div class="combat-event-warning">Concede solo <strong>cinque domande</strong> in tutto, condivise con gli altri avventurieri.</div>
+            <div class="combat-event-buttons">
+                <button id="puzzacinta-talk" type="button" class="combat-event-button combat-event-enter">PARLA</button>
+                <button id="puzzacinta-leave" type="button" class="combat-event-button combat-event-cancel">NON ORA</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#puzzacinta-leave")?.addEventListener("click", closeCombatPrompt);
+    overlay.querySelector("#puzzacinta-talk")?.addEventListener("click", async (ev) => {
+        const button = ev.currentTarget;
+        button.disabled = true;
+        try {
+            await flushPositionSave();
+            const fresh = await refreshRareEventState();
+            if (!fresh?.visible || fresh.phase !== "dialogue") {
+                closeCombatPrompt();
+                setMessage("Puzzacinta non è più qui.");
+                return;
+            }
+            window.location.href = "eventi/puzzacinta.html";
+        } catch (error) {
+            console.error("Ingresso Puzzacinta:", error);
+            button.disabled = false;
+        }
+    });
+}
+
 const FLOOR1_COOLDOWN_ENCOUNTERS =
     new Set([
         "combat_1",
@@ -150,6 +252,11 @@ function isDungeonCombatEventAvailable(
 
     }
 
+
+    if (combatEvent.type === "rare") {
+        return rareEventState?.visible === true &&
+            ["dialogue", "berserk_ready", "combat_active"].includes(rareEventState.phase);
+    }
 
     const isBossEvent =
         combatEvent.id ===
@@ -1131,6 +1238,11 @@ function openCombatPrompt(
     }
 
 
+    if (combatEvent.type === "rare" && rareEventState?.phase === "dialogue") {
+        openPuzzacintaPrompt(combatEvent);
+        return;
+    }
+
     combatPromptOpen =
         true;
 
@@ -1204,7 +1316,7 @@ function openCombatPrompt(
                     : (
                         isBossEvent
                             ? "GOBLIN BOSS"
-                            : "COMBATTIMENTO"
+                            : (combatEvent.type === "rare" ? "GOBLIN BERSERK" : "COMBATTIMENTO")
                     )
             }
         </h2>
@@ -1216,7 +1328,7 @@ function openCombatPrompt(
                     : (
                         isBossEvent
                             ? "Davanti a te si erge il Goblin Boss, a guardia delle scale."
-                            : "Una presenza ostile blocca il tuo cammino."
+                            : (combatEvent.type === "rare" ? "Puzzacinta è fuggito! Dalle ombre emerge Berserk." : "Una presenza ostile blocca il tuo cammino.")
                     )
             }
         </p>
@@ -1269,7 +1381,7 @@ function openCombatPrompt(
                         : (
                             isBossEvent
                                 ? "AFFRONTA IL BOSS"
-                                : "ENTRA IN COMBATTIMENTO"
+                                : (combatEvent.type === "rare" ? "AFFRONTA BERSERK" : "ENTRA IN COMBATTIMENTO")
                         )
                 }
             </button>
@@ -1431,22 +1543,23 @@ function openCombatPrompt(
                         );
 
 
+                // Non entrare in un raro con le RPC generiche.
+                // Il server verifica che la quinta domanda sia completata.
+                if (typeof flushPositionSave === "function") {
+                    await flushPositionSave();
+                }
                 const {
                     data,
                     error
-                } =
-                    await db.rpc(
-                        enterCombatRpc,
-                        {
-
-                            p_encounter_id:
-                                selectedEvent.encounter_id,
-
-                            p_character_id:
-                                character.id
-
-                        }
-                    );
+                } = selectedEvent.type === "rare"
+                    ? await db.rpc("enter_puzzacinta_combat", {
+                        p_character_id: character.id,
+                        p_run_id: rareEventState?.run_id
+                    })
+                    : await db.rpc(enterCombatRpc, {
+                        p_encounter_id: selectedEvent.encounter_id,
+                        p_character_id: character.id
+                    });
 
 
                 if (error) {
@@ -1620,7 +1733,8 @@ document.addEventListener(
 
         await Promise.all([
             refreshFloor1CombatStates(),
-            refreshGoblinBossState()
+            refreshGoblinBossState(),
+            refreshRareEventState()
         ]);
 
 
@@ -1632,6 +1746,7 @@ document.addEventListener(
 
         startFloor1CombatStateRefresh();
         startGoblinBossStateRefresh();
+        startRareEventRefresh();
 
     }
 );
@@ -1785,7 +1900,9 @@ function checkNearbyCombatEvents() {
     setMessage(
         combatEvent.type === "pvp"
             ? "Scorgi l'ingresso dell'Arena PvP."
-            : "Percepisci una presenza ostile nelle vicinanze."
+            : combatEvent.type === "rare"
+                ? (rareEventState?.phase === "dialogue" ? "Una figura incappucciata ti osserva." : "Berserk ruggisce nelle vicinanze!")
+                : "Percepisci una presenza ostile nelle vicinanze."
     );
 
 
@@ -1914,6 +2031,14 @@ function renderCombatEvents() {
 
             }
 
+
+            if (combatEvent.type === "rare") {
+                const img = token.querySelector("img");
+                if (img && img.getAttribute("src") !== rareEventImage()) {
+                    img.src = rareEventImage();
+                }
+                token.title = rareEventState?.phase === "dialogue" ? "Puzzacinta · NPC raro" : "Berserk · Rare Fight";
+            }
 
             const eventAvailable =
                 isDungeonCombatEventAvailable(
@@ -2096,6 +2221,14 @@ window.addEventListener(
     "beforeunload",
     () => {
 
+        if (rareEventRefreshInterval) {
+            clearInterval(rareEventRefreshInterval);
+            rareEventRefreshInterval = null;
+        }
+        if (rareEventChannel) {
+            db.removeChannel(rareEventChannel);
+            rareEventChannel = null;
+        }
         if (
             floor1CombatStateRefreshInterval
         ) {
