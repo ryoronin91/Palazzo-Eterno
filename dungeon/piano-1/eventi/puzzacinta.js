@@ -145,8 +145,16 @@ function setupVolume() {
 }
 document.addEventListener("DOMContentLoaded", async () => {
     $("rare-exit").addEventListener("click", async () => {
-        if (joinedRunId) await db.rpc("puzzacinta_leave_room", {p_run_id:joinedRunId}).catch(()=>{});
-        window.location.href = DUNGEON_URL;
+        try {
+            if (joinedRunId) {
+                const { error } = await db.rpc("puzzacinta_leave_room", { p_run_id: joinedRunId });
+                if (error) console.warn("Uscita dalla stanza Puzzacinta:", error);
+            }
+        } catch (error) {
+            console.warn("Impossibile notificare l'uscita da Puzzacinta:", error);
+        } finally {
+            window.location.href = DUNGEON_URL;
+        }
     });
     $("rare-room-form").addEventListener("submit", sendRoomMessage);
     $("rare-fight-enter").addEventListener("click", enterFight);
