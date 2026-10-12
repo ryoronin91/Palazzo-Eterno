@@ -583,7 +583,7 @@ async function loadSheetLeaderboard() {
             error
         } =
             await db.rpc(
-                "get_living_characters_leaderboard_with_badges",
+                "get_living_characters_leaderboard_with_levels",
                 {
                     p_limit:
                         5
@@ -638,6 +638,7 @@ function renderSheetLeaderboard(rows) {
         const position = Number(row.posizione) || 0;
         const score = Number(row.score) || 0;
         const name = escapeSheetLeaderboardHtml(row.character_name || "Avventuriero");
+        const level = Math.max(1, Number(row.character_level) || 1);
         const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeSheetLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
@@ -657,7 +658,7 @@ function renderSheetLeaderboard(rows) {
         return `<div class="sheet-leaderboard-row">
             <div class="sheet-leaderboard-main">
                 <span class="sheet-leaderboard-position">#${position}</span>
-                <span class="sheet-leaderboard-name" title="${name}">${name}</span>
+                <span class="sheet-leaderboard-name" title="${name}">Lv${level} ${name}</span>
                 <span class="sheet-leaderboard-score">${score.toLocaleString("it-IT")}</span>
             </div>
             <div class="sheet-leaderboard-badges">${badgesHtml || '<span class="sheet-leaderboard-no-badges">Nessuna onorificenza</span>'}</div>
