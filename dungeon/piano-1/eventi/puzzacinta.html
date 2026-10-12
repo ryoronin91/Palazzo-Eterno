@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Palazzo Eterno — Puzzacinta</title>
-  <link rel="stylesheet" href="puzzacinta.css?v=4">
+  <link rel="stylesheet" href="puzzacinta.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../../js/config.js?v=10"></script>
 </head>
@@ -22,52 +22,14 @@
         </div>
       </div>
 
-      <header class="rare-heading">
-        <span class="rare-eyebrow">PALAZZO ETERNO · INCONTRO RARO</span>
-        <h1>PUZZACINTA</h1>
-        <p>«Cinque risposte, viandante… poi sarà meglio correre.»</p>
-      </header>
-
       <div class="rare-layout">
-        <section class="rare-main-panel">
-          <div class="rare-art-panel">
-            <div class="rare-art-copy">
-              <span class="rare-kicker">Creatura misteriosa</span>
-              <h2>La stanza trattiene il fiato</h2>
-              <p>
-                Una figura curva e incappucciata ti osserva dal buio. Ogni risposta strappata a Puzzacinta
-                avvicina qualcosa di molto peggiore.
-              </p>
-            </div>
-            <div class="rare-art">
-              <img src="immagini/puzzacinta_evento.png" alt="Puzzacinta, figura incappucciata nel dungeon">
-            </div>
-          </div>
-
+        <section class="rare-main-panel" aria-label="Puzzacinta e dialogo">
+          <img class="rare-portrait" src="immagini/puzzacinta_evento.png" alt="Puzzacinta, figura incappucciata nel dungeon">
           <section class="rare-chat" aria-label="Dialogo con Puzzacinta">
             <div class="rare-chat-head">
-              <div>
-                <strong>LE CINQUE RISPOSTE</strong>
-                <span id="rare-status">Controllo apparizione…</span>
-              </div>
+              <div><strong>PUZZACINTA · LE CINQUE RISPOSTE</strong><span id="rare-status">Controllo apparizione…</span></div>
               <div class="rare-counter"><b id="rare-remaining">–</b><small>RIMASTE</small></div>
             </div>
-
-            <div class="rare-info-strip">
-              <div class="rare-info-box">
-                <span>Il tuo stato</span>
-                <b id="rare-my-role">In attesa</b>
-              </div>
-              <div class="rare-info-box">
-                <span>Interrogatore</span>
-                <b id="rare-current-speaker">—</b>
-              </div>
-              <div class="rare-info-box">
-                <span>Posizione coda</span>
-                <b id="rare-queue-position">—</b>
-              </div>
-            </div>
-
             <div class="rare-question-pips" id="rare-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
             <div class="rare-messages" id="rare-messages" role="log" aria-live="polite" aria-relevant="additions text">
               <p class="rare-empty">Nella penombra qualcuno trattiene una risata…</p>
@@ -79,8 +41,7 @@
               <button id="rare-send" type="submit" disabled>CHIEDI</button>
             </form>
             <div class="rare-fight" id="rare-fight" hidden>
-              <strong>PUZZACINTA È FUGGITO!</strong>
-              <p>Un ruggito rompe il silenzio. Berserk ti ha trovato.</p>
+              <strong>PUZZACINTA È FUGGITO!</strong><p>Un ruggito rompe il silenzio. Berserk ti ha trovato.</p>
               <button id="rare-fight-enter" type="button">⚔ AFFRONTA BERSERK</button>
             </div>
           </section>
@@ -95,6 +56,11 @@
             <span id="rare-room-clock">--:--</span>
           </div>
 
+          <div class="rare-info-strip">
+            <div class="rare-info-box"><span>Il tuo stato</span><b id="rare-my-role">In attesa</b></div>
+            <div class="rare-info-box"><span>Interrogatore</span><b id="rare-current-speaker">—</b></div>
+            <div class="rare-info-box"><span>Posizione coda</span><b id="rare-queue-position">—</b></div>
+          </div>
           <div id="rare-room-players" class="rare-room-players"></div>
 
           <div class="rare-room-chat-block">
@@ -121,6 +87,6 @@
       </div>
     </section>
   </main>
-  <script src="puzzacinta.js?v=6"></script>
+  <script src="puzzacinta.js?v=7"></script>
 </body>
 </html>
