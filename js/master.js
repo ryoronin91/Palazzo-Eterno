@@ -10519,3 +10519,334 @@ window.addEventListener("DOMContentLoaded", () => {
     }, 1000);
     window.addEventListener("beforeunload", () => window.clearInterval(timer), {once:true});
 });
+
+// ============================================================
+// MASTER v21 — TAB COMBATTIMENTI
+// Disponibile / Cooldown con RPC protetta, osservazione delle
+// sessioni in corso e lista dei partecipanti reali.
+// ============================================================
+
+let masterCombatPanelRows = [];
+let masterCombatPanelByEncounter = new Map();
+let masterCombatPanelBusy = false;
+let masterCombatPanelActionBusy = false;
+let masterCombatPanelLastFetch = 0;
+let masterCombatPanelSignature = '';
+const MASTER_COMBAT_PANEL_REFRESH_MS = 8000;
+
+function masterCombatPanelVisible() {
+    return !!document.querySelector('[data-master-control-pane="combats"]')?.classList.contains('is-active');
+}
+
+function masterCombatPanelNotify(message, error = false) {
+    const node = document.getElementById('master-combats-feedback');
+    if (node) {
+        node.textContent = message || '';
+        node.classList.toggle('is-error', error);
+    }
+}
+
+function masterCombatPanelNode(tag, className = '', content) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (content != null) node.textContent = String(content);
+    return node;
+}
+
+function masterCombatPanelTimeLeft(until) {
+    const millis = Date.parse(until || '') - Date.now();
+    if (!Number.isFinite(millis) || millis <= 0) return '00:00';
+    const sec = Math.ceil(millis / 1000);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+             : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+async function loadMasterCombatPanel(force = false) {
+    if (masterCombatPanelBusy || masterCombatPanelActionBusy) return;
+    if (!force && Date.now() - masterCombatPanelLastFetch < MASTER_COMBAT_PANEL_REFRESH_MS) return;
+    masterCombatPanelBusy = true;
+    try {
+        const {data, error} = await db.rpc('master_get_combat_panel_state');
+        if (error) throw error;
+        if (!data?.ok || !Array.isArray(data.encounters)) {
+            throw new Error('Risposta non valida dal server.');
+        }
+        masterCombatPanelRows = data.encounters;
+        masterCombatPanelByEncounter = new Map(masterCombatPanelRows.map(row => [row.encounter_id, row]));
+        masterCombatPanelLastFetch = Date.now();
+        masterCombatPanelNotify('');
+        renderMasterCombatPanel();
+        // Aggiorna la sola lettura dello stato della mappa, evitando
+        // di ricavare il cooldown dalle sessioni storiche.
+        if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) {
+            renderMasterOverviewMap();
+        }
+    } catch (error) {
+        console.error('Errore pannello combattimenti Master:',error);
+        masterCombatPanelNotify(
+            `Impossibile caricare i combattimenti: ${error?.message || 'errore di connessione'}. ` +
+            'Verifica di aver eseguito master_combattimenti_rpc.sql.', true
+        );
+    } finally {
+        masterCombatPanelBusy = false;
+    }
+}
+
+function masterCombatPanelState(row) {
+    const sessions = Array.isArray(row.sessions) ? row.sessions : [];
+    if (sessions.length) return 'in_progress';
+    if (row.special_event) return 'special';
+    if (row.cooldown_until && Date.parse(row.cooldown_until) > Date.now()) return 'cooldown';
+    return 'available';
+}
+
+function masterCombatPanelCard(row) {
+    const state = masterCombatPanelState(row);
+    const sessions = Array.isArray(row.sessions) ? row.sessions : [];
+    const title = row.name || row.encounter_id;
+    const card = masterCombatPanelNode('article',`master-combat-manage-card state-${state}`);
+    const header = masterCombatPanelNode('div','master-combat-card-header');
+    const identity = masterCombatPanelNode('div');
+    identity.append(
+        masterCombatPanelNode('h4','',title),
+        masterCombatPanelNode('small','master-combat-id',row.encounter_id)
+    );
+    const pill = masterCombatPanelNode('span',`master-combat-pill is-${state}`,
+        state === 'in_progress' ? 'IN CORSO'
+        : state === 'cooldown' ? 'COOLDOWN'
+        : state === 'special' ? 'EVENTO RARO' : 'DISPONIBILE'
+    );
+    header.append(identity,pill);
+    card.appendChild(header);
+
+    const body = masterCombatPanelNode('div','master-combat-card-body');
+    if (state === 'in_progress') {
+        const info = masterCombatPanelNode('div','master-combat-state-line');
+        info.append(masterCombatPanelNode('span','',`${sessions.length} session${sessions.length===1?'e':'i'} in corso`),
+                    masterCombatPanelNode('strong','','SLIDER BLOCCATO'));
+        body.appendChild(info);
+        const locked = masterCombatPanelNode('div','master-combat-slider-row');
+        locked.appendChild(masterCombatPanelNode('span','master-combat-slider-label','ATTIVO'));
+        const lockedSlider = masterCombatPanelNode('input','master-combat-state-slider');
+        lockedSlider.type = 'range'; lockedSlider.min = '0'; lockedSlider.max = '1';
+        lockedSlider.value = '0'; lockedSlider.disabled = true;
+        lockedSlider.setAttribute('aria-label', `Cambio stato bloccato per ${title}: sessione in corso`);
+        locked.appendChild(lockedSlider);
+        locked.appendChild(masterCombatPanelNode('span','master-combat-slider-label','COOLDOWN'));
+        body.appendChild(locked);
+        sessions.forEach(session => {
+            const box = masterCombatPanelNode('div','master-combat-session');
+            const top = masterCombatPanelNode('div','master-combat-session-header');
+            const details = masterCombatPanelNode('strong','',
+                `${session.status === 'waiting' ? 'In attesa' : 'In combattimento'} · Round ${Number(session.round)||1}`);
+            const watch = masterCombatPanelNode('button','button master-combat-watch','OSSERVA');
+            watch.type = 'button';
+            watch.addEventListener('click', () => openMasterCombat(session.id));
+            top.append(details,watch);
+            box.appendChild(top);
+            box.appendChild(masterCombatPanelNode('div','master-combat-players-heading','PERSONAGGI PRESENTI'));
+            const players = masterCombatPanelNode('div','master-combat-players');
+            const participants = Array.isArray(session.participants) ? session.participants : [];
+            if (participants.length) {
+                participants.forEach(person => {
+                    const player = masterCombatPanelNode('span','master-combat-person',person.name || 'Giocatore');
+                    player.title = `Stato: ${person.status || 'non disponibile'}`;
+                    players.appendChild(player);
+                });
+            } else {
+                players.appendChild(masterCombatPanelNode('span','master-combat-players-empty','Nessun personaggio presente.'));
+            }
+            box.appendChild(players);
+            body.appendChild(box);
+        });
+    } else if (state === 'special') {
+        body.appendChild(masterCombatPanelNode('div','master-combat-help',
+            'Questo combattimento si attiva attraverso Puzzacinta. Lo stato non è modificabile manualmente. Quando una sessione è in corso appariranno i personaggi e il pulsante Osserva.'));
+    } else {
+        const stateLine = masterCombatPanelNode('div','master-combat-state-line');
+        stateLine.appendChild(masterCombatPanelNode('span','',state === 'cooldown' ? 'Disponibile tra' : 'Pronto per essere avviato'));
+        const remaining = masterCombatPanelNode('strong',state === 'cooldown' ? 'is-cooldown' : '',state === 'cooldown' ? masterCombatPanelTimeLeft(row.cooldown_until) : 'PRONTO');
+        if (state === 'cooldown') remaining.dataset.masterCombatDeadline = row.cooldown_until;
+        stateLine.appendChild(remaining);
+        body.appendChild(stateLine);
+
+        const controls = masterCombatPanelNode('div','master-combat-state-controls');
+        const sliderLine = masterCombatPanelNode('div','master-combat-slider-row');
+        sliderLine.appendChild(masterCombatPanelNode('span','master-combat-slider-label','ATTIVO'));
+        const slider = masterCombatPanelNode('input','master-combat-state-slider');
+        slider.type='range'; slider.min='0'; slider.max='1';slider.step='1';
+        slider.value=state === 'cooldown' ? '1':'0';
+        slider.setAttribute('aria-label',`Stato di ${title}: attivo o cooldown`);
+        sliderLine.appendChild(slider);
+        sliderLine.appendChild(masterCombatPanelNode('span','master-combat-slider-label','COOLDOWN'));
+        controls.appendChild(sliderLine);
+
+        const editor = masterCombatPanelNode('div','master-combat-editor');
+        const minutesLabel = masterCombatPanelNode('label','master-combat-minutes-label','Durata del cooldown (minuti)');
+        const minutes = masterCombatPanelNode('input','master-combat-minutes-input');
+        minutes.type='number'; minutes.min='1'; minutes.max='10080';minutes.step='1';minutes.inputMode='numeric';
+        minutes.value = state === 'cooldown'
+            ? String(Math.max(1,Math.ceil((Date.parse(row.cooldown_until) - Date.now()) / 60000)))
+            : String(Number(row.suggested_cooldown_minutes) || 5);
+        minutes.setAttribute('aria-label',`Minuti di cooldown per ${title}`);
+        minutesLabel.appendChild(minutes);
+        const apply = masterCombatPanelNode('button','button master-combat-apply','APPLICA');
+        apply.type='button';
+        editor.append(minutesLabel,apply);
+        controls.appendChild(editor);
+
+        const hint = masterCombatPanelNode('div','master-combat-help',
+            'Spostare lo slider e confermare per aggiornare il cooldown del gioco.');
+        controls.appendChild(hint);
+
+        const updateControls = (dirty=false) => {
+            const targetCooldown = slider.value === '1';
+            const changed = targetCooldown !== (state === 'cooldown');
+            minutesLabel.hidden = !targetCooldown;
+            editor.hidden = !targetCooldown && !dirty && !changed;
+            apply.hidden = !dirty && !changed;
+            apply.textContent = targetCooldown ? 'IMPOSTA COOLDOWN' : 'RENDI DISPONIBILE';
+            hint.textContent = targetCooldown
+                ? 'Imposta i minuti e conferma per applicare un nuovo cooldown.'
+                : changed
+                    ? 'Conferma per annullare il cooldown e riattivare l’incontro.'
+                    : 'Sposta lo slider su Cooldown per disattivare temporaneamente l’incontro.';
+        };
+        slider.addEventListener('input',()=>updateControls(true));
+        minutes.addEventListener('input',()=>updateControls(true));
+        updateControls(false);
+
+        apply.addEventListener('click',async()=>{
+            const selectedCooldown = slider.value === '1';
+            const duration = selectedCooldown ? Number(minutes.value) : 0;
+            if (!Number.isSafeInteger(duration) || duration < 0 || duration > 10080 || (selectedCooldown && duration===0)) {
+                masterCombatPanelNotify('Inserisci una durata intera tra 1 e 10080 minuti.',true);
+                return;
+            }
+            const message = duration===0
+                ? `Rendere subito disponibile ${title}?\n\nIl cooldown verrà annullato.`
+                : `Impostare ${duration} minuti di cooldown per ${title}?\n\nLa scadenza sarà calcolata dal momento del salvataggio.`;
+            if (!window.confirm(message)) return;
+            await masterCombatPanelSubmit(row.encounter_id,duration);
+        });
+        body.appendChild(controls);
+    }
+    card.appendChild(body);
+    return card;
+}
+
+function renderMasterCombatPanel() {
+    const container = document.getElementById('master-combats-overview');
+    if (!container) return;
+    const signature = JSON.stringify(masterCombatPanelRows);
+    if (signature === masterCombatPanelSignature) {
+        masterCombatPanelUpdateCountdowns();
+        return;
+    }
+    if (container.contains(document.activeElement)) return;
+    masterCombatPanelSignature=signature;
+    container.replaceChildren();
+    if (!masterCombatPanelRows.length) {
+        container.appendChild(masterCombatPanelNode('div','master-control-empty','Nessun incontro configurato.'));
+        return;
+    }
+    for (const [floor,groupName] of [['dungeon','PIANO 1'],['base','LIVELLO BASE']]) {
+        const matches=masterCombatPanelRows.filter(row=>row.floor===floor);
+        if (!matches.length) continue;
+        const group=masterCombatPanelNode('section','master-combat-group');
+        group.appendChild(masterCombatPanelNode('h4','master-combat-group-title',groupName));
+        const grid=masterCombatPanelNode('div','master-combat-manage-grid');
+        matches.forEach(row=>grid.appendChild(masterCombatPanelCard(row)));
+        group.appendChild(grid);
+        container.appendChild(group);
+    }
+    masterCombatPanelUpdateCountdowns();
+}
+
+function masterCombatPanelUpdateCountdowns() {
+    document.querySelectorAll('[data-master-combat-deadline]').forEach(node=>{
+        node.textContent=masterCombatPanelTimeLeft(node.dataset.masterCombatDeadline);
+    });
+}
+
+async function masterCombatPanelSubmit(encounterId,minutes) {
+    if (masterCombatPanelActionBusy) return;
+    masterCombatPanelActionBusy=true;
+    const container=document.getElementById('master-combats-overview');
+    container?.classList.add('is-saving');
+    masterCombatPanelNotify('Salvataggio stato combattimento...');
+    try {
+        const {data,error}=await db.rpc('master_set_combat_cooldown',{
+            p_encounter_id:encounterId,p_minutes:minutes
+        });
+        if (error) throw error;
+        if (!data?.ok) throw new Error('Il server non ha confermato la modifica.');
+        masterCombatPanelSignature='';
+        masterCombatPanelLastFetch=0;
+        masterCombatPanelNotify('Stato aggiornato correttamente.');
+    } catch (error) {
+        masterCombatPanelNotify(`Modifica non salvata: ${error?.message || 'errore sconosciuto'}`,true);
+        console.error('Master: cambio cooldown combat:',error);
+        return;
+    } finally {
+        masterCombatPanelActionBusy=false;
+        container?.classList.remove('is-saving');
+    }
+    await loadMasterCombatPanel(true);
+    // Ricarica anche i cooldown tradizionali che supportano la mappa.
+    await loadMasterCooldownStates();
+    renderMasterOverviewMap();
+}
+
+// Il pannello e la mappa consumano la stessa origine dei cooldown,
+// evitando countdown stimati da combattimenti storici.
+const masterCombatPanelOldOverviewState = getMasterOverviewCombatState;
+getMasterOverviewCombatState = function(event,floor) {
+    const row = masterCombatPanelByEncounter.get(event?.encounter_id);
+    if (!row || (Date.now()-masterCombatPanelLastFetch) > 45000) {
+        return masterCombatPanelOldOverviewState(event,floor);
+    }
+    const state = masterCombatPanelState(row);
+    if (state === 'in_progress') return {
+        markerClass:'state-live',timerText:'',title:`${row.name || row.encounter_id} · in corso`
+    };
+    if (state === 'cooldown') return {
+        markerClass:'state-cooldown',
+        timerText:formatMasterCooldown(row.cooldown_until) || '',
+        title:`${row.name || row.encounter_id} · cooldown`
+    };
+    if (state === 'available') return {
+        markerClass:'state-active',timerText:'',title:`${row.name || row.encounter_id} · disponibile`
+    };
+    return masterCombatPanelOldOverviewState(event,floor);
+};
+
+const masterCombatPanelOldSetTab = setMasterControlTab;
+setMasterControlTab = function(tab) {
+    masterCombatPanelOldSetTab(tab);
+    if (tab==='combats') loadMasterCombatPanel(true);
+};
+
+const masterCombatPanelOldLoadCenter = loadMasterControlCenter;
+loadMasterControlCenter = async function () {
+    await masterCombatPanelOldLoadCenter();
+    if (masterCombatPanelVisible()) await loadMasterCombatPanel(true);
+};
+
+window.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('master-combats-refresh')?.addEventListener('click',()=>{
+        masterCombatPanelLastFetch=0;
+        loadMasterCombatPanel(true);
+    });
+    const timer=window.setInterval(()=>{
+        if (masterCombatPanelVisible() ||
+            document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) {
+            masterCombatPanelUpdateCountdowns();
+            if (!masterCombatPanelActionBusy) loadMasterCombatPanel();
+        }
+    },1000);
+    window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
+});

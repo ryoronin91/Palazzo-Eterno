@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=20" rel="stylesheet"/>
+<link href="css/master.css?v=21" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -219,23 +219,18 @@
 <div id="master-services-feedback" class="master-services-feedback" role="status" aria-live="polite"></div>
 <div class="master-control-list master-control-services-grid" id="master-control-services"><div class="master-control-empty">Caricamento servizi...</div></div>
 </section>
-<section class="master-control-pane" data-master-control-pane="combats">
-<div class="master-control-section-head"><span class="panel-label">CONTROLLO COMBATTIMENTI</span><h3>SESSIONI IN CORSO</h3><p>Osserva i combattimenti dei giocatori su entrambi i piani.</p></div>
-<aside class="master-combats-panel master-dashboard-panel">
-<div class="master-panel-header">
-<span class="panel-label">CONTROLLO</span>
-<h2>COMBATTIMENTI IN CORSO</h2>
-<div class="master-online-count" id="master-combat-count">
-                            Nessun combattimento attivo
-                        </div>
-</div>
-<div class="master-combat-list" id="master-combat-list">
-<div class="master-player-empty">
-                            Nessun combattimento in corso.
-                        </div>
-</div>
-</aside>
-<div class="master-control-section master-combat-extra"><div class="master-control-section-head"><h3>STATO E COOLDOWN</h3></div><div class="master-control-list" id="master-combats-cooldown-summary">La panoramica mostra i cooldown aggiornati.</div></div>
+<section class="master-control-pane master-combats-management-pane" data-master-control-pane="combats">
+  <div class="master-combat-manage-header">
+    <div><span class="panel-label">GESTIONE INCONTRI</span>
+      <h3>COMBATTIMENTI DEL PALAZZO</h3>
+      <p>Gestisci la disponibilità e i cooldown degli incontri. Le sessioni in corso sono protette.</p>
+    </div>
+    <button type="button" id="master-combats-refresh" class="button secondary">AGGIORNA INCONTRI</button>
+  </div>
+  <div id="master-combats-feedback" class="master-combats-feedback" role="status" aria-live="polite"></div>
+  <div id="master-combats-overview" class="master-combats-overview" aria-live="polite">
+    <div class="master-control-empty">Caricamento combattimenti...</div>
+  </div>
 </section>
 <section class="master-control-pane master-events-pane" data-master-control-pane="events">
 <div class="master-events-head"><div><span class="panel-label">MONITORAGGIO</span><h3 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h3></div><div aria-label="Piano osservato dal Master" class="master-floor-switch" role="group">
@@ -494,5 +489,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=20"></script>
+<script src="js/master.js?v=21"></script>
 </body></html>

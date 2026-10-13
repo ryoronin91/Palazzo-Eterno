@@ -2788,3 +2788,156 @@
     .master-service-state-controls {flex-basis:auto; width:100%;}
     .master-services-pane .master-services-heading {flex-direction:column;}
 }
+
+/* ============================================================
+   MASTER v21 — GESTIONE COMBATTIMENTI
+   ============================================================ */
+.master-page-redesigned .master-combats-management-pane {
+    min-width:0;
+    min-height:0;
+}
+.master-combat-manage-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin:0 0 13px;
+}
+.master-combat-manage-header h3 {
+    margin:6px 0 4px;
+    font-size:1.05rem;
+}
+.master-combat-manage-header p {
+    margin:0;
+    opacity:.7;
+    line-height:1.4;
+    font-size:.78rem;
+}
+.master-combat-manage-header .button {flex:0 0 auto;font-size:.72rem;white-space:nowrap;}
+.master-combats-feedback {
+    min-height:0;
+    font-size:.75rem;
+    color:#cdb886;
+    margin-bottom:8px;
+}
+.master-combats-feedback.is-error {color:#ff9999;}
+.master-combats-overview {display:flex;flex-direction:column;gap:17px;min-width:0;}
+.master-combat-group {min-width:0;}
+.master-combat-group-title {
+    margin:0 0 10px;
+    padding:0 0 9px;
+    border-bottom:1px solid rgba(184,138,59,.3);
+    color:#e5c88b;
+    font-size:.81rem;
+    font-weight:800;
+    letter-spacing:.075em;
+}
+.master-combat-manage-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    min-width:0;
+}
+.master-combat-manage-card {
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    border:1px solid rgba(184,138,59,.34);
+    border-radius:12px;
+    background:linear-gradient(145deg,rgba(27,28,31,.98),rgba(18,19,22,.96));
+    overflow:hidden;
+}
+.master-combat-manage-card.state-in_progress {border-color:rgba(236,144,76,.7);}
+.master-combat-manage-card.state-cooldown {border-color:rgba(137,139,148,.46);}
+.master-combat-card-header {
+    padding:13px 14px 10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:start;
+    gap:12px;
+    border-bottom:1px solid rgba(184,138,59,.18);
+}
+.master-combat-card-header h4 {margin:0;font-size:.96rem;line-height:1.35;overflow-wrap:anywhere;}
+.master-combat-id {display:block;margin-top:3px;font-size:.64rem;opacity:.53;overflow-wrap:anywhere;}
+.master-combat-pill {
+    flex:0 0 auto;
+    font-size:.62rem;
+    font-weight:800;
+    padding:5px 9px;
+    border:1px solid rgba(255,255,255,.24);
+    border-radius:999px;
+    color:#d8dadd;
+    text-transform:uppercase;
+    white-space:nowrap;
+}
+.master-combat-pill.is-available {color:#7ce0a0;border-color:rgba(94,215,140,.5);background:rgba(44,139,71,.13);}
+.master-combat-pill.is-cooldown {color:#b4b5bd;border-color:rgba(153,156,164,.5);background:rgba(117,122,131,.12);}
+.master-combat-pill.is-in_progress {color:#ffcf83;border-color:rgba(255,190,90,.48);background:rgba(178,91,27,.15);}
+.master-combat-pill.is-special {color:#d5b2ef;border-color:rgba(175,128,220,.48);background:rgba(118,66,155,.18);}
+.master-combat-card-body {padding:12px 14px 14px;display:flex;flex-direction:column;gap:11px;flex:1 1 auto;}
+.master-combat-state-line {
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px 12px;
+    font-size:.73rem;
+    align-items:center;
+    color:#d6d0be;
+}
+.master-combat-state-line strong {color:#e9c887;font-variant-numeric:tabular-nums;}
+.master-combat-state-line strong.is-cooldown {color:#e7b874;}
+.master-combat-state-controls {display:flex;flex-direction:column;gap:8px;}
+.master-combat-slider-row {display:flex;align-items:center;gap:11px;justify-content:space-between;}
+.master-combat-slider-label {font-size:.67rem;color:#bdb5a4;}
+.master-combat-state-slider {flex:1 1 auto;min-width:60px;max-width:145px;accent-color:#d5ad65;cursor:pointer;}
+.master-combat-state-slider:disabled {opacity:.3;cursor:not-allowed;}
+.master-combat-editor {display:flex;gap:8px;align-items:end;flex-wrap:wrap;}
+.master-combat-editor[hidden] {display:none!important;}
+.master-combat-minutes-label {display:flex;flex-direction:column;gap:5px;flex:1 1 130px;min-width:100px;font-size:.66rem;color:#cbb589;font-weight:700;}
+.master-combat-minutes-input {
+    width:100%;min-height:35px;box-sizing:border-box;
+    padding:6px 9px;
+    border-radius:7px;
+    border:1px solid rgba(184,138,59,.45);
+    background:#151619;
+    color:#fff;
+    font:inherit;
+    font-size:.84rem;
+}
+.master-combat-apply {min-height:35px;font-size:.7rem;padding:8px 12px;white-space:nowrap;}
+.master-combat-apply[hidden] {display:none!important;}
+.master-combat-players-heading {font-size:.67rem;color:#d5b678;font-weight:800;letter-spacing:.05em;}
+.master-combat-session {
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    background:rgba(0,0,0,.2);
+    border:1px solid rgba(211,154,83,.22);
+    border-radius:8px;
+    padding:10px;
+}
+.master-combat-session-header {display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.72rem;}
+.master-combat-session-header strong {color:#edbf7c;}
+.master-combat-watch {font-size:.69rem;flex:0 0 auto;white-space:nowrap;}
+.master-combat-players {display:flex;flex-wrap:wrap;gap:5px 7px;}
+.master-combat-person {
+    display:inline-flex;
+    align-items:center;
+    max-width:100%;
+    border-radius:6px;
+    padding:5px 7px;
+    font-size:.68rem;
+    overflow-wrap:anywhere;
+    border:1px solid rgba(128,171,218,.31);
+    background:rgba(64,101,153,.12);
+}
+.master-combat-players-empty {font-size:.7rem;opacity:.65;}
+.master-combat-help {font-size:.7rem;opacity:.65;line-height:1.4;}
+.master-combat-manage-card button:disabled {opacity:.55;cursor:not-allowed;}
+@media(max-width:1330px){.master-combat-manage-grid{grid-template-columns:1fr;}}
+@media(max-width:900px){.master-combat-manage-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:650px){
+    .master-combat-manage-grid{grid-template-columns:1fr;}
+    .master-combat-manage-header {align-items:stretch;flex-direction:column;}
+    .master-combat-manage-header .button{align-self:flex-start;}
+}
