@@ -8825,6 +8825,7 @@ function setupMasterControlCenter() {
 
 function setMasterControlTab(tab) {
     if (!MASTER_PAGE_SECTIONS[tab]) return;
+    document.querySelector(".master-page-redesigned")?.classList.toggle("master-overview-active", tab === "overview");
     document.querySelectorAll("[data-master-control-tab]").forEach(button => {
         const active = button.dataset.masterControlTab === tab;
         button.classList.toggle("is-active", active);
@@ -9581,3 +9582,242 @@ async function masterPgChangeItem(row,kind,value){
         await masterPgLoadSheet(masterPgSelectedId);
     }catch(err){window.alert(`Impossibile modificare l'oggetto: ${err.message||err}`);}
 }
+
+// ============================================================
+// MASTER v17 — PANORAMICA PULITA
+// Nessun riepilogo dentro il tab: solo mappa, PG e simboli.
+// I tempi sono mostrati esclusivamente sotto le icone.
+// Le coordinate dei servizi seguono base/services.json.
+// ============================================================
+
+const MASTER_OVERVIEW_SERVICE_COORDS_FALLBACK = [
+    { id:"runografo",    name:"Runografo",    npc:{x:18,y:21} },
+    { id:"locanda",      name:"Locanda",      npc:{x:4,y:15} },
+    { id:"addestratore", name:"Addestratore", npc:{x:22,y:18} },
+    { id:"quest_giver",  name:"Missioni",     npc:{x:13,y:21} }
+];
+
+let masterOverviewServiceLocations = MASTER_OVERVIEW_SERVICE_COORDS_FALLBACK;
+
+async function loadMasterOverviewServiceLocations() {
+    try {
+        const response = await fetch("base/services.json", { cache:"no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload.services)) throw new Error("Formato services.json non valido");
+        const loaded = payload.services.filter(service =>
+            service?.id && Number.isInteger(Number(service?.npc?.x)) &&
+            Number.isInteger(Number(service?.npc?.y))
+        );
+        if (loaded.length) masterOverviewServiceLocations = loaded;
+    } catch (error) {
+        console.warn("Master: uso coordinate note dei servizi della Base", error);
+    }
+    if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains("is-active")) {
+        requestAnimationFrame(renderMasterOverviewMap);
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    loadMasterOverviewServiceLocations();
+});
+
+function describeMasterServiceState(service) {
+    const label = service?.display_name || service?.service_key || "Servizio";
+    const status = String(service?.status || "").toLowerCase();
+    // Questi due campi provengono realmente da base_services.
+    const constructionReady = service?.construction_ready_at || null;
+    const maintenanceUntil = service?.maintenance_until || null;
+
+    if (["building", "construction", "constructing"].includes(status)) {
+        return {
+            label, markerClass:"state-building", iconClass:"state-building", icon:"🛠",
+            timerText: formatMasterCooldown(constructionReady),
+            description: constructionReady ? "In costruzione" : "In costruzione · tempo N/D"
+        };
+    }
+    if (["active", "enabled"].includes(status)) {
+        return {
+            label, markerClass:"state-active", iconClass:"state-active", icon:"🛠",
+            timerText: formatMasterCooldown(maintenanceUntil),
+            description: "Attivo"
+        };
+    }
+    if (["maintenance", "upgrading"].includes(status)) {
+        return {
+            label, markerClass:"state-building", iconClass:"state-building", icon:"🛠",
+            timerText: formatMasterCooldown(maintenanceUntil),
+            description:"In manutenzione"
+        };
+    }
+    if (["unbuilt", "inactive", "disabled"].includes(status)) {
+        return {
+            label, markerClass:"state-disabled", iconClass:"state-disabled", icon:"🛠",
+            timerText:"", description:"Non attivo"
+        };
+    }
+    return {
+        label, markerClass:"state-inactive", iconClass:"state-inactive", icon:"🛠",
+        timerText:"", description:"Stato non disponibile"
+    };
+}
+
+function getMasterOverviewBaseServiceMarkers() {
+    const serviceByKey = new Map((masterControlServices || []).map(service =>
+        [String(service.service_key || "").toLowerCase(), service]
+    ));
+    const markers = [];
+    // Mano di Scimmia è un vendor permanente, non soggetto a base_services.
+    markers.push({
+        x:22, y:13, title:"Mano di Scimmia · Vendor", markerClass:"state-active", timerText:""
+    });
+    for (const definition of masterOverviewServiceLocations) {
+        const service = serviceByKey.get(String(definition.id || "").toLowerCase());
+        const details = describeMasterServiceState(service || {
+            display_name:definition.name || definition.id, status:"unknown"
+        });
+        markers.push({
+            x:Number(definition.npc.x), y:Number(definition.npc.y),
+            title:`${details.label} · ${details.description}${details.timerText ? " · "+details.timerText : ""}`,
+            markerClass:details.markerClass, timerText:details.timerText
+        });
+    }
+    return markers;
+}
+
+function getMasterOverviewEventState(event, coords) {
+    // Gli eventi statici del dungeon non hanno un cooldown nel database.
+    // Non inventiamo un conto alla rovescia: compare soltanto se fornito.
+    const isActive = event?.is_active !== false;
+    const until = isActive ? event?.active_until : event?.cooldown_until;
+    return {
+        markerClass: isActive ? "state-active" : "state-inactive",
+        timerText: until ? formatMasterCooldown(until) : "",
+        title:`${event.id || "evento"} · ${isActive ? "attivo" : "non attivo"} · ${coords}`
+    };
+}
+
+function renderMasterOverviewMap() {
+    const image = document.getElementById("master-overview-map-image");
+    const container = document.getElementById("master-overview-map");
+    if (!image || !container) return;
+
+    const config = getMasterOverviewFloorConfig();
+    setText("master-overview-floor-name", config.title);
+    setText("master-overview-slide-count", `${config.index} / ${config.total}`);
+    image.alt = config.imageAlt;
+    if (image.getAttribute("src") !== config.image) image.setAttribute("src", config.image);
+    clearMasterOverviewMarkers();
+
+    // Aspetta che l'immagine abbia completato il caricamento prima di
+    // proiettare le coordinate del gioco sulla sua superficie reale.
+    if (!image.complete || !image.naturalWidth) return;
+    const imageRect = image.getBoundingClientRect();
+    const stageRect = container.getBoundingClientRect();
+    if (!imageRect.width || !imageRect.height || !stageRect.width || !stageRect.height) return;
+
+    const stepX = imageRect.width / config.columns;
+    const stepY = imageRect.height / config.rows;
+    const offsetX = imageRect.left - stageRect.left;
+    const offsetY = imageRect.top - stageRect.top;
+    const iconSize = Math.max(12, Math.min(stepX,stepY) * .68);
+    const tokenSize = Math.max(12, Math.min(stepX,stepY) * .93);
+
+    function place(node,x,y,size) {
+        const X = Number(x), Y = Number(y);
+        if (!Number.isFinite(X) || !Number.isFinite(Y) || X<0 || Y<0 || X>=config.columns || Y>=config.rows) return;
+        node.style.width = `${size}px`;
+        node.style.height = `${size}px`;
+        node.style.minWidth = `${size}px`;
+        node.style.left = `${offsetX + (X+.5)*stepX}px`;
+        node.style.top = `${offsetY + (Y+.5)*stepY}px`;
+        container.appendChild(node);
+    }
+
+    function addMarker(x,y,glyph,state,title,remaining = "",onClick=null) {
+        const marker = document.createElement("div");
+        marker.className = `master-overview-marker ${state}`;
+        marker.title = title;
+        const icon = document.createElement("span");
+        icon.className="icon";
+        icon.textContent=glyph;
+        marker.appendChild(icon);
+        // Niente ON o LIVE dentro le icone; mostriamo soltanto i tempi effettivi.
+        const time = String(remaining || "").trim();
+        if (time && !["ON","OFF","LIVE","WORK"].includes(time)) {
+            const label = document.createElement("span");
+            label.className="timer";
+            label.textContent=time;
+            marker.appendChild(label);
+        }
+        if (typeof onClick === "function") {
+            marker.tabIndex = 0;
+            marker.setAttribute("role", "button");
+            marker.addEventListener("click",onClick);
+            marker.addEventListener("keydown", e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();onClick();}});
+        }
+        place(marker,x,y,iconSize);
+    }
+
+    if (config.key === "dungeon") {
+        MASTER_COMBAT_EVENTS.forEach(event => {
+            const state = getMasterOverviewCombatState(event,"dungeon");
+            const live = getActiveCombatForEncounter(event.encounter_id);
+            addMarker(event.x,event.y,event.type==="boss" ? "👹" : "⚔",
+                state.markerClass,state.title,state.timerText,
+                live ? () => openMasterCombat(live.id) : null);
+        });
+        Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coords,event])=>{
+            const [x,y]=coords.split(",").map(Number);
+            const state = event.type==="trap"
+                ? getMasterOverviewTrapState(event,coords)
+                : getMasterOverviewEventState(event,coords);
+            addMarker(x,y,event.type==="trap" ? "⚠" : "◆",state.markerClass,state.title,state.timerText);
+        });
+        MASTER_SPECIAL_EVENTS.filter(event=>event.type==="pvp").forEach(event=>{
+            addMarker(event.x,event.y,"⚔","state-active",`${event.label || "Area PvP"} · evento PvP`);
+        });
+        MASTER_SPECIAL_EVENTS.filter(event=>event.type==="vendor").forEach(event=>{
+            // Vendor del dungeon non legati allo stato di costruzione Base.
+            addMarker(event.x,event.y,"🐒","state-active",`${event.label || "Vendor"} · disponibile`);
+        });
+    } else {
+        MASTER_BASE_COMBAT_EVENTS.forEach(event=>{
+            const state=getMasterOverviewCombatState(event,"base");
+            const live=getActiveCombatForEncounter(event.encounter_id);
+            addMarker(event.x,event.y,"⚔",state.markerClass,state.title,state.timerText,
+                live ? () => openMasterCombat(live.id) : null);
+        });
+        getMasterOverviewBaseServiceMarkers().forEach(item=>{
+            addMarker(item.x,item.y,"🛠",item.markerClass,item.title,item.timerText);
+        });
+    }
+
+    // I token vengono aggiunti dopo gli altri simboli: rimangono leggibili.
+    (masterControlAllPlayers || []).filter(player=>player.floor===config.key).forEach(player=>{
+        const token=document.createElement("img");
+        token.className=`master-overview-token ${player.online ? "is-online" : "is-offline"}`;
+        token.src="immagini/token/"+(player.token||"token_1.png");
+        token.alt=player.nome||"Giocatore";
+        token.title=`${player.nome||"PG"} · ${player.online ? "online" : "offline"} · X ${player.x} Y ${player.y}`;
+        token.tabIndex=0;
+        token.addEventListener("click",()=>openCharacterSheet(player.character_id));
+        token.addEventListener("keydown",e=>{if(e.key==="Enter"){openCharacterSheet(player.character_id);}});
+        place(token,player.x,player.y,tokenSize);
+    });
+}
+
+// Countdown visivi aggiornati al secondo senza interrogare Supabase.
+// Il refresh dei dati rimane quello condiviso con la pagina Master.
+let masterOverviewVisualTimer = null;
+window.addEventListener("DOMContentLoaded", () => {
+    if (masterOverviewVisualTimer) clearInterval(masterOverviewVisualTimer);
+    masterOverviewVisualTimer = setInterval(() => {
+        if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains("is-active")) {
+            renderMasterOverviewMap();
+        }
+    }, 1000);
+});
+window.addEventListener("beforeunload", () => {
+    if (masterOverviewVisualTimer) clearInterval(masterOverviewVisualTimer);
+});

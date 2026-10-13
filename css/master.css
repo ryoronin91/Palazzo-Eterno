@@ -2453,3 +2453,175 @@
 .master-pg-empty{color:#c7b8a2;opacity:.74;font-size:.78rem;padding:8px 0}
 .master-pg-loading{padding:16px;color:#d5c7a9}
 @media(max-width:700px){.master-pg-item{grid-template-columns:1fr}.master-pg-identity img{width:70px;height:70px}}
+/* ============================================================
+   MASTER v17 — PANORAMICA ESSENZIALE
+   Solo mappa e selettore; status negli altri tab.
+   ============================================================ */
+.master-page-redesigned.master-overview-active .master-control-center-head {
+    display: none;
+}
+.master-page-redesigned.master-overview-active .master-control-body {
+    overflow: hidden;
+    padding: 0;
+}
+.master-page-redesigned .master-control-pane[data-master-control-pane="overview"],
+.master-page-redesigned .master-control-pane[data-master-control-pane="overview"].is-active {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+.master-page-redesigned .master-overview-clean {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.master-page-redesigned .master-overview-clean > .master-overview-map-toolbar {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 1px 7px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+}
+.master-overview-clean .master-overview-floor-name {
+    font-size: clamp(.79rem, 1.05vw, .97rem);
+    line-height: 1.2;
+    color: #e9cf98;
+    letter-spacing: .07em;
+    font-weight: 800;
+}
+.master-overview-clean .master-overview-slider {display: inline-flex; align-items: center; flex:0 0 auto; gap: 7px}
+.master-overview-clean .master-overview-slide-button {width: 32px; height: 31px; padding: 0; font-size: 1.22rem}
+.master-overview-clean .master-overview-slide-count {min-width: 43px; font-size: .72rem}
+.master-page-redesigned .master-overview-clean > .master-overview-map {
+    box-sizing: border-box;
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    height: 0; /* flex uses all remaining available height */
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid rgba(184,138,59,.25);
+    border-radius: 9px;
+    background: rgba(0,0,0,.15);
+    overflow: hidden;
+}
+.master-page-redesigned .master-overview-clean .master-overview-map img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    flex: 0 1 auto;
+}
+/* La geometria dell'indicatore si riferisce solo al cerchio:
+   il countdown è posizionato SOTTO, non nel simbolo. */
+.master-page-redesigned .master-overview-marker {
+    display: block;
+    padding: 0;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible;
+    min-height: 0;
+    transform: translate(-50%, -50%);
+}
+.master-page-redesigned .master-overview-marker > .icon {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid rgba(255,255,255,.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    line-height: 1;
+    font-size: clamp(11px, 1vw, 17px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.78);
+}
+.master-page-redesigned .master-overview-marker.state-active > .icon {
+    background: rgba(30,120,65,.96); border-color: #76dca0;
+}
+.master-page-redesigned .master-overview-marker.state-live > .icon {
+    background: rgba(152,31,31,.96); border-color: #ff9393;
+}
+.master-page-redesigned .master-overview-marker.state-cooldown > .icon,
+.master-page-redesigned .master-overview-marker.state-inactive > .icon {
+    background: rgba(75,75,75,.95); border-color: #b1b1b1;
+    filter: grayscale(1);
+}
+.master-page-redesigned .master-overview-marker.state-building > .icon {
+    background: rgba(247,214,96,.98); border-color: #ffeb9b;
+}
+.master-page-redesigned .master-overview-marker.state-disabled > .icon {
+    background: rgba(128,28,28,.96); border-color: #ff7878;
+}
+.master-page-redesigned .master-overview-marker > .timer {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 2px);
+    display: block;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 2px 3px;
+    width: max-content;
+    max-width: 90px;
+    color: #ffe6a6;
+    font-size: clamp(7px, .7vw, 10px);
+    line-height: 1.05;
+    font-weight: 900;
+    background: rgba(10,10,10,.85);
+    border: 1px solid rgba(220,185,100,.32);
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,.9);
+    pointer-events: none;
+}
+.master-page-redesigned .master-overview-marker.state-cooldown > .timer {
+    color: #eee;
+    border-color: rgba(180,180,180,.35);
+}
+.master-page-redesigned .master-overview-token {
+    cursor: pointer;
+    object-fit: contain;
+    border: 0;
+    transform: translate(-50%, -50%);
+}
+.master-page-redesigned .master-overview-token.is-online {
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+    opacity: 1;
+}
+.master-page-redesigned .master-overview-token.is-offline {
+    filter: grayscale(1) brightness(.85) drop-shadow(0 1px 3px rgba(0,0,0,.9));
+    opacity: .7;
+}
+/* Dati operativi spostati da Panoramica nel tab Eventi/Segreti. */
+.master-page-redesigned .master-events-extra-status {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+.master-page-redesigned .master-events-extra-status > .master-info-panel {min-width:0; max-height:none}
+@media(max-width:850px) {
+    .master-page-redesigned .master-overview-clean {min-height:390px}
+    .master-page-redesigned .master-overview-clean > .master-overview-map {height:390px; flex-basis:390px}
+}
+@media(max-width:520px) {
+    .master-page-redesigned .master-events-extra-status {grid-template-columns:1fr}
+}

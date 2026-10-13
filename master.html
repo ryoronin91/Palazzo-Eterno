@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="it">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=16" rel="stylesheet"/>
+<link href="css/master.css?v=17" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -170,134 +171,44 @@
 </head>
 <body>
 <main class="master-page master-page-redesigned">
-<section class="master-layout" aria-label="Pannello amministrazione Palazzo Eterno">
-<aside class="master-navigation" aria-label="Navigazione Master">
+<section aria-label="Pannello amministrazione Palazzo Eterno" class="master-layout">
+<aside aria-label="Navigazione Master" class="master-navigation">
 <div class="master-navigation-brand"><span class="master-label">PALAZZO ETERNO</span><h1>MODALITÀ MASTER</h1></div>
-<nav class="master-control-tabs" aria-label="Sezioni gestione"><button type="button" class="master-control-tab is-active" data-master-control-tab="overview" aria-current="page">Panoramica</button>
-<button type="button" class="master-control-tab " data-master-control-tab="players" aria-current="false">Giocatori</button>
-<button type="button" class="master-control-tab " data-master-control-tab="services" aria-current="false">Vendor / Servizi</button>
-<button type="button" class="master-control-tab " data-master-control-tab="combats" aria-current="false">Combattimenti</button>
-<button type="button" class="master-control-tab " data-master-control-tab="events" aria-current="false">Eventi / Segreti</button>
-<button type="button" class="master-control-tab " data-master-control-tab="bacheca" aria-current="false">Bacheca</button></nav>
+<nav aria-label="Sezioni gestione" class="master-control-tabs"><button aria-current="page" class="master-control-tab is-active" data-master-control-tab="overview" type="button">Panoramica</button>
+<button aria-current="false" class="master-control-tab" data-master-control-tab="players" type="button">Giocatori</button>
+<button aria-current="false" class="master-control-tab" data-master-control-tab="services" type="button">Vendor / Servizi</button>
+<button aria-current="false" class="master-control-tab" data-master-control-tab="combats" type="button">Combattimenti</button>
+<button aria-current="false" class="master-control-tab" data-master-control-tab="events" type="button">Eventi / Segreti</button>
+<button aria-current="false" class="master-control-tab" data-master-control-tab="bacheca" type="button">Bacheca</button></nav>
 <div class="master-navigation-foot">Centro di controllo del Palazzo</div>
 </aside>
-<section class="master-main-column" aria-label="Gestione del gioco">
-<div id="master-control-center" class="master-control-center master-control-center-inline">
-<div class="master-control-center-head"><div><span class="master-label">GESTIONE PALAZZO</span><h2 id="master-control-center-title">PANORAMICA</h2><p id="master-panel-description">Stato operativo generale del gioco.</p></div><div class="master-control-refresh-wrap"><span id="master-control-refresh-status" class="master-control-refresh-status" aria-live="polite"></span><button id="master-control-refresh" type="button" class="button secondary">AGGIORNA DATI</button></div></div>
-<div class="master-control-body"><section class="master-control-pane is-active" data-master-control-pane="overview">
-<div class="master-overview-shell">
-<div class="master-control-summary-grid master-overview-summary-grid">
-<article class="master-control-card">
-<span class="panel-label">GIOCATORI</span>
-<strong id="master-control-player-count">-</strong>
-<small id="master-control-player-detail">Caricamento...</small>
-</article>
-<article class="master-control-card">
-<span class="panel-label">COMBATTIMENTI</span>
-<strong id="master-control-combat-count">-</strong>
-<small id="master-control-combat-detail">Caricamento...</small>
-</article>
-<article class="master-control-card">
-<span class="panel-label">BOSS</span>
-<strong id="master-control-boss-state">-</strong>
-<small id="master-control-boss-detail">Caricamento...</small>
-</article>
-<article class="master-control-card">
-<span class="panel-label">OGGETTI UNICI</span>
-<strong id="master-control-unique-count">-</strong>
-<small id="master-control-unique-detail">Caricamento...</small>
-</article>
-</div>
-
-<div class="master-overview-main">
-<article class="master-overview-map-card master-control-section">
+<section aria-label="Gestione del gioco" class="master-main-column">
+<div class="master-control-center master-control-center-inline" id="master-control-center">
+<div class="master-control-center-head"><div><span class="master-label">GESTIONE PALAZZO</span><h2 id="master-control-center-title">PANORAMICA</h2><p id="master-panel-description">Stato operativo generale del gioco.</p></div><div class="master-control-refresh-wrap"><span aria-live="polite" class="master-control-refresh-status" id="master-control-refresh-status"></span><button class="button secondary" id="master-control-refresh" type="button">AGGIORNA DATI</button></div></div>
+<div class="master-control-body"><section class="master-control-pane is-active" data-master-control-pane="overview"><div class="master-overview-clean">
 <div class="master-overview-map-toolbar">
-<div>
-<span class="panel-label">MAPPE DEL PALAZZO</span>
-<h3 id="master-overview-floor-name">PIANO 1</h3>
-<p id="master-overview-map-note">Giocatori, combat, trappole, eventi e vendor del piano selezionato.</p>
-</div>
-<div class="master-overview-slider" role="group" aria-label="Cambia mappa panoramica">
-<button id="master-overview-prev" type="button" class="master-overview-slide-button" aria-label="Mostra mappa precedente">‹</button>
-<span id="master-overview-slide-count" class="master-overview-slide-count">1 / 2</span>
-<button id="master-overview-next" type="button" class="master-overview-slide-button" aria-label="Mostra mappa successiva">›</button>
+<span class="master-overview-floor-name" id="master-overview-floor-name">PIANO 1</span>
+<div aria-label="Cambia piano visualizzato" class="master-overview-slider" role="group">
+<button aria-label="Piano precedente" class="master-overview-slide-button" id="master-overview-prev" type="button">‹</button>
+<span aria-live="polite" class="master-overview-slide-count" id="master-overview-slide-count">1 / 2</span>
+<button aria-label="Piano successivo" class="master-overview-slide-button" id="master-overview-next" type="button">›</button>
 </div>
 </div>
-<div class="master-overview-map-legend" aria-label="Legenda panoramica">
-<span><b class="legend-dot is-online"></b> PG online</span>
-<span><b class="legend-dot is-offline"></b> PG offline</span>
-<span><b class="legend-symbol combat">⚔</b> Combat</span>
-<span><b class="legend-symbol trap">⚠</b> Trappole</span>
-<span><b class="legend-symbol event">◆</b> Eventi</span>
-<span><b class="legend-symbol vendor">🛠</b> Vendor / servizi</span>
+<div aria-label="Mappa con giocatori, combattimenti, trappole, eventi e servizi" class="master-overview-map" id="master-overview-map" role="region">
+<img alt="Mappa del Piano 1" id="master-overview-map-image" src="immagini/dungeon-test.png?v=2"/>
 </div>
-<div id="master-overview-map" class="master-overview-map">
-<img id="master-overview-map-image" src="immagini/dungeon-test.png?v=2" alt="Mappa panoramica del Piano 1" />
-</div>
-</article>
-
-<div class="master-overview-side">
-<div class="master-overview-specials">
-<aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">ACCESSO BOSS</span>
-<h2>PASSWORD ATTUALE</h2>
-</div>
-<div class="master-special-value">
-<strong id="master-boss-password">...</strong>
-<span id="master-boss-password-expiry">Caricamento...</span>
-</div>
-</aside>
-<aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">OGGETTO SPECIALE</span>
-<h2>DITO DI SCIMMIA</h2>
-</div>
-<div class="master-special-value">
-<strong id="master-monkey-finger-status">Caricamento...</strong>
-<span id="master-monkey-finger-owner"></span>
-</div>
-</aside>
-</div>
-
-<div class="master-overview-status-grid">
-<article class="master-control-section">
-<div class="master-control-section-head compact"><h3>COMBAT</h3></div>
-<div id="master-overview-combats" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
-</article>
-<article class="master-control-section">
-<div class="master-control-section-head compact"><h3>TRAPPOLE</h3></div>
-<div id="master-overview-traps" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
-</article>
-<article class="master-control-section">
-<div class="master-control-section-head compact"><h3>EVENTI</h3></div>
-<div id="master-overview-events" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
-</article>
-<article class="master-control-section">
-<div class="master-control-section-head compact"><h3>VENDOR / SERVIZI</h3></div>
-<div id="master-overview-vendors" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
-</article>
-</div>
-
-<div class="master-overview-hidden-sync" hidden>
-<strong id="master-control-boss-password">-</strong>
-<span id="master-control-boss-password-expiry">Caricamento...</span>
-</div>
-</div>
-</div>
-</div>
-</section>
+</div></section>
 <section class="master-control-pane master-players-view" data-master-control-pane="players">
 <div class="master-pg-toolbar">
- <div><span class="panel-label">ARCHIVIO PERSONAGGI</span><h3 id="master-pg-title">TUTTI I GIOCATORI</h3></div>
- <button type="button" id="master-pg-back" class="button secondary" hidden>← TORNA ALL'ELENCO</button>
+<div><span class="panel-label">ARCHIVIO PERSONAGGI</span><h3 id="master-pg-title">TUTTI I GIOCATORI</h3></div>
+<button class="button secondary" hidden="" id="master-pg-back" type="button">← TORNA ALL'ELENCO</button>
 </div>
 <div id="master-pg-browser">
- <label class="master-pg-search-label" for="master-pg-search">Cerca un personaggio</label>
- <input id="master-pg-search" type="search" placeholder="Nome, piano, livello..." autocomplete="off"/>
- <div id="master-pg-list" class="master-pg-list">Caricamento personaggi...</div>
+<label class="master-pg-search-label" for="master-pg-search">Cerca un personaggio</label>
+<input autocomplete="off" id="master-pg-search" placeholder="Nome, piano, livello..." type="search"/>
+<div class="master-pg-list" id="master-pg-list">Caricamento personaggi...</div>
 </div>
-<div id="master-pg-sheet" class="master-pg-sheet" hidden aria-live="polite"></div>
+<div aria-live="polite" class="master-pg-sheet" hidden="" id="master-pg-sheet"></div>
 </section>
 <section class="master-control-pane" data-master-control-pane="services">
 <div class="master-control-section-head">
@@ -321,12 +232,12 @@
                         </div>
 </div>
 </aside>
-<div class="master-control-section master-combat-extra"><div class="master-control-section-head"><h3>STATO E COOLDOWN</h3></div><div id="master-combats-cooldown-summary" class="master-control-list">La panoramica mostra i cooldown aggiornati.</div></div>
+<div class="master-control-section master-combat-extra"><div class="master-control-section-head"><h3>STATO E COOLDOWN</h3></div><div class="master-control-list" id="master-combats-cooldown-summary">La panoramica mostra i cooldown aggiornati.</div></div>
 </section>
 <section class="master-control-pane master-events-pane" data-master-control-pane="events">
-<div class="master-events-head"><div><span class="panel-label">MONITORAGGIO</span><h3 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h3></div><div class="master-floor-switch" role="group" aria-label="Piano osservato dal Master">
-<button id="master-floor-dungeon" type="button" class="master-floor-button is-active" data-master-floor="dungeon" aria-pressed="true">PIANO 1</button>
-<button id="master-floor-base" type="button" class="master-floor-button" data-master-floor="base" aria-pressed="false">LIVELLO BASE</button>
+<div class="master-events-head"><div><span class="panel-label">MONITORAGGIO</span><h3 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h3></div><div aria-label="Piano osservato dal Master" class="master-floor-switch" role="group">
+<button aria-pressed="true" class="master-floor-button is-active" data-master-floor="dungeon" id="master-floor-dungeon" type="button">PIANO 1</button>
+<button aria-pressed="false" class="master-floor-button" data-master-floor="base" id="master-floor-base" type="button">LIVELLO BASE</button>
 </div></div>
 <div class="master-map-column">
 <div aria-label="Legenda mappa Master" class="master-map-legend">
@@ -346,7 +257,31 @@
                     Connessione al dungeon...
                 </div>
 </div>
-</section>
+<div class="master-events-extra-status"><aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
+<div class="master-panel-header compact">
+<span class="panel-label">ACCESSO BOSS</span>
+<h2>PASSWORD ATTUALE</h2>
+</div>
+<div class="master-special-value">
+<strong id="master-boss-password">...</strong>
+<span id="master-boss-password-expiry">Caricamento...</span>
+</div>
+</aside><aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
+<div class="master-panel-header compact">
+<span class="panel-label">OGGETTO SPECIALE</span>
+<h2>DITO DI SCIMMIA</h2>
+</div>
+<div class="master-special-value">
+<strong id="master-monkey-finger-status">Caricamento...</strong>
+<span id="master-monkey-finger-owner"></span>
+</div>
+</aside></div><div aria-hidden="true" hidden="" id="master-control-metrics-cache">
+<strong id="master-control-player-count"></strong><small id="master-control-player-detail"></small>
+<strong id="master-control-combat-count"></strong><small id="master-control-combat-detail"></small>
+<strong id="master-control-boss-state"></strong><small id="master-control-boss-detail"></small>
+<strong id="master-control-unique-count"></strong><small id="master-control-unique-detail"></small>
+<strong id="master-control-boss-password"></strong><span id="master-control-boss-password-expiry"></span>
+</div></section>
 <section class="master-control-pane" data-master-control-pane="bacheca">
 <div class="master-control-section-head">
 <div>
@@ -376,8 +311,8 @@
 </section></div>
 </div>
 </section>
-<aside class="master-right-column" aria-label="Strumenti permanenti">
-<div class="master-header-actions master-right-actions"><a href="scheda.html" class="button secondary">SCHEDA</a><button id="logout-button" type="button" class="button secondary">ESCI</button></div>
+<aside aria-label="Strumenti permanenti" class="master-right-column">
+<div class="master-header-actions master-right-actions"><a class="button secondary" href="scheda.html">SCHEDA</a><button class="button secondary" id="logout-button" type="button">ESCI</button></div>
 <aside class="master-players-panel master-dashboard-panel">
 <div class="master-panel-header">
 <span class="panel-label">PRESENZE</span>
@@ -410,8 +345,8 @@
                             MESSAGGIO
                         </label>
 <textarea class="master-chat-input" disabled="" id="master-chat-input" maxlength="300" placeholder="Scrivi come Master (massimo 300 caratteri)..."></textarea>
-<label for="master-chat-destination" class="master-chat-label master-chat-destination-label">INVIA A</label>
-<select id="master-chat-destination" class="master-chat-destination" aria-label="Destinazione messaggio Master">
+<label class="master-chat-label master-chat-destination-label" for="master-chat-destination">INVIA A</label>
+<select aria-label="Destinazione messaggio Master" class="master-chat-destination" id="master-chat-destination">
 <option value="both">Entrambi i piani</option>
 <option value="base">Livello Base</option>
 <option value="dungeon">Piano 1</option>
@@ -556,5 +491,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=16"></script>
+<script src="js/master.js?v=17"></script>
 </body></html>
