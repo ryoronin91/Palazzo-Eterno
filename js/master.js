@@ -9821,3 +9821,375 @@ window.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("beforeunload", () => {
     if (masterOverviewVisualTimer) clearInterval(masterOverviewVisualTimer);
 });
+
+
+// ============================================================
+// MASTER v18 — FIX PANORAMICA PIANO 1
+// - rimuove scale/dead_end dalla mappa overview
+// - rimuove PVP e vendor del Piano 1
+// - aggiunge Puzzacinta con stato/cooldown
+// - corregge i cooldown dei combat sulla mappa
+// ============================================================
+
+let masterPuzzacintaState = {
+    event_id: "puzzacinta_p1",
+    visible: false,
+    phase: "hidden",
+    x: 1,
+    y: 8,
+    window_end_at: null,
+    next_start_at: null,
+    combat_id: null,
+    enabled: true,
+    start_hours: [0, 4, 8, 12, 16, 20],
+    duration_minutes: 15,
+    timezone: "Europe/Rome",
+    source: "fallback"
+};
+
+function computeMasterRareEventNextStart(startHours) {
+    const hours = Array.isArray(startHours)
+        ? startHours.map(Number).filter(v => Number.isFinite(v) && v >= 0 && v <= 23).sort((a,b) => a-b)
+        : [];
+    if (!hours.length) return null;
+
+    const now = new Date();
+    for (let dayOffset = 0; dayOffset <= 2; dayOffset += 1) {
+        for (const hour of hours) {
+            const candidate = new Date(now);
+            candidate.setSeconds(0, 0);
+            candidate.setDate(candidate.getDate() + dayOffset);
+            candidate.setHours(hour, 0, 0, 0);
+            if (candidate.getTime() > now.getTime() + 1000) {
+                return candidate.toISOString();
+            }
+        }
+    }
+    return null;
+}
+
+async function loadMasterPuzzacintaState() {
+    const next = {
+        event_id: "puzzacinta_p1",
+        visible: false,
+        phase: "hidden",
+        x: 1,
+        y: 8,
+        window_end_at: null,
+        next_start_at: null,
+        combat_id: null,
+        enabled: true,
+        start_hours: [0, 4, 8, 12, 16, 20],
+        duration_minutes: 15,
+        timezone: "Europe/Rome",
+        source: "fallback"
+    };
+
+    try {
+        const { data, error } = await db
+            .from('dungeon_rare_events')
+            .select('event_id, x, y, enabled, timezone, start_hours, duration_minutes')
+            .eq('event_id', 'puzzacinta_p1')
+            .maybeSingle();
+        if (!error && data) {
+            next.x = Number(data.x);
+            next.y = Number(data.y);
+            next.enabled = data.enabled !== false;
+            next.timezone = data.timezone || next.timezone;
+            next.start_hours = Array.isArray(data.start_hours) ? data.start_hours : next.start_hours;
+            next.duration_minutes = Number(data.duration_minutes) || next.duration_minutes;
+            next.source = 'table';
+        }
+    } catch (error) {
+        console.warn('Master: impossibile leggere dungeon_rare_events per Puzzacinta:', error);
+    }
+
+    try {
+        const { data, error } = await db.rpc('get_puzzacinta_state');
+        if (!error && data) {
+            next.visible = data.visible === true;
+            next.phase = String(data.phase || next.phase);
+            if (Number.isFinite(Number(data.x))) next.x = Number(data.x);
+            if (Number.isFinite(Number(data.y))) next.y = Number(data.y);
+            next.window_end_at = data.window_end_at || null;
+            next.combat_id = data.combat_id || null;
+            next.source = 'rpc';
+        }
+    } catch (error) {
+        console.warn('Master: get_puzzacinta_state non disponibile:', error);
+    }
+
+    if (!next.visible && next.enabled !== false) {
+        next.next_start_at = computeMasterRareEventNextStart(next.start_hours);
+    }
+
+    masterPuzzacintaState = next;
+    return next;
+}
+
+function getMasterOverviewPuzzacintaState() {
+    const state = masterPuzzacintaState || {};
+    const phase = String(state.phase || 'hidden').toLowerCase();
+    const visible = state.visible === true || ['dialogue', 'berserk_ready', 'combat_active'].includes(phase);
+
+    if (visible) {
+        if (phase === 'combat_active' || phase === 'berserk_ready') {
+            return {
+                markerClass: 'state-live',
+                timerText: formatMasterCooldown(state.window_end_at) || '',
+                title: 'Puzzacinta · evento raro in corso'
+            };
+        }
+        return {
+            markerClass: 'state-active',
+            timerText: formatMasterCooldown(state.window_end_at) || '',
+            title: 'Puzzacinta · evento raro attivo'
+        };
+    }
+
+    const nextAt = state.next_start_at || null;
+    return {
+        markerClass: nextAt ? 'state-cooldown' : 'state-inactive',
+        timerText: formatMasterCooldown(nextAt) || '',
+        title: nextAt
+            ? `Puzzacinta · prossimo evento tra ${formatMasterCooldown(nextAt) || 'poco'}`
+            : 'Puzzacinta · evento raro non attivo'
+    };
+}
+
+function getMasterOverviewCombatState(event, floor) {
+    if (floor === 'base') {
+        const state = masterBaseCombatStates[event.state_key] || {};
+        const active = !!getActiveCombatForEncounter(event.encounter_id);
+        if (active) {
+            return {
+                markerClass: 'state-live',
+                timerText: '',
+                title: `${event.label || event.encounter_id} · combattimento in corso`
+            };
+        }
+        if (state.available === false) {
+            const until = state.cooldown_until || state.until || null;
+            return {
+                markerClass: 'state-cooldown',
+                timerText: formatMasterCooldown(until) || '',
+                title: `${event.label || event.encounter_id} · in cooldown${until ? ' fino a ' + formatMasterDateTime(until) : ''}`
+            };
+        }
+        return {
+            markerClass: 'state-active',
+            timerText: '',
+            title: `${event.label || event.encounter_id} · attivo`
+        };
+    }
+
+    if (event.type === 'boss') {
+        const active = !!getActiveCombatForEncounter(event.encounter_id);
+        if (active) {
+            return {
+                markerClass: 'state-live',
+                timerText: '',
+                title: 'Goblin Boss · combattimento in corso'
+            };
+        }
+        if (masterBossState.available === false) {
+            const until = masterBossState.cooldown_until || masterBossState.until || null;
+            return {
+                markerClass: 'state-cooldown',
+                timerText: formatMasterCooldown(until) || '',
+                title: `Goblin Boss · in cooldown${until ? ' fino a ' + formatMasterDateTime(until) : ''}`
+            };
+        }
+        return {
+            markerClass: 'state-active',
+            timerText: '',
+            title: 'Goblin Boss · attivo'
+        };
+    }
+
+    const state = masterControlRegularCombatStates.get(event.encounter_id) || {};
+    const active = !!getActiveCombatForEncounter(event.encounter_id);
+    if (active) {
+        return {
+            markerClass: 'state-live',
+            timerText: '',
+            title: `${event.encounter_id} · combattimento in corso`
+        };
+    }
+    const until = state.until || state.cooldown_until || state.disabled_until || null;
+    if (state.available === false || state.state === 'cooldown') {
+        return {
+            markerClass: 'state-cooldown',
+            timerText: formatMasterCooldown(until) || '',
+            title: `${event.encounter_id} · in cooldown${until ? ' fino a ' + formatMasterDateTime(until) : ''}`
+        };
+    }
+    return {
+        markerClass: 'state-active',
+        timerText: '',
+        title: `${event.encounter_id} · attivo`
+    };
+}
+
+function renderMasterOverviewMap() {
+    const image = document.getElementById('master-overview-map-image');
+    const container = document.getElementById('master-overview-map');
+    if (!image || !container) return;
+
+    const config = getMasterOverviewFloorConfig();
+    setText('master-overview-floor-name', config.title);
+    setText('master-overview-slide-count', `${config.index} / ${config.total}`);
+    image.alt = config.imageAlt;
+    if (image.getAttribute('src') !== config.image) image.setAttribute('src', config.image);
+    clearMasterOverviewMarkers();
+
+    if (!image.complete || !image.naturalWidth) return;
+    const imageRect = image.getBoundingClientRect();
+    const stageRect = container.getBoundingClientRect();
+    if (!imageRect.width || !imageRect.height || !stageRect.width || !stageRect.height) return;
+
+    const stepX = imageRect.width / config.columns;
+    const stepY = imageRect.height / config.rows;
+    const offsetX = imageRect.left - stageRect.left;
+    const offsetY = imageRect.top - stageRect.top;
+    const iconSize = Math.max(12, Math.min(stepX, stepY) * 0.68);
+    const tokenSize = Math.max(12, Math.min(stepX, stepY) * 0.93);
+
+    function place(node, x, y, size) {
+        const X = Number(x), Y = Number(y);
+        if (!Number.isFinite(X) || !Number.isFinite(Y) || X < 0 || Y < 0 || X >= config.columns || Y >= config.rows) return;
+        node.style.width = `${size}px`;
+        node.style.height = `${size}px`;
+        node.style.minWidth = `${size}px`;
+        node.style.left = `${offsetX + (X + 0.5) * stepX}px`;
+        node.style.top = `${offsetY + (Y + 0.5) * stepY}px`;
+        container.appendChild(node);
+    }
+
+    function addMarker(x, y, glyph, state, title, remaining = '', onClick = null) {
+        const marker = document.createElement('div');
+        marker.className = `master-overview-marker ${state}`;
+        marker.title = title;
+        const icon = document.createElement('span');
+        icon.className = 'icon';
+        icon.textContent = glyph;
+        marker.appendChild(icon);
+        const time = String(remaining || '').trim();
+        if (time) {
+            const label = document.createElement('span');
+            label.className = 'timer';
+            label.textContent = time;
+            marker.appendChild(label);
+        }
+        if (typeof onClick === 'function') {
+            marker.tabIndex = 0;
+            marker.setAttribute('role', 'button');
+            marker.addEventListener('click', onClick);
+            marker.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onClick();
+                }
+            });
+        }
+        place(marker, x, y, iconSize);
+    }
+
+    if (config.key === 'dungeon') {
+        MASTER_COMBAT_EVENTS.forEach(event => {
+            const state = getMasterOverviewCombatState(event, 'dungeon');
+            const live = getActiveCombatForEncounter(event.encounter_id);
+            addMarker(
+                event.x,
+                event.y,
+                event.type === 'boss' ? '👹' : '⚔',
+                state.markerClass,
+                state.title,
+                state.timerText,
+                live ? () => openMasterCombat(live.id) : null
+            );
+        });
+
+        Object.entries(MASTER_DUNGEON_EVENTS)
+            .filter(([, event]) => event.type === 'trap')
+            .forEach(([coords, event]) => {
+                const [x, y] = coords.split(',').map(Number);
+                const state = getMasterOverviewTrapState(event, coords);
+                addMarker(x, y, '⚠', state.markerClass, state.title, state.timerText);
+            });
+
+        const puzzState = getMasterOverviewPuzzacintaState();
+        addMarker(
+            masterPuzzacintaState.x,
+            masterPuzzacintaState.y,
+            '☣',
+            puzzState.markerClass,
+            puzzState.title,
+            puzzState.timerText
+        );
+    } else {
+        MASTER_BASE_COMBAT_EVENTS.forEach(event => {
+            const state = getMasterOverviewCombatState(event, 'base');
+            const live = getActiveCombatForEncounter(event.encounter_id);
+            addMarker(
+                event.x,
+                event.y,
+                '⚔',
+                state.markerClass,
+                state.title,
+                state.timerText,
+                live ? () => openMasterCombat(live.id) : null
+            );
+        });
+        getMasterOverviewBaseServiceMarkers().forEach(item => {
+            addMarker(item.x, item.y, '🛠', item.markerClass, item.title, item.timerText);
+        });
+    }
+
+    (masterControlAllPlayers || [])
+        .filter(player => player.floor === config.key)
+        .forEach(player => {
+            const token = document.createElement('img');
+            token.className = `master-overview-token ${player.online ? 'is-online' : 'is-offline'}`;
+            token.src = 'immagini/token/' + (player.token || 'token_1.png');
+            token.alt = player.nome || 'Giocatore';
+            token.title = `${player.nome || 'PG'} · ${player.online ? 'online' : 'offline'} · X ${player.x} Y ${player.y}`;
+            token.tabIndex = 0;
+            token.addEventListener('click', () => openCharacterSheet(player.character_id));
+            token.addEventListener('keydown', e => { if (e.key === 'Enter') openCharacterSheet(player.character_id); });
+            place(token, player.x, player.y, tokenSize);
+        });
+}
+
+const _masterOriginalLoadMasterControlCenterV18 = loadMasterControlCenter;
+loadMasterControlCenter = async function () {
+    await _masterOriginalLoadMasterControlCenterV18();
+    try {
+        await loadMasterPuzzacintaState();
+    } catch (error) {
+        console.warn('Master: aggiornamento Puzzacinta non riuscito:', error);
+    }
+    if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) {
+        renderMasterOverviewMap();
+    }
+};
+
+let masterPuzzacintaRefreshTimer = null;
+window.addEventListener('DOMContentLoaded', () => {
+    loadMasterPuzzacintaState().finally(() => {
+        if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) {
+            renderMasterOverviewMap();
+        }
+    });
+    if (masterPuzzacintaRefreshTimer) clearInterval(masterPuzzacintaRefreshTimer);
+    masterPuzzacintaRefreshTimer = setInterval(() => {
+        loadMasterPuzzacintaState().finally(() => {
+            if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) {
+                renderMasterOverviewMap();
+            }
+        });
+    }, 4000);
+});
+window.addEventListener('beforeunload', () => {
+    if (masterPuzzacintaRefreshTimer) clearInterval(masterPuzzacintaRefreshTimer);
+});
