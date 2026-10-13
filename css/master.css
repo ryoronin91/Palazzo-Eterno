@@ -2625,3 +2625,166 @@
 @media(max-width:520px) {
     .master-page-redesigned .master-events-extra-status {grid-template-columns:1fr}
 }
+
+/* ============================================================
+   MASTER v20 — GESTIONE VENDOR / SERVIZI
+   ============================================================ */
+.master-services-pane .master-services-heading {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+    margin-bottom:7px;
+}
+.master-services-pane .master-services-heading h3 { margin:5px 0 7px; }
+.master-services-pane .master-services-heading p {
+    max-width:750px;
+    line-height:1.5;
+    font-size:.78rem;
+    margin:0;
+    opacity:.82;
+}
+.master-services-pane #master-services-refresh {
+    flex:0 0 auto;
+    min-height:35px;
+    font-size:.72rem;
+}
+.master-services-feedback {
+    min-height:1.35rem;
+    margin:6px 0;
+    font-size:.78rem;
+    line-height:1.4;
+}
+.master-services-feedback.is-success { color:#92dfb0; }
+.master-services-feedback.is-error { color:#ff9393; }
+.master-page-redesigned #master-control-services.master-control-services-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:13px;
+    align-items:start;
+    padding-bottom:10px;
+}
+.master-service-card {
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border-radius:13px;
+    background:linear-gradient(160deg,rgba(36,35,34,.96),rgba(17,19,22,.96));
+    border:1px solid rgba(184,138,59,.34);
+}
+.master-service-card.is-active { border-color:rgba(85,190,118,.42); }
+.master-service-card.is-building { border-color:rgba(232,186,72,.52); }
+.master-service-card.is-unbuilt { border-color:rgba(225,96,96,.31); }
+.master-service-card-head {
+    display:flex;
+    justify-content:space-between;
+    gap:14px;
+    padding:14px;
+    border-bottom:1px solid rgba(184,138,59,.18);
+}
+.master-service-identity { flex:1 1 auto; min-width:0; }
+.master-service-headline { display:flex;gap:9px;align-items:center;flex-wrap:wrap; }
+.master-service-name { margin:0; font-size:1rem; }
+.master-service-level {
+    display:inline-flex;align-items:center;
+    background:rgba(188,137,53,.16);
+    color:#e9c78a;border-radius:6px;
+    border:1px solid rgba(188,137,53,.3);
+    font-size:.68rem;font-weight:800;
+    padding:3px 7px;white-space:nowrap;
+}
+.master-service-state-label {
+    display:inline-block;margin-top:9px;font-size:.65rem;
+    font-weight:800;letter-spacing:.055em;
+}
+.master-service-state-label.is-active { color:#7ce5a0; }
+.master-service-state-label.is-building { color:#f3d37a; }
+.master-service-state-label.is-unbuilt { color:#f6aaaa; }
+.master-service-state-controls { flex:0 0 175px;min-width:0; }
+.master-service-slider-caption {
+    display:block; font-size:.66rem; font-weight:700;
+    opacity:.84; margin-bottom:5px;
+}
+.master-service-state-slider { width:100%; cursor:pointer; accent-color:#d5af66; }
+.master-service-slider-labels {
+    display:flex;justify-content:space-between;gap:2px;
+    font-size:.56rem;font-weight:700;color:#ccb78a;
+}
+.master-service-card-body {display:flex;flex-direction:column;gap:13px;padding:13px;}
+.master-service-time-box {
+    padding:10px 12px;
+    background:rgba(8,9,11,.45);
+    border-radius:9px;
+    border:1px solid rgba(184,138,59,.2);
+}
+.master-service-time-box.is-active { border-color:rgba(102,213,143,.37); }
+.master-service-time-box.is-building { border-color:rgba(245,192,78,.37); }
+.master-service-time-caption {
+    display:block;font-size:.65rem;font-weight:700;opacity:.8;
+    margin-bottom:3px;
+}
+.master-service-time-value {
+    display:block;
+    font-size:1.23rem;
+    color:#e8c277;
+    font-variant-numeric:tabular-nums;
+}
+.master-service-time-box.is-active .master-service-time-value { color:#91e7b3; }
+.master-service-requirements {
+    display:flex;flex-direction:column;gap:9px;
+}
+.master-service-requirements-title {
+    color:#dfc18c;font-weight:800;font-size:.67rem;letter-spacing:.045em;
+    border-bottom:1px solid rgba(184,138,59,.2);padding-bottom:6px;
+}
+.master-service-resource-row {display:flex;flex-direction:column;gap:5px;}
+.master-service-resource-heading {
+    display:flex;justify-content:space-between;gap:10px;
+    align-items:center;font-size:.77rem;
+}
+.master-service-resource-name {overflow-wrap:anywhere;}
+.master-service-resource-count {font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.master-service-resource-progress {
+    width:100%;height:8px;overflow:hidden;
+    border:0;border-radius:999px;accent-color:#bd9447;
+}
+.master-service-resource-controls {display:flex;gap:6px;align-items:center;}
+.master-service-resource-amount,
+.master-service-gold-input {
+    min-width:0;width:70px;
+    background:rgba(0,0,0,.35);
+    color:inherit;border-radius:7px;
+    border:1px solid rgba(184,138,59,.45);
+    padding:7px;font:inherit;font-size:.77rem;
+    box-sizing:border-box;
+}
+.master-service-quantity-button {flex:1 1 0;min-width:0;font-size:.64rem;padding:7px 5px;white-space:nowrap;}
+.master-service-resource-controls button:disabled {opacity:.35;cursor:not-allowed;}
+.master-service-gold-box {
+    padding:11px;
+    display:flex;flex-direction:column;gap:8px;
+    background:rgba(69,94,55,.12);
+    border:1px solid rgba(127,207,139,.31);
+    border-radius:10px;
+}
+.master-service-gold-heading {font-size:.72rem;color:#9ceab8;}
+.master-service-muted {font-size:.72rem;opacity:.75;line-height:1.4;}
+.master-service-gold-controls {display:flex;gap:8px;align-items:center;}
+.master-service-gold-input {flex:1 1 auto;width:100px;}
+.master-service-gold-add {flex:0 0 auto;font-size:.67rem;white-space:nowrap;padding:9px;}
+.master-service-note {
+    font-size:.72rem;opacity:.68;line-height:1.5;
+    padding:9px;
+    border:1px dashed rgba(184,138,59,.24);
+    border-radius:8px;
+}
+#master-control-services.is-saving { opacity:.55;pointer-events:none; }
+@media (max-width:1440px) {
+    .master-page-redesigned #master-control-services.master-control-services-grid {grid-template-columns:1fr;}
+}
+@media (max-width:580px) {
+    .master-service-card-head {flex-direction:column;}
+    .master-service-state-controls {flex-basis:auto; width:100%;}
+    .master-services-pane .master-services-heading {flex-direction:column;}
+}

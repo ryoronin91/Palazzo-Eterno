@@ -10196,3 +10196,326 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('beforeunload', () => {
     if (masterPuzzacintaRefreshTimer) clearInterval(masterPuzzacintaRefreshTimer);
 });
+
+// ============================================================
+// MASTER V20 — VENDOR / SERVIZI
+// Tutte le scritture avvengono tramite RPC controllata dal Master.
+// ============================================================
+
+let masterServicesAdminRows = [];
+let masterServicesLastRenderSignature = "";
+let masterServicesLoading = false;
+let masterServicesActionBusy = false;
+let masterServicesLastFetch = 0;
+
+function masterServicesIsVisible() {
+    return !!document.querySelector('[data-master-control-pane="services"].is-active');
+}
+
+function masterServicesNotify(message, error = false) {
+    const node = document.getElementById("master-services-feedback");
+    if (!node) return;
+    node.textContent = message || "";
+    node.classList.toggle("is-error", error);
+    node.classList.toggle("is-success", !!message && !error);
+}
+
+async function loadMasterServicesAdminPanel(force = false) {
+    if (masterServicesLoading || masterServicesActionBusy) return;
+    if (!force && Date.now() - masterServicesLastFetch < 12000) return;
+    if (!force && !masterServicesIsVisible()) return;
+
+    masterServicesLoading = true;
+    const refreshButton = document.getElementById("master-services-refresh");
+    if (refreshButton) refreshButton.disabled = true;
+    try {
+        const {data, error} = await db.rpc("master_get_base_services_state");
+        if (error) throw error;
+        masterServicesAdminRows = Array.isArray(data?.services) ? data.services : [];
+        masterServicesLastFetch = Date.now();
+        renderMasterControlServices(force);
+        masterServicesNotify("");
+    } catch (error) {
+        console.error("Master: caricamento servizi amministrativi:", error);
+        masterServicesNotify(
+            `Servizi non disponibili: ${error?.message || "errore sconosciuto"}. ` +
+            "Esegui prima master_servizi_rpc.sql nel SQL Editor di Supabase.", true);
+    } finally {
+        masterServicesLoading = false;
+        if (refreshButton) refreshButton.disabled = false;
+    }
+}
+
+function masterServiceElement(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+}
+
+function masterServiceTimeUntil(deadline) {
+    return deadline ? (formatMasterCooldown(deadline) || "00:00") : "N/D";
+}
+
+function masterServiceProgressList(requirements, type, service, enabled, subtitle) {
+    const wrapper = masterServiceElement("div", "master-service-requirements");
+    const title = masterServiceElement("div", "master-service-requirements-title", subtitle);
+    wrapper.appendChild(title);
+    const rows = Array.isArray(requirements) ? requirements : [];
+    if (!rows.length) {
+        wrapper.appendChild(masterServiceElement("div", "master-service-muted", "Nessun requisito configurato."));
+        return wrapper;
+    }
+    rows.forEach(req => {
+        const required = Math.max(0, Number(req.required_quantity) || 0);
+        const contributed = Math.max(0, Number(req.contributed_quantity) || 0);
+        const remaining = Math.max(0, required - contributed);
+        const line = masterServiceElement("div", "master-service-resource-row");
+        const heading = masterServiceElement("div", "master-service-resource-heading");
+        heading.appendChild(masterServiceElement("span", "master-service-resource-name", req.item_name || req.item_id));
+        heading.appendChild(masterServiceElement("span", "master-service-resource-count", `${contributed.toLocaleString("it-IT")} / ${required.toLocaleString("it-IT")}`));
+        line.appendChild(heading);
+        const progress = masterServiceElement("progress", "master-service-resource-progress");
+        progress.max = Math.max(required, 1);
+        progress.value = Math.min(contributed, Math.max(required, 1));
+        line.appendChild(progress);
+
+        if (enabled) {
+            const controls = masterServiceElement("div", "master-service-resource-controls");
+            const field = masterServiceElement("input", "master-service-resource-amount");
+            field.type = "number";
+            field.inputMode = "numeric";
+            field.min = "1";
+            field.step = "1";
+            field.max = "1000000";
+            field.value = "1";
+            field.setAttribute("aria-label", `Quantità ${req.item_name || req.item_id}`);
+            controls.appendChild(field);
+            for (const deltaSign of [-1, 1]) {
+                const button = masterServiceElement("button", "button secondary master-service-quantity-button", deltaSign < 0 ? "− TOGLI" : "+ AGGIUNGI");
+                button.type = "button";
+                button.disabled = deltaSign > 0 ? remaining === 0 : contributed === 0;
+                button.title = deltaSign > 0 ? "Aggiungi risorse al progresso" : "Rimuovi risorse dal progresso";
+                button.addEventListener("click", async () => {
+                    const quantity = Number(field.value);
+                    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000) {
+                        masterServicesNotify("Inserisci una quantità intera tra 1 e 1.000.000.", true);
+                        return;
+                    }
+                    const delta = quantity * deltaSign;
+                    const result = contributed + delta;
+                    if (result < 0 || result > required) {
+                        masterServicesNotify(`Quantità non consentita: il progresso deve essere compreso tra 0 e ${required}.`, true);
+                        return;
+                    }
+                    const verb = deltaSign > 0 ? "AGGIUNGERE" : "TOGLIERE";
+                    if (!window.confirm(`${verb} ${quantity} × ${req.item_name || req.item_id} dai requisiti di ${service.display_name}?\n\nL'operazione modifica il progresso del servizio, NON gli inventari dei giocatori.`)) return;
+                    await masterServicesSubmit({
+                        p_service_key: service.service_key,
+                        p_action: type === "construction" ? "adjust_construction" : "adjust_upgrade",
+                        p_item_id: req.item_id,
+                        p_delta: delta
+                    });
+                });
+                controls.appendChild(button);
+            }
+            line.appendChild(controls);
+        }
+        wrapper.appendChild(line);
+    });
+    return wrapper;
+}
+
+function masterServiceCard(entry) {
+    const service = entry.service || {};
+    const status = String(service.status || "unbuilt");
+    const statusLevels = ["unbuilt", "building", "active"];
+    const statusIndex = Math.max(0, statusLevels.indexOf(status));
+    const level = Number(service.current_level) || 1;
+    const name = service.display_name || service.service_key || "Servizio";
+
+    const card = masterServiceElement("article", `master-service-card is-${status}`);
+    const top = masterServiceElement("div", "master-service-card-head");
+    const identity = masterServiceElement("div", "master-service-identity");
+    const headline = masterServiceElement("div", "master-service-headline");
+    headline.appendChild(masterServiceElement("h3", "master-service-name", name));
+    headline.appendChild(masterServiceElement("span", "master-service-level", `LV ${level}`));
+    identity.appendChild(headline);
+    identity.appendChild(masterServiceElement("span", `master-service-state-label is-${status}`,
+        status === "building" ? "IN COSTRUZIONE" : status === "active" ? "ATTIVO" : "DA COSTRUIRE"));
+    top.appendChild(identity);
+
+    const statusControls = masterServiceElement("div", "master-service-state-controls");
+    const sliderLabel = masterServiceElement("label", "master-service-slider-caption", "Stato servizio");
+    const slider = masterServiceElement("input", "master-service-state-slider");
+    slider.type = "range";
+    slider.min = "0";
+    slider.max = "2";
+    slider.step = "1";
+    slider.value = String(statusIndex);
+    slider.id = `master-service-slider-${service.service_key}`;
+    sliderLabel.htmlFor = slider.id;
+    slider.setAttribute("aria-label", `Stato ${name}`);
+    const labels = masterServiceElement("div", "master-service-slider-labels");
+    ["UNBUILT", "BUILDING", "ACTIVE"].forEach(t => labels.appendChild(masterServiceElement("span", "", t)));
+    slider.addEventListener("change", async () => {
+        const newState = statusLevels[Number(slider.value)] || status;
+        if (newState === status) return;
+        slider.value = String(statusIndex);
+        const transitionInfo = newState === "unbuilt"
+            ? "I progressi di COSTRUZIONE saranno azzerati e inizierà un nuovo ciclo. Il livello già raggiunto resterà invariato."
+            : newState === "building"
+                ? "Forzerai l'avvio della costruzione con il timer configurato, anche se i requisiti non sono completi."
+                : "Forzerai l'attivazione immediata con una nuova riserva iniziale di durata.";
+        if (!window.confirm(`Cambiare ${name} da ${status.toUpperCase()} a ${newState.toUpperCase()}?\n\n${transitionInfo}`)) return;
+        await masterServicesSubmit({p_service_key:service.service_key,p_action:"set_state",p_state:newState});
+    });
+    statusControls.append(sliderLabel, slider, labels);
+    top.appendChild(statusControls);
+    card.appendChild(top);
+
+    const body = masterServiceElement("div", "master-service-card-body");
+    const timeBox = masterServiceElement("div", `master-service-time-box is-${status}`);
+    const caption = status === "building" ? "COSTRUZIONE TERMINA TRA" : status === "active" ? "RESTERÀ ATTIVO PER" : "STATO DEL SERVIZIO";
+    timeBox.appendChild(masterServiceElement("span", "master-service-time-caption", caption));
+    const timeValue = masterServiceElement("strong", "master-service-time-value");
+    const deadline = status === "building" ? service.construction_ready_at : (status === "active" ? service.maintenance_until : null);
+    if (deadline) {
+        timeValue.dataset.masterServiceDeadline = deadline;
+        timeValue.textContent = masterServiceTimeUntil(deadline);
+    } else {
+        timeValue.textContent = status === "unbuilt" ? "INATTIVO" : "N/D";
+    }
+    timeBox.appendChild(timeValue);
+    body.appendChild(timeBox);
+
+    const constructionRequirements = entry.construction_requirements || [];
+    body.appendChild(masterServiceProgressList(constructionRequirements, "construction", service, status === "unbuilt", "REQUISITI DI COSTRUZIONE"));
+
+    if (status === "active") {
+        const maintenance = masterServiceElement("div", "master-service-gold-box");
+        maintenance.appendChild(masterServiceElement("strong", "master-service-gold-heading", "ESTENDI LA DURATA CON MONETE"));
+        const goldRequired = constructionRequirements.find(req => req.item_id === "moneta_oro");
+        const goldCost = Number(goldRequired?.required_quantity) || 0;
+        const goldDescription = goldCost > 0
+            ? `${goldCost.toLocaleString("it-IT")} monete = ${Math.max(1,Math.round((Number(service.maintenance_seconds)||28800)/3600))} ore. Accredito Master: non scala oro ai PG.`
+            : "Costo in monete non configurato: estensione non disponibile.";
+        maintenance.appendChild(masterServiceElement("small", "master-service-muted", goldDescription));
+        const controls = masterServiceElement("div", "master-service-gold-controls");
+        const field = masterServiceElement("input", "master-service-gold-input");
+        field.type = "number";
+        field.min = "1";
+        field.max = "1000000";
+        field.step = "1";
+        field.inputMode = "numeric";
+        field.placeholder = "Monete";
+        field.setAttribute("aria-label", `Monete per estendere ${name}`);
+        const addButton = masterServiceElement("button", "button master-service-gold-add", "+ AGGIUNGI MONETE");
+        addButton.type = "button";
+        addButton.disabled = goldCost <= 0;
+        addButton.addEventListener("click", async () => {
+            const coins = Number(field.value);
+            if (!Number.isSafeInteger(coins) || coins < 1 || coins > 1000000) {
+                masterServicesNotify("Inserisci un numero intero di monete tra 1 e 1.000.000.", true);
+                return;
+            }
+            const seconds = coins * Number(service.maintenance_seconds) / goldCost;
+            if (!window.confirm(`Accreditare ${coins.toLocaleString("it-IT")} monete a ${name} per estendere la durata di circa ${Math.round(seconds/60)} minuti?\n\nNessuna moneta verrà sottratta ai giocatori.`)) return;
+            await masterServicesSubmit({p_service_key:service.service_key,p_action:"add_gold",p_gold:coins});
+        });
+        controls.append(field, addButton);
+        maintenance.appendChild(controls);
+        body.appendChild(maintenance);
+    }
+
+    const upgrade = entry.upgrade || {};
+    const targetLevel = Number(upgrade.target_level) || 0;
+    if (level >= Number(upgrade.max_level || 6)) {
+        body.appendChild(masterServiceElement("div", "master-service-note", "Livello massimo raggiunto."));
+    } else if (upgrade.enabled && targetLevel > level) {
+        body.appendChild(masterServiceProgressList(upgrade.requirements, "upgrade", service, status === "active", `REQUISITI PER IL LIVELLO ${targetLevel}`));
+        if (status !== "active") body.appendChild(masterServiceElement("div", "master-service-note", "Le risorse per l'upgrade sono modificabili quando il servizio è Active."));
+    } else {
+        body.appendChild(masterServiceElement("div", "master-service-note", `Upgrade al livello ${level + 1} non ancora abilitato nel gioco.`));
+    }
+
+    card.appendChild(body);
+    return card;
+}
+
+function renderMasterControlServices(force = false) {
+    const container = document.getElementById("master-control-services");
+    if (!container) return;
+    if (!masterServicesAdminRows.length) {
+        if (!masterServicesLoading) container.textContent = "Caricamento servizi Master...";
+        return;
+    }
+    // Non ricostruire le righe ogni quattro secondi mentre il Master sta scrivendo.
+    const signature = JSON.stringify(masterServicesAdminRows);
+    if (!force && signature === masterServicesLastRenderSignature) {
+        updateMasterServiceCountdowns();
+        return;
+    }
+    if (!force && container.contains(document.activeElement)) return;
+    masterServicesLastRenderSignature = signature;
+    container.replaceChildren();
+    masterServicesAdminRows.forEach(entry => container.appendChild(masterServiceCard(entry)));
+    updateMasterServiceCountdowns();
+}
+
+function updateMasterServiceCountdowns() {
+    document.querySelectorAll("[data-master-service-deadline]").forEach(node => {
+        node.textContent = masterServiceTimeUntil(node.dataset.masterServiceDeadline);
+    });
+}
+
+async function masterServicesSubmit(payload) {
+    if (masterServicesActionBusy) return;
+    masterServicesActionBusy = true;
+    const container = document.getElementById("master-control-services");
+    container?.classList.add("is-saving");
+    masterServicesNotify("Salvataggio in corso...");
+    try {
+        const {data, error} = await db.rpc("master_manage_base_service", payload);
+        if (error) throw error;
+        if (!data?.ok) throw new Error("Operazione non confermata dal server.");
+        masterServicesNotify("Modifica applicata al servizio.");
+    } catch (error) {
+        console.error("Modifica servizio Master:", error);
+        masterServicesNotify(`Modifica non salvata: ${error?.message || "errore sconosciuto"}`, true);
+        return;
+    } finally {
+        masterServicesActionBusy = false;
+        container?.classList.remove("is-saving");
+    }
+    masterServicesLastFetch = 0;
+    masterServicesLastRenderSignature = "";
+    await loadMasterServicesAdminPanel(true);
+    // Sincronizza la Panoramica della Base già presente nel Master.
+    await loadMasterControlServices();
+}
+
+const masterServicesOldSetTabV20 = setMasterControlTab;
+setMasterControlTab = function (tab) {
+    masterServicesOldSetTabV20(tab);
+    if (tab === "services") loadMasterServicesAdminPanel(true);
+};
+
+const masterServicesOldControlLoadV20 = loadMasterControlCenter;
+loadMasterControlCenter = async function () {
+    await masterServicesOldControlLoadV20();
+    if (masterServicesIsVisible()) await loadMasterServicesAdminPanel(true);
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("master-services-refresh")?.addEventListener("click", async () => {
+        masterServicesLastFetch = 0;
+        await loadMasterServicesAdminPanel(true);
+    });
+    const timer = window.setInterval(() => {
+        if (!masterServicesIsVisible()) return;
+        updateMasterServiceCountdowns();
+        if (!masterServicesActionBusy) loadMasterServicesAdminPanel();
+    }, 1000);
+    window.addEventListener("beforeunload", () => window.clearInterval(timer), {once:true});
+});

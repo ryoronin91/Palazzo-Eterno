@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=19" rel="stylesheet"/>
+<link href="css/master.css?v=20" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -210,11 +210,14 @@
 </div>
 <div aria-live="polite" class="master-pg-sheet" hidden="" id="master-pg-sheet"></div>
 </section>
-<section class="master-control-pane" data-master-control-pane="services">
-<div class="master-control-section-head">
-<div><span class="panel-label">BASE</span><h3>VENDOR E SERVIZI</h3></div>
+<section class="master-control-pane master-services-pane" data-master-control-pane="services">
+<div class="master-control-section-head master-services-heading">
+<div><span class="panel-label">LIVELLO BASE · CONTROLLO MASTER</span><h3>VENDOR E SERVIZI</h3>
+<p>Gestisci stati, avanzamento delle risorse e durata dei servizi. Le risorse e le monete aggiunte qui sono crediti amministrativi: non vengono sottratte ai personaggi.</p></div>
+<button id="master-services-refresh" type="button" class="button secondary">AGGIORNA SERVIZI</button>
 </div>
-<div class="master-control-list master-control-services-grid" id="master-control-services"><div class="master-control-empty">Caricamento...</div></div>
+<div id="master-services-feedback" class="master-services-feedback" role="status" aria-live="polite"></div>
+<div class="master-control-list master-control-services-grid" id="master-control-services"><div class="master-control-empty">Caricamento servizi...</div></div>
 </section>
 <section class="master-control-pane" data-master-control-pane="combats">
 <div class="master-control-section-head"><span class="panel-label">CONTROLLO COMBATTIMENTI</span><h3>SESSIONI IN CORSO</h3><p>Osserva i combattimenti dei giocatori su entrambi i piani.</p></div>
@@ -491,5 +494,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=19"></script>
+<script src="js/master.js?v=20"></script>
 </body></html>
