@@ -9431,14 +9431,17 @@ async function masterPgLoadSheet(id) {
         const character=characterResult.data;
         masterPgInventory=inventoryResult.data||[];
         masterPgItemCatalog=new Map((catalogResult.data||[]).map(item=>[item.id,item]));
-        let resonance="N/D", finalScore="N/D";
-        const [resonanceResult, scoreResult] = await Promise.all([
-            db.rpc("get_character_resonance_safe",{p_character_id:id}),
-            db.rpc("get_character_final_score",{p_character_id:id})
-        ]);
-        if(!resonanceResult.error) resonance=masterPgValue(resonanceResult.data);
-        if(!scoreResult.error) finalScore=masterPgValue(scoreResult.data);
-        masterPgRenderSheet(character, resonance, finalScore);
+        // La Risonanza della scheda giocatore usa get_character_final_score
+        // tramite get_character_resonance_safe. Quest'ultima RPC non e'
+        // eseguibile direttamente con il ruolo authenticated; la prima sì.
+        const {data:score, error:scoreError} = await db.rpc(
+            "get_character_final_score", {p_character_id:id}
+        );
+        if(scoreError) {
+            console.warn("Risonanza Master non disponibile:", scoreError);
+        }
+        const resonance=scoreError ? "N/D" : masterPgValue(score);
+        masterPgRenderSheet(character, resonance);
     }catch(error){
         console.error("Caricamento scheda Master:",error);
         sheet.replaceChildren(masterPgEl("div","master-pg-feedback error",`Impossibile leggere la scheda: ${error.message||error}`));
@@ -9451,7 +9454,7 @@ function masterPgValue(value) {
     return String(value);
 }
 
-function masterPgRenderSheet(c, resonance, finalScore) {
+function masterPgRenderSheet(c, resonance) {
     const sheet=document.getElementById("master-pg-sheet");
     sheet.replaceChildren();
     setText("master-pg-title",`SCHEDA · ${c.nome || "Personaggio"}`);
@@ -9470,7 +9473,7 @@ function masterPgRenderSheet(c, resonance, finalScore) {
     const currentGold=c.current_gold ?? 0;
     masterPgStats(main,[
         ["LIVELLO",c.livello||1],["RISONANZA",resonance],["MONETE D'ORO",currentGold],
-        ["SCORE FINALE",finalScore],["PF ATTUALI",c.current_hp??"-"],["PM ATTUALI",c.current_pm??"-"],
+        ["PF ATTUALI",c.current_hp??"-"],["PM ATTUALI",c.current_pm??"-"],
         ["PUNTI ABILITÀ",c.punti_abilita??0]
     ]);
 
@@ -9558,7 +9561,7 @@ function masterPgRenderInventoryRows(parent,rows){
         const actions=masterPgEl("div","master-pg-item-actions",null);
         const quantity=document.createElement("input");quantity.type="number";quantity.min="0";quantity.max="999999";quantity.step="1";quantity.value=String(row.quantity);
         quantity.setAttribute("aria-label",`Quantità ${definition.name||row.item_id}`);
-        const update=masterPgEl("button","button secondary","Quantità");update.type="button";
+        const update=masterPgEl("button","button secondary","Modifica");update.type="button";
         update.addEventListener("click",()=>masterPgChangeItem(row,"quantity",quantity.value));
         const slot=document.createElement("select");
         slot.setAttribute("aria-label",`Equipaggiamento ${definition.name||row.item_id}`);
