@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=21" rel="stylesheet"/>
+<link href="css/master.css?v=22" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -214,72 +214,61 @@
 <div class="master-control-section-head master-services-heading">
 <div><span class="panel-label">LIVELLO BASE · CONTROLLO MASTER</span><h3>VENDOR E SERVIZI</h3>
 <p>Gestisci stati, avanzamento delle risorse e durata dei servizi. Le risorse e le monete aggiunte qui sono crediti amministrativi: non vengono sottratte ai personaggi.</p></div>
-<button id="master-services-refresh" type="button" class="button secondary">AGGIORNA SERVIZI</button>
+<button class="button secondary" id="master-services-refresh" type="button">AGGIORNA SERVIZI</button>
 </div>
-<div id="master-services-feedback" class="master-services-feedback" role="status" aria-live="polite"></div>
+<div aria-live="polite" class="master-services-feedback" id="master-services-feedback" role="status"></div>
 <div class="master-control-list master-control-services-grid" id="master-control-services"><div class="master-control-empty">Caricamento servizi...</div></div>
 </section>
 <section class="master-control-pane master-combats-management-pane" data-master-control-pane="combats">
-  <div class="master-combat-manage-header">
-    <div><span class="panel-label">GESTIONE INCONTRI</span>
-      <h3>COMBATTIMENTI DEL PALAZZO</h3>
-      <p>Gestisci la disponibilità e i cooldown degli incontri. Le sessioni in corso sono protette.</p>
-    </div>
-    <button type="button" id="master-combats-refresh" class="button secondary">AGGIORNA INCONTRI</button>
-  </div>
-  <div id="master-combats-feedback" class="master-combats-feedback" role="status" aria-live="polite"></div>
-  <div id="master-combats-overview" class="master-combats-overview" aria-live="polite">
-    <div class="master-control-empty">Caricamento combattimenti...</div>
-  </div>
+<div class="master-combat-manage-header">
+<div><span class="panel-label">GESTIONE INCONTRI</span>
+<h3>COMBATTIMENTI DEL PALAZZO</h3>
+<p>Gestisci la disponibilità e i cooldown degli incontri. Le sessioni in corso sono protette.</p>
+</div>
+<button class="button secondary" id="master-combats-refresh" type="button">AGGIORNA INCONTRI</button>
+</div>
+<div aria-live="polite" class="master-combats-feedback" id="master-combats-feedback" role="status"></div>
+<div aria-live="polite" class="master-combats-overview" id="master-combats-overview">
+<div class="master-control-empty">Caricamento combattimenti...</div>
+</div>
 </section>
-<section class="master-control-pane master-events-pane" data-master-control-pane="events">
-<div class="master-events-head"><div><span class="panel-label">MONITORAGGIO</span><h3 id="master-floor-title">PALAZZO ETERNO - PIANO 1</h3></div><div aria-label="Piano osservato dal Master" class="master-floor-switch" role="group">
-<button aria-pressed="true" class="master-floor-button is-active" data-master-floor="dungeon" id="master-floor-dungeon" type="button">PIANO 1</button>
-<button aria-pressed="false" class="master-floor-button" data-master-floor="base" id="master-floor-base" type="button">LIVELLO BASE</button>
-</div></div>
-<div class="master-map-column">
-<div aria-label="Legenda mappa Master" class="master-map-legend">
-<span><b class="legend-dot is-online"></b> PG online</span>
-<span><b class="legend-dot is-offline"></b> PG offline</span>
-<span><b class="legend-symbol combat">⚔</b> Combat</span>
-<span id="master-legend-boss"><b class="legend-symbol boss">👹</b> Boss</span>
-<span id="master-legend-pvp"><b class="legend-symbol pvp">⚔</b> PvP</span>
-<span id="master-legend-vendor"><b class="legend-symbol vendor">🐒</b> Vendor</span>
-<span id="master-legend-trap"><b class="legend-symbol trap">⚠</b> Trappola</span>
-<span id="master-legend-event"><b class="legend-symbol event">◆</b> Evento</span>
+<section class="master-control-pane master-events-management-pane" data-master-control-pane="events">
+<div class="master-events-management-head">
+<div>
+<span class="panel-label">CONTROLLO EVENTI</span>
+<h3>EVENTI E SEGRETI</h3>
+<p>Attiva o disattiva gli eventi del Piano 1. Le trappole conservano il loro cooldown naturale.</p>
 </div>
-<div class="master-map" id="master-map">
-<img alt="Mappa completa del dungeon" id="master-map-image" src="immagini/dungeon-test.png?v=2"/>
+<button class="button secondary" id="master-events-refresh" type="button">AGGIORNA EVENTI</button>
 </div>
-<div class="master-message" id="master-message">
-                    Connessione al dungeon...
-                </div>
+<p aria-live="polite" class="master-events-feedback" id="master-events-feedback" role="status"></p>
+<h4 class="master-events-group-title">EVENTI <span>4</span></h4>
+<div class="master-events-management-grid" id="master-events-management-list">
+<div class="master-control-empty">Caricamento eventi...</div>
 </div>
-<div class="master-events-extra-status"><aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">ACCESSO BOSS</span>
-<h2>PASSWORD ATTUALE</h2>
+<h4 class="master-events-group-title master-events-secrets-heading">SEGRETI <span>1</span></h4>
+<section aria-label="Password del Boss" class="master-event-secret-card">
+<div class="master-event-secret-icon">🔐</div>
+<div class="master-event-secret-copy">
+<strong>Password del Boss</strong>
+<span>Accesso alla stanza del Goblin Boss</span>
+<div class="master-event-password-readout"><strong id="master-boss-password">Caricamento...</strong><small id="master-boss-password-expiry">Verifica in corso...</small></div>
 </div>
-<div class="master-special-value">
-<strong id="master-boss-password">...</strong>
-<span id="master-boss-password-expiry">Caricamento...</span>
-</div>
-</aside><aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">OGGETTO SPECIALE</span>
-<h2>DITO DI SCIMMIA</h2>
-</div>
-<div class="master-special-value">
-<strong id="master-monkey-finger-status">Caricamento...</strong>
-<span id="master-monkey-finger-owner"></span>
-</div>
-</aside></div><div aria-hidden="true" hidden="" id="master-control-metrics-cache">
+</section>
+<div aria-hidden="true" class="master-events-hidden" hidden="">
+<div id="master-map"><img alt="" id="master-map-image" src="immagini/dungeon-test.png?v=2"/></div>
+<div id="master-message"></div>
+<div id="master-floor-title"></div>
+<button data-master-floor="dungeon" id="master-floor-dungeon" type="button"></button>
+<button data-master-floor="base" id="master-floor-base" type="button"></button>
+<div class="master-monkey-finger-panel"><strong id="master-monkey-finger-status"></strong><span id="master-monkey-finger-owner"></span></div>
 <strong id="master-control-player-count"></strong><small id="master-control-player-detail"></small>
 <strong id="master-control-combat-count"></strong><small id="master-control-combat-detail"></small>
 <strong id="master-control-boss-state"></strong><small id="master-control-boss-detail"></small>
 <strong id="master-control-unique-count"></strong><small id="master-control-unique-detail"></small>
 <strong id="master-control-boss-password"></strong><span id="master-control-boss-password-expiry"></span>
-</div></section>
+</div>
+</section>
 <section class="master-control-pane" data-master-control-pane="bacheca">
 <div class="master-control-section-head">
 <div>
@@ -298,7 +287,7 @@
 <textarea id="master-noticeboard-upgrade" placeholder="Una voce per riga" rows="10"></textarea>
 </label>
 <label class="master-noticeboard-editor">
-<span>BUG &amp; SUGGERIMENTI</span>
+<span>BUG & SUGGERIMENTI</span>
 <textarea id="master-noticeboard-avvisi" placeholder="Una voce per riga" rows="10"></textarea>
 </label>
 </div>
@@ -489,5 +478,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=21"></script>
+<script src="js/master.js?v=22"></script>
 </body></html>

@@ -10850,3 +10850,238 @@ window.addEventListener('DOMContentLoaded',()=>{
     },1000);
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 });
+
+// ============================================================
+// MASTER v22 — EVENTI / SEGRETI
+// Le scritture vengono verificate dalle RPC SECURITY DEFINER Master.
+// La scheda Dito di Scimmia è in sola lettura.
+// ============================================================
+
+const MASTER_EVENT_DEFINITIONS = [
+    { id:'blade_corridor', title:'Trappola 1', subtitle:'Corridoio delle lame · Piano 1', icon:'⚠', kind:'trap' },
+    { id:'acid_vapor', title:'Trappola 2', subtitle:'Vapore acido · Piano 1', icon:'⚠', kind:'trap' },
+    { id:'puzzacinta_p1', title:'Puzzacinta', subtitle:'Evento raro · Piano 1', icon:'🧙', kind:'rare' },
+    { id:'dito_scimmia', title:'Dito di Scimmia', subtitle:'Oggetto unico del Palazzo', icon:'☝️', kind:'finger' }
+];
+let masterEventAdminState = null;
+let masterEventAdminBusy = false;
+let masterEventAdminLastLoad = 0;
+let masterEventAdminLoading = false;
+
+function masterEventsPaneVisible() {
+    return !!document.querySelector('[data-master-control-pane="events"]')?.classList.contains('is-active');
+}
+function masterEventsNotice(message, error=false) {
+    const node = document.getElementById('master-events-feedback');
+    if (!node) return;
+    node.textContent = message || '';
+    node.classList.toggle('is-error', !!error);
+}
+function masterEventsDuration(deadline) {
+    const ms = deadline ? new Date(deadline).getTime() - Date.now() : NaN;
+    if (!Number.isFinite(ms)) return '';
+    if (ms <= 0) return '00:00';
+    const total = Math.ceil(ms / 1000);
+    const hours = Math.floor(total / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return hours
+        ? `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+        : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+function masterEventsRow(def) {
+    const state = masterEventAdminState || {};
+    if (def.kind === 'trap') {
+        const data = (state.traps || []).find(row => row.trap_id === def.id);
+        const enabled = data?.enabled !== false;
+        const cooldownActive = !!(data?.disabled_until && Date.parse(data.disabled_until) > Date.now());
+        return {
+            enabled,
+            status: enabled ? (cooldownActive ? 'COOLDOWN' : 'ATTIVA') : 'DISATTIVATA',
+            detail: enabled
+                ? (cooldownActive ? 'La trappola è in cooldown automatico, poi tornerà disponibile.' : 'La trappola può attivarsi quando un giocatore la attraversa.')
+                : 'Disattivata dal Master: non può colpire i giocatori.',
+            countdown: enabled && cooldownActive ? data.disabled_until : null
+        };
+    }
+    if (def.kind === 'rare') {
+        const data = state.puzzacinta || {};
+        const enabled = data.enabled === true;
+        return {
+            enabled,
+            status: enabled ? 'ABILITATO' : 'DISABILITATO',
+            detail: enabled
+                ? 'Le apparizioni programmate restano attive (ogni 4 ore).'
+                : 'Le nuove apparizioni sono bloccate dal Master.',
+            countdown: null
+        };
+    }
+    const owners = Array.isArray(state.finger_owners) ? state.finger_owners : [];
+    return {
+        enabled:false,
+        status: owners.length ? 'IN POSSESSO' : 'DISPONIBILE',
+        detail: owners.length
+            ? 'In mano a: ' + owners.map(owner => String(owner.name || 'PG sconosciuto')).join(', ')
+            : 'Non risulta in possesso di alcun personaggio. Può essere raccolto.',
+        countdown:null,
+        readOnly:true
+    };
+}
+
+function masterEventsRender() {
+    const list = document.getElementById('master-events-management-list');
+    if (!list) return;
+    list.replaceChildren();
+    if (!masterEventAdminState) {
+        const placeholder=document.createElement('div');
+        placeholder.className='master-control-empty';
+        placeholder.textContent='I dati degli eventi non sono disponibili. Installa lo SQL v22 e riprova.';
+        list.appendChild(placeholder);
+        return;
+    }
+
+    for (const def of MASTER_EVENT_DEFINITIONS) {
+        const state = masterEventsRow(def);
+        const card = document.createElement('article');
+        card.className=`master-event-admin-card ${state.enabled ? 'is-active' : 'is-disabled'}`;
+        card.dataset.eventId=def.id;
+        const header=document.createElement('div');
+        header.className='master-event-admin-header';
+        const title=document.createElement('div');
+        title.className='master-event-admin-title';
+        const icon=document.createElement('span');icon.className='master-event-admin-icon';icon.textContent=def.icon;
+        const info=document.createElement('div');
+        const strong=document.createElement('strong');strong.textContent=def.title;
+        const subtitle=document.createElement('small');subtitle.textContent=def.subtitle;
+        info.append(strong,subtitle);title.append(icon,info);
+        const status=document.createElement('span');
+        status.className=`master-event-admin-state ${state.enabled ? 'is-enabled' : ''}`;
+        status.textContent=state.status;
+        header.append(title,status);
+        const detail=document.createElement('div');
+        detail.className='master-event-admin-detail';
+        detail.textContent=state.detail;
+        if (def.kind === 'finger') detail.classList.add('master-event-finger-owners');
+        const footer=document.createElement('div');footer.className='master-event-admin-footer';
+        const footLabel=document.createElement('span');
+        if (state.countdown) {
+            footLabel.dataset.masterEventDeadline=state.countdown;
+            footLabel.textContent='Cooldown: '+masterEventsDuration(state.countdown);
+        } else {
+            footLabel.textContent=def.kind==='rare' ? 'Controllo apparizioni programmate' :
+                def.kind==='finger' ? 'Rilevamento automatico del possesso' : 'Cooldown naturale: 15 minuti';
+        }
+        footer.appendChild(footLabel);
+        if (!state.readOnly) {
+            const toggle=document.createElement('label');toggle.className='master-event-toggle';
+            const input=document.createElement('input');
+            input.type='checkbox';input.checked=state.enabled;input.disabled=masterEventAdminBusy;
+            input.setAttribute('role','switch');
+            input.setAttribute('aria-label',`Attiva o disattiva ${def.title}`);
+            const track=document.createElement('span');track.className='master-event-toggle-track';
+            track.setAttribute('aria-hidden','true');
+            const text=document.createElement('span');text.textContent=state.enabled ? 'ON' : 'OFF';
+            input.addEventListener('change',async()=>{
+                const previous=state.enabled;
+                const question=previous
+                    ? `Disattivare ${def.title}?`
+                    : `Attivare ${def.title}?`;
+                if (!confirm(question)) {input.checked=previous;return;}
+                await masterEventsToggle(def.id,!previous);
+            });
+            toggle.append(input,track,text);
+            footer.appendChild(toggle);
+        }
+        card.append(header,detail,footer);
+        list.appendChild(card);
+    }
+    masterEventsUpdateTimers();
+}
+function masterEventsUpdateTimers() {
+    document.querySelectorAll('[data-master-event-deadline]').forEach(el=>{
+        el.textContent='Cooldown: '+masterEventsDuration(el.dataset.masterEventDeadline);
+    });
+}
+async function masterEventsLoad(force=false) {
+    if (masterEventAdminLoading || masterEventAdminBusy) return;
+    if (!force && Date.now()-masterEventAdminLastLoad < 11000) return;
+    masterEventAdminLoading=true;
+    try {
+        const {data,error}=await db.rpc('master_get_event_controls');
+        if (error) throw error;
+        if (!data || !Array.isArray(data.traps)) throw new Error('Risposta del server non valida');
+        masterEventAdminState=data;
+        masterEventAdminLastLoad=Date.now();
+        masterEventsRender();
+        // La mappa e la scheda eventi devono concordare sullo stato Puzzacinta.
+        if (masterPuzzacintaState && data.puzzacinta?.event_id === 'puzzacinta_p1') {
+            masterPuzzacintaState.enabled = data.puzzacinta.enabled === true;
+        }
+        if (masterEventsPaneVisible()) masterEventsNotice('');
+    } catch(error) {
+        if (masterEventsPaneVisible()) masterEventsNotice(`Caricamento non riuscito: ${error?.message || 'errore sconosciuto'}`,true);
+        console.error('Master v22: lettura eventi:',error);
+        if (!masterEventAdminState) masterEventsRender();
+    } finally {
+        masterEventAdminLoading=false;
+    }
+}
+async function masterEventsToggle(eventId,enabled) {
+    if (masterEventAdminBusy) return;
+    masterEventAdminBusy=true;
+    masterEventsNotice('Salvataggio in corso...');
+    masterEventsRender();
+    try {
+        const {data,error}=await db.rpc('master_set_event_enabled',{
+            p_event_id:eventId,p_enabled:enabled
+        });
+        if (error) throw error;
+        if (data?.ok !== true) throw new Error('Modifica non confermata dal server');
+        masterEventAdminLastLoad=0;
+        masterEventsNotice('Stato aggiornato correttamente.');
+    } catch(error) {
+        masterEventsNotice(`Modifica non salvata: ${error?.message || 'errore sconosciuto'}`,true);
+        console.error('Master v22: cambio stato evento:',error);
+    } finally {
+        masterEventAdminBusy=false;
+        masterEventAdminLastLoad=0;
+        await masterEventsLoad(true);
+    }
+    if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) renderMasterOverviewMap();
+}
+// Stato amministrativo applicato anche alle icone sulla mappa.
+const masterEventsOldOverviewTrapState=getMasterOverviewTrapState;
+getMasterOverviewTrapState=function(event,coords) {
+    const control=(masterEventAdminState?.traps || []).find(row=>row.trap_id===event?.id);
+    if (control?.enabled===false) return {
+        markerClass:'state-inactive',timerText:'',title:`${event?.id || 'Trappola'} · disattivata dal Master · ${coords}`
+    };
+    return masterEventsOldOverviewTrapState(event,coords);
+};
+const masterEventsOldOverviewRareState=getMasterOverviewPuzzacintaState;
+getMasterOverviewPuzzacintaState=function() {
+    if (masterEventAdminState?.puzzacinta?.enabled===false) return {
+        markerClass:'state-inactive',timerText:'',title:'Puzzacinta · disabilitato dal Master'
+    };
+    return masterEventsOldOverviewRareState();
+};
+
+const masterEventsOldSetTab=setMasterControlTab;
+setMasterControlTab=function(tab) {
+    masterEventsOldSetTab(tab);
+    if (tab==='events') masterEventsLoad(true);
+};
+const masterEventsOldLoadCenter=loadMasterControlCenter;
+loadMasterControlCenter=async function() {
+    await masterEventsOldLoadCenter();
+    if (masterEventsPaneVisible()) await masterEventsLoad(true);
+};
+window.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('master-events-refresh')?.addEventListener('click',()=>masterEventsLoad(true));
+    const timer=window.setInterval(()=>{
+        masterEventsUpdateTimers();
+        if (masterEventsPaneVisible()) masterEventsLoad();
+        else if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains('is-active')) masterEventsLoad();
+    },1000);
+    window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
+});

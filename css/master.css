@@ -2941,3 +2941,52 @@
     .master-combat-manage-header {align-items:stretch;flex-direction:column;}
     .master-combat-manage-header .button{align-self:flex-start;}
 }
+
+/* ============================================================
+   MASTER v22 — EVENTI E SEGRETI
+   ============================================================ */
+.master-page-redesigned .master-events-management-pane {min-width:0;}
+.master-events-management-head {display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+.master-events-management-head h3 {margin:5px 0 4px;font-size:1.1rem;color:#f2d6a4;}
+.master-events-management-head p {margin:0;font-size:.75rem;line-height:1.45;opacity:.7;}
+.master-events-management-head .button {flex:0 0 auto;font-size:.72rem;min-height:34px;}
+.master-events-feedback {font-size:.74rem;min-height:18px;margin:0 0 8px;color:#e1bf86;}
+.master-events-feedback.is-error {color:#ff9c97;}
+.master-events-group-title {display:flex;align-items:center;gap:9px;font-size:.78rem;letter-spacing:.095em;margin:13px 0 10px;color:#e9bd78;border-bottom:1px solid rgba(211,167,84,.25);padding-bottom:7px;}
+.master-events-group-title span {font-size:.68rem;color:#c1b7a6;border:1px solid rgba(211,167,84,.25);padding:1px 6px;border-radius:10px;}
+.master-events-management-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.master-event-admin-card {position:relative;display:flex;min-width:0;flex-direction:column;gap:11px;border:1px solid rgba(201,154,83,.32);border-radius:12px;background:linear-gradient(140deg,#1c1d20,#121316);padding:14px;}
+.master-event-admin-card.is-disabled {border-color:rgba(159,162,175,.33);}
+.master-event-admin-card.is-active {border-color:rgba(100,195,138,.45);}
+.master-event-admin-header {display:flex;align-items:start;justify-content:space-between;gap:9px;}
+.master-event-admin-title {display:flex;align-items:center;gap:9px;min-width:0;}
+.master-event-admin-icon {display:flex;align-items:center;justify-content:center;flex:0 0 37px;width:37px;height:37px;border-radius:10px;background:rgba(184,138,59,.16);border:1px solid rgba(184,138,59,.23);font-size:1.2rem;}
+.master-event-admin-title strong {font-size:.9rem;display:block;line-height:1.4;}
+.master-event-admin-title small {font-size:.7rem;display:block;opacity:.62;line-height:1.35;}
+.master-event-admin-state {font-size:.65rem;border-radius:999px;border:1px solid #5a5b5f;padding:5px 8px;white-space:nowrap;color:#aeb0b5;}
+.master-event-admin-state.is-enabled {color:#8ce4a4;border-color:#477957;background:rgba(71,121,87,.12);}
+.master-event-admin-detail {font-size:.73rem;line-height:1.5;color:#c9c2b4;min-height:30px;}
+.master-event-admin-footer {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px;padding-top:9px;border-top:1px solid rgba(216,172,105,.11);}
+.master-event-admin-footer > span {font-size:.7rem;color:#c6b9a3;}
+.master-event-toggle {cursor:pointer;display:inline-flex;position:relative;align-items:center;gap:9px;color:#dad2c3;font-weight:700;font-size:.7rem;user-select:none;}
+.master-event-toggle input {position:absolute;opacity:0;width:1px;height:1px;}
+.master-event-toggle-track {width:48px;height:25px;border:1px solid #6b6c70;border-radius:30px;position:relative;background:#464850;transition:background .16s ease;display:inline-block;}
+.master-event-toggle-track:before {content:"";width:17px;height:17px;position:absolute;left:3px;top:3px;background:#d2d2d5;border-radius:50%;box-shadow:0 1px 3px #0009;transition:transform .16s ease;}
+.master-event-toggle input:checked + .master-event-toggle-track {background:#29834a;border-color:#66b87e;}
+.master-event-toggle input:checked + .master-event-toggle-track:before {transform:translateX(23px);background:#f5fff6;}
+.master-event-toggle input:focus-visible + .master-event-toggle-track {outline:2px solid #ebc377;outline-offset:3px;}
+.master-event-toggle input:disabled + .master-event-toggle-track {opacity:.45;cursor:not-allowed;}
+.master-event-secrets-heading {margin-top:20px;}
+.master-event-secret-card {display:flex;gap:14px;align-items:start;border:1px solid rgba(203,160,88,.38);border-radius:12px;background:linear-gradient(140deg,#1e1d1c,#121315);padding:15px;max-width:100%;}
+.master-event-secret-icon {font-size:1.45rem;line-height:1.35;}
+.master-event-secret-copy {display:flex;flex-direction:column;gap:4px;min-width:0;}
+.master-event-secret-copy > strong {font-size:.9rem;}
+.master-event-secret-copy > span {opacity:.63;font-size:.71rem;}
+.master-event-password-readout {margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.master-event-password-readout strong {color:#f1c575;font-size:clamp(.98rem,1.45vw,1.25rem);letter-spacing:.04em;overflow-wrap:anywhere;}
+.master-event-password-readout small {font-size:.72rem;color:#c9c0ad;}
+.master-event-finger-owners {font-weight:700;color:#edd29c;}
+.master-events-management-grid button:disabled {opacity:.5;cursor:not-allowed;}
+@media (max-width: 1300px) {.master-events-management-grid {grid-template-columns:1fr;}}
+@media (max-width: 900px) {.master-events-management-grid {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width: 650px) {.master-events-management-grid {grid-template-columns:1fr;}}
