@@ -5,7 +5,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=14" rel="stylesheet"/>
+<link href="css/master.css?v=15" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -185,30 +185,8 @@
 <div id="master-control-center" class="master-control-center master-control-center-inline">
 <div class="master-control-center-head"><div><span class="master-label">GESTIONE PALAZZO</span><h2 id="master-control-center-title">PANORAMICA</h2><p id="master-panel-description">Stato operativo generale del gioco.</p></div><div class="master-control-refresh-wrap"><span id="master-control-refresh-status" class="master-control-refresh-status" aria-live="polite"></span><button id="master-control-refresh" type="button" class="button secondary">AGGIORNA DATI</button></div></div>
 <div class="master-control-body"><section class="master-control-pane is-active" data-master-control-pane="overview">
-<div class="master-control-grid two-columns master-important-states"><aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">ACCESSO BOSS</span>
-<h2>PASSWORD ATTUALE</h2>
-</div>
-<div class="master-special-value">
-<strong id="master-boss-password">...</strong>
-<span id="master-boss-password-expiry">
-                            Caricamento...
-                        </span>
-</div>
-</aside><aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
-<div class="master-panel-header compact">
-<span class="panel-label">OGGETTO SPECIALE</span>
-<h2>DITO DI SCIMMIA</h2>
-</div>
-<div class="master-special-value">
-<strong id="master-monkey-finger-status">
-                            Caricamento...
-                        </strong>
-<span id="master-monkey-finger-owner"></span>
-</div>
-</aside></div>
-<div class="master-control-summary-grid">
+<div class="master-overview-shell">
+<div class="master-control-summary-grid master-overview-summary-grid">
 <article class="master-control-card">
 <span class="panel-label">GIOCATORI</span>
 <strong id="master-control-player-count">-</strong>
@@ -230,26 +208,83 @@
 <small id="master-control-unique-detail">Caricamento...</small>
 </article>
 </div>
-<div class="master-control-grid two-columns">
+
+<div class="master-overview-main">
+<article class="master-overview-map-card master-control-section">
+<div class="master-overview-map-toolbar">
+<div>
+<span class="panel-label">MAPPE DEL PALAZZO</span>
+<h3 id="master-overview-floor-name">PIANO 1</h3>
+<p id="master-overview-map-note">Giocatori, combat, trappole, eventi e vendor del piano selezionato.</p>
+</div>
+<div class="master-overview-slider" role="group" aria-label="Cambia mappa panoramica">
+<button id="master-overview-prev" type="button" class="master-overview-slide-button" aria-label="Mostra mappa precedente">‹</button>
+<span id="master-overview-slide-count" class="master-overview-slide-count">1 / 2</span>
+<button id="master-overview-next" type="button" class="master-overview-slide-button" aria-label="Mostra mappa successiva">›</button>
+</div>
+</div>
+<div class="master-overview-map-legend" aria-label="Legenda panoramica">
+<span><b class="legend-dot is-online"></b> PG online</span>
+<span><b class="legend-dot is-offline"></b> PG offline</span>
+<span><b class="legend-symbol combat">⚔</b> Combat</span>
+<span><b class="legend-symbol trap">⚠</b> Trappole</span>
+<span><b class="legend-symbol event">◆</b> Eventi</span>
+<span><b class="legend-symbol vendor">🛠</b> Vendor / servizi</span>
+</div>
+<div id="master-overview-map" class="master-overview-map">
+<img id="master-overview-map-image" src="immagini/dungeon-test.png?v=2" alt="Mappa panoramica del Piano 1" />
+</div>
+</article>
+
+<div class="master-overview-side">
+<div class="master-overview-specials">
+<aside class="master-info-panel master-dashboard-panel master-boss-password-panel">
+<div class="master-panel-header compact">
+<span class="panel-label">ACCESSO BOSS</span>
+<h2>PASSWORD ATTUALE</h2>
+</div>
+<div class="master-special-value">
+<strong id="master-boss-password">...</strong>
+<span id="master-boss-password-expiry">Caricamento...</span>
+</div>
+</aside>
+<aside class="master-info-panel master-dashboard-panel master-monkey-finger-panel">
+<div class="master-panel-header compact">
+<span class="panel-label">OGGETTO SPECIALE</span>
+<h2>DITO DI SCIMMIA</h2>
+</div>
+<div class="master-special-value">
+<strong id="master-monkey-finger-status">Caricamento...</strong>
+<span id="master-monkey-finger-owner"></span>
+</div>
+</aside>
+</div>
+
+<div class="master-overview-status-grid">
 <article class="master-control-section">
-<div class="master-control-section-head"><h3>COOLDOWN</h3></div>
-<div class="master-control-list" id="master-control-cooldowns"><div class="master-control-empty">Caricamento...</div></div>
+<div class="master-control-section-head compact"><h3>COMBAT</h3></div>
+<div id="master-overview-combats" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
 </article>
 <article class="master-control-section">
-<div class="master-control-section-head"><h3>OGGETTI UNICI</h3></div>
-<div class="master-control-list" id="master-control-unique-items"><div class="master-control-empty">Caricamento...</div></div>
+<div class="master-control-section-head compact"><h3>TRAPPOLE</h3></div>
+<div id="master-overview-traps" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
 </article>
 <article class="master-control-section">
-<div class="master-control-section-head"><h3>COMBATTIMENTI ATTIVI</h3></div>
-<div class="master-control-list" id="master-control-combats"><div class="master-control-empty">Caricamento...</div></div>
+<div class="master-control-section-head compact"><h3>EVENTI</h3></div>
+<div id="master-overview-events" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
 </article>
 <article class="master-control-section">
-<div class="master-control-section-head"><h3>PASSWORD BOSS</h3></div>
-<div class="master-control-feature-value">
+<div class="master-control-section-head compact"><h3>VENDOR / SERVIZI</h3></div>
+<div id="master-overview-vendors" class="master-overview-status-list"><div class="master-control-empty">Caricamento...</div></div>
+</article>
+</div>
+
+<div class="master-overview-hidden-sync" hidden>
 <strong id="master-control-boss-password">-</strong>
 <span id="master-control-boss-password-expiry">Caricamento...</span>
 </div>
-</article>
+</div>
+</div>
 </div>
 </section>
 <section class="master-control-pane" data-master-control-pane="players">
@@ -515,5 +550,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=14"></script>
+<script src="js/master.js?v=15"></script>
 </body></html>
