@@ -839,6 +839,87 @@
     <script src="js/combat-loot.js?v=55"></script>
     <script src="js/combat.js?v=75"></script>
 
+    <!-- v76: la Presence del Dungeon non deve bloccare il combattimento -->
+    <script>
+    (function () {
+        if (typeof setupDungeonPresenceWhileInCombat !== "function") return;
+
+        // Eseguito prima di DOMContentLoaded, quindi prima dell'avvio di combat.js.
+        setupDungeonPresenceWhileInCombat = async function () {
+            if (masterObserverMode || !currentCharacter || !currentUser) return;
+
+            let channel = null;
+            let trackStarted = false;
+            let disabled = false;
+
+            const stopFailedPresence = reason => {
+                if (disabled) return;
+                disabled = true;
+                console.warn(
+                    "Presence Dungeon temporaneamente non disponibile: " +
+                    "il combattimento prosegue comunque.", reason
+                );
+                if (combatDungeonChannel === channel) {
+                    combatDungeonChannel = null;
+                }
+                if (channel) {
+                    Promise.resolve()
+                        .then(() => db.removeChannel(channel))
+                        .catch(error => console.warn(
+                            "Chiusura Presence Dungeon non riuscita:", error
+                        ));
+                }
+            };
+
+            try {
+                channel = db.channel(COMBAT_DUNGEON_CHANNEL_NAME, {
+                    config: {
+                        presence: { key: currentCharacter.id }
+                    }
+                });
+                combatDungeonChannel = channel;
+
+                // Non attendiamo il Realtime prima di caricare sessione e turni.
+                // Un canale in errore viene rimosso per impedire retry infiniti.
+                channel.subscribe(status => {
+                    console.log("Presence dungeon dal combat:", status);
+                    if (disabled) return;
+
+                    if (status === "SUBSCRIBED" && !trackStarted) {
+                        trackStarted = true;
+
+                        Promise.resolve().then(() => channel.track({
+                            character_id: currentCharacter.id,
+                            user_id: currentUser.id,
+                            name: currentCharacter.nome || "Avventuriero",
+                            token: currentCharacter.token || "token_1.png",
+                            x: Number(currentCharacter.dungeon_x),
+                            y: Number(currentCharacter.dungeon_y),
+                            current_hp: currentCharacter.current_hp,
+                            active_combat_id: currentCharacter.active_combat_id || combatId,
+                            in_combat: true,
+                            online_at: new Date().toISOString()
+                        })).then(result => {
+                            if (result && result !== "ok") {
+                                stopFailedPresence(result);
+                            }
+                        }).catch(stopFailedPresence);
+                    } else if (
+                        status === "CHANNEL_ERROR" ||
+                        status === "TIMED_OUT" ||
+                        status === "CLOSED"
+                    ) {
+                        stopFailedPresence(status);
+                    }
+                });
+            } catch (error) {
+                stopFailedPresence(error);
+            }
+        };
+    }());
+    </script>
+
+
 <div
     id="combat-victory-overlay"
     class="combat-victory-overlay"
