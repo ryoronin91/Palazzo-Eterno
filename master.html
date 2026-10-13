@@ -5,7 +5,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=15" rel="stylesheet"/>
+<link href="css/master.css?v=16" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -287,11 +287,17 @@
 </div>
 </div>
 </section>
-<section class="master-control-pane" data-master-control-pane="players">
-<div class="master-control-section-head">
-<div><span class="panel-label">ROSTER</span><h3>TUTTI I GIOCATORI</h3></div>
+<section class="master-control-pane master-players-view" data-master-control-pane="players">
+<div class="master-pg-toolbar">
+ <div><span class="panel-label">ARCHIVIO PERSONAGGI</span><h3 id="master-pg-title">TUTTI I GIOCATORI</h3></div>
+ <button type="button" id="master-pg-back" class="button secondary" hidden>← TORNA ALL'ELENCO</button>
 </div>
-<div class="master-control-list master-control-player-grid" id="master-control-players"></div>
+<div id="master-pg-browser">
+ <label class="master-pg-search-label" for="master-pg-search">Cerca un personaggio</label>
+ <input id="master-pg-search" type="search" placeholder="Nome, piano, livello..." autocomplete="off"/>
+ <div id="master-pg-list" class="master-pg-list">Caricamento personaggi...</div>
+</div>
+<div id="master-pg-sheet" class="master-pg-sheet" hidden aria-live="polite"></div>
 </section>
 <section class="master-control-pane" data-master-control-pane="services">
 <div class="master-control-section-head">
@@ -550,5 +556,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=15"></script>
+<script src="js/master.js?v=16"></script>
 </body></html>

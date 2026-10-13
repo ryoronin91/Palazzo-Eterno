@@ -9335,3 +9335,249 @@ window.addEventListener("resize", () => {
         requestAnimationFrame(renderMasterOverviewMap);
     }
 });
+
+// ============================================================
+// MASTER v16 — ROSTER E SCHEDA AMMINISTRATIVA
+// Usa direttamente characters, character_inventory, items e RPC
+// protette lato Supabase. Non modifica il PG al semplice click.
+// ============================================================
+let masterPgSelectedId = null;
+let masterPgInventory = [];
+let masterPgItemCatalog = new Map();
+let masterPgLoading = false;
+
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("master-pg-search")?.addEventListener("input", renderMasterControlPlayers);
+    document.getElementById("master-pg-back")?.addEventListener("click", masterPgCloseSheet);
+    renderMasterControlPlayers();
+});
+
+function masterPgCloseSheet() {
+    masterPgSelectedId = null;
+    document.getElementById("master-pg-browser")?.removeAttribute("hidden");
+    document.getElementById("master-pg-sheet")?.setAttribute("hidden", "");
+    document.getElementById("master-pg-back")?.setAttribute("hidden", "");
+    setText("master-pg-title", "TUTTI I GIOCATORI");
+    renderMasterControlPlayers();
+}
+
+function renderMasterControlPlayers() {
+    const container = document.getElementById("master-pg-list");
+    if (!container) return;
+    const query = (document.getElementById("master-pg-search")?.value || "").toLocaleLowerCase("it").trim();
+    const players = [...masterControlAllPlayers].filter(p => {
+        const searchable = `${p.nome || ""} ${p.livello || ""} ${masterFloorDisplayName(p.floor)}`;
+        return searchable.toLocaleLowerCase("it").includes(query);
+    }).sort((a,b) => Number(b.online) - Number(a.online) || String(a.nome||"").localeCompare(String(b.nome||""),"it"));
+    container.replaceChildren();
+    if (!players.length) {
+        const empty = document.createElement("div");
+        empty.className="master-pg-empty";
+        empty.textContent = "Nessun personaggio corrispondente.";
+        container.appendChild(empty);
+        return;
+    }
+    for (const p of players) {
+        const button = document.createElement("button");
+        button.type="button";
+        button.className=`master-pg-entry ${p.online ? "is-online" : "is-offline"}`;
+        const icon=document.createElement("img");
+        icon.src="immagini/token/"+(p.token||"token_1.png"); icon.alt="";
+        const info=document.createElement("div");
+        const title=document.createElement("strong");
+        title.textContent=`${p.nome || "Avventuriero"} · Lv ${Number(p.livello)||1}`;
+        const status=document.createElement("small");
+        status.innerHTML=`<span class="master-pg-dot ${p.online ? "is-online" : ""}">${p.online ? "●" : "○"}</span> ${p.online ? "Online" : "Offline"} · ${masterFloorDisplayName(p.floor)}`;
+        info.append(title,status);button.append(icon,info);
+        button.addEventListener("click",()=>masterPgOpenSheet(p.character_id));
+        container.appendChild(button);
+    }
+}
+
+function masterPgEl(tag, className="", value="") {
+    const el=document.createElement(tag);
+    if(className) el.className=className;
+    if(value!==null && value!==undefined) el.textContent=String(value);
+    return el;
+}
+
+async function masterPgOpenSheet(id) {
+    if(masterPgLoading) return;
+    masterPgSelectedId=id;
+    const browser=document.getElementById("master-pg-browser");
+    const sheet=document.getElementById("master-pg-sheet");
+    const back=document.getElementById("master-pg-back");
+    if(!sheet) return;
+    browser.hidden=true;sheet.hidden=false;back.hidden=false;
+    sheet.replaceChildren(masterPgEl("div","master-pg-loading","Caricamento scheda del personaggio..."));
+    await masterPgLoadSheet(id);
+}
+
+async function masterPgLoadSheet(id) {
+    const sheet=document.getElementById("master-pg-sheet");
+    if(!sheet||!id) return;
+    masterPgLoading=true;
+    try {
+        const [characterResult, inventoryResult, catalogResult] = await Promise.all([
+            db.from("characters").select("*").eq("id",id).single(),
+            db.from("character_inventory").select("id,character_id,item_id,quantity,equipped_slot,expires_at").eq("character_id",id),
+            db.from("items").select("*")
+        ]);
+        if(characterResult.error) throw characterResult.error;
+        if(inventoryResult.error) throw inventoryResult.error;
+        if(catalogResult.error) throw catalogResult.error;
+        if(masterPgSelectedId!==id) return;
+        const character=characterResult.data;
+        masterPgInventory=inventoryResult.data||[];
+        masterPgItemCatalog=new Map((catalogResult.data||[]).map(item=>[item.id,item]));
+        let resonance="N/D", finalScore="N/D";
+        const [resonanceResult, scoreResult] = await Promise.all([
+            db.rpc("get_character_resonance_safe",{p_character_id:id}),
+            db.rpc("get_character_final_score",{p_character_id:id})
+        ]);
+        if(!resonanceResult.error) resonance=masterPgValue(resonanceResult.data);
+        if(!scoreResult.error) finalScore=masterPgValue(scoreResult.data);
+        masterPgRenderSheet(character, resonance, finalScore);
+    }catch(error){
+        console.error("Caricamento scheda Master:",error);
+        sheet.replaceChildren(masterPgEl("div","master-pg-feedback error",`Impossibile leggere la scheda: ${error.message||error}`));
+    }finally {masterPgLoading=false;}
+}
+
+function masterPgValue(value) {
+    if(value===null||value===undefined) return "N/D";
+    if(typeof value==='object') return String(value.resonance ?? value.risonanza ?? value.total ?? value.value ?? JSON.stringify(value));
+    return String(value);
+}
+
+function masterPgRenderSheet(c, resonance, finalScore) {
+    const sheet=document.getElementById("master-pg-sheet");
+    sheet.replaceChildren();
+    setText("master-pg-title",`SCHEDA · ${c.nome || "Personaggio"}`);
+    const floor=getMasterCharacterFloor(c);
+    const cached=masterControlAllPlayers.find(p=>p.character_id===c.id);
+    const identity=masterPgEl("div","master-pg-identity",null);
+    const token=masterPgEl("img","",null);
+    token.src="immagini/token/"+(c.token||"token_1.png");token.alt="Token del personaggio";
+    const identityInfo=masterPgEl("div","",null);
+    identityInfo.append(masterPgEl("h2","",c.nome||"Avventuriero"));
+    identityInfo.append(masterPgEl("p","",`Lv ${c.livello||1} · ${c.razza||"Razza N/D"} · ${c.classe||"Classe N/D"}`));
+    identityInfo.append(masterPgEl("p","",`${cached?.online?"● Online":"○ Offline"} · ${masterFloorDisplayName(floor)} · X ${cached?.x ?? (floor==="base"?c.base_x:c.dungeon_x)} Y ${cached?.y ?? (floor==="base"?c.base_y:c.dungeon_y)}`));
+    identity.append(token,identityInfo);sheet.append(identity);
+
+    const main=masterPgCreateSection(sheet,"RISORSE, RISONANZA E PROGRESSIONE");
+    const currentGold=c.current_gold ?? 0;
+    masterPgStats(main,[
+        ["LIVELLO",c.livello||1],["RISONANZA",resonance],["MONETE D'ORO",currentGold],
+        ["SCORE FINALE",finalScore],["PF ATTUALI",c.current_hp??"-"],["PM ATTUALI",c.current_pm??"-"],
+        ["PUNTI ABILITÀ",c.punti_abilita??0]
+    ]);
+
+    const attributes=masterPgCreateSection(sheet,"ATTRIBUTI");
+    masterPgStats(attributes,[
+        ["FORZA",c.forza],["RESISTENZA",c.resistenza],["COSTITUZIONE",c.costituzione],
+        ["INTELLIGENZA",c.intelligenza],["DESTREZZA",c.destrezza],["FORTUNA",c.fortuna]
+    ]);
+
+    const equipped=masterPgInventory.filter(row=>row.equipped_slot);
+    const gear=masterPgCreateSection(sheet,"EQUIPAGGIAMENTO");
+    if(!equipped.length)gear.append(masterPgEl("p","master-pg-empty","Nessun oggetto equipaggiato."));
+    else masterPgRenderInventoryRows(gear,equipped);
+    const inventory=masterPgCreateSection(sheet,"INVENTARIO");
+    if(!masterPgInventory.length)inventory.append(masterPgEl("p","master-pg-empty","Inventario vuoto."));
+    else masterPgRenderInventoryRows(inventory,masterPgInventory);
+
+    const editor=masterPgCreateSection(sheet,"MODIFICA PERSONAGGIO · SOLO MASTER");
+    editor.append(masterPgEl("p","master-pg-empty","Le modifiche vengono salvate solo dopo la conferma e sono convalidate dal server."));
+    const form=document.createElement("form");
+    const grid=masterPgEl("div","master-pg-edit-grid",null);
+    const editables=[
+        ["livello","Livello",1,999],["forza","FOR",1,1000],["resistenza","RES",1,1000],
+        ["costituzione","COS",1,1000],["intelligenza","INT",1,1000],
+        ["destrezza","DES",1,1000],["fortuna","LCK",1,1000],
+        ["current_hp","PF attuali",0,1000000],["current_pm","PM attuali",0,1000000],
+        ["current_gold","Monete d'oro",0,1000000000],["punti_abilita","Punti abilità",0,1000000]
+    ];
+    for(const [column,label,min,max] of editables){
+        const wrap=masterPgEl("label","master-pg-edit-field",null);
+        wrap.append(masterPgEl("span","",label));
+        const input=document.createElement("input");
+        input.type="number";input.name=column;input.value=String(c[column]??0);input.min=String(min);input.max=String(max);input.step="1";input.required=true;
+        wrap.append(input);grid.append(wrap);
+    }
+    form.append(grid);
+    const actions=masterPgEl("div","master-pg-form-actions",null);
+    const save=masterPgEl("button","button","SALVA MODIFICHE");
+    save.type="submit";
+    const feedback=masterPgEl("span","master-pg-feedback","");
+    actions.append(save,feedback);form.append(actions);editor.append(form);
+    form.addEventListener("submit",async(event)=>{
+        event.preventDefault();
+        const updates={};
+        for(const [column,,min,max] of editables){
+            const input=form.elements.namedItem(column);
+            const v=Number(input.value);
+            if(!Number.isSafeInteger(v)||v<min||v>max){feedback.textContent=`Valore non valido: ${column}`;feedback.className="master-pg-feedback error";return;}
+            if(v!==Number(c[column]??0))updates[column]=v;
+        }
+        if(!Object.keys(updates).length){feedback.textContent="Nessuna modifica da salvare.";return;}
+        if(!window.confirm(`Confermi le modifiche alle statistiche di ${c.nome}?`))return;
+        save.disabled=true;feedback.textContent="Salvataggio in corso...";
+        try{
+            const {error}=await db.rpc("master_update_character_safe",{p_character_id:c.id,p_changes:updates});
+            if(error)throw error;
+            feedback.className="master-pg-feedback ok";feedback.textContent="Modifiche salvate.";
+            await loadAllMasterCharacters();await masterPgLoadSheet(c.id);
+        }catch(err){console.error(err);feedback.className="master-pg-feedback error";feedback.textContent=`Errore: ${err.message||err}`;}
+        finally{save.disabled=false;}
+    });
+}
+
+function masterPgCreateSection(parent,title){
+    const section=masterPgEl("section","master-pg-section",null);
+    section.append(masterPgEl("h3","",title));parent.append(section);return section;
+}
+function masterPgStats(parent,rows){
+    const grid=masterPgEl("div","master-pg-stat-grid",null);
+    for(const [label,value] of rows){
+        const item=masterPgEl("div","master-pg-stat",null);
+        item.append(masterPgEl("span","",label),masterPgEl("strong","",value??"-"));grid.append(item);
+    }
+    parent.append(grid);
+}
+function masterPgRenderInventoryRows(parent,rows){
+    const list=masterPgEl("div","master-pg-inventory",null);
+    for(const row of rows){
+        const definition=masterPgItemCatalog.get(row.item_id)||{};
+        const item=masterPgEl("div","master-pg-item",null);
+        const main=masterPgEl("div","",null);
+        main.append(masterPgEl("strong","",`${definition.name||row.item_id} ×${row.quantity}`));
+        const bonuses=Object.entries(definition).filter(([key,value])=>key.endsWith("_bonus")&&Number(value)).map(([key,value])=>`${key.replace(/_bonus$/,'')}: ${value>0?'+':''}${value}`);
+        main.append(masterPgEl("small","",`${row.equipped_slot?"Equipaggiato: "+row.equipped_slot+" · ":""}${definition.description||""}${bonuses.length?" · "+bonuses.join(" · "):""}`));
+        const actions=masterPgEl("div","master-pg-item-actions",null);
+        const quantity=document.createElement("input");quantity.type="number";quantity.min="0";quantity.max="999999";quantity.step="1";quantity.value=String(row.quantity);
+        quantity.setAttribute("aria-label",`Quantità ${definition.name||row.item_id}`);
+        const update=masterPgEl("button","button secondary","Quantità");update.type="button";
+        update.addEventListener("click",()=>masterPgChangeItem(row,"quantity",quantity.value));
+        const slot=document.createElement("select");
+        slot.setAttribute("aria-label",`Equipaggiamento ${definition.name||row.item_id}`);
+        const slots=["", ...(definition.equip_slot ? [definition.equip_slot] : []), row.equipped_slot || ""];
+        for(const key of [...new Set([...slots,row.equipped_slot||""])]){
+            const option=document.createElement("option");option.value=key;option.textContent=key||"Non equipaggiato";option.selected=key===(row.equipped_slot||"");slot.append(option);
+        }
+        slot.addEventListener("change",()=>masterPgChangeItem(row,"slot",slot.value));
+        actions.append(quantity,update,slot);item.append(main,actions);list.append(item);
+    }
+    parent.append(list);
+}
+async function masterPgChangeItem(row,kind,value){
+    const player=masterControlAllPlayers.find(p=>p.character_id===masterPgSelectedId);
+    const name=player?.nome||"personaggio";
+    if(!window.confirm(`Confermi la modifica all'oggetto ${row.item_id} di ${name}?`))return;
+    try{
+        const changes=kind==="quantity" ? {quantity:Number(value)} : {equipped_slot:value||null};
+        const {error}=await db.rpc("master_update_inventory_safe",{p_character_id:masterPgSelectedId,p_inventory_id:row.id,p_changes:changes});
+        if(error)throw error;
+        await masterPgLoadSheet(masterPgSelectedId);
+    }catch(err){window.alert(`Impossibile modificare l'oggetto: ${err.message||err}`);}
+}
