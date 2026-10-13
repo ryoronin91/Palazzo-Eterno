@@ -206,6 +206,9 @@ document.addEventListener(
 
             await setupRealtime();
 
+            // Prima visualizzazione dei sei pannelli del nuovo Master.
+            await loadMasterControlCenter();
+
             startMasterDashboardRefresh();
 
         } catch (error) {
@@ -8052,4 +8055,677 @@ function renderMasterControlCooldowns() {
         row.append(info, state);
         container.appendChild(row);
     });
+}
+
+// ============================================================
+// MASTER v14 — LAYOUT A TRE COLONNE, PRESENZE GLOBALI,
+// CHAT UNIFICATA BASE/PIANO 1
+// Overrides mirati delle funzioni delle versioni precedenti:
+// nessuna RPC amministrativa esistente viene rimossa.
+// ============================================================
+
+const masterFloorChannels = new Map();
+const masterFloorConnected = new Map();
+let masterRosterExtrasLastLoaded = 0;
+let masterGlobalLoadBusy = false;
+
+const MASTER_PAGE_SECTIONS = {
+    overview: ["PANORAMICA", "Stato operativo generale del gioco."],
+    players: ["GIOCATORI", "Elenco di tutti i personaggi del Palazzo."],
+    services: ["VENDOR / SERVIZI", "Servizi e costruzioni del Livello Base."],
+    combats: ["COMBATTIMENTI", "Combattimenti attivi su entrambi i piani."],
+    events: ["EVENTI / SEGRETI", "Mappe, eventi, trappole e incontri."],
+    bacheca: ["BACHECA", "Gestione delle comunicazioni pubbliche ai giocatori."]
+};
+
+function setupMasterControlCenter() {
+    const refresh = document.getElementById("master-control-refresh");
+    const save = document.getElementById("master-noticeboard-save");
+    refresh?.addEventListener("click", loadMasterControlCenter);
+    save?.addEventListener("click", saveMasterNoticeboard);
+
+    document.querySelectorAll("[data-master-control-tab]").forEach(button => {
+        button.addEventListener("click", () => setMasterControlTab(button.dataset.masterControlTab));
+    });
+    const image = document.getElementById("master-map-image");
+    image?.addEventListener("load", () => {
+        if (document.querySelector('[data-master-control-pane="events"]')?.classList.contains("is-active")) {
+            requestAnimationFrame(() => { renderAllTokens(); renderMasterEvents(); });
+        }
+    });
+    setMasterControlTab("overview");
+}
+
+function setMasterControlTab(tab) {
+    if (!MASTER_PAGE_SECTIONS[tab]) return;
+    document.querySelectorAll("[data-master-control-tab]").forEach(button => {
+        const active = button.dataset.masterControlTab === tab;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-current", active ? "page" : "false");
+    });
+    document.querySelectorAll("[data-master-control-pane]").forEach(pane => {
+        pane.classList.toggle("is-active", pane.dataset.masterControlPane === tab);
+    });
+    setText("master-control-center-title", MASTER_PAGE_SECTIONS[tab][0]);
+    setText("master-panel-description", MASTER_PAGE_SECTIONS[tab][1]);
+    document.querySelector(".master-control-body")?.scrollTo(0, 0);
+    if (tab === "events") {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            renderAllTokens();
+            renderMasterEvents();
+        }));
+    }
+    if (tab === "combats") {
+        renderActiveMasterCombats();
+        renderMasterControlCombats();
+    }
+}
+
+function getMasterCharacterFloor(character) {
+    const location = String(character?.current_location || "dungeon").toLowerCase();
+    if (location === "base") return "base";
+    if (location === "combat" && character?.active_combat_id) {
+        const session = activeMasterCombats.get(character.active_combat_id);
+        if (String(session?.encounter_id || "").startsWith("base_")) return "base";
+    }
+    return "dungeon";
+}
+
+function masterFloorDisplayName(floor) {
+    return floor === "base" ? "Base" : "Piano 1";
+}
+
+function masterGetPresence(characterId) {
+    return onlinePlayers.get(characterId) || null;
+}
+
+function updateMasterSelectedFloorPlayers() {
+    const selected = new Set();
+    allMasterPlayers.clear();
+    masterControlAllPlayers.forEach(character => {
+        if (getMasterCharacterFloor(character) !== masterViewFloor) return;
+        selected.add(character.character_id);
+        allMasterPlayers.set(character.character_id, character);
+    });
+    for (const [id, token] of Array.from(playerTokens.entries())) {
+        if (!selected.has(id)) {
+            token?.remove();
+            playerTokens.delete(id);
+        }
+    }
+    renderAllTokens();
+}
+
+function masterBuildCharacter(row) {
+    const presence = masterGetPresence(row.id);
+    const floor = getMasterCharacterFloor(row);
+    const xStored = floor === "base" ? row.base_x : row.dungeon_x;
+    const yStored = floor === "base" ? row.base_y : row.dungeon_y;
+    const canUsePresence = !!presence && presence.master_floor === floor;
+    const x = canUsePresence && Number.isFinite(Number(presence.x))
+        ? Number(presence.x) : Number(xStored);
+    const y = canUsePresence && Number.isFinite(Number(presence.y))
+        ? Number(presence.y) : Number(yStored);
+    return {
+        ...row,
+        character_id: row.id,
+        nome: presence?.nome || presence?.name || row.nome || "Avventuriero",
+        token: presence?.token || row.token || "token_1.png",
+        x: Number.isFinite(x) ? x : 0,
+        y: Number.isFinite(y) ? y : 0,
+        floor,
+        online: !!presence,
+        score: masterPlayerScores.get(row.id) ?? 0,
+        has_monkey_finger: masterMonkeyFingerOwners.has(row.id),
+        current_hp: presence?.current_hp ?? row.current_hp,
+        active_combat_id: row.active_combat_id || presence?.active_combat_id || null
+    };
+}
+
+async function loadAllMasterCharacters() {
+    if (masterGlobalLoadBusy) return;
+    masterGlobalLoadBusy = true;
+    try {
+        const { data, error } = await db.from("characters").select(`
+            id, user_id, nome, livello, token,
+            forza, resistenza, costituzione, intelligenza, destrezza, fortuna,
+            current_hp, current_pm, dungeon_x, dungeon_y, base_x, base_y,
+            current_location, active_combat_id
+        `);
+        if (error) throw error;
+        const rows = Array.isArray(data) ? data : [];
+        // Rilevamento score / Dito di Scimmia ogni 30s, non a ogni refresh da 4s.
+        if (Date.now() - masterRosterExtrasLastLoaded > 30000) {
+            await loadMasterCharacterExtras(rows.map(row => row.id));
+            masterRosterExtrasLastLoaded = Date.now();
+        }
+        masterControlAllPlayers = rows.map(masterBuildCharacter);
+        updateMasterSelectedFloorPlayers();
+        updatePlayerList();
+        updateOnlineCounter();
+        renderMasterMonkeyFingerStatus();
+        updateMasterChatPresenceLabels();
+        if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains("is-active")) {
+            renderMasterControlOverview();
+        }
+    } catch (error) {
+        console.error("Errore roster globale Master:", error);
+        setMasterControlRefreshStatus("Impossibile leggere tutti i personaggi.", "error");
+    } finally {
+        masterGlobalLoadBusy = false;
+    }
+}
+
+// Il roster completo ora è alimentato direttamente dalla lettura globale
+// precedente, quindi evita una seconda query e N RPC score duplicate.
+async function loadMasterControlAllPlayers() {
+    if (masterControlAllPlayers.length === 0 && !masterGlobalLoadBusy) {
+        await loadAllMasterCharacters();
+    }
+}
+
+function updatePlayerList() {
+    const list = document.getElementById("master-player-list");
+    if (!list) return;
+    list.replaceChildren();
+    const players = [...masterControlAllPlayers].sort((a, b) =>
+        Number(b.online) - Number(a.online) ||
+        String(a.nome || "").localeCompare(String(b.nome || ""), "it")
+    );
+    if (!players.length) {
+        const empty = document.createElement("div");
+        empty.className = "master-player-empty";
+        empty.textContent = "Nessun personaggio trovato.";
+        list.appendChild(empty);
+        return;
+    }
+    for (const player of players) {
+        const row = document.createElement("div");
+        row.className = "master-player-item";
+        row.classList.toggle("is-offline", !player.online);
+        row.classList.toggle("is-combat", !!player.active_combat_id);
+
+        const image = document.createElement("img");
+        image.src = "immagini/token/" + (player.token || "token_1.png");
+        image.alt = "";
+        const info = document.createElement("div");
+        info.className = "master-player-info";
+        const name = document.createElement("span");
+        name.className = "master-player-name";
+        name.textContent = player.nome || "Avventuriero";
+        const position = document.createElement("span");
+        position.className = "master-player-position";
+        position.textContent = `${masterFloorDisplayName(player.floor)} · X ${player.x} · Y ${player.y}`;
+        const statuses = document.createElement("div");
+        statuses.className = "master-player-status-row";
+        const badge = (text, kind) => {
+            const el = document.createElement("span");
+            el.className = "master-status-badge " + kind;
+            el.textContent = text;
+            statuses.appendChild(el);
+        };
+        badge(player.online ? "● ONLINE" : "○ OFFLINE", player.online ? "online" : "offline");
+        badge(masterFloorDisplayName(player.floor), "floor");
+        if (player.active_combat_id) badge("⚔ COMBAT", "combat");
+        if (player.has_monkey_finger) badge("☝ DITO", "monkey-finger");
+        const score = document.createElement("span");
+        score.className = "master-player-score";
+        score.textContent = `LV ${Number(player.livello) || 1} · SCORE ${Number(player.score) || 0}`;
+        info.append(name, position, score, statuses);
+        row.append(image, info);
+        if (player.active_combat_id) {
+            const watch = document.createElement("button");
+            watch.type = "button";
+            watch.className = "button master-inline-watch";
+            watch.textContent = "OSSERVA";
+            watch.addEventListener("click", event => {
+                event.stopPropagation();
+                openMasterCombat(player.active_combat_id);
+            });
+            row.appendChild(watch);
+        }
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-label", `Scheda ${player.nome}, ${masterFloorDisplayName(player.floor)}`);
+        row.addEventListener("click", () => openCharacterSheet(player.character_id));
+        row.addEventListener("keydown", event => {
+            if (event.target !== row) return;
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openCharacterSheet(player.character_id);
+            }
+        });
+        list.appendChild(row);
+    }
+}
+
+function updateOnlineCounter() {
+    const total = masterControlAllPlayers.length;
+    const connected = masterControlAllPlayers.filter(player => player.online).length;
+    setText("master-online-count", `${connected} online · ${total - connected} offline · ${total} totali`);
+}
+
+function syncPresencePlayers() {
+    onlinePlayers.clear();
+    for (const [floor, channel] of masterFloorChannels) {
+        let state = {};
+        try { state = channel.presenceState() || {}; }
+        catch (error) { console.warn("Presence Master", floor, error); }
+        Object.values(state).forEach(presences => {
+            (presences || []).forEach(presence => {
+                if (!presence?.character_id) return;
+                onlinePlayers.set(presence.character_id, {
+                    ...presence, master_floor: floor,
+                    nome: presence.nome || presence.name || "Avventuriero"
+                });
+            });
+        });
+    }
+    masterControlAllPlayers = masterControlAllPlayers.map(character => masterBuildCharacter(character));
+    updateMasterSelectedFloorPlayers();
+    updatePlayerList();
+    updateOnlineCounter();
+    renderActiveMasterCombats();
+    updateMasterChatPresenceLabels();
+}
+
+function updatePlayer(data) {
+    if (!data?.character_id) return;
+    const previous = onlinePlayers.get(data.character_id) || {};
+    onlinePlayers.set(data.character_id, {
+        ...previous, ...data, master_floor: "dungeon",
+        nome: data.nome || data.name || previous.nome || "Avventuriero"
+    });
+    masterControlAllPlayers = masterControlAllPlayers.map(character =>
+        character.character_id === data.character_id ? masterBuildCharacter(character) : character
+    );
+    updateMasterSelectedFloorPlayers();
+    updatePlayerList();
+    updateOnlineCounter();
+}
+
+async function setupRealtime() {
+    const jobs = ["base", "dungeon"].map(async floor => {
+        if (masterFloorChannels.has(floor)) return;
+        const config = floor === "base"
+            ? { channel:MASTER_BASE_CHANNEL_NAME, event:"base-chat", floorId:MASTER_BASE_CHAT_FLOOR_ID }
+            : { channel:DUNGEON_CHANNEL_NAME, event:"floor-chat", floorId:MASTER_DUNGEON_CHAT_FLOOR_ID };
+        const channel = db.channel(config.channel);
+        masterFloorChannels.set(floor, channel);
+        masterFloorConnected.set(floor, false);
+        channel.on("presence", { event:"sync" }, syncPresencePlayers);
+        channel.on("broadcast", { event:config.event }, message => {
+            if (!message?.payload) return;
+            appendMasterChatMessage({ ...message.payload, master_floor_id:config.floorId },
+                message.payload.name === "MASTER" || message.payload.nome === "MASTER" || message.payload.sender_name === "MASTER");
+        });
+        if (floor === "dungeon") {
+            ["player-move", "player-state"].forEach(eventName => {
+                channel.on("broadcast", {event:eventName}, message => {
+                    if (message?.payload?.character_id) updatePlayer(message.payload);
+                });
+            });
+        }
+        await new Promise(resolve => {
+            channel.subscribe(status => {
+                if (status === "SUBSCRIBED") {
+                    masterFloorConnected.set(floor, true);
+                    syncPresencePlayers();
+                    resolve();
+                } else if (["CLOSED", "CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+                    masterFloorConnected.set(floor, false);
+                    syncPresencePlayers();
+                    resolve();
+                }
+                setMasterChatConnected([...masterFloorConnected.values()].some(Boolean));
+            });
+        });
+    });
+    await Promise.all(jobs);
+    dungeonChannel = masterFloorChannels.get(masterViewFloor) || null;
+    realtimeReady = [...masterFloorConnected.values()].some(Boolean);
+    syncPresencePlayers();
+    showMessage(realtimeReady ? "Monitoraggio Base e Piano 1 attivo." : "Connessione realtime non disponibile.");
+}
+
+async function switchMasterFloor(floor) {
+    if (!["base", "dungeon"].includes(floor) || masterFloorSwitchInProgress) return;
+    masterFloorSwitchInProgress = true;
+    try {
+        masterViewFloor = floor;
+        dungeonChannel = masterFloorChannels.get(floor) || null;
+        updateMasterFloorInterface();
+        updateMasterSelectedFloorPlayers();
+        updatePlayerList();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        renderAllTokens();
+        renderMasterEvents();
+    } finally {
+        masterFloorSwitchInProgress = false;
+    }
+}
+
+function setMasterChatConnected(connected) {
+    const status = document.getElementById("master-chat-status");
+    const onlineFloors = ["base", "dungeon"].filter(floor => masterFloorConnected.get(floor));
+    const usable = connected && onlineFloors.length > 0;
+    const input = document.getElementById("master-chat-input");
+    const send = document.getElementById("master-chat-send");
+    if (input) input.disabled = !usable;
+    if (send) send.disabled = !usable;
+    if (status) {
+        status.textContent = onlineFloors.length === 2
+            ? "Base + Piano 1 connessi"
+            : onlineFloors.length === 1
+                ? `${masterFloorDisplayName(onlineFloors[0])} connesso · altro piano non disponibile`
+                : "Chat scollegata";
+        status.classList.toggle("is-online", usable);
+    }
+}
+
+async function loadMasterChatHistory() {
+    const container = document.getElementById("master-chat-messages");
+    if (!container) return;
+    try {
+        const { data, error } = await db.from("dungeon_chat_messages")
+            .select("id, floor_id, character_id, user_id, sender_name, message_text, created_at")
+            .in("floor_id", [MASTER_BASE_CHAT_FLOOR_ID, MASTER_DUNGEON_CHAT_FLOOR_ID])
+            .order("created_at", {ascending:false})
+            .limit(MASTER_CHAT_HISTORY_LIMIT);
+        if (error) throw error;
+        renderedMasterChatMessageIds.clear();
+        container.replaceChildren();
+        for (const row of data || []) {
+            appendMasterChatMessage({
+                id: row.id,
+                character_id: row.character_id,
+                name: row.sender_name,
+                text: row.message_text,
+                sent_at: row.created_at,
+                master_floor_id: row.floor_id
+            }, row.sender_name === "MASTER");
+        }
+        if (!(data || []).length) {
+            const empty = document.createElement("div");
+            empty.className = "master-chat-empty";
+            empty.textContent = "Nessun messaggio ancora.";
+            container.appendChild(empty);
+        }
+    } catch (error) {
+        console.error("Errore storico chat globale Master:", error);
+        container.textContent = "Impossibile caricare i messaggi dei due piani.";
+    }
+}
+
+async function sendMasterChatMessage() {
+    const input = document.getElementById("master-chat-input");
+    const feedback = document.getElementById("master-chat-feedback");
+    const button = document.getElementById("master-chat-send");
+    const text = input?.value?.trim();
+    if (!text || !currentUser) return;
+    const selected = document.getElementById("master-chat-destination")?.value || "both";
+    const targets = selected === "both" ? ["base", "dungeon"] : [selected];
+    if (button) button.disabled = true;
+    if (feedback) feedback.textContent = "Invio in corso…";
+    const sent = [], failed = [];
+    for (const floor of targets) {
+        if (!masterFloorConnected.get(floor)) {
+            failed.push(masterFloorDisplayName(floor));
+            continue;
+        }
+        const floorId = floor === "base" ? MASTER_BASE_CHAT_FLOOR_ID : MASTER_DUNGEON_CHAT_FLOOR_ID;
+        try {
+            const {data, error} = await db.from("dungeon_chat_messages").insert({
+                floor_id: floorId, character_id:null, user_id:currentUser.id,
+                sender_name:"MASTER", message_text:text
+            }).select("id, character_id, user_id, sender_name, message_text, created_at").single();
+            if (error) throw error;
+            const payload = {
+                id:data.id, character_id:null, master_user_id:currentUser.id,
+                name:"MASTER", nome:"MASTER", text:data.message_text || text,
+                timestamp:data.created_at, sent_at:data.created_at
+            };
+            appendMasterChatMessage({...payload, master_floor_id:floorId},true);
+            const channel = masterFloorChannels.get(floor);
+            const result = await channel.send({
+                type:"broadcast", event:floor === "base" ? "base-chat" : "floor-chat", payload
+            });
+            if (result !== "ok" && result !== undefined) console.warn("Broadcast chat Master:",result);
+            sent.push(masterFloorDisplayName(floor));
+        } catch (error) {
+            console.error("Errore invio chat Master:",floor,error);
+            failed.push(masterFloorDisplayName(floor));
+        }
+    }
+    if (sent.length) input.value = "";
+    if (feedback) feedback.textContent = failed.length
+        ? `${sent.length ? "Inviato a " + sent.join(" e ") + ". " : ""}Non inviato a ${failed.join(" e ")}.`
+        : `Inviato a ${sent.join(" e ")}.`;
+    if (button) button.disabled = ![...masterFloorConnected.values()].some(Boolean);
+}
+
+function appendMasterChatMessage(data, isMaster = false) {
+    const container = document.getElementById("master-chat-messages");
+    if (!container || !data) return;
+    const id = data.id || data.message_id || null;
+    if (id && renderedMasterChatMessageIds.has(String(id))) return;
+    if (id) renderedMasterChatMessageIds.add(String(id));
+    container.querySelector(".master-chat-empty")?.remove();
+    const message = document.createElement("div");
+    message.className = "master-chat-message" + (isMaster ? " is-master" : "");
+    if (id) message.dataset.messageId = String(id);
+    const stamp = data.sent_at || data.timestamp || data.created_at;
+    message.dataset.ts = String(new Date(stamp || Date.now()).getTime() || 0);
+    const authorId = data.character_id || "";
+    if (authorId) message.dataset.characterId = authorId;
+    const authorName = data.name || data.nome || data.sender_name || "Giocatore";
+    const floorId = data.master_floor_id || data.floor_id || getMasterChatFloorId();
+    const label = floorId === MASTER_BASE_CHAT_FLOOR_ID ? "Base" : "Piano 1";
+    const meta = document.createElement("div");
+    meta.className = "master-chat-meta";
+    const name = document.createElement("strong");
+    name.textContent = authorName;
+    const place = document.createElement("span");
+    place.className = "master-chat-location";
+    place.textContent = label;
+    const presence = document.createElement("span");
+    presence.className = "master-chat-presence";
+    if (authorId) {
+        const known = masterControlAllPlayers.find(player => player.character_id === authorId);
+        const active = known?.online || false;
+        presence.textContent = `${active ? "● online" : "○ offline"}${known ? " · " + masterFloorDisplayName(known.floor) : ""}`;
+        presence.classList.toggle("is-online", active);
+    }
+    const time = document.createElement("span");
+    time.className = "master-chat-clock";
+    time.textContent = formatChatTime(stamp);
+    meta.append(name, place);
+    if (authorId) meta.append(presence);
+    meta.append(time);
+    const body = document.createElement("div");
+    body.className = "master-chat-body";
+    body.textContent = String(data.text ?? data.message_text ?? "");
+    message.append(meta, body);
+    const timestamp = Number(message.dataset.ts);
+    const later = [...container.querySelectorAll(".master-chat-message")]
+        .find(entry => Number(entry.dataset.ts) < timestamp);
+    if (later) container.insertBefore(message, later);
+    else container.appendChild(message);
+    while (container.querySelectorAll(".master-chat-message").length > MASTER_CHAT_HISTORY_LIMIT) {
+        const last = container.querySelector(".master-chat-message:last-child");
+        if (!last) break;
+        if (last.dataset.messageId) renderedMasterChatMessageIds.delete(last.dataset.messageId);
+        last.remove();
+    }
+    container.scrollTop = 0;
+}
+
+function updateMasterChatPresenceLabels() {
+    const map = new Map(masterControlAllPlayers.map(player => [player.character_id, player]));
+    document.querySelectorAll(".master-chat-message[data-character-id]").forEach(el => {
+        const presence = el.querySelector(".master-chat-presence");
+        if (!presence) return;
+        const known = map.get(el.dataset.characterId);
+        const active = !!known?.online;
+        presence.textContent = `${active ? "● online" : "○ offline"}${known ? " · " + masterFloorDisplayName(known.floor) : ""}`;
+        presence.classList.toggle("is-online", active);
+    });
+}
+
+async function openCharacterSheet(characterId) {
+    const modal = document.getElementById("master-character-modal");
+    if (!modal) return;
+    showMessage("Caricamento scheda...");
+    const {data, error} = await db.from("characters").select(`
+        id, nome, livello, token,
+        forza, resistenza, costituzione, intelligenza, destrezza, fortuna,
+        current_hp, current_pm, dungeon_x, dungeon_y,
+        base_x, base_y, current_location, active_combat_id
+    `).eq("id", characterId).single();
+    if (error) {
+        console.error("Errore caricamento scheda Master:",error);
+        showMessage("Impossibile caricare la scheda.");
+        return;
+    }
+    const global = masterControlAllPlayers.find(p => p.character_id === characterId);
+    const floor = getMasterCharacterFloor(data);
+    const x = floor === "base" ? data.base_x : data.dungeon_x;
+    const y = floor === "base" ? data.base_y : data.dungeon_y;
+    fillCharacterSheet({
+        ...data,
+        online:!!global?.online,
+        active_combat_id:data.active_combat_id || global?.active_combat_id || null,
+        score: global?.score ?? masterPlayerScores.get(characterId) ?? 0,
+        has_monkey_finger:global?.has_monkey_finger ?? masterMonkeyFingerOwners.has(characterId),
+        master_display_x:global?.x ?? x,
+        master_display_y:global?.y ?? y
+    });
+    const position = document.getElementById("master-character-position");
+    if (position) position.textContent = `${masterFloorDisplayName(floor)} · X ${Number(global?.x ?? x) || 0} • Y ${Number(global?.y ?? y) || 0}`;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+    showMessage("");
+}
+
+// Il roster centrale e le statistiche dell'overview usano il roster globale.
+function renderMasterControlPlayers() {
+    const container = document.getElementById("master-control-players");
+    if (!container) return;
+    container.replaceChildren();
+    const players = [...masterControlAllPlayers].sort((a,b) => String(a.nome || "").localeCompare(String(b.nome || ""),"it"));
+    if (!players.length) {
+        const empty = document.createElement("div");
+        empty.className = "master-control-empty";
+        empty.textContent = "Nessun personaggio trovato nel database.";
+        container.appendChild(empty);
+    }
+    for (const player of players) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "master-control-row";
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+        const name = document.createElement("strong");
+        name.textContent = player.nome;
+        const meta = document.createElement("small");
+        meta.textContent = `LV ${Number(player.livello) || 1} · SCORE ${Number(player.score) || 0} · ${masterFloorDisplayName(player.floor)} · X ${player.x} Y ${player.y}${player.active_combat_id ? " · COMBAT" : ""}`;
+        info.append(name,meta);
+        const state = document.createElement("span");
+        state.className = `master-control-state ${player.online ? "master-control-good" : ""}`;
+        state.textContent = player.online ? "ONLINE" : "OFFLINE";
+        row.append(info,state);
+        row.addEventListener("click",()=>openCharacterSheet(player.character_id));
+        container.appendChild(row);
+    }
+}
+
+function renderMasterControlCombats() {
+    const container = document.getElementById("master-control-combats");
+    if (!container) return;
+    container.replaceChildren();
+    const combats = [...activeMasterCombats.values()];
+    if (!combats.length) {
+        const empty = document.createElement("div");
+        empty.className = "master-control-empty";
+        empty.textContent = "Nessun combattimento attivo.";
+        container.appendChild(empty);
+        return;
+    }
+    for (const combat of combats) {
+        const row = document.createElement("div");
+        row.className = "master-control-row";
+        const info = document.createElement("div");
+        info.className = "master-control-row-main";
+        const title = document.createElement("strong");
+        title.textContent = String(combat.encounter_id || "COMBAT").toUpperCase();
+        const meta = document.createElement("small");
+        const participants = masterControlAllPlayers.filter(p => p.active_combat_id === combat.id).map(p => p.nome);
+        meta.textContent = `${combat.status} · Round ${Number(combat.round_number) || 1}${participants.length ? " · " + participants.join(", ") : ""}`;
+        info.append(title, meta);
+        const watch = document.createElement("button");
+        watch.type = "button";
+        watch.className = "button master-combat-watch";
+        watch.textContent = "OSSERVA";
+        watch.addEventListener("click", () => openMasterCombat(combat.id));
+        row.append(info, watch);
+        container.appendChild(row);
+    }
+}
+
+window.addEventListener("beforeunload", () => {
+    for (const channel of masterFloorChannels.values()) db.removeChannel(channel);
+    masterFloorChannels.clear();
+});
+
+// Gli indicatori di inventario e le sessioni combat devono prendere i
+// nominativi dal roster globale, non solo dal piano attualmente mostrato.
+function renderMasterMonkeyFingerStatus() {
+    const status = document.getElementById("master-monkey-finger-status");
+    const owner = document.getElementById("master-monkey-finger-owner");
+    const panel = document.querySelector(".master-monkey-finger-panel");
+    if (!status) return;
+    const byId = new Map(masterControlAllPlayers.map(player => [player.character_id,player]));
+    const owners = [...masterMonkeyFingerOwners].map(id => byId.get(id)?.nome || `PG ${id}`).filter(Boolean);
+    const available = owners.length === 0;
+    status.textContent = available ? "DISPONIBILE" : "IN POSSESSO";
+    if (owner) owner.textContent = available ? "Nessun PG lo possiede." : `In mano a: ${owners.join(", ")}`;
+    panel?.classList.toggle("is-available", available);
+    panel?.classList.toggle("is-owned", !available);
+}
+
+function renderActiveMasterCombats() {
+    const list = document.getElementById("master-combat-list");
+    if (!list) return;
+    const combats = [...activeMasterCombats.values()].sort((a,b) =>
+        String(a.encounter_id || "").localeCompare(String(b.encounter_id || "")));
+    const count = combats.length;
+    setText("master-combat-count",count ? `${count} combattiment${count === 1 ? "o" : "i"} attiv${count === 1 ? "o" : "i"}` : "Nessun combattimento attivo");
+    list.replaceChildren();
+    if (!count) {
+        const empty = document.createElement("div");
+        empty.className = "master-player-empty";
+        empty.textContent = "Nessun combattimento in corso.";
+        list.appendChild(empty);
+        return;
+    }
+    for (const combat of combats) {
+        const row = document.createElement("div");
+        row.className = "master-combat-item";
+        const info = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "master-combat-title";
+        title.textContent = String(combat.encounter_id || "COMBAT").toUpperCase();
+        const meta = document.createElement("div");
+        meta.className = "master-combat-meta";
+        const names = masterControlAllPlayers.filter(p => p.active_combat_id === combat.id).map(p => p.nome);
+        meta.textContent = `${combat.status === "active" ? "IN CORSO" : "IN ATTESA"} · Round ${Number(combat.round_number) || 1}${names.length ? " · " + names.join(", ") : ""}`;
+        info.append(title,meta);
+        const watch = document.createElement("button");
+        watch.type = "button";
+        watch.className = "button master-combat-watch";
+        watch.textContent = "OSSERVA";
+        watch.addEventListener("click",()=>openMasterCombat(combat.id));
+        row.append(info,watch);
+        list.appendChild(row);
+    }
 }
