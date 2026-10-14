@@ -10,9 +10,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
   <script src="js/piano-Ia.js?v=2" defer></script>
+
+  <style>
+    /* Test mosaico 3x3 per verifica allineamento */
+    #map-background{opacity:0 !important;}
+    #map-tile-mosaic{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);pointer-events:none;z-index:0;}
+    #map-tile-mosaic img{display:block;width:100%;height:100%;object-fit:fill;image-rendering:auto;}
+    #map-grid,#fog-canvas,.map-entities{z-index:1;}
+  </style>
 </head>
 <body>
-  <main class="jungle-page" id="jungle-app" data-map="piano-Ia.json" data-image="immagini/piano-Ia-hd.webp">
+  <main class="jungle-page" id="jungle-app" data-map="piano-Ia.json" data-image="immagini/piano-Ia-01.png">
     <header class="jungle-header">
       <a class="jungle-exit" href="../../scheda.html" aria-label="Torna alla scheda">← ESCI</a>
       <div class="jungle-heading">
@@ -31,7 +39,7 @@
 
     <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
     <div class="prototype-note" id="test-notice">
-      <strong>VERSIONE DI TEST</strong> — Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
+      <strong>VERSIONE DI TEST</strong> — Questa build usa un mosaico di 9 immagini numerate (01 → 09, da sinistra a destra e dall’alto in basso) per verificare l’allineamento col JSON. Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
     </div>
 
     <div class="jungle-layout">
@@ -65,7 +73,18 @@
         </div>
         <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="Mappa. Usa WASD o le frecce per muoverti">
           <div class="map-layer" id="map-layer">
-            <img id="map-background" src="immagini/piano-Ia-hd.webp?v=1" alt="Mappa del Piano I" draggable="false">
+            <img id="map-background" src="immagini/piano-Ia-01.png?v=tiles" alt="Mappa del Piano I" draggable="false">
+            <div id="map-tile-mosaic" aria-hidden="true">
+              <img src="immagini/piano-Ia-01.png" alt="">
+              <img src="immagini/piano-Ia-02.png" alt="">
+              <img src="immagini/piano-Ia-03.png" alt="">
+              <img src="immagini/piano-Ia-04.png" alt="">
+              <img src="immagini/piano-Ia-05.png" alt="">
+              <img src="immagini/piano-Ia-06.png" alt="">
+              <img src="immagini/piano-Ia-07.png" alt="">
+              <img src="immagini/piano-Ia-08.png" alt="">
+              <img src="immagini/piano-Ia-09.png" alt="">
+            </div>
             <div class="map-grid" id="map-grid" aria-hidden="true"></div>
             <canvas id="fog-canvas" aria-hidden="true"></canvas>
             <div class="map-entities" id="map-entities"></div>
