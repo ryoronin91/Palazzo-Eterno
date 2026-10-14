@@ -3,85 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#102118">
-  <title>Palazzo Eterno — Piano I: Giungla Preistorica</title>
-
-  <!-- La pagina si trova in dungeon/piano-I/ -->
-  <link rel="stylesheet" href="css/piano-Ia.css?v=1">
+  <meta name="theme-color" content="#07140d">
+  <title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="css/piano-Ia.css?v=2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/config.js?v=10"></script>
+  <script src="js/piano-Ia.js?v=2" defer></script>
 </head>
 <body>
-  <div class="dungeon-layout" id="dungeon-app" data-floor="I" data-map="Ia"
-       data-map-json="piano-Ia.json" data-map-image="immagini/piano-Ia.png">
-
-    <header class="dungeon-header">
-      <div class="dungeon-heading">
-        <span class="dungeon-eyebrow">PALAZZO ETERNO</span>
-        <h1>Piano I — Giungla Preistorica</h1>
+  <main class="jungle-page" id="jungle-app" data-map="piano-Ia.json" data-image="immagini/piano-Ia.png">
+    <header class="jungle-header">
+      <a class="jungle-exit" href="../../scheda.html" aria-label="Torna alla scheda">← ESCI</a>
+      <div class="jungle-heading">
+        <span class="jungle-kicker">PALAZZO ETERNO</span>
+        <h1>PIANO I <span>· GIUNGLA PREISTORICA</span></h1>
       </div>
-      <div class="dungeon-header-actions">
-        <button type="button" id="audio-toggle" aria-label="Attiva o disattiva l'audio" title="Audio">♪</button>
-        <label for="audio-volume" class="visually-hidden">Volume</label>
-        <input type="range" id="audio-volume" min="0" max="100" value="50" aria-label="Volume">
-        <button type="button" id="open-character" title="Scheda personaggio">Scheda</button>
-        <button type="button" id="open-feedback" title="Segnala bug e suggerimenti">Bug &amp; suggerimenti</button>
+      <div class="jungle-header-tools">
+        <div class="audio-control">
+          <button id="audio-toggle" type="button" title="Attiva o disattiva la musica" aria-label="Musica disattivata">♫</button>
+          <label class="sr-only" for="audio-volume">Volume</label>
+          <input id="audio-volume" type="range" min="0" max="100" step="5" value="35">
+        </div>
+        <a href="../../scheda.html" class="sheet-link">SCHEDA PG</a>
       </div>
     </header>
 
-    <main class="dungeon-main">
-      <section class="map-panel" aria-label="Mappa della Giungla Preistorica">
-        <div class="map-toolbar">
-          <strong>Settore Ia</strong>
-          <div class="map-tools">
-            <button type="button" id="map-zoom-out" aria-label="Riduci zoom">−</button>
-            <button type="button" id="map-zoom-reset" aria-label="Ripristina zoom">100%</button>
-            <button type="button" id="map-zoom-in" aria-label="Aumenta zoom">+</button>
-          </div>
-        </div>
-        <div class="map-viewport" id="map-viewport" tabindex="0"
-             aria-label="Area di gioco: mappa del Piano I">
-          <div id="map-layer" class="map-layer">
-            <img id="map-background" src="immagini/piano-Ia.png" alt="Mappa del settore Ia, Giungla Preistorica" draggable="false">
-            <div id="map-grid" class="map-grid" aria-hidden="true"></div>
-            <div id="map-entities" class="map-entities" aria-label="Personaggi ed entità"></div>
-            <div id="map-interactions" class="map-interactions"></div>
-          </div>
-        </div>
-        <div id="map-status" class="map-status" role="status" aria-live="polite">Mappa in preparazione</div>
-      </section>
+    <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
+    <div class="prototype-note" id="test-notice">
+      <strong>VERSIONE DI TEST</strong> — Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
+    </div>
 
-      <aside class="dungeon-sidebar" aria-label="Informazioni e comandi">
-        <section class="character-panel">
-          <h2>Personaggio</h2>
-          <div id="character-summary">In attesa dei dati del personaggio</div>
-        </section>
-        <section class="actions-panel">
-          <h2>Azioni</h2>
-          <div id="dungeon-actions" class="dungeon-actions"></div>
-        </section>
-        <section class="nearby-panel">
-          <h2>Nei dintorni</h2>
-          <div id="nearby-entities"></div>
-        </section>
-        <section class="chat-panel">
-          <h2>Chat</h2>
-          <div id="dungeon-chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
-          <form id="dungeon-chat-form" autocomplete="off">
-            <label for="dungeon-chat-input" class="visually-hidden">Messaggio</label>
-            <input type="text" id="dungeon-chat-input" maxlength="500" placeholder="Scrivi un messaggio...">
-            <button type="submit">Invia</button>
+    <div class="jungle-layout">
+      <aside class="jungle-left">
+        <section class="jungle-panel jungle-chat-panel">
+          <h2>CHAT DEL PIANO</h2>
+          <div id="floor-chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="muted">Connessione in corso…</p></div>
+          <form id="floor-chat-form" class="chat-form" autocomplete="off">
+            <input id="floor-chat-input" type="text" maxlength="300" placeholder="Scrivi un messaggio…" aria-label="Messaggio in chat" disabled>
+            <button id="floor-chat-send" type="submit" disabled aria-label="Invia messaggio">➤</button>
           </form>
         </section>
+        <section class="jungle-panel jungle-online-panel">
+          <h2>PERSONAGGI ONLINE <span id="online-count">0</span></h2>
+          <div id="dungeon-online-list" class="panel-list"><p class="muted">In attesa…</p></div>
+        </section>
+        <section class="jungle-panel jungle-ranking-panel">
+          <h2>RISONANZA · TOP 5</h2>
+          <div id="dungeon-leaderboard-list" class="panel-list"><p class="muted">Caricamento…</p></div>
+        </section>
       </aside>
-    </main>
 
-    <div id="dungeon-modal-root" class="modal-root"></div>
-    <div id="dungeon-toast-root" class="toast-root" aria-live="polite"></div>
-  </div>
+      <section class="jungle-map-column" aria-label="Esplorazione del Piano I">
+        <div class="map-heading">
+          <div><span class="map-eyebrow">SETTORE IA</span><strong>SENTIERI DELLA GIUNGLA</strong></div>
+          <div class="map-controls">
+            <button id="map-zoom-out" title="Riduci ingrandimento" aria-label="Riduci ingrandimento">−</button>
+            <button id="map-zoom-reset" title="Zoom predefinito">13 × 13</button>
+            <button id="map-zoom-in" title="Aumenta ingrandimento" aria-label="Aumenta ingrandimento">+</button>
+          </div>
+        </div>
+        <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="Mappa. Usa WASD o le frecce per muoverti">
+          <div class="map-layer" id="map-layer">
+            <img id="map-background" src="immagini/piano-Ia.png" alt="Mappa del Piano I" draggable="false">
+            <div class="map-grid" id="map-grid" aria-hidden="true"></div>
+            <canvas id="fog-canvas" aria-hidden="true"></canvas>
+            <div class="map-entities" id="map-entities"></div>
+          </div>
+          <div id="map-loading" class="map-loading">Caricamento mappa e griglia…</div>
+        </div>
+        <div class="map-footer">
+          <div class="movement-description"><strong>W A S D</strong> / <strong>← ↑ ↓ →</strong> · oppure clicca una casella adiacente</div>
+          <div class="map-toggles">
+            <label><input id="toggle-grid" type="checkbox"> Griglia</label>
+            <label><input id="toggle-fog" type="checkbox" checked> Esplorazione</label>
+          </div>
+          <div id="player-coordinates" class="coordinates">X — · Y —</div>
+        </div>
+        <div class="touch-dpad" aria-label="Comandi di movimento per dispositivi touch">
+          <span></span><button type="button" data-move="0,-1" aria-label="Su">↑</button><span></span>
+          <button type="button" data-move="-1,0" aria-label="Sinistra">←</button>
+          <button type="button" data-move="0,1" aria-label="Giù">↓</button>
+          <button type="button" data-move="1,0" aria-label="Destra">→</button>
+        </div>
+      </section>
 
-  <!-- I percorsi risalgono di due livelli: dungeon/piano-I/ → radice repository. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../js/config.js"></script>
-  <!-- Controller da realizzare adattando il JS del Piano 1. -->
-  <script src="js/piano-Ia.js?v=1" defer></script>
+      <aside class="jungle-right">
+        <section class="jungle-panel hero-panel">
+          <div class="hero-headline"><div><span class="panel-eyebrow">AVVENTURIERO</span><h2 id="character-name">PERSONAGGIO</h2></div><span id="character-level" class="hero-level">LV —</span></div>
+          <div class="hero-portrait-line">
+            <img id="character-token" class="hero-portrait" src="../../immagini/token/token_1.png" alt="Token del personaggio">
+            <div class="hero-vitals"><div><span>VITA</span><strong id="character-hp">—</strong></div><div><span>MANA</span><strong id="character-mana">—</strong></div><div><span>RISONANZA</span><strong id="character-resonance">—</strong></div></div>
+          </div>
+          <a href="../../scheda.html" class="full-sheet">APRI SCHEDA COMPLETA ↗</a>
+        </section>
+        <section class="jungle-panel stats-panel">
+          <h2>STATISTICHE</h2>
+          <div class="stats-grid">
+            <div><span>ATT</span><strong id="stat-att">—</strong></div>
+            <div><span>DIF</span><strong id="stat-dif">—</strong></div>
+            <div><span>MOV</span><strong id="stat-mov">—</strong></div>
+            <div><span>CRT</span><strong id="stat-crt">—</strong></div>
+          </div>
+          <h2 class="subheading">ATTRIBUTI</h2>
+          <div class="stats-grid">
+            <div><span>FOR</span><strong id="attr-for">—</strong></div>
+            <div><span>RES</span><strong id="attr-res">—</strong></div>
+            <div><span>COS</span><strong id="attr-cos">—</strong></div>
+            <div><span>INT</span><strong id="attr-int">—</strong></div>
+            <div><span>DES</span><strong id="attr-des">—</strong></div>
+            <div><span>LCK</span><strong id="attr-lck">—</strong></div>
+          </div>
+        </section>
+        <section class="jungle-panel actions-panel">
+          <h2>ABILITÀ / CONSUMABILI</h2>
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">✦ <span>CURA</span><small>In preparazione</small></button>
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">♥ <span>POZIONE VITA</span><small>In preparazione</small></button>
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">◆ <span>POZIONE MANA</span><small>In preparazione</small></button>
+        </section>
+        <section class="jungle-panel notes-panel">
+          <h2>NOTE PERSONALI</h2>
+          <textarea id="character-notes" maxlength="3000" placeholder="Annota indizi, percorsi e scoperte…"></textarea>
+          <button type="button" id="save-notes-button">SALVA NOTE LOCALI</button>
+        </section>
+      </aside>
+    </div>
+    <div id="jungle-toast" class="jungle-toast" role="status" aria-live="polite"></div>
+  </main>
 </body>
 </html>
