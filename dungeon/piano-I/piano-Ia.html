@@ -14,8 +14,8 @@
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
     #map-background{opacity:0 !important;}
-    #map-tile-mosaic{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);pointer-events:none;z-index:0;}
-    #map-tile-mosaic img{display:block;width:100%;height:100%;object-fit:fill;image-rendering:auto;}
+    #map-tile-mosaic{position:absolute;inset:0;width:100%;height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;pointer-events:none;z-index:0;}
+    #map-tile-mosaic img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:fill;image-rendering:auto;}
     #map-grid,#fog-canvas,.map-entities{z-index:1;}
   </style>
 </head>
@@ -39,7 +39,7 @@
 
     <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
     <div class="prototype-note" id="test-notice">
-      <strong>VERSIONE DI TEST</strong> — Questa build usa un mosaico di 9 immagini numerate (01 → 09, da sinistra a destra e dall’alto in basso) per verificare l’allineamento col JSON. Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
+      <strong>VERSIONE DI TEST</strong> — Questa build usa 9 ritagli esatti della mappa originale (21 × 27 caselle ciascuno) per verificare l’allineamento col JSON. Disattiva Esplorazione per vedere tutte le sezioni. Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
     </div>
 
     <div class="jungle-layout">
@@ -73,17 +73,17 @@
         </div>
         <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="Mappa. Usa WASD o le frecce per muoverti">
           <div class="map-layer" id="map-layer">
-            <img id="map-background" src="immagini/piano-Ia-01.png?v=tiles" alt="Mappa del Piano I" draggable="false">
+            <img id="map-background" src="immagini/piano-Ia-01.png?v=tile3" alt="Mappa del Piano I" draggable="false">
             <div id="map-tile-mosaic" aria-hidden="true">
-              <img src="immagini/piano-Ia-01.png" alt="">
-              <img src="immagini/piano-Ia-02.png" alt="">
-              <img src="immagini/piano-Ia-03.png" alt="">
-              <img src="immagini/piano-Ia-04.png" alt="">
-              <img src="immagini/piano-Ia-05.png" alt="">
-              <img src="immagini/piano-Ia-06.png" alt="">
-              <img src="immagini/piano-Ia-07.png" alt="">
-              <img src="immagini/piano-Ia-08.png" alt="">
-              <img src="immagini/piano-Ia-09.png" alt="">
+              <img src="immagini/piano-Ia-01.png?v=3" alt="">
+              <img src="immagini/piano-Ia-02.png?v=3" alt="">
+              <img src="immagini/piano-Ia-03.png?v=3" alt="">
+              <img src="immagini/piano-Ia-04.png?v=3" alt="">
+              <img src="immagini/piano-Ia-05.png?v=3" alt="">
+              <img src="immagini/piano-Ia-06.png?v=3" alt="">
+              <img src="immagini/piano-Ia-07.png?v=3" alt="">
+              <img src="immagini/piano-Ia-08.png?v=3" alt="">
+              <img src="immagini/piano-Ia-09.png?v=3" alt="">
             </div>
             <div class="map-grid" id="map-grid" aria-hidden="true"></div>
             <canvas id="fog-canvas" aria-hidden="true"></canvas>
