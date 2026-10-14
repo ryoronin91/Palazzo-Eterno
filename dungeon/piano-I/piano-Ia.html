@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102118">
+  <title>Palazzo Eterno — Piano I: Giungla Preistorica</title>
+
+  <!-- La pagina si trova in dungeon/piano-I/ -->
+  <link rel="stylesheet" href="css/piano-Ia.css?v=1">
+</head>
+<body>
+  <div class="dungeon-layout" id="dungeon-app" data-floor="I" data-map="Ia"
+       data-map-json="piano-Ia.json" data-map-image="immagini/piano-Ia.png">
+
+    <header class="dungeon-header">
+      <div class="dungeon-heading">
+        <span class="dungeon-eyebrow">PALAZZO ETERNO</span>
+        <h1>Piano I — Giungla Preistorica</h1>
+      </div>
+      <div class="dungeon-header-actions">
+        <button type="button" id="audio-toggle" aria-label="Attiva o disattiva l'audio" title="Audio">♪</button>
+        <label for="audio-volume" class="visually-hidden">Volume</label>
+        <input type="range" id="audio-volume" min="0" max="100" value="50" aria-label="Volume">
+        <button type="button" id="open-character" title="Scheda personaggio">Scheda</button>
+        <button type="button" id="open-feedback" title="Segnala bug e suggerimenti">Bug &amp; suggerimenti</button>
+      </div>
+    </header>
+
+    <main class="dungeon-main">
+      <section class="map-panel" aria-label="Mappa della Giungla Preistorica">
+        <div class="map-toolbar">
+          <strong>Settore Ia</strong>
+          <div class="map-tools">
+            <button type="button" id="map-zoom-out" aria-label="Riduci zoom">−</button>
+            <button type="button" id="map-zoom-reset" aria-label="Ripristina zoom">100%</button>
+            <button type="button" id="map-zoom-in" aria-label="Aumenta zoom">+</button>
+          </div>
+        </div>
+        <div class="map-viewport" id="map-viewport" tabindex="0"
+             aria-label="Area di gioco: mappa del Piano I">
+          <div id="map-layer" class="map-layer">
+            <img id="map-background" src="immagini/piano-Ia.png" alt="Mappa del settore Ia, Giungla Preistorica" draggable="false">
+            <div id="map-grid" class="map-grid" aria-hidden="true"></div>
+            <div id="map-entities" class="map-entities" aria-label="Personaggi ed entità"></div>
+            <div id="map-interactions" class="map-interactions"></div>
+          </div>
+        </div>
+        <div id="map-status" class="map-status" role="status" aria-live="polite">Mappa in preparazione</div>
+      </section>
+
+      <aside class="dungeon-sidebar" aria-label="Informazioni e comandi">
+        <section class="character-panel">
+          <h2>Personaggio</h2>
+          <div id="character-summary">In attesa dei dati del personaggio</div>
+        </section>
+        <section class="actions-panel">
+          <h2>Azioni</h2>
+          <div id="dungeon-actions" class="dungeon-actions"></div>
+        </section>
+        <section class="nearby-panel">
+          <h2>Nei dintorni</h2>
+          <div id="nearby-entities"></div>
+        </section>
+        <section class="chat-panel">
+          <h2>Chat</h2>
+          <div id="dungeon-chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
+          <form id="dungeon-chat-form" autocomplete="off">
+            <label for="dungeon-chat-input" class="visually-hidden">Messaggio</label>
+            <input type="text" id="dungeon-chat-input" maxlength="500" placeholder="Scrivi un messaggio...">
+            <button type="submit">Invia</button>
+          </form>
+        </section>
+      </aside>
+    </main>
+
+    <div id="dungeon-modal-root" class="modal-root"></div>
+    <div id="dungeon-toast-root" class="toast-root" aria-live="polite"></div>
+  </div>
+
+  <!-- I percorsi risalgono di due livelli: dungeon/piano-I/ → radice repository. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/config.js"></script>
+  <!-- Controller da realizzare adattando il JS del Piano 1. -->
+  <script src="js/piano-Ia.js?v=1" defer></script>
+</body>
+</html>
