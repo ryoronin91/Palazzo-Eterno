@@ -81,8 +81,8 @@ function renderCombatTokens() {
             // =================================================
 
             if (
-                entity.status ===
-                    "dead"
+                entity.status !==
+                    "alive"
                 ||
                 Number(
                     entity.current_hp
