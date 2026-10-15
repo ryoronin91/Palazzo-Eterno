@@ -1,3 +1,40 @@
+Hai un nuovo messaggio.
+
+
+Vai ai contenuti
+Utilizzo di Gmail con gli screen reader
+1 di 1
+Palazzo Eterno — Piano I-A: HTML e JavaScript con forzieri di test
+Posta in arrivo
+
+mattia labartino <mattia.laba@gmail.com>
+Allegati
+10:21 (0 minuti fa)
+a me
+
+Ciao,
+
+ti allego i due file completi per il Piano I-A, con zoom dell’intera mappa, segnaposto degli eventi e 12 forzieri di test collegati alle RPC Supabase.
+
+Percorsi di destinazione:
+
+dungeon/piano-I/piano-Ia.html
+dungeon/piano-I/js/piano-Ia.js
+Attenzione: i file sono stati ricostruiti a partire dalla copia locale disponibile e non sono stati verificati in browser rispetto all’ultima revisione presente su GitHub. Prima di sovrascrivere i file online, confrontali con la versione attuale o conservala come backup. La raccolta di prova non assegna ancora frutti all’inventario e il cooldown è 30 secondi.
+
+A presto!
+
+ 2 allegati
+  •  Scansionato da Gmail
+Avviso virus – 1 allegato contiene un virus o un file bloccato. Il download dell'allegato è stato disabilitato.
+
+Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+10:21 (0 minuti fa)
+a me
+
+Per ragioni di sicurezza, Gmail non consente l'utilizzo di questo tipo di file perché vìola le norme di Google relative ai file eseguibili e agli archivi.
+
+Ciao, ti allego i due file completi per il Piano IA, con zoom dell'intera mappa, segnaposto degli eventi e 12 forzieri di test collegati alle RPC Supabase. Percorsi di destinazione: dungeon/piano-I
 
 <!DOCTYPE html>
 <html lang="it">
@@ -10,393 +47,123 @@
   <link rel="stylesheet" href="css/piano-Ia.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=3" defer></script>
+  <script src="js/piano-Ia.js?v=4" defer></script>
 
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
-    #map-background {
-      opacity: 0 !important;
-    }
-
-    #map-tile-mosaic {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-rows: repeat(3, minmax(0, 1fr));
-      gap: 0;
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    #map-tile-mosaic img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
-      object-fit: fill;
-      image-rendering: auto;
-    }
-
-    #map-grid,
-    #fog-canvas,
-    .map-entities {
-      z-index: 1;
-    }
+    #map-background{opacity:0 !important;}
+    #map-tile-mosaic{position:absolute;inset:0;width:100%;height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;pointer-events:none;z-index:0;}
+    #map-tile-mosaic img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:fill;image-rendering:auto;}
+    #map-grid,#fog-canvas,.map-entities{z-index:1;}
   </style>
 </head>
-
 <body>
-  <main
-    class="jungle-page"
-    id="jungle-app"
-    data-map="piano-Ia.json"
-    data-image="immagini/piano-Ia-01.png"
-  >
-
+  <main class="jungle-page" id="jungle-app" data-map="piano-Ia.json" data-image="immagini/piano-Ia-01.png">
     <header class="jungle-header">
-      <a
-        class="jungle-exit"
-        href="../../scheda.html"
-        aria-label="Torna alla scheda"
-      >← ESCI</a>
-
+      <a class="jungle-exit" href="../../scheda.html" aria-label="Torna alla scheda">← ESCI</a>
       <div class="jungle-heading">
         <span class="jungle-kicker">PALAZZO ETERNO</span>
         <h1>PIANO I <span>· GIUNGLA PREISTORICA</span></h1>
       </div>
-
       <div class="jungle-header-tools">
         <div class="audio-control">
-          <button
-            id="audio-toggle"
-            type="button"
-            title="Attiva o disattiva la musica"
-            aria-label="Musica disattivata"
-          >♫</button>
-
+          <button id="audio-toggle" type="button" title="Attiva o disattiva la musica" aria-label="Musica disattivata">♫</button>
           <label class="sr-only" for="audio-volume">Volume</label>
-          <input
-            id="audio-volume"
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value="35"
-          >
+          <input id="audio-volume" type="range" min="0" max="100" step="5" value="35">
         </div>
-
         <a href="../../scheda.html" class="sheet-link">SCHEDA PG</a>
       </div>
     </header>
 
-    <div
-      id="jungle-status"
-      class="jungle-status"
-      role="status"
-      aria-live="polite"
-    >
-      Caricamento del Piano I…
-    </div>
-
+    <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
     <div class="prototype-note" id="test-notice">
-      <strong>VERSIONE DI TEST</strong> —
-      Questa build usa 9 ritagli esatti della mappa originale
-      (21 × 27 caselle ciascuno) per verificare l’allineamento col JSON.
-      Disattiva Esplorazione per vedere tutte le sezioni.
-      Gli spostamenti vengono salvati solo su questo browser.
-      Non modificano le coordinate del PG nel database
-      e non attivano eventi o combattimenti.
+      <strong>VERSIONE DI TEST</strong> — Questa build usa 9 ritagli esatti della mappa originale (21 × 27 caselle ciascuno) per verificare l’allineamento col JSON. Disattiva Esplorazione per vedere tutte le sezioni. Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
     </div>
 
     <div class="jungle-layout">
-
-      <!-- COLONNA SINISTRA -->
       <aside class="jungle-left">
-
         <section class="jungle-panel jungle-chat-panel">
           <h2>CHAT DEL PIANO</h2>
-
-          <div
-            id="floor-chat-messages"
-            class="chat-messages"
-            role="log"
-            aria-live="polite"
-          >
-            <p class="muted">Connessione in corso…</p>
-          </div>
-
-          <form
-            id="floor-chat-form"
-            class="chat-form"
-            autocomplete="off"
-          >
-            <input
-              id="floor-chat-input"
-              type="text"
-              maxlength="300"
-              placeholder="Scrivi un messaggio…"
-              aria-label="Messaggio in chat"
-              disabled
-            >
-            <button
-              id="floor-chat-send"
-              type="submit"
-              disabled
-              aria-label="Invia messaggio"
-            >➤</button>
+          <div id="floor-chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="muted">Connessione in corso…</p></div>
+          <form id="floor-chat-form" class="chat-form" autocomplete="off">
+            <input id="floor-chat-input" type="text" maxlength="300" placeholder="Scrivi un messaggio…" aria-label="Messaggio in chat" disabled>
+            <button id="floor-chat-send" type="submit" disabled aria-label="Invia messaggio">➤</button>
           </form>
         </section>
-
         <section class="jungle-panel jungle-online-panel">
           <h2>PERSONAGGI ONLINE <span id="online-count">0</span></h2>
-
-          <div id="dungeon-online-list" class="panel-list">
-            <p class="muted">In attesa…</p>
-          </div>
+          <div id="dungeon-online-list" class="panel-list"><p class="muted">In attesa…</p></div>
         </section>
-
         <section class="jungle-panel jungle-ranking-panel">
           <h2>RISONANZA · TOP 5</h2>
-
-          <div id="dungeon-leaderboard-list" class="panel-list">
-            <p class="muted">Caricamento…</p>
-          </div>
+          <div id="dungeon-leaderboard-list" class="panel-list"><p class="muted">Caricamento…</p></div>
         </section>
-
       </aside>
 
-      <!-- MAPPA CENTRALE -->
-      <section
-        class="jungle-map-column"
-        aria-label="Esplorazione del Piano I"
-      >
-
+      <section class="jungle-map-column" aria-label="Esplorazione del Piano I">
         <div class="map-heading">
-          <div>
-            <span class="map-eyebrow">SETTORE IA</span>
-            <strong>SENTIERI DELLA GIUNGLA</strong>
-          </div>
-
-          <!-- CONTROLLI ZOOM -->
+          <div><span class="map-eyebrow">SETTORE IA</span><strong>SENTIERI DELLA GIUNGLA</strong></div>
           <div class="map-controls">
-
-            <button
-              id="map-zoom-out"
-              type="button"
-              title="Riduci ingrandimento"
-              aria-label="Riduci ingrandimento"
-            >−</button>
-
-            <button
-              id="map-zoom-reset"
-              type="button"
-              title="Ripristina zoom 13 × 13"
-            >13 × 13</button>
-
-            <button
-              id="map-zoom-full"
-              type="button"
-              title="Visualizza tutta la mappa 63 × 81"
-              aria-label="Mappa intera"
-            >Mappa intera</button>
-
-            <button
-              id="map-zoom-in"
-              type="button"
-              title="Aumenta ingrandimento"
-              aria-label="Aumenta ingrandimento"
-            >+</button>
-
+            <button id="map-zoom-out" title="Riduci ingrandimento" aria-label="Riduci ingrandimento">−</button>
+            <button id="map-zoom-reset" title="Ripristina zoom 13 × 13">13 × 13</button>
+            <button id="map-zoom-full" title="Visualizza tutte le 63 × 81 caselle" aria-label="Mappa intera">Mappa intera</button>
+            <button id="map-zoom-in" title="Aumenta ingrandimento" aria-label="Aumenta ingrandimento">+</button>
           </div>
         </div>
-
-        <div
-          class="map-viewport"
-          id="map-viewport"
-          tabindex="0"
-          aria-label="Mappa. Usa WASD o le frecce per muoverti"
-        >
-
+        <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="Mappa. Usa WASD o le frecce per muoverti">
           <div class="map-layer" id="map-layer">
-
-            <img
-              id="map-background"
-              src="immagini/piano-Ia-01.png?v=tile3"
-              alt="Mappa del Piano I"
-              draggable="false"
-            >
-
-            <!-- MOSAICO 3 × 3 -->
+            <img id="map-background" src="immagini/piano-Ia-01.png?v=tile3" alt="Mappa del Piano I" draggable="false">
             <div id="map-tile-mosaic" aria-hidden="true">
               <img src="immagini/piano-Ia-01.png?v=3" alt="">
               <img src="immagini/piano-Ia-02.png?v=3" alt="">
               <img src="immagini/piano-Ia-03.png?v=3" alt="">
-
               <img src="immagini/piano-Ia-04.png?v=3" alt="">
               <img src="immagini/piano-Ia-05.png?v=3" alt="">
               <img src="immagini/piano-Ia-06.png?v=3" alt="">
-
               <img src="immagini/piano-Ia-07.png?v=3" alt="">
               <img src="immagini/piano-Ia-08.png?v=3" alt="">
               <img src="immagini/piano-Ia-09.png?v=3" alt="">
             </div>
-
-            <div
-              class="map-grid"
-              id="map-grid"
-              aria-hidden="true"
-            ></div>
-
-            <canvas
-              id="fog-canvas"
-              aria-hidden="true"
-            ></canvas>
-
-            <div
-              class="map-entities"
-              id="map-entities"
-            ></div>
-
+            <div class="map-grid" id="map-grid" aria-hidden="true"></div>
+            <canvas id="fog-canvas" aria-hidden="true"></canvas>
+            <div class="map-entities" id="map-entities"></div>
           </div>
-
-          <div id="map-loading" class="map-loading">
-            Caricamento mappa e griglia…
-          </div>
-
+          <div id="map-loading" class="map-loading">Caricamento mappa e griglia…</div>
         </div>
-
         <div class="map-footer">
-
-          <div class="movement-description">
-            <strong>W A S D</strong> /
-            <strong>← ↑ ↓ →</strong>
-            · oppure clicca una casella adiacente
-          </div>
-
+          <div class="movement-description"><strong>W A S D</strong> / <strong>← ↑ ↓ →</strong> · oppure clicca una casella adiacente</div>
           <div class="map-toggles">
-            <label>
-              <input id="toggle-grid" type="checkbox">
-              Griglia
-            </label>
-
-            <label>
-              <input
-                id="toggle-fog"
-                type="checkbox"
-                checked
-              >
-              Esplorazione
-            </label>
+            <label><input id="toggle-grid" type="checkbox"> Griglia</label>
+            <label><input id="toggle-fog" type="checkbox" checked> Esplorazione</label>
           </div>
-
-          <div id="player-coordinates" class="coordinates">
-            X — · Y —
-          </div>
-
+          <div id="player-coordinates" class="coordinates">X — · Y —</div>
         </div>
-
-        <div
-          class="touch-dpad"
-          aria-label="Comandi di movimento per dispositivi touch"
-        >
-          <span></span>
-
-          <button
-            type="button"
-            data-move="0,-1"
-            aria-label="Su"
-          >↑</button>
-
-          <span></span>
-
-          <button
-            type="button"
-            data-move="-1,0"
-            aria-label="Sinistra"
-          >←</button>
-
-          <button
-            type="button"
-            data-move="0,1"
-            aria-label="Giù"
-          >↓</button>
-
-          <button
-            type="button"
-            data-move="1,0"
-            aria-label="Destra"
-          >→</button>
-
+        <div class="touch-dpad" aria-label="Comandi di movimento per dispositivi touch">
+          <span></span><button type="button" data-move="0,-1" aria-label="Su">↑</button><span></span>
+          <button type="button" data-move="-1,0" aria-label="Sinistra">←</button>
+          <button type="button" data-move="0,1" aria-label="Giù">↓</button>
+          <button type="button" data-move="1,0" aria-label="Destra">→</button>
         </div>
-
       </section>
 
-      <!-- COLONNA DESTRA -->
       <aside class="jungle-right">
-
         <section class="jungle-panel hero-panel">
-
-          <div class="hero-headline">
-            <div>
-              <span class="panel-eyebrow">AVVENTURIERO</span>
-              <h2 id="character-name">PERSONAGGIO</h2>
-            </div>
-
-            <span id="character-level" class="hero-level">
-              LV —
-            </span>
-          </div>
-
+          <div class="hero-headline"><div><span class="panel-eyebrow">AVVENTURIERO</span><h2 id="character-name">PERSONAGGIO</h2></div><span id="character-level" class="hero-level">LV —</span></div>
           <div class="hero-portrait-line">
-            <img
-              id="character-token"
-              class="hero-portrait"
-              src="../../immagini/token/token_1.png"
-              alt="Token del personaggio"
-            >
-
-            <div class="hero-vitals">
-              <div>
-                <span>VITA</span>
-                <strong id="character-hp">—</strong>
-              </div>
-
-              <div>
-                <span>MANA</span>
-                <strong id="character-mana">—</strong>
-              </div>
-
-              <div>
-                <span>RISONANZA</span>
-                <strong id="character-resonance">—</strong>
-              </div>
-            </div>
+            <img id="character-token" class="hero-portrait" src="../../immagini/token/token_1.png" alt="Token del personaggio">
+            <div class="hero-vitals"><div><span>VITA</span><strong id="character-hp">—</strong></div><div><span>MANA</span><strong id="character-mana">—</strong></div><div><span>RISONANZA</span><strong id="character-resonance">—</strong></div></div>
           </div>
-
-          <a href="../../scheda.html" class="full-sheet">
-            APRI SCHEDA COMPLETA ↗
-          </a>
-
+          <a href="../../scheda.html" class="full-sheet">APRI SCHEDA COMPLETA ↗</a>
         </section>
-
         <section class="jungle-panel stats-panel">
-
           <h2>STATISTICHE</h2>
-
           <div class="stats-grid">
             <div><span>ATT</span><strong id="stat-att">—</strong></div>
             <div><span>DIF</span><strong id="stat-dif">—</strong></div>
             <div><span>MOV</span><strong id="stat-mov">—</strong></div>
             <div><span>CRT</span><strong id="stat-crt">—</strong></div>
           </div>
-
           <h2 class="subheading">ATTRIBUTI</h2>
-
           <div class="stats-grid">
             <div><span>FOR</span><strong id="attr-for">—</strong></div>
             <div><span>RES</span><strong id="attr-res">—</strong></div>
@@ -405,221 +172,51 @@
             <div><span>DES</span><strong id="attr-des">—</strong></div>
             <div><span>LCK</span><strong id="attr-lck">—</strong></div>
           </div>
-
         </section>
-
         <section class="jungle-panel actions-panel">
-
           <h2>ABILITÀ / CONSUMABILI</h2>
-
-          <button
-            type="button"
-            disabled
-            title="Da collegare alle RPC del nuovo piano"
-          >
-            ✦ <span>CURA</span>
-            <small>In preparazione</small>
-          </button>
-
-          <button
-            type="button"
-            disabled
-            title="Da collegare alle RPC del nuovo piano"
-          >
-            ♥ <span>POZIONE VITA</span>
-            <small>In preparazione</small>
-          </button>
-
-          <button
-            type="button"
-            disabled
-            title="Da collegare alle RPC del nuovo piano"
-          >
-            ◆ <span>POZIONE MANA</span>
-            <small>In preparazione</small>
-          </button>
-
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">✦ <span>CURA</span><small>In preparazione</small></button>
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">♥ <span>POZIONE VITA</span><small>In preparazione</small></button>
+          <button type="button" disabled title="Da collegare alle RPC del nuovo piano">◆ <span>POZIONE MANA</span><small>In preparazione</small></button>
         </section>
-
         <section class="jungle-panel notes-panel">
-
           <h2>NOTE PERSONALI</h2>
-
-          <textarea
-            id="character-notes"
-            maxlength="3000"
-            placeholder="Annota indizi, percorsi e scoperte…"
-          ></textarea>
-
-          <button
-            type="button"
-            id="save-notes-button"
-          >
-            SALVA NOTE LOCALI
-          </button>
-
+          <textarea id="character-notes" maxlength="3000" placeholder="Annota indizi, percorsi e scoperte…"></textarea>
+          <button type="button" id="save-notes-button">SALVA NOTE LOCALI</button>
         </section>
-
       </aside>
-
     </div>
-
-    <div
-      id="jungle-toast"
-      class="jungle-toast"
-      role="status"
-      aria-live="polite"
-    ></div>
-
+    <div id="jungle-toast" class="jungle-toast" role="status" aria-live="polite"></div>
   </main>
-  
-<!-- PIANO I-A: SEGNAPOSTO DI PROGETTAZIONE -->
+
+<!-- Indicatori provvisori Piano I-A -->
 <style>
-  .pia-planning-marker {
-    position: absolute;
-    z-index: 10;
-    pointer-events: none;
-    border-radius: 50%;
-    box-shadow: 0 0 0 1px #fff;
-    transform: translate(-50%, -50%);
-  }
-
-  .pia-planning-camp {
-    position: absolute;
-    z-index: 9;
-    pointer-events: none;
-    background: rgba(45, 210, 90, .35);
-    border: 1px solid #37eb70;
-  }
-
-  #pia-planning-toggle {
-    cursor: pointer;
-    padding: 5px 9px;
-    border: 1px solid #9e8750;
-    border-radius: 5px;
-    background: #203523;
-    color: #f0df9a;
-    font-size: 12px;
-  }
-
-  #pia-planning-toggle[aria-pressed="false"] {
-    opacity: .65;
-  }
+.pia-planning-marker{position:absolute;z-index:10;pointer-events:none;border-radius:50%;box-shadow:0 0 0 1px white;transform:translate(-50%,-50%)}
+.pia-planning-camp{position:absolute;z-index:9;pointer-events:none;background:rgba(45,210,90,.35);border:1px solid #37eb70}
+#pia-planning-toggle{cursor:pointer;padding:5px 9px;border:1px solid #9e8750;border-radius:5px;background:#203523;color:#f0df9a;font-size:12px}
 </style>
-
 <script>
-(() => {
-  'use strict';
-
-  // Coordinate logiche della mappa
-  const COLS = 63;
-  const ROWS = 81;
-
-  const points = [
-    {
-      x: 27, y: 32,
-      name: 'Allosauro Dominante',
-      color: '#ff3838'
-    },
-    {
-      x: 0, y: 67,
-      name: 'Guardie lucertoloidi',
-      color: '#38aaff'
-    },
-    {
-      x: 61, y: 79,
-      name: 'Ingresso sud-est',
-      color: '#ffd449'
-    },
-    {
-      x: 57, y: 61,
-      name: 'Ingresso est inferiore',
-      color: '#ffd449'
-    },
-    {
-      x: 61, y: 29,
-      name: 'Ingresso est',
-      color: '#ffd449'
-    },
-    {
-      x: 59, y: 3,
-      name: 'Ingresso nord-est',
-      color: '#ffd449'
-    }
-  ];
-
-  const layer = document.getElementById('map-layer');
-  const controls = document.querySelector('.map-controls');
-
-  if (!layer || !controls) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'pia-planning-overlay';
-
-  Object.assign(overlay.style, {
-    position: 'absolute',
-    inset: '0',
-    pointerEvents: 'none',
-    zIndex: '10'
-  });
-
-  // Indicatore per ogni posizione fissa.
-  for (const point of points) {
-    const marker = document.createElement('div');
-
-    marker.className = 'pia-planning-marker';
-    marker.title = point.name;
-
-    marker.style.left =
-      ((point.x + 0.5) / COLS * 100) + '%';
-
-    marker.style.top =
-      ((point.y + 0.5) / ROWS * 100) + '%';
-
-    marker.style.width = (100 / COLS) + '%';
-    marker.style.height = (100 / ROWS) + '%';
-    marker.style.background = point.color;
-
-    overlay.appendChild(marker);
-  }
-
-  // Accampamento 3 x 3
-  const camp = document.createElement('div');
-  camp.className = 'pia-planning-camp';
-  camp.title = 'Accampamento - Lautopasto';
-
-  camp.style.left = (28 / COLS * 100) + '%';
-  camp.style.top = (34 / ROWS * 100) + '%';
-  camp.style.width = (3 / COLS * 100) + '%';
-  camp.style.height = (3 / ROWS * 100) + '%';
-
-  overlay.appendChild(camp);
-  layer.appendChild(overlay);
-
-  // Pulsante per mostrare / nascondere i segnaposto
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.id = 'pia-planning-toggle';
-  button.textContent = 'Eventi: ON';
-  button.setAttribute('aria-pressed', 'true');
-
-  button.addEventListener('click', () => {
-    const visible = overlay.style.display !== 'none';
-
-    overlay.style.display = visible ? 'none' : '';
-    button.textContent =
-      visible ? 'Eventi: OFF' : 'Eventi: ON';
-
-    button.setAttribute(
-      'aria-pressed',
-      String(!visible)
-    );
-  });
-
-  controls.appendChild(button);
+(()=>{'use strict';
+const cols=63,rows=81,layer=document.getElementById('map-layer'),controls=document.querySelector('.map-controls');
+if(!layer||!controls)return;
+const overlay=document.createElement('div');overlay.id='pia-planning-overlay';
+Object.assign(overlay.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'10'});
+const points=[
+{ x:27,y:32,name:'Allosauro Dominante',color:'#ff3838'},
+{ x:0,y:67,name:'Guardie lucertoloidi',color:'#38aaff'},
+{ x:61,y:79,name:'Ingresso sud-est',color:'#ffd449'},
+{ x:57,y:61,name:'Ingresso est inferiore',color:'#ffd449'},
+{ x:61,y:29,name:'Ingresso est',color:'#ffd449'},
+{ x:59,y:3,name:'Ingresso nord-est',color:'#ffd449'}];
+for(const p of points){const el=document.createElement('div');el.className='pia-planning-marker';el.title=p.name;
+Object.assign(el.style,{left:((p.x+.5)/cols*100)+'%',top:((p.y+.5)/rows*100)+'%',width:(100/cols)+'%',height:(100/rows)+'%',background:p.color});overlay.appendChild(el)}
+const camp=document.createElement('div');camp.className='pia-planning-camp';camp.title='Accampamento Lautopasto';
+Object.assign(camp.style,{left:(28/cols*100)+'%',top:(34/rows*100)+'%',width:(3/cols*100)+'%',height:(3/rows*100)+'%'});
+overlay.appendChild(camp);layer.appendChild(overlay);
+const b=document.createElement('button');b.id='pia-planning-toggle';b.type='button';b.textContent='Eventi: ON';b.setAttribute('aria-pressed','true');
+b.addEventListener('click',()=>{const visible=overlay.style.display!=='none';overlay.style.display=visible?'none':'';b.textContent=visible?'Eventi: OFF':'Eventi: ON';b.setAttribute('aria-pressed',String(!visible))});controls.appendChild(b);
 })();
 </script>
-<!-- FINE SEGNAPOSTO -->
-
+<!-- Fine indicatori -->
 </body>
 </html>

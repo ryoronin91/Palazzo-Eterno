@@ -1,43 +1,62 @@
+Hai un nuovo messaggio.
+
+
+Vai ai contenuti
+Utilizzo di Gmail con gli screen reader
+1 di 1
+Palazzo Eterno — Piano I-A: HTML e JavaScript con forzieri di test
+Posta in arrivo
+
+mattia labartino <mattia.laba@gmail.com>
+Allegati
+10:21 (0 minuti fa)
+a me
+
+Ciao,
+
+ti allego i due file completi per il Piano I-A, con zoom dell’intera mappa, segnaposto degli eventi e 12 forzieri di test collegati alle RPC Supabase.
+
+Percorsi di destinazione:
+
+dungeon/piano-I/piano-Ia.html
+dungeon/piano-I/js/piano-Ia.js
+Attenzione: i file sono stati ricostruiti a partire dalla copia locale disponibile e non sono stati verificati in browser rispetto all’ultima revisione presente su GitHub. Prima di sovrascrivere i file online, confrontali con la versione attuale o conservala come backup. La raccolta di prova non assegna ancora frutti all’inventario e il cooldown è 30 secondi.
+
+A presto!
+
+ 2 allegati
+  •  Scansionato da Gmail
+Avviso virus – 1 allegato contiene un virus o un file bloccato. Il download dell'allegato è stato disabilitato.
+
+Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+10:21 (0 minuti fa)
+a me
+
+Per ragioni di sicurezza, Gmail non consente l'utilizzo di questo tipo di file perché vìola le norme di Google relative ai file eseguibili e agli archivi.
+
+Ciao, ti allego i due file completi per il Piano IA, con zoom dell'intera mappa, segnaposto degli eventi e 12 forzieri di test collegati alle RPC Supabase. Percorsi di destinazione: dungeon/piano-I
 
 /*
  * Palazzo Eterno — Piano I / settore Ia
- * Prototipo di esplorazione indipendente.
- * NON salva dungeon_x/y sul database.
- * Mappa logica: 63 x 81 celle.
- * Matrice JSON: 71 x 89, con padding di 4 celle.
+ * Prototipo di esplorazione indipendente: NON salva dungeon_x/y sul DB.
+ * Si basa sul formato dungeon.json del Piano 1 (celle con bitmask e padding 4).
+ * La mappa originale ha 63 x 81 celle logiche, dentro una matrice 71 x 89.
  */
-
 (() => {
   'use strict';
-
   const $ = id => document.getElementById(id);
   const app = $('jungle-app');
   if (!app) return;
 
   const state = {
-    map: null,
-    cols: 0,
-    rows: 0,
-    offsetX: 0,
-    offsetY: 0,
-    x: null,
-    y: null,
-    viewCells: 13,
-    cellPx: 0,
-    user: null,
-    character: null,
-    db: null,
-    channel: null,
-    connected: false,
-    fogEnabled: true,
-    visited: new Set(),
-    remotePlayers: new Map(),
-    token: null,
+    map: null, cols: 0, rows: 0, offsetX: 0, offsetY: 0,
+    x: null, y: null, viewCells: 13, cellPx: 0,
+    user: null, character: null, db: null, channel: null,
+    connected: false, fogEnabled: true, visited: new Set(),
+    remotePlayers: new Map(), token: null,
     storageKey: 'palazzo:piano-Ia:guest',
-    messageTimeout: null,
-    music: null,
-    ready: false,
-    equipmentBonuses: {}
+    messageTimeout: null, music: null,
+    ready: false, equipmentBonuses: {}
   };
 
   const viewport = $('map-viewport');
@@ -50,21 +69,12 @@
   const chatInput = $('floor-chat-input');
   const chatSend = $('floor-chat-send');
   const loading = $('map-loading');
-
   const virtualKeys = Object.freeze({
-    arrowup: [0, -1],
-    w: [0, -1],
-    arrowdown: [0, 1],
-    s: [0, 1],
-    arrowleft: [-1, 0],
-    a: [-1, 0],
-    arrowright: [1, 0],
-    d: [1, 0]
+    arrowup: [0, -1], w: [0, -1],
+    arrowdown: [0, 1], s: [0, 1],
+    arrowleft: [-1, 0], a: [-1, 0],
+    arrowright: [1, 0], d: [1, 0]
   });
-
-  // --------------------------------------------------
-  // MESSAGGI E SALVATAGGIO LOCALE
-  // --------------------------------------------------
 
   function status(message, error = false) {
     const el = $('jungle-status');
@@ -76,615 +86,232 @@
     const el = $('jungle-toast');
     el.textContent = message;
     el.classList.add('visible');
-
     clearTimeout(state.messageTimeout);
-
-    state.messageTimeout = setTimeout(() => {
-      el.classList.remove('visible');
-    }, 2300);
+    state.messageTimeout = setTimeout(() => el.classList.remove('visible'), 2300);
   }
 
   function localRead(key, fallback = null) {
-    try {
-      const value = localStorage.getItem(key);
-      return value === null ? fallback : JSON.parse(value);
-    } catch (_) {
-      return fallback;
-    }
+    try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+    catch (_) { return fallback; }
   }
-
   function localWrite(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (_) {
-      // Browser in modalità privata.
-    }
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* privacy mode */ }
   }
-
-  function posKey(x, y) {
-    return `${x},${y}`;
-  }
-
-  function inside(x, y) {
-    return (
-      x >= 0 &&
-      y >= 0 &&
-      x < state.cols &&
-      y < state.rows
-    );
-  }
-
-  function bits() {
-    return state.map?.cell_bit || {};
-  }
-
-  // --------------------------------------------------
-  // COLLISIONI E CASELLE PERCORRIBILI
-  // --------------------------------------------------
+  function posKey(x, y) { return `${x},${y}`; }
+  function inside(x, y) { return x >= 0 && y >= 0 && x < state.cols && y < state.rows; }
+  function bits() { return state.map?.cell_bit || {}; }
 
   function walkable(x, y) {
     if (!state.map || !inside(x, y)) return false;
-
-    const value = Number(
-      state.map.cells[y + state.offsetY]?.[
-        x + state.offsetX
-      ]
-    );
-
-    if (!Number.isFinite(value) || value === 0) {
-      return false;
-    }
-
+    const v = Number(state.map.cells[y + state.offsetY]?.[x + state.offsetX]);
+    if (!Number.isFinite(v) || v === 0) return false;
     const mask = bits();
-
+    // Identico criterio adottato da canMoveTo() nel JS del Piano 1.
     return [
-      mask.room ?? 2,
-      mask.corridor ?? 4,
-      mask.aperture ?? 32,
-      mask.arch ?? 65536,
-      mask.door ?? 131072,
-      mask.portcullis ?? 2097152,
-      mask.stair_down ?? 4194304,
+      mask.room ?? 2, mask.corridor ?? 4, mask.aperture ?? 32,
+      mask.arch ?? 65536, mask.door ?? 131072,
+      mask.portcullis ?? 2097152, mask.stair_down ?? 4194304,
       mask.stair_up ?? 8388608
-    ].some(bit => (value & bit) !== 0);
+    ].some(bit => (v & bit) !== 0);
   }
 
-  // --------------------------------------------------
-  // POSIZIONE INIZIALE
-  // --------------------------------------------------
-
   function getInitialPosition() {
-    const entry =
-      (state.map.egress || []).find(
-        e => e.dir === 'west'
-      ) ||
-      state.map.egress?.[0];
-
+    // Egress del generatore: lato ovest, row 67. La matrice ha un margine di 4 celle.
+    // Cerchiamo la prima casella giocabile vicino all'uscita senza assumere che l'egress
+    // stesso sia dentro l'area 63x81.
+    const entry = (state.map.egress || []).find(e => e.dir === 'west') || state.map.egress?.[0];
     if (entry) {
       const ey = Number(entry.row) - state.offsetY;
-      const ex = Math.max(
-        0,
-        Number(entry.col) - state.offsetX
-      );
-
-      for (let radius = 0; radius <= 9; radius++) {
-        for (
-          let y = Math.max(0, ey - radius);
-          y <= Math.min(state.rows - 1, ey + radius);
-          y++
-        ) {
-          for (
-            let x = 0;
-            x <= Math.min(
-              state.cols - 1,
-              1 + radius + ex
-            );
-            x++
-          ) {
-            if (walkable(x, y)) {
-              return { x, y };
-            }
+      const ex = Math.max(0, Number(entry.col) - state.offsetX);
+      for (let r = 0; r <= 9; r++) {
+        for (let y = Math.max(0, ey - r); y <= Math.min(state.rows - 1, ey + r); y++) {
+          for (let x = 0; x <= Math.min(state.cols - 1, 1 + r + ex); x++) {
+            if (walkable(x, y)) return { x, y };
           }
         }
       }
     }
-
     for (let y = 0; y < state.rows; y++) {
       for (let x = 0; x < state.cols; x++) {
-        if (walkable(x, y)) {
-          return { x, y };
-        }
+        if (walkable(x, y)) return { x, y };
       }
     }
-
-    throw new Error(
-      'Nessuna casella percorribile nel JSON.'
-    );
+    throw new Error('Nessuna casella percorribile nel JSON.');
   }
 
-  // --------------------------------------------------
-  // CARICAMENTO DELLA MAPPA
-  // --------------------------------------------------
-
   async function loadMap() {
-    const mapPath =
-      app.dataset.map || 'piano-Ia.json';
-
-    const response = await fetch(mapPath, {
-      cache: 'no-cache'
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Impossibile caricare ${mapPath} ` +
-        `(HTTP ${response.status}).`
-      );
-    }
-
+    const mapPath = app.dataset.map || 'piano-Ia.json';
+    const response = await fetch(mapPath, { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`Impossibile caricare ${mapPath} (HTTP ${response.status}).`);
     const data = await response.json();
-
-    if (
-      !Array.isArray(data.cells) ||
-      !data.cells.length ||
-      !Array.isArray(data.cells[0])
-    ) {
-      throw new Error(
-        'Il file JSON non contiene una matrice cells valida.'
-      );
+    if (!Array.isArray(data.cells) || !data.cells.length || !Array.isArray(data.cells[0])) {
+      throw new Error('Il file JSON non contiene una matrice cells valida.');
     }
-
     const cols = Number(data.settings?.n_cols);
     const rows = Number(data.settings?.n_rows);
-
-    if (
-      !Number.isInteger(cols) ||
-      !Number.isInteger(rows) ||
-      cols < 1 ||
-      rows < 1
-    ) {
-      throw new Error(
-        'Dimensioni n_cols/n_rows mancanti nel JSON.'
-      );
+    if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
+      throw new Error('Dimensioni n_cols/n_rows mancanti nel JSON.');
     }
-
-    const offsetX =
-      (data.cells[0].length - cols) / 2;
-
-    const offsetY =
-      (data.cells.length - rows) / 2;
-
-    if (
-      !Number.isInteger(offsetX) ||
-      !Number.isInteger(offsetY) ||
-      offsetX < 0 ||
-      offsetY < 0
-    ) {
-      throw new Error(
-        'La matrice del dungeon non corrisponde ' +
-        'alle dimensioni dichiarate.'
-      );
+    const offsetX = (data.cells[0].length - cols) / 2;
+    const offsetY = (data.cells.length - rows) / 2;
+    if (!Number.isInteger(offsetX) || !Number.isInteger(offsetY) || offsetX < 0 || offsetY < 0) {
+      throw new Error('La matrice del dungeon non corrisponde alle dimensioni dichiarate.');
     }
-
     state.map = data;
     state.cols = cols;
     state.rows = rows;
     state.offsetX = offsetX;
     state.offsetY = offsetY;
-
     fogCanvas.width = cols * 16;
     fogCanvas.height = rows * 16;
-
-    grid.style.setProperty(
-      '--grid-columns',
-      cols
-    );
-
-    const imagePath =
-      image.getAttribute('src') ||
-      app.dataset.image ||
-      'immagini/piano-Ia-01.png';
-
+    grid.style.setProperty('--grid-columns', cols);
     image.onerror = () => {
-      status(
-        `Errore caricamento immagine: ${imagePath}`,
-        true
-      );
+      status('Errore: immagine della mappa non trovata in immagini/piano-Ia-hd-soft.png.', true);
     };
-
     if (image.complete && !image.naturalWidth) {
-      throw new Error(
-        `Impossibile caricare ${imagePath}.`
-      );
+      throw new Error('Impossibile caricare immagini/piano-Ia-hd-soft.png.');
     }
-
     if (!image.complete) {
       await new Promise((resolve, reject) => {
-        image.addEventListener(
-          'load',
-          resolve,
-          { once: true }
-        );
-
-        image.addEventListener(
-          'error',
-          () => reject(
-            new Error(
-              `Impossibile caricare ${imagePath}.`
-            )
-          ),
-          { once: true }
-        );
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', () => reject(new Error('Impossibile caricare immagini/piano-Ia-hd-soft.png.')), { once: true });
       });
     }
-
-    // Il background è soltanto un'immagine
-    // tecnica. La grafica del Piano I-A
-    // è composta dalle 9 immagini dell'HTML.
-
+    const ratioMap = cols / rows;
+    const ratioImg = image.naturalWidth / image.naturalHeight;
+    if (Math.abs(ratioMap - ratioImg) > .04) {
+      console.warn('Piano Ia: proporzioni PNG/JSON diverse. Verificare la sovrapposizione della griglia.', ratioImg, ratioMap);
+      toast('Controlla l’allineamento tra immagine e JSON.');
+    }
     return data;
   }
 
-  // --------------------------------------------------
-  // PROGRESSI LOCALI
-  // --------------------------------------------------
-
   function saveProgress() {
     if (!state.ready) return;
-
-    localWrite(
-      `${state.storageKey}:position`,
-      {
-        x: state.x,
-        y: state.y
-      }
-    );
-
-    localWrite(
-      `${state.storageKey}:visited`,
-      [...state.visited]
-    );
+    localWrite(`${state.storageKey}:position`, { x: state.x, y: state.y });
+    localWrite(`${state.storageKey}:visited`, [...state.visited]);
   }
 
   function loadProgress() {
-    const saved = localRead(
-      `${state.storageKey}:position`
-    );
-
-    const start =
-      saved &&
-      walkable(
-        Number(saved.x),
-        Number(saved.y)
-      )
-        ? {
-            x: Number(saved.x),
-            y: Number(saved.y)
-          }
-        : getInitialPosition();
-
+    const saved = localRead(`${state.storageKey}:position`);
+    const start = saved && walkable(Number(saved.x), Number(saved.y))
+      ? { x: Number(saved.x), y: Number(saved.y) }
+      : getInitialPosition();
     state.x = start.x;
     state.y = start.y;
-
-    state.visited = new Set(
-      (
-        localRead(
-          `${state.storageKey}:visited`,
-          []
-        ) || []
-      ).filter(value => typeof value === 'string')
-    );
-
+    state.visited = new Set((localRead(`${state.storageKey}:visited`, []) || []).filter(v => typeof v === 'string'));
     revealAroundPlayer();
     updateCoordinates();
   }
 
-  // --------------------------------------------------
-  // ESPLORAZIONE E NEBBIA
-  // --------------------------------------------------
-
   function revealAroundPlayer() {
     if (state.x === null) return;
-
-    for (
-      let y = Math.max(0, state.y - 6);
-      y <= Math.min(state.rows - 1, state.y + 6);
-      y++
-    ) {
-      for (
-        let x = Math.max(0, state.x - 6);
-        x <= Math.min(state.cols - 1, state.x + 6);
-        x++
-      ) {
-        const distance =
-          (x - state.x) ** 2 +
-          (y - state.y) ** 2;
-
-        if (distance <= 36) {
-          state.visited.add(posKey(x, y));
-        }
+    for (let y = Math.max(0, state.y - 6); y <= Math.min(state.rows - 1, state.y + 6); y++) {
+      for (let x = Math.max(0, state.x - 6); x <= Math.min(state.cols - 1, state.x + 6); x++) {
+        if ((x - state.x) ** 2 + (y - state.y) ** 2 <= 36) state.visited.add(posKey(x, y));
       }
     }
-
     drawFog();
   }
 
   function drawFog() {
     const ctx = fogCanvas.getContext('2d');
     if (!ctx) return;
-
-    const size = 16;
-
-    ctx.clearRect(
-      0,
-      0,
-      fogCanvas.width,
-      fogCanvas.height
-    );
-
+    const z = 16;
+    ctx.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
     if (!state.fogEnabled) return;
-
     ctx.fillStyle = 'rgba(0, 8, 3, .97)';
-
-    ctx.fillRect(
-      0,
-      0,
-      fogCanvas.width,
-      fogCanvas.height
-    );
-
+    ctx.fillRect(0, 0, fogCanvas.width, fogCanvas.height);
     for (const key of state.visited) {
-      const [x, y] = key
-        .split(',')
-        .map(Number);
-
+      const [x, y] = key.split(',').map(Number);
       if (!inside(x, y)) continue;
-
-      ctx.clearRect(
-        x * size,
-        y * size,
-        size,
-        size
-      );
-
-      const distance =
-        (x - state.x) ** 2 +
-        (y - state.y) ** 2;
-
-      if (distance > 36) {
+      ctx.clearRect(x * z, y * z, z, z);
+      if ((x - state.x) ** 2 + (y - state.y) ** 2 > 36) {
         ctx.fillStyle = 'rgba(0, 9, 2, .43)';
-
-        ctx.fillRect(
-          x * size,
-          y * size,
-          size,
-          size
-        );
+        ctx.fillRect(x * z, y * z, z, z);
       }
     }
   }
 
-  // --------------------------------------------------
-  // TOKEN PERSONAGGIO
-  // --------------------------------------------------
-
   function tokenUrl(name) {
-    const safe = String(
-      name || 'token_1.png'
-    ).replace(/[^a-zA-Z0-9_.-]/g, '');
-
-    return (
-      `../../immagini/token/` +
-      `${safe || 'token_1.png'}`
-    );
+    const safe = String(name || 'token_1.png').replace(/[^a-zA-Z0-9_.-]/g, '');
+    return `../../immagini/token/${safe || 'token_1.png'}`;
   }
 
   function makeToken(imgFile, own, label) {
     const token = document.createElement('div');
-
-    token.className = own
-      ? 'player-token'
-      : 'remote-token';
-
+    token.className = own ? 'player-token' : 'remote-token';
     token.title = label || 'Avventuriero';
-
     const img = document.createElement('img');
-
     img.src = tokenUrl(imgFile);
     img.alt = label || 'Personaggio';
-
-    img.onerror = () => {
-      img.onerror = null;
-      img.src = tokenUrl('token_1.png');
-    };
-
+    img.onerror = () => { img.onerror = null; img.src = tokenUrl('token_1.png'); };
     token.appendChild(img);
     entityLayer.appendChild(token);
-
     return token;
   }
 
   function positionToken(token, x, y) {
     if (!token || !inside(x, y)) return;
-
-    const px = state.cellPx;
-
-    token.style.left = `${x * px + 1}px`;
-    token.style.top = `${y * px + 1}px`;
-
-    token.style.width =
-      `${Math.max(1, px - 2)}px`;
-
-    token.style.height =
-      `${Math.max(1, px - 2)}px`;
+    token.style.left = `${x * state.cellPx + 1}px`;
+    token.style.top = `${y * state.cellPx + 1}px`;
+    token.style.width = `${state.cellPx - 2}px`;
+    token.style.height = `${state.cellPx - 2}px`;
   }
 
   function renderTokens() {
-    if (!state.token) {
-      state.token = makeToken(
-        state.character?.token,
-        true,
-        state.character?.nome || 'Esploratore'
-      );
-    }
-
-    positionToken(
-      state.token,
-      state.x,
-      state.y
-    );
-
-    for (const [, info] of state.remotePlayers) {
-      if (!info.token) {
-        info.token = makeToken(
-          info.image,
-          false,
-          info.name
-        );
-      }
-
-      positionToken(
-        info.token,
-        info.x,
-        info.y
-      );
+    if (!state.token) state.token = makeToken(state.character?.token, true, state.character?.nome || 'Esploratore');
+    positionToken(state.token, state.x, state.y);
+    for (const [id, info] of state.remotePlayers) {
+      if (!info.token) info.token = makeToken(info.image, false, info.name);
+      positionToken(info.token, info.x, info.y);
     }
   }
 
-  // --------------------------------------------------
-  // ZOOM E TELECAMERA
-  // --------------------------------------------------
-
   function resizeMap(instant = false) {
     if (!state.map || !viewport) return;
-
     const frame = viewport.getBoundingClientRect();
-
     if (frame.width < 1) return;
-
-    const entireMap =
-      state.viewCells >= Math.max(
-        state.cols,
-        state.rows
-      );
-
+    // Vista completa: adatta sia la larghezza (63) sia l'altezza (81) della mappa.
+    const entireMap = state.viewCells >= Math.max(state.cols, state.rows);
     const px = entireMap
-      ? Math.min(
-          viewport.clientWidth / state.cols,
-          viewport.clientHeight / state.rows
-        )
+      ? Math.min(viewport.clientWidth / state.cols, viewport.clientHeight / state.rows)
       : frame.width / state.viewCells;
-
     state.cellPx = px;
-
-    layer.style.width =
-      `${state.cols * px}px`;
-
-    layer.style.height =
-      `${state.rows * px}px`;
-
-    layer.style.setProperty(
-      '--cell',
-      `${px}px`
-    );
-
+    layer.style.width = `${state.cols * px}px`;
+    layer.style.height = `${state.rows * px}px`;
+    layer.style.setProperty('--cell', `${px}px`);
     renderTokens();
     centerCamera(instant);
   }
 
   function centerCamera(instant = false) {
-    if (
-      state.x === null ||
-      !state.cellPx
-    ) return;
-
+    if (state.x === null || !state.cellPx) return;
     const viewW = viewport.clientWidth;
     const viewH = viewport.clientHeight;
-
     const mapW = state.cols * state.cellPx;
     const mapH = state.rows * state.cellPx;
-
     const x = mapW <= viewW
       ? -(viewW - mapW) / 2
-      : Math.max(
-          0,
-          Math.min(
-            (state.x + 0.5) * state.cellPx -
-              viewW / 2,
-            mapW - viewW
-          )
-        );
-
+      : Math.max(0, Math.min((state.x + .5) * state.cellPx - viewW / 2, mapW - viewW));
     const y = mapH <= viewH
       ? -(viewH - mapH) / 2
-      : Math.max(
-          0,
-          Math.min(
-            (state.y + 0.5) * state.cellPx -
-              viewH / 2,
-            mapH - viewH
-          )
-        );
-
-    layer.style.transition =
-      instant ? 'none' : '';
-
-    layer.style.transform =
-      `translate3d(${-x}px, ${-y}px, 0)`;
+      : Math.max(0, Math.min((state.y + .5) * state.cellPx - viewH / 2, mapH - viewH));
+    layer.style.transition = instant ? 'none' : '';
+    layer.style.transform = `translate3d(${-x}px, ${-y}px, 0)`;
   }
-
-  function setZoom(viewCells) {
-    const limit = state.map
-      ? Math.max(state.cols, state.rows)
-      : 81;
-
-    state.viewCells = Math.max(
-      7,
-      Math.min(limit, viewCells)
-    );
-
-    const full =
-      state.viewCells >= limit;
-
-    $('map-zoom-reset').textContent = full
-      ? `${state.cols} × ${state.rows}`
-      : `${state.viewCells} × ${state.viewCells}`;
-
-    resizeMap(true);
-  }
-
-  // --------------------------------------------------
-  // MOVIMENTO
-  // --------------------------------------------------
 
   function updateCoordinates() {
-    $('player-coordinates').textContent =
-      `X ${state.x} · Y ${state.y} / ` +
-      `${state.cols} × ${state.rows}`;
+    $('player-coordinates').textContent = `X ${state.x} · Y ${state.y} / ${state.cols} × ${state.rows}`;
   }
 
   function move(dx, dy) {
-    if (
-      !state.ready ||
-      state.x === null
-    ) return;
-
-    const x = state.x + dx;
-    const y = state.y + dy;
-
-    if (!walkable(x, y)) {
-      toast('Il sentiero è bloccato.');
-      return;
-    }
-
+    if (!state.ready || state.x === null) return;
+    const x = state.x + dx, y = state.y + dy;
+    if (!walkable(x, y)) { toast('Il sentiero è bloccato.'); return; }
     state.x = x;
     state.y = y;
-
-    positionToken(
-      state.token,
-      x,
-      y
-    );
-
+    positionToken(state.token, x, y);
     centerCamera();
     revealAroundPlayer();
     updateCoordinates();
@@ -692,1065 +319,354 @@
     broadcastPosition();
   }
 
-  // --------------------------------------------------
-  // CONTROLLI DELLA PAGINA
-  // --------------------------------------------------
+  function setZoom(viewCells) {
+    const limit = state.map ? Math.max(state.cols, state.rows) : 81;
+    state.viewCells = Math.max(7, Math.min(limit, viewCells));
+    $('map-zoom-reset').textContent = state.viewCells >= limit
+      ? `${state.cols} × ${state.rows}`
+      : `${state.viewCells} × ${state.viewCells}`;
+    resizeMap(true);
+  }
 
   function bindControls() {
-    document.addEventListener(
-      'keydown',
-      event => {
-        if (
-          event.altKey ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.repeat
-        ) return;
-
-        const target = event.target;
-
-        if (
-          target?.closest?.(
-            'input, textarea, select, button, ' +
-            '[contenteditable="true"]'
-          )
-        ) return;
-
-        const key =
-          event.key.toLowerCase();
-
-        const direction = virtualKeys[key];
-
-        if (!direction) return;
-
-        event.preventDefault();
-        move(...direction);
-      }
-    );
-
-    viewport.addEventListener(
-      'click',
-      event => {
-        if (!state.ready) return;
-
-        const rect =
-          layer.getBoundingClientRect();
-
-        const x = Math.floor(
-          (event.clientX - rect.left) /
-            state.cellPx
-        );
-
-        const y = Math.floor(
-          (event.clientY - rect.top) /
-            state.cellPx
-        );
-
-        if (!inside(x, y)) return;
-
-        const dx = x - state.x;
-        const dy = y - state.y;
-
-        if (Math.abs(dx) + Math.abs(dy) === 1) {
-          move(dx, dy);
-        } else {
-          toast(
-            'Clicca una casella adiacente per spostarti.'
-          );
-        }
-
-        viewport.focus({
-          preventScroll: true
-        });
-      }
-    );
-
-    document
-      .querySelectorAll('[data-move]')
-      .forEach(button => {
-        button.addEventListener(
-          'click',
-          () => {
-            const direction =
-              button.dataset.move
-                .split(',')
-                .map(Number);
-
-            move(...direction);
-          }
-        );
-      });
-
-    // Zoom normale.
-    $('map-zoom-out').addEventListener(
-      'click',
-      () => setZoom(state.viewCells + 2)
-    );
-
-    $('map-zoom-in').addEventListener(
-      'click',
-      () => setZoom(state.viewCells - 2)
-    );
-
-    // Ripristina 13 x 13.
-    $('map-zoom-reset').addEventListener(
-      'click',
-      () => setZoom(13)
-    );
-
-    // Visualizza tutta la mappa 63 x 81.
-    $('map-zoom-full').addEventListener(
-      'click',
-      () => setZoom(
-        Math.max(
-          state.cols,
-          state.rows
-        )
-      )
-    );
-
-    $('toggle-grid').addEventListener(
-      'change',
-      event => {
-        grid.classList.toggle(
-          'visible',
-          event.target.checked
-        );
-      }
-    );
-
-    $('toggle-fog').addEventListener(
-      'change',
-      event => {
-        state.fogEnabled =
-          event.target.checked;
-
-        drawFog();
-      }
-    );
-
-    if (typeof ResizeObserver !== 'undefined') {
-      new ResizeObserver(
-        () => resizeMap(true)
-      ).observe(viewport);
-    } else {
-      window.addEventListener(
-        'resize',
-        () => resizeMap(true)
-      );
-    }
-
-    $('save-notes-button').addEventListener(
-      'click',
-      () => {
-        localWrite(
-          `${state.storageKey}:notes`,
-          $('character-notes').value
-        );
-
-        toast(
-          'Note salvate in questo browser.'
-        );
-      }
-    );
-
-    $('floor-chat-form').addEventListener(
-      'submit',
-      sendChat
-    );
-
+    document.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
+      const target = event.target;
+      if (target?.closest?.('input, textarea, select, button, [contenteditable="true"]')) return;
+      const d = virtualKeys[event.key.toLowerCase()];
+      if (!d) return;
+      event.preventDefault();
+      move(...d);
+    });
+    viewport.addEventListener('click', event => {
+      if (!state.ready) return;
+      const rect = layer.getBoundingClientRect();
+      const x = Math.floor((event.clientX - rect.left) / state.cellPx);
+      const y = Math.floor((event.clientY - rect.top) / state.cellPx);
+      if (!inside(x, y)) return;
+      const dx = x - state.x, dy = y - state.y;
+      if (Math.abs(dx) + Math.abs(dy) === 1) move(dx, dy);
+      else toast('Clicca una casella adiacente per spostarti.');
+      viewport.focus({ preventScroll: true });
+    });
+    document.querySelectorAll('[data-move]').forEach(button => {
+      button.addEventListener('click', () => move(...button.dataset.move.split(',').map(Number)));
+    });
+    $('map-zoom-out').addEventListener('click', () => setZoom(state.viewCells + 2));
+    $('map-zoom-in').addEventListener('click', () => setZoom(state.viewCells - 2));
+    $('map-zoom-reset').addEventListener('click', () => setZoom(13));
+    $('map-zoom-full').addEventListener('click', () => setZoom(Math.max(state.cols, state.rows)));
+    $('toggle-grid').addEventListener('change', ev => grid.classList.toggle('visible', ev.target.checked));
+    $('toggle-fog').addEventListener('change', ev => {
+      state.fogEnabled = ev.target.checked;
+      drawFog();
+    });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => resizeMap(true)).observe(viewport);
+    else window.addEventListener('resize', () => resizeMap(true));
+    $('save-notes-button').addEventListener('click', () => {
+      localWrite(`${state.storageKey}:notes`, $('character-notes').value);
+      toast('Note salvate in questo browser.');
+    });
+    $('floor-chat-form').addEventListener('submit', sendChat);
     setupAudio();
   }
 
-  // --------------------------------------------------
-  // AUDIO
-  // --------------------------------------------------
-
   function setupAudio() {
-    const audio = new Audio(
-      '../../music/dungeon.mp3'
-    );
-
+    const audio = new Audio('../../music/dungeon.mp3');
     audio.loop = true;
     audio.preload = 'none';
-
-    audio.volume = (
-      Number(
-        localRead(
-          'palazzo:piano-Ia:volume',
-          35
-        )
-      ) || 0
-    ) / 100;
-
-    $('audio-volume').value =
-      Math.round(audio.volume * 100);
-
+    audio.volume = (Number(localRead('palazzo:piano-Ia:volume', 35)) || 0) / 100;
+    $('audio-volume').value = Math.round(audio.volume * 100);
     state.music = audio;
-
     const setLabel = () => {
-      $('audio-toggle').textContent =
-        audio.paused ? '♫' : '♪';
-
-      $('audio-toggle').setAttribute(
-        'aria-label',
-        audio.paused
-          ? 'Attiva la musica'
-          : 'Disattiva la musica'
-      );
+      $('audio-toggle').textContent = audio.paused ? '♫' : '♪';
+      $('audio-toggle').setAttribute('aria-label', audio.paused ? 'Attiva la musica' : 'Disattiva la musica');
     };
-
-    $('audio-toggle').addEventListener(
-      'click',
-      async () => {
-        try {
-          if (audio.paused) {
-            await audio.play();
-          } else {
-            audio.pause();
-          }
-        } catch (_) {
-          toast(
-            'Impossibile avviare la musica.'
-          );
-        }
-
-        setLabel();
-      }
-    );
-
-    $('audio-volume').addEventListener(
-      'input',
-      event => {
-        audio.volume =
-          Number(event.target.value) / 100;
-
-        localWrite(
-          'palazzo:piano-Ia:volume',
-          Number(event.target.value)
-        );
-      }
-    );
-
-    window.addEventListener(
-      'pagehide',
-      () => {
-        audio.pause();
-
-        if (state.channel && state.db) {
-          state.db.removeChannel(
-            state.channel
-          );
-        }
-      }
-    );
+    $('audio-toggle').addEventListener('click', async () => {
+      try { if (audio.paused) await audio.play(); else audio.pause(); }
+      catch (_) { toast('Impossibile avviare la musica.'); }
+      setLabel();
+    });
+    $('audio-volume').addEventListener('input', e => {
+      audio.volume = Number(e.target.value) / 100;
+      localWrite('palazzo:piano-Ia:volume', Number(e.target.value));
+    });
+    window.addEventListener('pagehide', () => { audio.pause(); if (state.channel && state.db) state.db.removeChannel(state.channel); });
   }
 
-  // --------------------------------------------------
-  // UTILITY PERSONAGGIO
-  // --------------------------------------------------
-
-  function textInto(
-    id,
-    value,
-    fallback = '—'
-  ) {
-    $(id).textContent =
-      value === undefined ||
-      value === null ||
-      value === ''
-        ? fallback
-        : String(value);
+  function textInto(id, value, fallback = '—') {
+    $(id).textContent = value === undefined || value === null || value === '' ? fallback : String(value);
   }
-
   const firstValue = (obj, keys) => {
-    for (const key of keys) {
-      if (
-        obj &&
-        obj[key] !== null &&
-        obj[key] !== undefined
-      ) {
-        return obj[key];
-      }
-    }
-
+    for (const key of keys) if (obj && obj[key] !== null && obj[key] !== undefined) return obj[key];
     return null;
   };
 
-  // --------------------------------------------------
-  // EQUIPAGGIAMENTO
-  // --------------------------------------------------
-
   async function loadEquipmentBonuses() {
-    const names = [
-      'attack',
-      'defense',
-      'forza',
-      'resistenza',
-      'costituzione',
-      'intelligenza',
-      'destrezza',
-      'fortuna'
-    ];
-
-    const bonuses = Object.fromEntries(
-      names.map(
-        name => [`${name}_bonus`, 0]
-      )
-    );
-
-    if (
-      !state.character ||
-      !state.db
-    ) {
-      state.equipmentBonuses = bonuses;
-      return;
-    }
-
+    const names = ['attack','defense','forza','resistenza','costituzione','intelligenza','destrezza','fortuna'];
+    const bonuses = Object.fromEntries(names.map(n => [`${n}_bonus`, 0]));
+    if (!state.character || !state.db) { state.equipmentBonuses = bonuses; return; }
     try {
-      const fields = names
-        .map(name => `${name}_bonus`)
-        .join(', ');
-
-      const { data, error } = await state.db
-        .from('character_inventory')
-        .select(
-          `equipped_slot, item:items (${fields})`
-        )
-        .eq(
-          'character_id',
-          state.character.id
-        );
-
+      const { data, error } = await state.db.from('character_inventory')
+        .select(`equipped_slot, item:items (${names.map(n => `${n}_bonus`).join(', ')})`)
+        .eq('character_id', state.character.id);
       if (error) throw error;
-
       for (const entry of data || []) {
-        if (
-          !entry.equipped_slot ||
-          !entry.item
-        ) continue;
-
-        for (const name of names) {
-          bonuses[`${name}_bonus`] +=
-            Number(
-              entry.item[`${name}_bonus`]
-            ) || 0;
-        }
+        if (!entry.equipped_slot || !entry.item) continue;
+        for (const name of names) bonuses[`${name}_bonus`] += Number(entry.item[`${name}_bonus`]) || 0;
       }
-    } catch (error) {
-      console.warn(
-        'Bonus equipaggiamento non disponibili:',
-        error
-      );
-    }
-
+    } catch (error) { console.warn('Bonus equipaggiamento non disponibili:', error); }
     state.equipmentBonuses = bonuses;
   }
 
-  // --------------------------------------------------
-  // STATISTICHE
-  // --------------------------------------------------
-
   function calculatedStats() {
-    const character =
-      state.character || {};
-
-    const bonus =
-      state.equipmentBonuses;
-
-    const effective = key => {
-      return Math.min(
-        30,
-        Math.max(
-          1,
-          (Number(character[key]) || 1) +
-            (Number(bonus[`${key}_bonus`]) || 0)
-        )
-      );
-    };
-
-    const forza =
-      effective('forza');
-
-    const resistenza =
-      effective('resistenza');
-
-    const costituzione =
-      effective('costituzione');
-
-    const intelligenza =
-      effective('intelligenza');
-
-    const destrezza =
-      effective('destrezza');
-
-    const fortuna =
-      effective('fortuna');
-
+    const c = state.character || {};
+    const bonus = state.equipmentBonuses;
+    const eff = key => Math.min(30, Math.max(1, (Number(c[key]) || 1) + (Number(bonus[`${key}_bonus`]) || 0)));
+    const forza = eff('forza'), resistenza = eff('resistenza'), costituzione = eff('costituzione');
+    const intelligenza = eff('intelligenza'), destrezza = eff('destrezza'), fortuna = eff('fortuna');
     return {
-      forza,
-      resistenza,
-      costituzione,
-      intelligenza,
-      destrezza,
-      fortuna,
-
-      attack:
-        Math.ceil(forza / 2) +
-        (Number(bonus.attack_bonus) || 0),
-
-      defense:
-        Math.ceil(7 + resistenza / 2) +
-        (Number(bonus.defense_bonus) || 0),
-
-      maxHealth:
-        Math.ceil(5 * costituzione / 2),
-
-      maxMana:
-        Math.ceil(5 * intelligenza / 2),
-
-      movement:
-        Math.ceil(4 + destrezza / 2),
-
-      critical:
-        Math.round(
-          fortuna * (50 / 30) * 100
-        ) / 100
+      forza, resistenza, costituzione, intelligenza, destrezza, fortuna,
+      attack: Math.ceil(forza / 2) + (Number(bonus.attack_bonus) || 0),
+      defense: Math.ceil(7 + resistenza / 2) + (Number(bonus.defense_bonus) || 0),
+      maxHealth: Math.ceil(5 * costituzione / 2),
+      maxMana: Math.ceil(5 * intelligenza / 2),
+      movement: Math.ceil(4 + destrezza / 2),
+      critical: Math.round(fortuna * (50 / 30) * 100) / 100
     };
   }
-
-  // --------------------------------------------------
-  // SCHEDA PERSONAGGIO
-  // --------------------------------------------------
 
   function fillCharacterPanel() {
-    const character = state.character;
-
-    if (!character) {
-      textInto(
-        'character-name',
-        'ESPLORATORE'
-      );
-      return;
-    }
-
-    const stats = calculatedStats();
-
-    textInto(
-      'character-name',
-      character.nome ||
-        character.name ||
-        'AVVENTURIERO'
-    );
-
-    textInto(
-      'character-level',
-      `LV ${Number(character.livello) || 1}`
-    );
-
-    textInto(
-      'character-hp',
-      `${character.current_hp ?? stats.maxHealth} / ` +
-      `${stats.maxHealth}`
-    );
-
-    textInto(
-      'character-mana',
-      `${character.current_pm ?? stats.maxMana} / ` +
-      `${stats.maxMana}`
-    );
-
-    textInto(
-      'character-resonance',
-      firstValue(
-        character,
-        [
-          'resonance_score',
-          'resonance',
-          'score'
-        ]
-      ) ?? '—'
-    );
-
-    textInto('stat-att', stats.attack);
-    textInto('stat-dif', stats.defense);
-    textInto('stat-mov', stats.movement);
-
-    textInto(
-      'stat-crt',
-      `${stats.critical.toFixed(2)}%`
-    );
-
-    const attributes = {
-      for: 'forza',
-      res: 'resistenza',
-      cos: 'costituzione',
-      int: 'intelligenza',
-      des: 'destrezza',
-      lck: 'fortuna'
-    };
-
-    for (
-      const [label, key] of
-      Object.entries(attributes)
-    ) {
-      textInto(
-        `attr-${label}`,
-        stats[key]
-      );
-    }
-
-    $('character-token').src =
-      tokenUrl(character.token);
-
-    $('character-token').onerror = event => {
-      event.target.onerror = null;
-      event.target.src =
-        tokenUrl('token_1.png');
-    };
+    const c = state.character;
+    if (!c) { textInto('character-name', 'ESPLORATORE'); return; }
+    const st = calculatedStats();
+    textInto('character-name', c.nome || c.name || 'AVVENTURIERO');
+    textInto('character-level', `LV ${Number(c.livello) || 1}`);
+    textInto('character-hp', `${c.current_hp ?? st.maxHealth} / ${st.maxHealth}`);
+    textInto('character-mana', `${c.current_pm ?? st.maxMana} / ${st.maxMana}`);
+    textInto('character-resonance', firstValue(c, ['resonance_score', 'resonance', 'score']) ?? '—');
+    textInto('stat-att', st.attack);
+    textInto('stat-dif', st.defense);
+    textInto('stat-mov', st.movement);
+    textInto('stat-crt', `${st.critical.toFixed(2)}%`);
+    const attributes = {for:'forza', res:'resistenza', cos:'costituzione', int:'intelligenza', des:'destrezza', lck:'fortuna'};
+    for (const [label, key] of Object.entries(attributes)) textInto(`attr-${label}`, st[key]);
+    $('character-token').src = tokenUrl(c.token);
+    $('character-token').onerror = e => { e.target.onerror = null; e.target.src = tokenUrl('token_1.png'); };
   }
-
-  // --------------------------------------------------
-  // CARICAMENTO PG DA SUPABASE
-  // --------------------------------------------------
 
   async function loadCharacter() {
     const db = window.supabaseClient;
-
     if (!db?.auth?.getUser) {
-      status(
-        'Esplorazione locale: autenticazione non disponibile.'
-      );
+      status('Esplorazione locale: autenticazione non disponibile.');
       return;
     }
-
     state.db = db;
-
-    const {
-      data: auth,
-      error: authError
-    } = await db.auth.getUser();
-
-    if (
-      authError ||
-      !auth?.user
-    ) {
-      status(
-        'Esplorazione locale: accedi per mostrare ' +
-        'il tuo PG e usare la chat.'
-      );
+    const { data: auth, error: authError } = await db.auth.getUser();
+    if (authError || !auth?.user) {
+      status('Esplorazione locale: accedi per mostrare il tuo PG e usare la chat.');
       return;
     }
-
     state.user = auth.user;
-
-    const {
-      data: character,
-      error
-    } = await db
-      .from('characters')
-      .select('*')
-      .eq(
-        'user_id',
-        auth.user.id
-      )
-      .maybeSingle();
-
+    const { data: character, error } = await db.from('characters').select('*').eq('user_id', auth.user.id).maybeSingle();
     if (error) throw error;
-
-    if (!character) {
-      status(
-        'Nessun personaggio associato a questo account.',
-        true
-      );
-      return;
-    }
-
+    if (!character) { status('Nessun personaggio associato a questo account.', true); return; }
     state.character = character;
-
-    state.storageKey =
-      `palazzo:piano-Ia:${character.id}`;
-
+    state.storageKey = `palazzo:piano-Ia:${character.id}`;
     await loadEquipmentBonuses();
     fillCharacterPanel();
   }
 
-  // --------------------------------------------------
-  // CLASSIFICA TOP 5
-  // --------------------------------------------------
-
   async function loadLeaderboard() {
-    const target =
-      $('dungeon-leaderboard-list');
-
-    if (
-      !state.db ||
-      !state.user
-    ) {
-      target.innerHTML =
-        '<p class="muted">Accedi per vedere la classifica.</p>';
-
-      return;
-    }
-
-    const {
-      data,
-      error
-    } = await state.db.rpc(
-      'get_living_characters_leaderboard_with_badges',
-      {
-        p_limit: 5
-      }
-    );
-
-    if (error) {
-      target.textContent =
-        'Classifica non disponibile.';
-      return;
-    }
-
+    const target = $('dungeon-leaderboard-list');
+    if (!state.db || !state.user) { target.innerHTML = '<p class="muted">Accedi per vedere la classifica.</p>'; return; }
+    const { data, error } = await state.db.rpc('get_living_characters_leaderboard_with_badges', { p_limit: 5 });
+    if (error) { target.textContent = 'Classifica non disponibile.'; return; }
     target.replaceChildren();
-
-    if (!data?.length) {
-      target.textContent =
-        'Nessun personaggio in classifica.';
-      return;
-    }
-
+    if (!data?.length) { target.textContent = 'Nessun personaggio in classifica.'; return; }
     for (const row of data.slice(0, 5)) {
-      const div =
-        document.createElement('div');
-
-      div.className = 'leader-row';
-
-      const rank =
-        document.createElement('span');
-
-      rank.className = 'leader-rank';
-      rank.textContent =
-        `#${row.posizione ?? '?'}`;
-
-      const name =
-        document.createElement('span');
-
-      name.className = 'leader-name';
-
-      name.textContent =
-        `${row.level ? `Lv${row.level} ` : ''}` +
-        `${row.character_name || 'Avventuriero'}`;
-
-      const score =
-        document.createElement('span');
-
-      score.className = 'leader-score';
-
-      score.textContent =
-        Number(row.score || 0)
-          .toLocaleString('it-IT');
-
-      div.append(
-        rank,
-        name,
-        score
-      );
-
-      target.append(div);
+      const div = document.createElement('div'); div.className = 'leader-row';
+      const rank = document.createElement('span'); rank.className = 'leader-rank'; rank.textContent = `#${row.posizione ?? '?'}`;
+      const name = document.createElement('span'); name.className = 'leader-name'; name.textContent = `${row.level ? `Lv${row.level} ` : ''}${row.character_name || 'Avventuriero'}`;
+      const score = document.createElement('span'); score.className = 'leader-score'; score.textContent = Number(row.score || 0).toLocaleString('it-IT');
+      div.append(rank, name, score); target.append(div);
     }
   }
 
-  // --------------------------------------------------
-  // CHAT DEL PIANO I-A
-  // --------------------------------------------------
-
-  function appendChat(
-    name,
-    text,
-    time = Date.now()
-  ) {
-    const row =
-      document.createElement('div');
-
-    row.className = 'chat-line';
-
-    const who =
-      document.createElement('span');
-
-    who.className = 'chat-name';
-    who.textContent = name;
-
-    const body =
-      document.createElement('span');
-
-    body.className = 'chat-text';
-    body.textContent = text;
-
-    const when =
-      document.createElement('span');
-
-    when.className = 'chat-time';
-
-    when.textContent =
-      new Date(time).toLocaleTimeString(
-        'it-IT',
-        {
-          hour: '2-digit',
-          minute: '2-digit'
-        }
-      );
-
-    row.append(
-      who,
-      body,
-      when
-    );
-
+  function appendChat(name, text, time = Date.now()) {
+    const row = document.createElement('div'); row.className = 'chat-line';
+    const who = document.createElement('span'); who.className = 'chat-name'; who.textContent = name;
+    const body = document.createElement('span'); body.className = 'chat-text'; body.textContent = text;
+    const when = document.createElement('span'); when.className = 'chat-time'; when.textContent = new Date(time).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+    row.append(who, body, when);
     chatBox.append(row);
-
-    while (chatBox.children.length > 100) {
-      chatBox.firstChild.remove();
-    }
-
-    chatBox.scrollTop =
-      chatBox.scrollHeight;
+    while (chatBox.children.length > 100) chatBox.firstChild.remove();
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
 
   async function sendChat(event) {
     event.preventDefault();
-
-    const value =
-      chatInput.value.trim();
-
-    if (
-      !value ||
-      !state.connected ||
-      !state.channel ||
-      !state.character
-    ) return;
-
+    const value = chatInput.value.trim();
+    if (!value || !state.connected || !state.channel || !state.character) return;
     if (value.length > 300) return;
-
     chatInput.disabled = true;
-
     try {
-      const result =
-        await state.channel.send({
-          type: 'broadcast',
-          event: 'floor-chat',
-          payload: {
-            id: state.character.id,
-            name:
-              state.character.nome ||
-              'Avventuriero',
-            text: value,
-            sent_at: Date.now()
-          }
-        });
-
-      if (result !== 'ok') {
-        throw new Error(
-          `Invio fallito (${result})`
-        );
-      }
-
-      appendChat(
-        state.character.nome || 'Tu',
-        value
-      );
-
+      const result = await state.channel.send({ type: 'broadcast', event: 'floor-chat', payload: { id: state.character.id, name: state.character.nome || 'Avventuriero', text: value, sent_at: Date.now() } });
+      if (result !== 'ok') throw new Error(`Invio fallito (${result})`);
+      appendChat(state.character.nome || 'Tu', value);
       chatInput.value = '';
-    } catch (error) {
-      toast(
-        'Chat non inviata: ' +
-        String(
-          error.message || error
-        )
-      );
-    } finally {
-      chatInput.disabled =
-        !state.connected;
-
-      chatInput.focus();
-    }
+    } catch (error) { toast('Chat non inviata: ' + String(error.message || error)); }
+    finally { chatInput.disabled = !state.connected; chatInput.focus(); }
   }
 
-  // --------------------------------------------------
-  // POSIZIONE ONLINE
-  // --------------------------------------------------
-
   function broadcastPosition() {
-    if (
-      !state.connected ||
-      !state.channel ||
-      !state.character
-    ) return;
-
-    state.channel.track({
-      name:
-        state.character.nome ||
-        'Avventuriero',
-
-      image:
-        state.character.token ||
-        'token_1.png',
-
-      x: state.x,
-      y: state.y
-    });
+    if (!state.connected || !state.channel || !state.character) return;
+    state.channel.track({ name: state.character.nome || 'Avventuriero', image: state.character.token || 'token_1.png', x: state.x, y: state.y });
   }
 
   function updateOnline() {
-    const list =
-      $('dungeon-online-list');
-
-    const presence =
-      state.channel?.presenceState?.() || {};
-
-    state.remotePlayers.forEach(
-      info => info.token?.remove()
-    );
-
+    const list = $('dungeon-online-list');
+    const presence = state.channel?.presenceState?.() || {};
+    state.remotePlayers.forEach(v => v.token?.remove());
     state.remotePlayers.clear();
     list.replaceChildren();
-
     let count = 0;
-
-    for (
-      const [id, entries] of
-      Object.entries(presence)
-    ) {
-      const player =
-        entries?.[entries.length - 1];
-
-      if (!player) continue;
-
-      count++;
-
-      const div =
-        document.createElement('div');
-
-      div.className = 'online-row';
-
-      const dot =
-        document.createElement('span');
-
-      dot.className = 'online-dot';
-
-      const name =
-        document.createElement('span');
-
-      name.textContent =
-        player.name || 'Avventuriero';
-
-      div.append(dot, name);
-      list.append(div);
-
-      if (
-        id !== state.character?.id &&
-        walkable(
-          Number(player.x),
-          Number(player.y)
-        )
-      ) {
-        state.remotePlayers.set(
-          id,
-          {
-            x: Number(player.x),
-            y: Number(player.y),
-            name: player.name,
-            image: player.image,
-            token: null
-          }
-        );
+    for (const [id, entries] of Object.entries(presence)) {
+      const p = entries?.[entries.length - 1];
+      if (!p) continue;
+      count += 1;
+      const div = document.createElement('div'); div.className = 'online-row';
+      const dot = document.createElement('span'); dot.className = 'online-dot';
+      const text = document.createElement('span'); text.textContent = p.name || 'Avventuriero';
+      div.append(dot, text); list.append(div);
+      if (id !== state.character?.id && walkable(Number(p.x), Number(p.y))) {
+        state.remotePlayers.set(id, { x: Number(p.x), y: Number(p.y), name: p.name, image: p.image, token: null });
       }
     }
-
-    $('online-count').textContent =
-      String(count);
-
-    if (!count) {
-      list.textContent =
-        'Nessun esploratore collegato.';
-    }
-
+    $('online-count').textContent = String(count);
+    if (!count) list.textContent = 'Nessun esploratore collegato.';
     renderTokens();
   }
 
-  // --------------------------------------------------
-  // REALTIME SUPABASE
-  // --------------------------------------------------
-
   async function connectRealtime() {
-    if (
-      !state.db ||
-      !state.character
-    ) {
-      chatBox.textContent =
-        'Accedi per utilizzare la chat del Piano I.';
-
+    if (!state.db || !state.character) {
+      chatBox.textContent = 'Accedi per utilizzare la chat del Piano I.';
       return;
     }
-
-    const channel = state.db.channel(
-      'palazzo-eterno-piano-Ia',
-      {
-        config: {
-          presence: {
-            key: state.character.id
-          },
-          broadcast: {
-            self: false
-          }
-        }
-      }
-    );
-
+    // Il canale è isolato dal piano_1: niente presenze o chat in comune.
+    const channel = state.db.channel('palazzo-eterno-piano-Ia', {
+      config: { presence: { key: state.character.id }, broadcast: { self: false } }
+    });
     state.channel = channel;
-
-    channel.on(
-      'presence',
-      {
-        event: 'sync'
-      },
-      updateOnline
-    );
-
-    channel.on(
-      'broadcast',
-      {
-        event: 'floor-chat'
-      },
-      ({ payload }) => {
-        if (
-          !payload ||
-          !payload.text ||
-          payload.id === state.character.id
-        ) return;
-
-        appendChat(
-          String(
-            payload.name ||
-            'Avventuriero'
-          ),
-          String(payload.text)
-            .slice(0, 300),
-          payload.sent_at ||
-            Date.now()
-        );
+    channel.on('presence', { event: 'sync' }, updateOnline);
+    channel.on('broadcast', { event: 'floor-chat' }, ({ payload }) => {
+      if (!payload || !payload.text || payload.id === state.character.id) return;
+      appendChat(String(payload.name || 'Avventuriero'), String(payload.text).slice(0, 300), payload.sent_at || Date.now());
+    });
+    channel.subscribe(async result => {
+      if (result === 'SUBSCRIBED') {
+        state.connected = true;
+        chatBox.replaceChildren();
+        chatInput.disabled = false;
+        chatSend.disabled = false;
+        appendChat('Sistema', 'Chat temporanea del Piano I attiva. I messaggi non vengono archiviati.');
+        await channel.track({ name: state.character.nome || 'Avventuriero', image: state.character.token || 'token_1.png', x: state.x, y: state.y });
+      } else if (result === 'CHANNEL_ERROR' || result === 'TIMED_OUT' || result === 'CLOSED') {
+        state.connected = false;
+        chatInput.disabled = true;
+        chatSend.disabled = true;
+        chatBox.textContent = 'Chat non disponibile: connessione persa.';
       }
-    );
-
-    channel.subscribe(
-      async result => {
-        if (result === 'SUBSCRIBED') {
-          state.connected = true;
-
-          chatBox.replaceChildren();
-
-          chatInput.disabled = false;
-          chatSend.disabled = false;
-
-          appendChat(
-            'Sistema',
-            'Chat temporanea del Piano I attiva. ' +
-            'I messaggi non vengono archiviati.'
-          );
-
-          await channel.track({
-            name:
-              state.character.nome ||
-              'Avventuriero',
-
-            image:
-              state.character.token ||
-              'token_1.png',
-
-            x: state.x,
-            y: state.y
-          });
-        } else if (
-          result === 'CHANNEL_ERROR' ||
-          result === 'TIMED_OUT' ||
-          result === 'CLOSED'
-        ) {
-          state.connected = false;
-
-          chatInput.disabled = true;
-          chatSend.disabled = true;
-
-          chatBox.textContent =
-            'Chat non disponibile: connessione persa.';
-        }
-      }
-    );
+    });
   }
-
-  // --------------------------------------------------
-  // AVVIO DEL PIANO I-A
-  // --------------------------------------------------
 
   async function main() {
     bindControls();
-
     try {
       await loadMap();
-
-      try {
-        await loadCharacter();
-      } catch (error) {
-        console.error(
-          'Piano Ia: lettura PG:',
-          error
-        );
-
-        status(
-          'Errore caricamento personaggio. ' +
-          'Esplorazione locale disponibile.',
-          true
-        );
-      }
-
+      try { await loadCharacter(); }
+      catch (err) { console.error('Piano Ia: lettura PG:', err); status('Errore caricamento personaggio. Esplorazione locale disponibile.', true); }
       loadProgress();
-
-      $('character-notes').value =
-        localRead(
-          `${state.storageKey}:notes`,
-          ''
-        ) || '';
-
+      $('character-notes').value = localRead(`${state.storageKey}:notes`, '') || '';
       state.ready = true;
-
       renderTokens();
       resizeMap(true);
-
       loading.hidden = true;
-
-      status(
-        `Piano I caricato · ` +
-        `${state.cols} × ${state.rows} caselle · ` +
-        `X ${state.x} / Y ${state.y}`
-      );
-
-      await Promise.allSettled([
-        loadLeaderboard(),
-        connectRealtime()
-      ]);
-    } catch (error) {
-      console.error(
-        'Piano Ia:',
-        error
-      );
-
-      loading.textContent =
-        'Impossibile caricare la mappa. ' +
-        'Controlla i percorsi nella console.';
-
-      status(
-        error?.message ||
-        'Errore sconosciuto durante il caricamento.',
-        true
-      );
+      status(`Piano I caricato · ${state.cols} × ${state.rows} caselle · X ${state.x} / Y ${state.y}`);
+      await Promise.allSettled([loadLeaderboard(), connectRealtime()]);
+    } catch (err) {
+      console.error('Piano Ia:', err);
+      loading.textContent = 'Impossibile caricare la mappa. Controlla i percorsi nella console.';
+      status(err?.message || 'Errore sconosciuto durante il caricamento.', true);
     }
   }
-
   main();
+})();
+
+
+/* Palazzo Eterno — forzieri di prova Piano I-A. Caricare DOPO piano-Ia.js. */
+(() => {
+  'use strict';
+  const root = document.getElementById('jungle-app');
+  const map = document.getElementById('map-layer');
+  if (!root || !map) return;
+  const COLS = 63, ROWS = 81;
+  const $ = id => document.getElementById(id);
+  const layer = document.createElement('div');
+  layer.id = 'pia-chest-layer';
+  Object.assign(layer.style, {position:'absolute',inset:'0',zIndex:'8',pointerEvents:'none'});
+  map.appendChild(layer);
+  const label = document.createElement('div');
+  label.textContent = 'Forzieri TEST: connessione…';
+  Object.assign(label.style,{fontSize:'12px',color:'#e8d49b',margin:'6px 0'});
+  document.querySelector('.map-footer')?.appendChild(label);
+  let chests = [], busy = false;
+  const client = () => window.supabaseClient;
+  const notify = msg => { label.textContent=msg; };
+  const pos = () => {
+    const m = /X\s*(\d+)\s*[·\/]\s*Y\s*(\d+)/i.exec($('player-coordinates')?.textContent||'');
+    return m ? {x:Number(m[1]),y:Number(m[2])} : null;
+  };
+  function render() {
+    layer.replaceChildren();
+    chests.filter(c=>c.available).forEach(c=>{
+      const el=document.createElement('div');
+      el.textContent='◆'; el.title=`Frutto Carnoso (TEST) — X ${c.x}, Y ${c.y}`;
+      Object.assign(el.style,{
+        position:'absolute',left:((c.x+.5)/COLS*100)+'%',top:((c.y+.5)/ROWS*100)+'%',
+        transform:'translate(-50%,-50%)',color:'#ffcd43',fontSize:'clamp(8px, 1.3vw, 20px)',
+        textShadow:'0 0 3px #000, 0 0 5px #000',pointerEvents:'none'
+      });
+      layer.appendChild(el);
+    });
+  }
+  async function refresh() {
+    const db=client();
+    if(!db) {notify('Forzieri TEST: Supabase non disponibile');return;}
+    const {data,error}=await db.rpc('piano_ia_chests_refresh');
+    if(error){notify('Forzieri TEST: '+error.message);return;}
+    chests=Array.isArray(data)?data:[];
+    render();
+    notify(`Forzieri TEST: ${chests.filter(c=>c.available).length}/12 disponibili • cooldown 30 s`);
+  }
+  async function collect() {
+    if(busy) return;
+    const p=pos(); if(!p) return;
+    const chest=chests.find(c=>c.available&&c.x===p.x&&c.y===p.y);
+    if(!chest) return;
+    busy=true;
+    try {
+      const {data,error}=await client().rpc('piano_ia_chest_collect',{p_id:chest.id,p_x:p.x,p_y:p.y});
+      if(error) notify('Raccolta fallita: '+error.message);
+      else notify(data?.message||data?.reason||'Forziere aggiornato');
+      await refresh();
+    } finally {busy=false;}
+  }
+  // Il prototipo conserva le coordinate localmente: leggiamo quelle mostrate sulla mappa.
+  const coords=$('player-coordinates');
+  if(coords){new MutationObserver(()=>{collect();}).observe(coords,{childList:true,characterData:true,subtree:true});}
+  // Poll leggero condiviso; il DB rigenera soltanto se il timer è scaduto.
+  setInterval(refresh,10000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+  setTimeout(refresh,1200);
 })();
