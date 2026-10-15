@@ -819,6 +819,40 @@ async function peAIAttack(rpc, label) {
     return result;
 }
 
+
+// FUGA UCCELLI PARASSITA — animazione dei passi fino al bordo.
+// Il server ha già convalidato il percorso; questa funzione anima
+// soltanto la rappresentazione locale, senza consumare movimento due volte.
+async function peAIAnimateParasiticBirdEscape(before, after, path) {
+    const steps = Array.isArray(path) ? path : [];
+    const token = combatTokens.get(before.id);
+    const last = steps[steps.length - 1];
+    const moved = Number(before.x) !== Number(after.x) ||
+        Number(before.y) !== Number(after.y);
+
+    if (!moved || !steps.length || !last ||
+        Number(last.x) !== Number(after.x) ||
+        Number(last.y) !== Number(after.y) || !token) {
+        renderCombatTokens();
+        return;
+    }
+
+    const originalTransition = token.style.transition;
+    const stepDuration = 220;
+    token.style.transition = `left ${stepDuration - 20}ms linear, top ${stepDuration - 20}ms linear, filter .15s ease`;
+    try {
+        for (const step of steps) {
+            combatEntities.set(before.id, { ...after, x: step.x, y: step.y });
+            renderCombatTokens();
+            await new Promise(resolve => setTimeout(resolve, stepDuration));
+        }
+    } finally {
+        combatEntities.set(before.id, after);
+        renderCombatTokens();
+        token.style.transition = originalTransition;
+    }
+}
+
 async function peAINewEnemyTurn(enemy) {
     const type=String(enemy.monster_type||'').toLowerCase();
     // Le piante riusano RPC dedicate, preservando integralmente i Goblin.
@@ -869,9 +903,29 @@ async function peAINewEnemyTurn(enemy) {
             const remaining=getCombatDistance(destination.x,destination.y,edge.x,edge.y);
             if(!best||remaining<best.remaining||(remaining===best.remaining&&p.length<best.path.length)) best={path:p,remaining};
         }
-        enemy=await peAIMove(enemy,best?.path||[]);
-        const escaped=await peAIRpc('escape_parasitic_bird');
-        if(escaped?.escaped) addCombatLog(`${enemy.display_name} fugge dal combattimento senza lasciare bottino!`);
+        // Il movimento viene registrato prima sul server, ma mostrato
+        // sulla mappa casella per casella. Il token non sparisce in anticipo.
+        const beforeMove = { ...enemy };
+        const escapePath = best?.path || [];
+        enemy = await peAIMove(enemy, escapePath);
+        await peAIAnimateParasiticBirdEscape(beforeMove, enemy, escapePath);
+
+        const atEdge = Number(enemy.x) === 0 || Number(enemy.x) === COMBAT_COLUMNS - 1 ||
+            Number(enemy.y) === 0 || Number(enemy.y) === COMBAT_ROWS - 1;
+        if (!atEdge) return; // Non può ancora scappare: riproverà al turno seguente.
+
+        // Rimane fermo e visibile al bordo per tre secondi interi.
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Prima il messaggio condiviso, poi la fuga sul server:
+        // anche gli altri giocatori lo leggono prima che sparisca il token.
+        await addSharedCombatLog(
+            `${enemy.display_name} raggiunge il bordo e fugge dal combattimento senza lasciare bottino!`
+        );
+        const escaped = await peAIRpc('escape_parasitic_bird');
+        if (escaped?.escaped) {
+            combatEntities.set(enemy.id, { ...enemy, status: 'escaped' });
+            renderCombatTokens();
+        }
         return;
     }
     // Se tutti i giocatori sono già avvelenati/sanguinanti, rimane lontano.

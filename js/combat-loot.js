@@ -1120,7 +1120,7 @@ function setupVictoryExitButton() {
                 baseCombatEncounterIds.has(combatSession?.encounter_id)
                     ? "base/base.html"
                     : isPianoIACombat
-                        ? "dungeon/piano-Ia/piano-Ia.html"
+                        ? "dungeon/piano-I/piano-Ia.html"
                         : "dungeon/piano-1/dungeon.html";
 
             window.location.href =
