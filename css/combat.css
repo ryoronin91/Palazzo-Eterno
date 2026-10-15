@@ -3016,3 +3016,42 @@
 .combat-equipment-select { width:100%; padding: 9px 8px; background:#120e0b; color:#ead7ad; border:1px solid #71532e; border-radius:5px; font-size:11px; }
 .combat-equipment-preview { min-height: 52px; margin: 13px 0; padding: 10px; font-size: 11px; line-height:1.5; color:#cdbb98; background:#0e0b08; border:1px solid #433320; border-radius:5px; }
 .combat-equipment-confirm { width:100%; }
+
+/* Badge effetti di stato: in alto a destra dei token senza coprire il ritratto. */
+.combat-token-statuses {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    z-index: 35;
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 2px;
+    width: max-content;
+    max-width: 76px;
+    pointer-events: none;
+}
+.combat-token-statuses[hidden] { display: none; }
+.combat-token-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(13px, 1.65vw, 19px);
+    height: clamp(13px, 1.65vw, 19px);
+    border-radius: 50%;
+    border: 1px solid rgba(250,245,220,.8);
+    box-shadow: 0 1px 5px #000;
+    font-family: 'Segoe UI Symbol','Apple Color Emoji',sans-serif;
+    font-size: clamp(10px, 1.25vw, 14px);
+    line-height: 1;
+    color: #fff;
+    background: #333;
+    text-shadow: 0 1px 2px #000;
+}
+.combat-token-status--bleed { background: #8c141c; }
+.combat-token-status--poison { background: #24672d; color: #baff91; }
+.combat-token-status--weapon { background: #2250a5; color: #d8ebff; }
+.combat-token-status--armor { background: #254d96; color: #d9eeff; }
+.combat-token-status--sharp { background: #267345; color: #d3ffda; }
+.combat-token-status--speed { background: #80602b; color: #ffe4a4; }

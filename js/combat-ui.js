@@ -28,6 +28,41 @@ function renderCombat() {
 }
 
 
+// Icone ed etichette per gli effetti realmente presenti in combat_effects.
+const COMBAT_STATUS_VISUALS = Object.freeze({
+    dot_sanguinamento: { name: 'Sanguinamento', symbol: '🩸', tone: 'bleed', damage: true },
+    dot_veleno: { name: 'Avvelenamento', symbol: '☠', tone: 'poison', damage: true },
+    attack_bonus: { name: 'Arma Potenziata', symbol: '⚔', tone: 'weapon' },
+    defense_bonus: { name: 'Armatura Potenziata', symbol: '🛡', tone: 'armor' },
+    critical_bonus: { name: 'Affilatura', symbol: '🗡', tone: 'sharp' },
+    movement_bonus: { name: 'Rapidità', symbol: '👢', tone: 'speed' }
+});
+
+function renderCombatTokenStatusIcons(token, entityId) {
+    let holder = token.querySelector('.combat-token-statuses');
+    if (!holder) {
+        holder = document.createElement('div');
+        holder.className = 'combat-token-statuses';
+        holder.setAttribute('aria-label', 'Effetti attivi');
+        token.appendChild(holder);
+    }
+    holder.replaceChildren();
+    if (!Array.isArray(combatEffects)) return;
+    for (const effect of combatEffects) {
+        const visual = COMBAT_STATUS_VISUALS[effect.effect_type];
+        if (!visual || effect.target_entity_id !== entityId || Number(effect.remaining_rounds) <= 0) continue;
+        const badge = document.createElement('span');
+        badge.className = `combat-token-status combat-token-status--${visual.tone}`;
+        badge.textContent = visual.symbol;
+        const amount = Math.abs(Number(effect.value) || 0);
+        const magnitude = visual.damage ? `${amount} danni` : `+${amount}`;
+        badge.title = `${visual.name} (${magnitude}) · ${Number(effect.remaining_rounds)} round`;
+        badge.setAttribute('aria-label', badge.title);
+        holder.appendChild(badge);
+    }
+    holder.hidden = holder.childElementCount === 0;
+}
+
 // ============================================================
 // TOKEN SULLA MAPPA
 // ============================================================
@@ -196,6 +231,9 @@ function renderCombatTokens() {
 
             }
 
+
+            // Icone temporanee su qualsiasi token, nemico o giocatore.
+            renderCombatTokenStatusIcons(token, entity.id);
 
             // =================================================
             // DIMENSIONE
@@ -1641,7 +1679,13 @@ function renderActiveCombatBuffs() {
             "Affilatura",
 
         movement_bonus:
-            "Rapidità"
+            "Rapidità",
+
+        dot_sanguinamento:
+            "Sanguinamento",
+
+        dot_veleno:
+            "Avvelenamento"
 
     };
 
@@ -1704,12 +1748,12 @@ function renderActiveCombatBuffs() {
                 "combat-buff-name";
 
 
-            name.textContent =
-                buffNames[
-                    effect.effect_type
-                ]
-                ||
-                effect.effect_type;
+            const dotEffect = effect.effect_type === 'dot_sanguinamento' || effect.effect_type === 'dot_veleno';
+            const effectAmount = Math.abs(Number(effect.value) || 0);
+            const readableName = buffNames[effect.effect_type] || effect.effect_type;
+            name.textContent = dotEffect
+                ? `${readableName} (${effectAmount} danni)`
+                : readableName;
 
 
             const value =
@@ -1748,10 +1792,8 @@ function renderActiveCombatBuffs() {
                     : "";
 
 
-            left.append(
-                name,
-                value
-            );
+            left.append(name);
+            if (!dotEffect) left.append(value);
 
 
             const duration =
