@@ -632,3 +632,75 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
   setTimeout(refresh,1200);
 })();
+
+
+/* PIANO I-A — FRUTTO CARNOSO: CONSUMABILE */
+(() => {
+  'use strict';
+  const panel = document.querySelector('.actions-panel');
+  if (!panel) return;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = 'piano-ia-use-fruit';
+  button.disabled = true;
+  button.style.display = 'none'; // Non mostrarlo finche non risulta nell'inventario.
+  button.innerHTML = '🍎 <span>FRUTTO CARNOSO</span> <small id="piano-ia-fruit-count">Quantità: —</small>';
+  button.title = 'Recupera fino a 10 PF e 10 PM';
+  panel.appendChild(button);
+
+  const notice = document.createElement('div');
+  notice.setAttribute('role','status');
+  notice.style.cssText = 'font-size:12px;color:#e9d69b;margin-top:5px;';
+  panel.appendChild(notice);
+  let inventoryId = null;
+  let characterId = null;
+  let loading = false;
+  const db = () => typeof supabaseClient !== 'undefined' ? supabaseClient : null;
+
+  async function refresh() {
+    if (loading || !db()) return;
+    try {
+      const { data: { user }, error: authError } = await db().auth.getUser();
+      if (authError || !user) return;
+      if (!characterId) {
+        const result = await db().from('characters').select('id').eq('user_id',user.id).maybeSingle();
+        if (result.error || !result.data) return;
+        characterId = result.data.id;
+      }
+      const inv = await db().from('character_inventory')
+        .select('id,quantity').eq('character_id',characterId)
+        .eq('item_id','frutto_carnoso').is('equipped_slot',null);
+      if (inv.error) { notice.textContent=inv.error.message; return; }
+      const rows=inv.data||[];
+      inventoryId=rows.find(item=>item.quantity>0)?.id||null;
+      const count=rows.reduce((total,item)=>total+Math.max(0,Number(item.quantity)||0),0);
+      document.getElementById('piano-ia-fruit-count').textContent='Quantità: '+count;
+      button.style.display = count > 0 ? '' : 'none';
+      button.disabled = count === 0;
+    } catch(error) { console.error('Frutto Carnoso:',error); }
+  }
+
+  button.addEventListener('click',async()=>{
+    if (loading || !inventoryId || !db()) return;
+    loading=true;
+    button.disabled=true;
+    try {
+      const {data,error}=await db().rpc('use_piano_ia_fruit',{p_inventory_id:inventoryId});
+      if (error) throw error;
+      notice.textContent='Frutto consumato! PF '+data.current_pf+'/'+data.max_pf+
+        ' · PM '+data.current_pm+'/'+data.max_pm;
+      const hp=document.getElementById('character-hp');
+      const mana=document.getElementById('character-mana');
+      if(hp) hp.textContent=data.current_pf+' / '+data.max_pf;
+      if(mana) mana.textContent=data.current_pm+' / '+data.max_pm;
+    } catch(error) {
+      notice.textContent='Utilizzo non riuscito: '+(error.message||String(error));
+    } finally {
+      loading=false;
+      await refresh();
+    }
+  });
+  setTimeout(refresh,1600);
+  setInterval(refresh,12000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+})();
