@@ -155,7 +155,7 @@
   }
 
   function loadProgress() {
-    const saved = localRead(`${state.storageKey}:position`);
+    const saved = null; // Le coordinate ufficiali sono sempre lette da Supabase.
     const start = saved && walkable(Number(saved.x), Number(saved.y))
       ? { x: Number(saved.x), y: Number(saved.y) }
       : getInitialPosition();
@@ -278,7 +278,7 @@
     if (error) throw error;
     if (!data?.active) {
       state.ready = false;
-      status('Il tuo PG non è stato ammesso al Piano I-A.', true);
+      status('Non è possibile entrare nel Piano I-A con questo PG.', true);
       return false;
     }
     state.x = Number(data.x);
@@ -399,7 +399,7 @@
         if (!entry.equipped_slot || !entry.item) continue;
         for (const name of names) bonuses[`${name}_bonus`] += Number(entry.item[`${name}_bonus`]) || 0;
       }
-    } catch (error) { console.warn('Bonus equipaggiamento non disponibili:', error); }
+    } catch (error) { console.warn('Bonus equipaggiamento non disponibili:', erroror); }
     state.equipmentBonuses = bonuses;
   }
 
@@ -440,15 +440,15 @@
   }
 
   async function loadCharacter() {
-    const db = window.supabaseClient;
+    const db = typeof supabaseClient !== 'undefined' ? supabaseClient : null;
     if (!db?.auth?.getUser) {
-      status('Esplorazione locale: autenticazione non disponibile.');
+      status('Supabase non disponibile. Controlla config.js.', true);
       return;
     }
     state.db = db;
     const { data: auth, error: authError } = await db.auth.getUser();
     if (authError || !auth?.user) {
-      status('Esplorazione locale: accedi per mostrare il tuo PG e usare la chat.');
+      status('Accedi per entrare nel Piano I-A.', true);
       return;
     }
     state.user = auth.user;
@@ -564,20 +564,38 @@
     });
   }
 
+  // Il pulsante ESCI riporta davvero il PG alla Base nel database.
+  document.querySelector('.jungle-exit')?.addEventListener('click', async event => {
+    if (!state.db || !state.character || !state.ready) return;
+    event.preventDefault();
+    const exit = event.currentTarget;
+    exit.style.pointerEvents = 'none';
+    try {
+      const { error } = await state.db.rpc('piano_ia_exit');
+      if (error) throw error;
+      window.location.assign(exit.href);
+    } catch (error) {
+      exit.style.pointerEvents = '';
+      toast('Uscita non riuscita: ' + (error.message || error));
+    }
+  });
+
   async function main() {
     bindControls();
     try {
       await loadMap();
       try { await loadCharacter(); }
-      catch (err) { console.error('Piano Ia: lettura PG:', err); status('Errore caricamento personaggio. Esplorazione locale disponibile.', true); }
+      catch (err) { console.error('Piano Ia: lettura PG:', err); status('Impossibile caricare il personaggio.', true); }
       loadProgress();
-      const serverReady=await loadServerPosition();
+      let serverReady = false;
+      try { serverReady = await loadServerPosition(); }
+      catch (error) { status('Accesso al Piano I-A non riuscito: '+(error.message || error),true); console.error(error); }
       $('character-notes').value = localRead(`${state.storageKey}:notes`, '') || '';
       state.ready = serverReady;
       renderTokens();
       resizeMap(true);
       loading.hidden = true;
-      status(`Piano I caricato · ${state.cols} × ${state.rows} caselle · X ${state.x} / Y ${state.y}`);
+      if (serverReady) status(`Piano I-A · ${state.character?.nome || 'Avventuriero'} · X ${state.x} / Y ${state.y}`);
       await Promise.allSettled([loadLeaderboard(), connectRealtime()]);
     } catch (err) {
       console.error('Piano Ia:', err);
