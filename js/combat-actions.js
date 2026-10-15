@@ -250,6 +250,10 @@ function getCombatGridCoordinatesFromPointer(
 
 function getCurrentTargetRange() {
 
+    if (combatTargetMode && combatTargetMode.startsWith("special:")) {
+        return combatTargetMode === "special:veleno" ? getCombatEffectiveAttribute("intelligenza") : 1;
+    }
+
     if (
         combatTargetMode ===
         "basic_attack"
@@ -990,6 +994,11 @@ async function handleCombatTokenClick(
 
     }
 
+
+    if (combatTargetMode && combatTargetMode.startsWith("special:")) {
+        await performPlayerSpecialAbility(entity.id, combatTargetMode.slice(8));
+        return;
+    }
 
     // ========================================================
     // ATTACCO BASE
@@ -1782,6 +1791,11 @@ function handleAbilityButton(
 
     }
 
+
+    if (["succhiasangue", "sanguinamento", "veleno"].includes(ability.id)) {
+        startPlayerSpecialTargeting(entry);
+        return;
+    }
 
     // ========================================================
     // DARDO DI FUOCO
@@ -2622,4 +2636,46 @@ async function useCombatInventoryItem(
 
     }
 
+}
+
+// Abilita speciali: lancio del PG di prova
+function startPlayerSpecialTargeting(entry) {
+    const player = getMyPlayerEntity();
+    if (!player || !isMyTurn() || player.action_used) {
+        addCombatLog("Azione non disponibile.");
+        return;
+    }
+    const ability = entry?.ability;
+    if (!ability || Number(player.current_pm) < Number(ability.pm_cost)) {
+        addCombatLog("PM insufficienti.");
+        return;
+    }
+    combatTargetMode = "special:" + ability.id;
+    closeCombatDrawer();
+    addCombatLog(ability.name + ": seleziona un nemico in portata.");
+    updateTargetSelectionVisuals();
+}
+
+async function performPlayerSpecialAbility(targetEntityId, abilityId) {
+    if (!currentCharacter || !isMyTurn()) return;
+    try {
+        const { data, error } = await db.rpc("cast_player_special_ability", {
+            p_combat_id: combatId,
+            p_character_id: currentCharacter.id,
+            p_target_entity_id: targetEntityId,
+            p_ability_id: abilityId
+        });
+        if (error) throw error;
+        cancelCombatTargeting();
+        await Promise.all([loadCombatEntities(), loadCombatEffects()]);
+        if (typeof loadCombatSnapshot === "function") await loadCombatSnapshot();
+        renderCombat();
+        const message = data?.duration
+            ? abilityId + ": " + data.damage_per_turn + " PF/turno per " + data.duration + " turni."
+            : abilityId + ": " + (data?.damage || 0) + " danni, " + (data?.healed || 0) + " PF recuperati.";
+        addSharedCombatLog(message);
+    } catch (error) {
+        console.error("Errore abilita speciale", error);
+        addCombatLog("Abilita non riuscita: " + error.message);
+    }
 }
