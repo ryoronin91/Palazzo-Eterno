@@ -583,7 +583,7 @@
   Object.assign(label.style,{fontSize:'12px',color:'#e8d49b',margin:'6px 0'});
   document.querySelector('.map-footer')?.appendChild(label);
   let chests = [], busy = false;
-  const client = () => window.supabaseClient;
+  const client = () => supabaseClient;
   const notify = msg => { label.textContent=msg; };
   const pos = () => {
     const m = /X\s*(\d+)\s*[·\/]\s*Y\s*(\d+)/i.exec($('player-coordinates')?.textContent||'');
