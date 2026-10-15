@@ -472,5 +472,154 @@
     ></div>
 
   </main>
+  
+<!-- PIANO I-A: SEGNAPOSTO DI PROGETTAZIONE -->
+<style>
+  .pia-planning-marker {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px #fff;
+    transform: translate(-50%, -50%);
+  }
+
+  .pia-planning-camp {
+    position: absolute;
+    z-index: 9;
+    pointer-events: none;
+    background: rgba(45, 210, 90, .35);
+    border: 1px solid #37eb70;
+  }
+
+  #pia-planning-toggle {
+    cursor: pointer;
+    padding: 5px 9px;
+    border: 1px solid #9e8750;
+    border-radius: 5px;
+    background: #203523;
+    color: #f0df9a;
+    font-size: 12px;
+  }
+
+  #pia-planning-toggle[aria-pressed="false"] {
+    opacity: .65;
+  }
+</style>
+
+<script>
+(() => {
+  'use strict';
+
+  // Coordinate logiche della mappa
+  const COLS = 63;
+  const ROWS = 81;
+
+  const points = [
+    {
+      x: 27, y: 32,
+      name: 'Allosauro Dominante',
+      color: '#ff3838'
+    },
+    {
+      x: 0, y: 67,
+      name: 'Guardie lucertoloidi',
+      color: '#38aaff'
+    },
+    {
+      x: 61, y: 79,
+      name: 'Ingresso sud-est',
+      color: '#ffd449'
+    },
+    {
+      x: 57, y: 61,
+      name: 'Ingresso est inferiore',
+      color: '#ffd449'
+    },
+    {
+      x: 61, y: 29,
+      name: 'Ingresso est',
+      color: '#ffd449'
+    },
+    {
+      x: 59, y: 3,
+      name: 'Ingresso nord-est',
+      color: '#ffd449'
+    }
+  ];
+
+  const layer = document.getElementById('map-layer');
+  const controls = document.querySelector('.map-controls');
+
+  if (!layer || !controls) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pia-planning-overlay';
+
+  Object.assign(overlay.style, {
+    position: 'absolute',
+    inset: '0',
+    pointerEvents: 'none',
+    zIndex: '10'
+  });
+
+  // Indicatore per ogni posizione fissa.
+  for (const point of points) {
+    const marker = document.createElement('div');
+
+    marker.className = 'pia-planning-marker';
+    marker.title = point.name;
+
+    marker.style.left =
+      ((point.x + 0.5) / COLS * 100) + '%';
+
+    marker.style.top =
+      ((point.y + 0.5) / ROWS * 100) + '%';
+
+    marker.style.width = (100 / COLS) + '%';
+    marker.style.height = (100 / ROWS) + '%';
+    marker.style.background = point.color;
+
+    overlay.appendChild(marker);
+  }
+
+  // Accampamento 3 x 3
+  const camp = document.createElement('div');
+  camp.className = 'pia-planning-camp';
+  camp.title = 'Accampamento - Lautopasto';
+
+  camp.style.left = (28 / COLS * 100) + '%';
+  camp.style.top = (34 / ROWS * 100) + '%';
+  camp.style.width = (3 / COLS * 100) + '%';
+  camp.style.height = (3 / ROWS * 100) + '%';
+
+  overlay.appendChild(camp);
+  layer.appendChild(overlay);
+
+  // Pulsante per mostrare / nascondere i segnaposto
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = 'pia-planning-toggle';
+  button.textContent = 'Eventi: ON';
+  button.setAttribute('aria-pressed', 'true');
+
+  button.addEventListener('click', () => {
+    const visible = overlay.style.display !== 'none';
+
+    overlay.style.display = visible ? 'none' : '';
+    button.textContent =
+      visible ? 'Eventi: OFF' : 'Eventi: ON';
+
+    button.setAttribute(
+      'aria-pressed',
+      String(!visible)
+    );
+  });
+
+  controls.appendChild(button);
+})();
+</script>
+<!-- FINE SEGNAPOSTO -->
+
 </body>
 </html>
