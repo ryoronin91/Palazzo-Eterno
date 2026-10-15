@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // BASE.JS
 //
@@ -8,18 +8,24 @@
 // logiche di movimento, eventi o combattimento.
 // ============================================================
 
+
 console.log("BASE.JS CARICATO");
+
 
 const db = supabaseClient;
 
+
 const BASE_MAP_COLUMNS = 27;
 const BASE_MAP_ROWS = 36;
+
 
 const BASE_CAMERA_RADIUS = 6;
 const BASE_CAMERA_VISIBLE_CELLS =
     BASE_CAMERA_RADIUS * 2 + 1;
 
+
 const BASE_CAMERA_TRANSITION_MS = 170;
+
 
 let currentUser = null;
 let character = null;
@@ -27,107 +33,144 @@ let baseData = null;
 let baseWalkableCells = new Set();
 
 
+
+
 // ============================================================
 // VENDOR - MANO DI SCIMMIA
 // ============================================================
 
+
 const BASE_VENDOR_X = 22;
 const BASE_VENDOR_Y = 13;
+
 
 const BASE_VENDOR_PAGE =
     "services/vendor/vendor.html";
 
+
 let baseVendorEntering =
     false;
+
+
 
 
 // ============================================================
 // RUNOGRAFO
 // ============================================================
 
+
 const BASE_RUNOGRAFO_X = 18;
 const BASE_RUNOGRAFO_Y = 21;
+
 
 const BASE_RUNOGRAFO_PAGE =
     "services/runografo/runografo.html";
 
+
 let baseRunografoEntering =
     false;
+
+
 
 
 // ============================================================
 // LOCANDA - FEGATO D'OCA
 // ============================================================
 
+
 const BASE_LOCANDA_X = 4;
 const BASE_LOCANDA_Y = 15;
+
 
 const BASE_LOCANDA_PAGE =
     "services/locanda/locanda.html";
 
+
 let baseLocandaEntering =
     false;
+
+
 
 
 // ============================================================
 // ADDESTRATORE - CODA D'ORSO
 // ============================================================
 
+
 const BASE_ADDESTRATORE_X = 22;
 const BASE_ADDESTRATORE_Y = 18;
+
 
 const BASE_ADDESTRATORE_PAGE =
     "services/addestratore/addestratore.html";
 
+
 let baseAddestratoreEntering =
     false;
+
+
 
 
 // ============================================================
 // QUEST GIVER - DENTE DI CASTORO
 // ============================================================
 
+
 const BASE_QUEST_GIVER_X = 13;
 const BASE_QUEST_GIVER_Y = 21;
+
 
 const BASE_QUEST_GIVER_PAGE =
     "services/questgiver/questgiver.html";
 
+
 let baseQuestGiverEntering =
     false;
+
+
 
 
 // ============================================================
 // RIPOSO NELL'AREA DELLA LOCANDA
 // ============================================================
 
+
 let baseInnResting =
     false;
+
 
 let baseInnState =
     null;
 
+
 let baseInnTimer =
     null;
 
+
 let baseInnTickBusy =
     false;
+
+
 
 
 // ============================================================
 // DATABASE / REALTIME LIVELLO BASE
 // ============================================================
 
+
 let basePositionSaveTimer = null;
 let basePositionSaveRunning = false;
 let basePositionSavePending = false;
 
+
 let baseChannel = null;
 let baseRealtimeReady = false;
+
 
 // Broadcast = movimento immediato.
 // Presence = ingresso/uscita + riallineamento.
 let baseBroadcastPending = false;
+
 
 // Giocatori remoti presenti nel Livello Base.
 // La Presence mantiene lo stato, mentre queste Map gestiscono
@@ -135,17 +178,22 @@ let baseBroadcastPending = false;
 const baseOtherPlayers = new Map();
 const baseOtherPlayerTokens = new Map();
 
+
 const BASE_CHANNEL_NAME =
     "palazzo-eterno-base";
+
 
 const BASE_CHAT_FLOOR_ID =
     "base";
 
+
 const BASE_CHAT_HISTORY_LIMIT =
     100;
 
+
 const renderedBaseChatMessageIds =
     new Set();
+
 
 let equipmentBonuses = {
     attack_bonus: 0,
@@ -158,26 +206,33 @@ let equipmentBonuses = {
     fortuna_bonus: 0
 };
 
+
 // ============================================================
 // ABILITÀ / CONSUMABILI NELLA BASE
 // ============================================================
 
+
 let characterInventory = [];
 let characterAbilities = [];
 let baseActionsReady = false;
+
 
 // Cura usa la stessa RPC del dungeon.
 let baseHealModeActive = false;
 let baseHealRangeElements = [];
 let baseHealInProgress = false;
 
+
 // Giorno Paga fuori combattimento è indipendente da Cura.
 let baseGiornoPagaInProgress = false;
+
+
 
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         setMessage("Caricamento del Livello Base...");
+
 
         // L'audio e' opzionale: un errore non deve bloccare il gioco.
         try {
@@ -187,10 +242,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.warn("Audio Base non disponibile:", audioError);
         }
 
+
         await loadBaseMapDefinition();
         await loadCharacter();
         await loadCharacterEquipment();
         await loadBaseAbilities();
+
 
         updateCharacterPanel();
         setupBaseActions();
@@ -198,29 +255,38 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateBaseConsumables();
         updateBaseAbilityVisibility();
 
+
         // ----------------------------------------------------
         // RISONANZA · TOP 5
         // ----------------------------------------------------
 
+
         await Promise.allSettled([loadBaseLeaderboard(), loadBaseResonanceScore()]);
+
 
         // ----------------------------------------------------
         // CHAT
         // ----------------------------------------------------
 
+
         setupBaseChat();
         await loadBaseChatHistory();
+
 
  // ----------------------------------------------------
 // POSIZIONE PERSISTENTE
 // ----------------------------------------------------
 
+
 await initializeBasePlayer();
+
+
 
 
 // ----------------------------------------------------
 // SERVIZI DEL LIVELLO BASE
 // ----------------------------------------------------
+
 
 if (
     typeof initializeBaseServices ===
@@ -229,14 +295,18 @@ if (
     await initializeBaseServices();
 }
 
+
 // Se il personaggio ricarica la Base mentre si trova già
 // nell'area della Locanda, ripristina subito lo stato di riposo.
 await updateBaseInnRestState();
 
 
+
+
 setupBaseCamera();
 setupBaseNoticeboard();
 setupBaseMovement();
+
 
         // ----------------------------------------------------
         // EVENTI SULLA CASELLA DI ARRIVO
@@ -247,10 +317,13 @@ setupBaseMovement();
         // scala. Il flag viene consumato una sola volta.
         // ----------------------------------------------------
 
+
         let skipArrivalEvent =
             false;
 
+
         try {
+
 
             skipArrivalEvent =
                 sessionStorage.getItem(
@@ -258,22 +331,30 @@ setupBaseMovement();
                 ) ===
                 "1";
 
+
             if (skipArrivalEvent) {
+
 
                 sessionStorage.removeItem(
                     "palazzo_eterno_skip_base_arrival_event"
                 );
 
+
             }
 
+
         } catch (storageError) {
+
 
             console.warn(
                 "Impossibile leggere flag arrivo Base:",
                 storageError
             );
 
+
         }
+
+
 
 
         if (
@@ -284,9 +365,11 @@ setupBaseMovement();
             checkBaseTeleportEvent();
         }
 
+
 // ----------------------------------------------------
 // SERVIZIO PRESENTE SULLA CASELLA DI ARRIVO
 // ----------------------------------------------------
+
 
 if (
     typeof checkBaseServiceArea ===
@@ -298,22 +381,28 @@ if (
     );
 }
 
+
         // ----------------------------------------------------
         // SCAMBIO TRA GIOCATORI
         // ----------------------------------------------------
 
+
         setupBaseTradeUi();
+
 
         // ----------------------------------------------------
         // PERSONAGGI ONLINE / REALTIME
         // ----------------------------------------------------
 
+
         await setupBaseRealtime();
         await recoverBaseTradeState();
+
 
         setMessage(
             "Livello Base caricato."
         );
+
 
         // La Top 5 si aggiorna senza bloccare il movimento.
         window.setInterval(() => {
@@ -330,18 +419,23 @@ if (
     }
 });
 
+
 async function loadBaseMapDefinition() {
     const response = await fetch("base.json", {
         cache: "no-store"
     });
 
+
     if (!response.ok) {
         throw new Error("Impossibile caricare base.json.");
     }
 
+
     const data = await response.json();
 
+
     baseData = data;
+
 
     baseWalkableCells =
         new Set(
@@ -356,13 +450,16 @@ async function loadBaseMapDefinition() {
                 )
         );
 
+
     const columns =
         Number(data?.grid?.columns) ||
         BASE_MAP_COLUMNS;
 
+
     const rows =
         Number(data?.grid?.rows) ||
         BASE_MAP_ROWS;
+
 
     if (
         columns !== BASE_MAP_COLUMNS ||
@@ -374,8 +471,10 @@ async function loadBaseMapDefinition() {
         );
     }
 
+
     console.log("Definizione Livello Base caricata:", data);
 }
+
 
 async function loadCharacter() {
     const {
@@ -383,16 +482,20 @@ async function loadCharacter() {
         error: authError
     } = await db.auth.getUser();
 
+
     if (authError) {
         throw authError;
     }
+
 
     if (!user) {
         window.location.href = "../login.html";
         return;
     }
 
+
     currentUser = user;
+
 
     const { data, error } = await db
         .from("characters")
@@ -400,23 +503,28 @@ async function loadCharacter() {
         .eq("user_id", currentUser.id)
         .maybeSingle();
 
+
     if (error) {
         throw error;
     }
+
 
     if (!data) {
         window.location.href = "../personaggio.html";
         return;
     }
 
+
     character = data;
 }
+
 
 async function loadCharacterEquipment() {
     if (!character) {
         characterInventory = [];
         return;
     }
+
 
     const { data, error } = await db
         .from("character_inventory")
@@ -443,6 +551,7 @@ async function loadCharacterEquipment() {
         `)
         .eq("character_id", character.id);
 
+
     if (error) {
         console.warn(
             "Inventario/equipaggiamento non disponibile nel Livello Base:",
@@ -452,7 +561,9 @@ async function loadCharacterEquipment() {
         return;
     }
 
+
     characterInventory = data || [];
+
 
     equipmentBonuses = {
         attack_bonus: 0,
@@ -465,10 +576,12 @@ async function loadCharacterEquipment() {
         fortuna_bonus: 0
     };
 
+
     characterInventory
         .filter(entry => entry.equipped_slot && entry.item)
         .forEach(entry => {
             const item = entry.item;
+
 
             Object.keys(equipmentBonuses).forEach(key => {
                 equipmentBonuses[key] +=
@@ -476,18 +589,22 @@ async function loadCharacterEquipment() {
             });
         });
 
+
     updateBaseConsumables();
 }
+
 
 // ============================================================
 // ABILITÀ PERSONAGGIO NELLA BASE
 // ============================================================
+
 
 async function loadBaseAbilities() {
     if (!character) {
         characterAbilities = [];
         return;
     }
+
 
     const { data, error } = await db
         .from("character_abilities")
@@ -506,6 +623,7 @@ async function loadBaseAbilities() {
         `)
         .eq("character_id", character.id);
 
+
     if (error) {
         console.warn(
             "Abilità non disponibili nel Livello Base:",
@@ -515,8 +633,10 @@ async function loadBaseAbilities() {
         return;
     }
 
+
     characterAbilities = data || [];
 }
+
 
 function hasBaseAbility(abilityId) {
     return characterAbilities.some(
@@ -526,6 +646,7 @@ function hasBaseAbility(abilityId) {
     );
 }
 
+
 function getBaseHealAbilityEntry() {
     return characterAbilities.find(
         entry =>
@@ -533,6 +654,7 @@ function getBaseHealAbilityEntry() {
             entry.ability?.id === "cura"
     ) || null;
 }
+
 
 function getBaseHealPmCost() {
     return Math.max(
@@ -543,14 +665,17 @@ function getBaseHealPmCost() {
     );
 }
 
+
 function updateBaseHealCostLabel() {
     const button = document.getElementById("dungeon-heal-button");
     const label = button?.querySelector("small");
+
 
     if (label) {
         label.textContent = `${getBaseHealPmCost()} PM`;
     }
 }
+
 
 // ============================================================
 // GIORNO PAGA - FUORI COMBATTIMENTO
@@ -560,6 +685,7 @@ function updateBaseHealCostLabel() {
 // nessun listener o targeting con Cura.
 // ============================================================
 
+
 function getBaseGiornoPagaAbilityEntry() {
     return characterAbilities.find(
         entry =>
@@ -567,6 +693,7 @@ function getBaseGiornoPagaAbilityEntry() {
             entry.ability?.id === "giorno_paga"
     ) || null;
 }
+
 
 function getBaseGiornoPagaPmCost() {
     return Math.max(
@@ -577,104 +704,128 @@ function getBaseGiornoPagaPmCost() {
     );
 }
 
+
 function ensureBaseGiornoPagaButton() {
     const existing =
         document.getElementById(
             "dungeon-giorno-paga-button"
         );
 
+
     if (existing) {
         return existing;
     }
+
 
     const healButton =
         document.getElementById(
             "dungeon-heal-button"
         );
 
+
     if (!healButton) {
         return null;
     }
+
 
     // cloneNode non copia gli event listener del pulsante Cura.
     const button =
         healButton.cloneNode(true);
 
+
     button.id =
         "dungeon-giorno-paga-button";
+
 
     button.dataset.action =
         "giorno-paga";
 
+
     button.disabled =
         true;
+
 
     button.classList.remove(
         "active"
     );
+
 
     const icon =
         button.querySelector(
             ".action-card-icon"
         );
 
+
     const title =
         button.querySelector(
             "strong"
         );
+
 
     const cost =
         button.querySelector(
             "small"
         );
 
+
     if (icon) {
         icon.textContent = "¤";
     }
 
+
     if (title) {
         title.textContent = "GIORNO PAGA";
     }
+
 
     if (cost) {
         cost.textContent =
             `${getBaseGiornoPagaPmCost()} PM`;
     }
 
+
     button.style.display =
         "none";
+
 
     healButton.insertAdjacentElement(
         "afterend",
         button
     );
 
+
     return button;
 }
+
 
 function updateBaseGiornoPagaVisibility() {
     const button =
         ensureBaseGiornoPagaButton();
 
+
     if (!button) {
         return;
     }
+
 
     button.style.display =
         hasBaseAbility("giorno_paga")
             ? ""
             : "none";
 
+
     const cost =
         button.querySelector(
             "small"
         );
+
 
     if (cost) {
         cost.textContent =
             `${getBaseGiornoPagaPmCost()} PM`;
     }
 }
+
 
 function updateBaseGiornoPagaAvailability() {
     const button =
@@ -682,12 +833,15 @@ function updateBaseGiornoPagaAvailability() {
             "dungeon-giorno-paga-button"
         );
 
+
     if (!button || !character) {
         return;
     }
 
+
     const stats =
         getCalculatedStats();
+
 
     const currentPM =
         character.current_pm === null ||
@@ -695,19 +849,23 @@ function updateBaseGiornoPagaAvailability() {
             ? stats.maxMana
             : Number(character.current_pm);
 
+
     button.disabled =
         !hasBaseAbility("giorno_paga") ||
         currentPM < getBaseGiornoPagaPmCost() ||
         baseGiornoPagaInProgress;
 }
 
+
 function setupBaseGiornoPagaAction() {
     const button =
         ensureBaseGiornoPagaButton();
 
+
     if (!button) {
         return;
     }
+
 
     if (
         button.dataset.giornoPagaReady !==
@@ -715,6 +873,7 @@ function setupBaseGiornoPagaAction() {
     ) {
         button.dataset.giornoPagaReady =
             "1";
+
 
         button.addEventListener(
             "click",
@@ -726,20 +885,24 @@ function setupBaseGiornoPagaAction() {
                     return;
                 }
 
+
                 // Chiude solo un eventuale targeting Cura già aperto.
                 // La logica e il pulsante Cura restano invariati.
                 if (baseHealModeActive) {
                     deactivateBaseHealMode();
                 }
 
+
                 await castBaseGiornoPaga();
             }
         );
     }
 
+
     updateBaseGiornoPagaVisibility();
     updateBaseGiornoPagaAvailability();
 }
+
 
 async function castBaseGiornoPaga() {
     if (
@@ -750,8 +913,10 @@ async function castBaseGiornoPaga() {
         return;
     }
 
+
     const stats =
         getCalculatedStats();
+
 
     const currentPM =
         character.current_pm === null ||
@@ -759,8 +924,10 @@ async function castBaseGiornoPaga() {
             ? stats.maxMana
             : Number(character.current_pm);
 
+
     const pmCost =
         getBaseGiornoPagaPmCost();
+
 
     if (currentPM < pmCost) {
         setMessage(
@@ -770,10 +937,13 @@ async function castBaseGiornoPaga() {
         return;
     }
 
+
     baseGiornoPagaInProgress =
         true;
 
+
     updateBaseGiornoPagaAvailability();
+
 
     try {
         const {
@@ -787,9 +957,11 @@ async function castBaseGiornoPaga() {
             }
         );
 
+
         if (error) {
             throw error;
         }
+
 
         if (
             data?.current_pm !==
@@ -799,18 +971,22 @@ async function castBaseGiornoPaga() {
                 Number(data.current_pm);
         }
 
+
         updateCharacterPanel();
         updateBaseActionAvailability();
+
 
         setMessage(
             `Usi GIORNO PAGA! L'oro del prossimo incontro sarà raddoppiato. (-${data?.pm_cost ?? pmCost} PM)`
         );
+
 
     } catch (error) {
         console.error(
             "Errore Giorno Paga fuori combattimento nella Base:",
             error
         );
+
 
         setMessage(
             error?.message ||
@@ -821,50 +997,63 @@ async function castBaseGiornoPaga() {
         baseGiornoPagaInProgress =
             false;
 
+
         updateBaseGiornoPagaVisibility();
         updateBaseGiornoPagaAvailability();
     }
 }
 
 
+
+
 function updateBaseAbilityVisibility() {
     const healButton =
         document.getElementById("dungeon-heal-button");
+
 
     if (healButton) {
         healButton.style.display =
             hasBaseAbility("cura") ? "" : "none";
     }
 
+
     updateBaseHealCostLabel();
     updateBaseActionAvailability();
 }
 
+
 // ============================================================
 // AZIONI / CONSUMABILI NELLA BASE
 // ============================================================
+
 
 function setupBaseActions() {
     if (baseActionsReady) {
         return;
     }
 
+
     baseActionsReady = true;
+
 
     const healButton =
         document.getElementById("dungeon-heal-button");
 
+
     const healthPotionButton =
         document.getElementById("dungeon-health-potion-button");
 
+
     const manaPotionButton =
         document.getElementById("dungeon-mana-potion-button");
+
 
     if (healButton) {
         healButton.addEventListener("click", () => {
             if (healButton.disabled) {
                 return;
             }
+
 
             if (baseHealModeActive) {
                 deactivateBaseHealMode();
@@ -874,16 +1063,19 @@ function setupBaseActions() {
         });
     }
 
+
     if (healthPotionButton) {
         healthPotionButton.addEventListener("click", async () => {
             if (healthPotionButton.disabled) {
                 return;
             }
 
+
             deactivateBaseHealMode();
             await useBasePotion("health");
         });
     }
+
 
     if (manaPotionButton) {
         manaPotionButton.addEventListener("click", async () => {
@@ -891,55 +1083,70 @@ function setupBaseActions() {
                 return;
             }
 
+
             deactivateBaseHealMode();
             await useBasePotion("mana");
         });
     }
 
+
     updateBaseActionAvailability();
 }
 
+
 function findBasePotion(type) {
     return characterInventory.find(entry => {
+        if (entry.item?.id === 'frutto_carnoso') return false;
         if (!entry.item || Number(entry.quantity) <= 0) {
             return false;
         }
+
 
         if (type === "health") {
             return (Number(entry.item.heal_pf) || 0) > 0;
         }
 
+
         if (type === "mana") {
             return (Number(entry.item.heal_pm) || 0) > 0;
         }
+
 
         return false;
     });
 }
 
+
 function updateBaseConsumables() {
     const healthPotion = findBasePotion("health");
     const manaPotion = findBasePotion("mana");
+
 
     setText(
         "dungeon-health-potion-count",
         `x${healthPotion ? Number(healthPotion.quantity) || 0 : 0}`
     );
 
+
     setText(
         "dungeon-mana-potion-count",
         `x${manaPotion ? Number(manaPotion.quantity) || 0 : 0}`
     );
 
+
+    updateFruitConsumable();
     updateBaseActionAvailability();
 }
+
 
 function updateBaseActionAvailability() {
     if (!character) {
         return;
     }
 
+
     const stats = getCalculatedStats();
+
 
     const currentPF =
         character.current_hp === null ||
@@ -947,17 +1154,21 @@ function updateBaseActionAvailability() {
             ? stats.maxHealth
             : Number(character.current_hp);
 
+
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
             ? stats.maxMana
             : Number(character.current_pm);
 
+
     const healButton =
         document.getElementById("dungeon-heal-button");
 
+
     if (healButton) {
         const healPmCost = getBaseHealPmCost();
+
 
         healButton.disabled =
             !hasBaseAbility("cura") ||
@@ -965,11 +1176,14 @@ function updateBaseActionAvailability() {
             baseHealInProgress;
     }
 
+
     const healthButton =
         document.getElementById("dungeon-health-potion-button");
 
+
     const manaButton =
         document.getElementById("dungeon-mana-potion-button");
+
 
     if (healthButton) {
         healthButton.disabled =
@@ -977,19 +1191,24 @@ function updateBaseActionAvailability() {
             currentPF >= stats.maxHealth;
     }
 
+
     if (manaButton) {
         manaButton.disabled =
             !findBasePotion("mana") ||
             currentPM >= stats.maxMana;
     }
 
+
     // Giorno Paga è gestito separatamente da Cura.
     updateBaseGiornoPagaAvailability();
 }
 
 
+
+
 async function useBasePotion(type) {
     const potion = findBasePotion(type);
+
 
     if (!potion) {
         setMessage(
@@ -1000,7 +1219,9 @@ async function useBasePotion(type) {
         return;
     }
 
+
     const stats = getCalculatedStats();
+
 
     const oldPF =
         character.current_hp === null ||
@@ -1008,20 +1229,24 @@ async function useBasePotion(type) {
             ? stats.maxHealth
             : Number(character.current_hp);
 
+
     const oldPM =
         character.current_pm === null ||
         character.current_pm === undefined
             ? stats.maxMana
             : Number(character.current_pm);
 
+
     let newPF = oldPF;
     let newPM = oldPM;
+
 
     if (type === "health") {
         if (oldPF >= stats.maxHealth) {
             setMessage("Hai già tutti i PF.");
             return;
         }
+
 
         newPF = Math.min(
             stats.maxHealth,
@@ -1033,11 +1258,13 @@ async function useBasePotion(type) {
             return;
         }
 
+
         newPM = Math.min(
             stats.maxMana,
             oldPM + (Number(potion.item.heal_pm) || 0)
         );
     }
+
 
     try {
         const { error: rpcError } = await db.rpc(
@@ -1047,23 +1274,28 @@ async function useBasePotion(type) {
             }
         );
 
+
         if (rpcError) {
             throw rpcError;
         }
+
 
         const updateData =
             type === "health"
                 ? { current_hp: newPF }
                 : { current_pm: newPM };
 
+
         const { error } = await db
             .from("characters")
             .update(updateData)
             .eq("id", character.id);
 
+
         if (error) {
             throw error;
         }
+
 
         if (type === "health") {
             character.current_hp = newPF;
@@ -1071,10 +1303,12 @@ async function useBasePotion(type) {
             character.current_pm = newPM;
         }
 
+
         await loadCharacterEquipment();
         updateCharacterPanel();
         updateBaseActionAvailability();
         await updateBasePresence();
+
 
         setMessage(
             type === "health"
@@ -1087,15 +1321,18 @@ async function useBasePotion(type) {
     }
 }
 
+
 // ============================================================
 // CURA CON TARGETING - RPC CONDIVISA CON IL DUNGEON
 // ============================================================
+
 
 function activateBaseHealMode() {
     if (!character || !hasBaseAbility("cura")) {
         setMessage("Il personaggio non conosce Cura.");
         return;
     }
+
 
     const stats = getCalculatedStats();
     const currentPM =
@@ -1104,60 +1341,76 @@ function activateBaseHealMode() {
             ? stats.maxMana
             : Number(character.current_pm);
 
+
     const pmCost = getBaseHealPmCost();
+
 
     if (currentPM < pmCost) {
         setMessage("Non hai abbastanza PM per usare Cura.");
         return;
     }
 
+
     baseHealModeActive = true;
+
 
     const button = document.getElementById("dungeon-heal-button");
     button?.classList.add("active");
 
+
     renderBaseHealRange();
     updateBaseHealTargets();
+
 
     setMessage(
         "CURA: scegli te stesso o un alleato in una delle 8 caselle adiacenti."
     );
 }
 
+
 function deactivateBaseHealMode() {
     baseHealModeActive = false;
 
+
     const button = document.getElementById("dungeon-heal-button");
     button?.classList.remove("active");
+
 
     clearBaseHealRange();
     clearBaseHealTargets();
 }
 
+
 function renderBaseHealRange() {
     clearBaseHealRange();
+
 
     if (!baseHealModeActive) {
         return;
     }
+
 
     const map = document.getElementById("dungeon-map");
     if (!map) {
         return;
     }
 
+
     const rect = map.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) {
         return;
     }
 
+
     const cellWidth = rect.width / BASE_MAP_COLUMNS;
     const cellHeight = rect.height / BASE_MAP_ROWS;
+
 
     for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
             const x = Number(basePlayerX) + dx;
             const y = Number(basePlayerY) + dy;
+
 
             if (
                 x < 0 ||
@@ -1168,6 +1421,7 @@ function renderBaseHealRange() {
                 continue;
             }
 
+
             const element = document.createElement("div");
             element.className = "dungeon-heal-range-cell";
             element.style.left = `${x * cellWidth}px`;
@@ -1175,54 +1429,66 @@ function renderBaseHealRange() {
             element.style.width = `${cellWidth}px`;
             element.style.height = `${cellHeight}px`;
 
+
             map.appendChild(element);
             baseHealRangeElements.push(element);
         }
     }
 }
 
+
 function clearBaseHealRange() {
     baseHealRangeElements.forEach(element => element.remove());
     baseHealRangeElements = [];
 }
 
+
 function isInBaseHealRange(x, y) {
     const dx = Math.abs(Number(x) - Number(basePlayerX));
     const dy = Math.abs(Number(y) - Number(basePlayerY));
 
+
     return dx <= 1 && dy <= 1;
 }
+
 
 function updateBaseHealTargets() {
     clearBaseHealTargets();
 
+
     if (!baseHealModeActive) {
         return;
     }
+
 
     if (basePlayerToken) {
         basePlayerToken.classList.add("heal-target");
         basePlayerToken.style.pointerEvents = "auto";
     }
 
+
     baseOtherPlayers.forEach(player => {
         if (!isInBaseHealRange(player.x, player.y)) {
             return;
         }
 
+
         if (player.in_combat || player.active_combat_id) {
             return;
         }
+
 
         const token = baseOtherPlayerTokens.get(player.character_id);
         if (!token) {
             return;
         }
 
+
         token.classList.add("heal-target");
         token.style.pointerEvents = "auto";
     });
 }
+
 
 function clearBaseHealTargets() {
     if (basePlayerToken) {
@@ -1230,11 +1496,13 @@ function clearBaseHealTargets() {
         basePlayerToken.style.pointerEvents = "";
     }
 
+
     baseOtherPlayerTokens.forEach(token => {
         token.classList.remove("heal-target");
         token.style.pointerEvents = "";
     });
 }
+
 
 async function castBaseHealOnCharacter(
     targetCharacterId,
@@ -1248,13 +1516,16 @@ async function castBaseHealOnCharacter(
         return;
     }
 
+
     if (targetCharacterId !== character.id) {
         const target = baseOtherPlayers.get(targetCharacterId);
+
 
         if (!target || !isInBaseHealRange(target.x, target.y)) {
             setMessage("Il bersaglio è fuori dal raggio di Cura.");
             return;
         }
+
 
         if (target.in_combat || target.active_combat_id) {
             setMessage("Non puoi curare un personaggio impegnato in combattimento.");
@@ -1262,8 +1533,10 @@ async function castBaseHealOnCharacter(
         }
     }
 
+
     baseHealInProgress = true;
     updateBaseActionAvailability();
+
 
     try {
         // La RPC verifica anche il range usando le coordinate salvate.
@@ -1275,6 +1548,7 @@ async function castBaseHealOnCharacter(
         basePositionSavePending = false;
         await flushBasePositionSave();
 
+
         const { data, error } = await db.rpc(
             "use_heal",
             {
@@ -1283,20 +1557,26 @@ async function castBaseHealOnCharacter(
             }
         );
 
+
         if (error) {
             throw error;
         }
 
+
         const result = data || {};
 
+
         character.current_pm = Number(result.caster_current_pm);
+
 
         if (targetCharacterId === character.id) {
             character.current_hp = Number(result.target_current_hp);
         }
 
+
         updateCharacterPanel();
         await updateBasePresence();
+
 
         if (baseChannel && baseRealtimeReady) {
             await baseChannel.send({
@@ -1313,7 +1593,9 @@ async function castBaseHealOnCharacter(
             });
         }
 
+
         const healedAmount = Number(result.healed_amount) || 0;
+
 
         if (targetCharacterId === character.id) {
             setMessage(
@@ -1325,7 +1607,9 @@ async function castBaseHealOnCharacter(
             );
         }
 
+
         deactivateBaseHealMode();
+
 
     } catch (error) {
         console.error("Errore Cura nella Base:", error);
@@ -1339,6 +1623,7 @@ async function castBaseHealOnCharacter(
     }
 }
 
+
 function getEffectiveAttribute(attribute) {
     const base = Number(character?.[attribute]) || 1;
     const bonus =
@@ -1348,11 +1633,13 @@ function getEffectiveAttribute(attribute) {
             ]
         ) || 0;
 
+
     return Math.max(
         1,
         Math.min(30, base + bonus)
     );
 }
+
 
 function getCalculatedStats() {
     const forza = getEffectiveAttribute("forza");
@@ -1362,6 +1649,7 @@ function getCalculatedStats() {
     const destrezza = getEffectiveAttribute("destrezza");
     const fortuna = getEffectiveAttribute("fortuna");
 
+
     return {
         forza,
         resistenza,
@@ -1370,22 +1658,28 @@ function getCalculatedStats() {
         destrezza,
         fortuna,
 
+
         attack:
             Math.ceil(forza / 2) +
             (Number(equipmentBonuses.attack_bonus) || 0),
+
 
         defense:
             Math.ceil(7 + resistenza / 2) +
             (Number(equipmentBonuses.defense_bonus) || 0),
 
+
         maxHealth:
             Math.ceil(5 * costituzione / 2),
+
 
         maxMana:
             Math.ceil(5 * intelligenza / 2),
 
+
         movement:
             Math.ceil(4 + destrezza / 2),
+
 
         critical:
             Math.round(
@@ -1394,15 +1688,18 @@ function getCalculatedStats() {
     };
 }
 
+
 function updateCharacterPanel() {
     if (!character) {
         return;
     }
 
+
     const stats = getCalculatedStats();
     const name =
         character.nome ||
         "Avventuriero";
+
 
     setText("character-name", name);
     setText("character-name-panel", name);
@@ -1411,8 +1708,10 @@ function updateCharacterPanel() {
         Number(character.livello) || 1
     );
 
+
     const portrait =
         document.getElementById("character-token");
+
 
     if (portrait) {
         portrait.src =
@@ -1422,9 +1721,11 @@ function updateCharacterPanel() {
                 "token_1.png"
             );
 
+
         portrait.alt =
             `Token di ${name}`;
     }
+
 
     setText("forza-display", stats.forza);
     setText("resistenza-display", stats.resistenza);
@@ -1432,6 +1733,7 @@ function updateCharacterPanel() {
     setText("intelligenza-display", stats.intelligenza);
     setText("destrezza-display", stats.destrezza);
     setText("fortuna-display", stats.fortuna);
+
 
     const currentPF =
         character.current_hp === null ||
@@ -1445,6 +1747,7 @@ function updateCharacterPanel() {
                 )
             );
 
+
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
@@ -1456,6 +1759,7 @@ function updateCharacterPanel() {
                     stats.maxMana
                 )
             );
+
 
     setText("attack-display", stats.attack);
     setText("defense-display", stats.defense);
@@ -1474,14 +1778,17 @@ function updateCharacterPanel() {
     );
 }
 
+
 function setText(id, value) {
     const element =
         document.getElementById(id);
+
 
     if (element) {
         element.textContent = value;
     }
 }
+
 
 function setMessage(text, error = false) {
     const element =
@@ -1489,9 +1796,11 @@ function setMessage(text, error = false) {
             "dungeon-message"
         );
 
+
     if (!element) {
         return;
     }
+
 
     element.textContent = text;
     element.classList.toggle(
@@ -1499,6 +1808,8 @@ function setMessage(text, error = false) {
         !!error
     );
 }
+
+
 
 
 // ============================================================
@@ -1511,12 +1822,16 @@ function setMessage(text, error = false) {
 // La mappa Base usa una griglia 27 x 36.
 // ============================================================
 
+
 const BASE_INITIAL_PLAYER_X = 12;
 const BASE_INITIAL_PLAYER_Y = 19;
+
 
 let basePlayerX = BASE_INITIAL_PLAYER_X;
 let basePlayerY = BASE_INITIAL_PLAYER_Y;
 let basePlayerToken = null;
+
+
 
 
 // ============================================================
@@ -1531,11 +1846,13 @@ let basePlayerToken = null;
 //
 // ============================================================
 
+
 const BASE_NOTICEBOARD_CELLS =
     new Set([
         "14,10",
         "15,10"
     ]);
+
 
 const BASE_NOTICEBOARD_CONTENT = {
     novita: {
@@ -1547,6 +1864,7 @@ const BASE_NOTICEBOARD_CONTENT = {
         ]
     },
 
+
     upgrade: {
         title: "PROSSIMI UPGRADE",
         items: [
@@ -1554,6 +1872,7 @@ const BASE_NOTICEBOARD_CONTENT = {
             "Scambio tra giocatori."
         ]
     },
+
 
     avvisi: {
         title: "AVVISI",
@@ -1563,8 +1882,11 @@ const BASE_NOTICEBOARD_CONTENT = {
     }
 };
 
+
 let baseNoticeboardActiveTab =
     "novita";
+
+
 
 
 // ============================================================
@@ -1583,6 +1905,7 @@ let baseNoticeboardActiveTab =
 // X13 Y21
 // X14 Y21
 // ============================================================
+
 
 const BASE_STATIC_DECORATIONS = [
     {
@@ -1647,17 +1970,22 @@ const BASE_STATIC_DECORATIONS = [
     }
 ];
 
+
 const baseStaticDecorationElements =
     new Map();
+
+
 
 
 // ============================================================
 // CREA E POSIZIONA IL TOKEN
 // ============================================================
 
+
 async function initializeBasePlayer() {
     const map =
         document.getElementById("dungeon-map");
+
 
     if (
         !map ||
@@ -1667,15 +1995,20 @@ async function initializeBasePlayer() {
     }
 
 
+
+
     // --------------------------------------------------------
     // POSIZIONE SALVATA NEL DATABASE
     // --------------------------------------------------------
 
+
     const storedX =
         Number(character.base_x);
 
+
     const storedY =
         Number(character.base_y);
+
 
     const storedPositionValid =
         Number.isInteger(storedX) &&
@@ -1690,28 +2023,40 @@ async function initializeBasePlayer() {
         );
 
 
+
+
     if (storedPositionValid) {
+
 
         basePlayerX =
             storedX;
 
+
         basePlayerY =
             storedY;
 
+
     } else {
+
 
         basePlayerX =
             BASE_INITIAL_PLAYER_X;
+
 
         basePlayerY =
             BASE_INITIAL_PLAYER_Y;
 
 
+
+
         character.base_x =
             basePlayerX;
 
+
         character.base_y =
             basePlayerY;
+
+
 
 
         const {
@@ -1721,11 +2066,14 @@ async function initializeBasePlayer() {
                 .from("characters")
                 .update({
 
+
                     base_x:
                         basePlayerX,
 
+
                     base_y:
                         basePlayerY
+
 
                 })
                 .eq(
@@ -1734,31 +2082,43 @@ async function initializeBasePlayer() {
                 );
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
 
+
     }
+
+
 
 
     // --------------------------------------------------------
     // TOKEN DEL PERSONAGGIO
     // --------------------------------------------------------
 
+
     if (!basePlayerToken) {
         basePlayerToken =
             document.createElement("div");
 
+
         basePlayerToken.className =
             "dungeon-player-token base-player-token";
+
 
         basePlayerToken.dataset.characterId =
             character.id;
 
+
         const image =
             document.createElement("img");
+
 
         image.src =
             "../immagini/token/" +
@@ -1767,13 +2127,17 @@ async function initializeBasePlayer() {
                 "token_1.png"
             );
 
+
         image.alt =
             character.nome ||
             "Personaggio";
 
+
         image.draggable = false;
 
+
         basePlayerToken.appendChild(image);
+
 
         basePlayerToken.addEventListener(
             "click",
@@ -1782,8 +2146,10 @@ async function initializeBasePlayer() {
                     return;
                 }
 
+
                 event.preventDefault();
                 event.stopPropagation();
+
 
                 await castBaseHealOnCharacter(
                     character.id,
@@ -1792,8 +2158,10 @@ async function initializeBasePlayer() {
             }
         );
 
+
         map.appendChild(basePlayerToken);
     }
+
 
     renderBaseStaticDecorations();
     positionBasePlayerToken();
@@ -1802,13 +2170,18 @@ async function initializeBasePlayer() {
 
 
 
+
+
+
 // ============================================================
 // POSIZIONA TOKEN SULLA GRIGLIA 27 x 36
 // ============================================================
 
+
 function positionBasePlayerToken() {
     const map =
         document.getElementById("dungeon-map");
+
 
     if (
         !map ||
@@ -1817,8 +2190,10 @@ function positionBasePlayerToken() {
         return;
     }
 
+
     const rect =
         map.getBoundingClientRect();
+
 
     if (
         rect.width <= 0 ||
@@ -1827,13 +2202,16 @@ function positionBasePlayerToken() {
         return;
     }
 
+
     const cellWidth =
         rect.width /
         BASE_MAP_COLUMNS;
 
+
     const cellHeight =
         rect.height /
         BASE_MAP_ROWS;
+
 
     const tokenSize =
         Math.min(
@@ -1841,11 +2219,14 @@ function positionBasePlayerToken() {
             cellHeight
         ) * 0.88;
 
+
     basePlayerToken.style.width =
         `${tokenSize}px`;
 
+
     basePlayerToken.style.height =
         `${tokenSize}px`;
+
 
     basePlayerToken.style.left =
         `${
@@ -1857,6 +2238,7 @@ function positionBasePlayerToken() {
             tokenSize / 2
         }px`;
 
+
     basePlayerToken.style.top =
         `${
             (
@@ -1867,14 +2249,18 @@ function positionBasePlayerToken() {
             tokenSize / 2
         }px`;
 
+
     basePlayerToken.style.zIndex =
         "20";
 }
 
 
+
+
 // ============================================================
 // COORDINATE A SCHERMO
 // ============================================================
+
 
 function updateBaseCoordinates() {
     const element =
@@ -1882,75 +2268,96 @@ function updateBaseCoordinates() {
             "dungeon-player-coordinates"
         );
 
+
     if (!element) {
         return;
     }
+
 
     element.textContent =
         `Coordinate PG: X ${basePlayerX} · Y ${basePlayerY}`;
 }
 
 
+
+
 // ============================================================
 // CREA GLI ARREDI STATICI DELLA BASE
 // ============================================================
+
 
 function renderBaseStaticDecorations() {
     const map =
         document.getElementById("dungeon-map");
 
+
     if (!map) {
         return;
     }
 
+
     BASE_STATIC_DECORATIONS.forEach(
         decoration => {
+
 
             let element =
                 baseStaticDecorationElements.get(
                     decoration.id
                 );
 
+
             if (!element) {
                 element =
                     document.createElement("img");
 
+
                 element.className =
                     "base-static-decoration";
+
 
                 element.dataset.decorationId =
                     decoration.id;
 
+
                 element.src =
                     decoration.imageSrc;
+
 
                 element.alt =
                     decoration.alt || "";
 
+
                 element.draggable =
                     false;
 
+
                 element.style.position =
                     "absolute";
+
 
                 element.style.pointerEvents =
                     decoration.id === "mano_di_scimmia"
                         ? "auto"
                         : "none";
 
+
                 element.style.cursor =
                     decoration.id === "mano_di_scimmia"
                         ? "pointer"
                         : "default";
 
+
                 element.style.objectFit =
                     "contain";
+
 
                 element.style.display =
                     "block";
 
+
                 element.style.userSelect =
                     "none";
+
 
                 if (
                     decoration.id ===
@@ -1959,11 +2366,13 @@ function renderBaseStaticDecorations() {
                     element.title =
                         "Mano di Scimmia";
 
+
                     element.addEventListener(
                         "click",
                         async event => {
                             event.preventDefault();
                             event.stopPropagation();
+
 
                             if (
                                 !isBaseVendorAdjacentToPlayer()
@@ -1972,8 +2381,10 @@ function renderBaseStaticDecorations() {
                                     "Avvicinati a Mano di Scimmia per commerciare."
                                 );
 
+
                                 return;
                             }
+
 
                             await enterBaseVendor();
                         }
@@ -1982,7 +2393,11 @@ function renderBaseStaticDecorations() {
 
 
 
+
+
+
                 map.appendChild(element);
+
 
                 baseStaticDecorationElements.set(
                     decoration.id,
@@ -1990,27 +2405,35 @@ function renderBaseStaticDecorations() {
                 );
             }
 
+
         }
     );
 
+
     positionBaseStaticDecorations();
 }
+
+
 
 
 // ============================================================
 // POSIZIONA GLI ARREDI STATICI SULLA GRIGLIA
 // ============================================================
 
+
 function positionBaseStaticDecorations() {
     const map =
         document.getElementById("dungeon-map");
+
 
     if (!map) {
         return;
     }
 
+
     const rect =
         map.getBoundingClientRect();
+
 
     if (
         rect.width <= 0 ||
@@ -2019,42 +2442,53 @@ function positionBaseStaticDecorations() {
         return;
     }
 
+
     const cellWidth =
         rect.width /
         BASE_MAP_COLUMNS;
+
 
     const cellHeight =
         rect.height /
         BASE_MAP_ROWS;
 
+
     BASE_STATIC_DECORATIONS.forEach(
         decoration => {
+
 
             const element =
                 baseStaticDecorationElements.get(
                     decoration.id
                 );
 
+
             if (!element) {
                 return;
             }
 
+
             element.style.left =
                 `${decoration.x * cellWidth}px`;
+
 
             element.style.top =
                 `${decoration.y * cellHeight}px`;
 
+
             element.style.width =
                 `${decoration.width * cellWidth}px`;
 
+
             element.style.height =
                 `${decoration.height * cellHeight}px`;
+
 
             element.style.zIndex =
                 String(
                     decoration.zIndex ?? 6
                 );
+
 
                 if (
     decoration.id ===
@@ -2062,21 +2496,27 @@ function positionBaseStaticDecorations() {
 ) {
     const scale = 1.12;
 
+
     element.style.transform =
         `translateY(-10px) scale(${scale})`;
+
 
     element.style.transformOrigin =
         "center center";
 }
+
 
         }
     );
 }
 
 
+
+
 // ============================================================
 // VENDOR - MANO DI SCIMMIA
 // ============================================================
+
 
 function isBaseVendorCell(
     x,
@@ -2092,6 +2532,8 @@ function isBaseVendorCell(
 }
 
 
+
+
 function isBaseVendorAdjacentToPlayer() {
     if (
         basePlayerX === null ||
@@ -2099,6 +2541,7 @@ function isBaseVendorAdjacentToPlayer() {
     ) {
         return false;
     }
+
 
     const distance =
         Math.abs(
@@ -2111,8 +2554,11 @@ function isBaseVendorAdjacentToPlayer() {
             BASE_VENDOR_Y
         );
 
+
     return distance === 1;
 }
+
+
 
 
 async function enterBaseVendor() {
@@ -2123,6 +2569,7 @@ async function enterBaseVendor() {
         return;
     }
 
+
     if (
         !isBaseVendorAdjacentToPlayer()
     ) {
@@ -2130,15 +2577,19 @@ async function enterBaseVendor() {
             "Avvicinati a Mano di Scimmia per commerciare."
         );
 
+
         return;
     }
+
 
     baseVendorEntering =
         true;
 
+
     setMessage(
         "Ti avvicini a Mano di Scimmia..."
     );
+
 
     try {
         // Salva immediatamente la posizione attuale della Base.
@@ -2147,14 +2598,18 @@ async function enterBaseVendor() {
                 basePositionSaveTimer
             );
 
+
             basePositionSaveTimer =
                 null;
         }
 
+
         basePositionSavePending =
             false;
 
+
         await flushBasePositionSave();
+
 
         // Ricorda al negozio da dove siamo arrivati.
         try {
@@ -2169,6 +2624,7 @@ async function enterBaseVendor() {
             );
         }
 
+
         const {
             error
         } =
@@ -2178,8 +2634,10 @@ async function enterBaseVendor() {
                     base_x:
                         Number(basePlayerX),
 
+
                     base_y:
                         Number(basePlayerY),
+
 
                     current_location:
                         "vendor"
@@ -2189,21 +2647,27 @@ async function enterBaseVendor() {
                     character.id
                 );
 
+
         if (error) {
             throw error;
         }
 
+
         character.base_x =
             Number(basePlayerX);
+
 
         character.base_y =
             Number(basePlayerY);
 
+
         character.current_location =
             "vendor";
 
+
         window.location.href =
             BASE_VENDOR_PAGE;
+
 
     } catch (error) {
         console.error(
@@ -2211,8 +2675,10 @@ async function enterBaseVendor() {
             error
         );
 
+
         baseVendorEntering =
             false;
+
 
         setMessage(
             "Non riesco ad aprire il negozio. Riprova."
@@ -2221,14 +2687,18 @@ async function enterBaseVendor() {
 }
 
 
+
+
 // ============================================================
 // RUNOGRAFO
 // ============================================================
+
 
 function isBaseRunografoCell(
     x,
     y
 ) {
+
 
     return (
         Number(x) ===
@@ -2240,15 +2710,20 @@ function isBaseRunografoCell(
 }
 
 
+
+
 function isBaseRunografoActive() {
+
 
     if (
         typeof isBaseServiceActive !==
         "function"
     ) {
 
+
         return false;
     }
+
 
     return (
         isBaseServiceActive(
@@ -2259,48 +2734,63 @@ function isBaseRunografoActive() {
 }
 
 
+
+
 async function enterBaseRunografo() {
+
 
     if (
         baseRunografoEntering ||
         !character
     ) {
 
+
         return;
     }
+
 
     if (
         !isBaseRunografoActive()
     ) {
 
+
         return;
     }
 
+
     baseRunografoEntering =
         true;
+
 
     setMessage(
         "Ti avvicini al Runografo..."
     );
 
+
     try {
+
 
         if (
             basePositionSaveTimer
         ) {
 
+
             clearTimeout(
                 basePositionSaveTimer
             );
+
 
             basePositionSaveTimer =
                 null;
         }
 
+
         basePositionSavePending =
             false;
 
+
         await flushBasePositionSave();
+
 
         const {
             error
@@ -2315,6 +2805,7 @@ async function enterBaseRunografo() {
                             basePlayerX
                         ),
 
+
                     base_y:
                         Number(
                             basePlayerY
@@ -2325,19 +2816,23 @@ async function enterBaseRunografo() {
                     character.id
                 );
 
+
         if (error) {
             throw error;
         }
+
 
         character.base_x =
             Number(
                 basePlayerX
             );
 
+
         character.base_y =
             Number(
                 basePlayerY
             );
+
 
         /*
          * Il Runografo è un servizio interno al Livello Base.
@@ -2345,18 +2840,23 @@ async function enterBaseRunografo() {
          * nella Base anche mentre usa il servizio.
          */
 
+
         window.location.href =
             BASE_RUNOGRAFO_PAGE;
 
+
     } catch (error) {
+
 
         console.error(
             "Errore ingresso Runografo dalla Base:",
             error
         );
 
+
         baseRunografoEntering =
             false;
+
 
         setMessage(
             "Non riesco ad aprire il Runografo. Riprova.",
@@ -2367,9 +2867,13 @@ async function enterBaseRunografo() {
 
 
 
+
+
+
 // ============================================================
 // ADDESTRATORE - CODA D'ORSO
 // ============================================================
+
 
 function isBaseAddestratoreCell(x, y) {
     return (
@@ -2378,25 +2882,31 @@ function isBaseAddestratoreCell(x, y) {
     );
 }
 
+
 function isBaseAddestratoreActive() {
     if (typeof isBaseServiceActive !== "function") {
         return false;
     }
 
+
     return isBaseServiceActive("addestratore") === true;
 }
+
 
 async function enterBaseAddestratore() {
     if (baseAddestratoreEntering || !character) {
         return;
     }
 
+
     if (!isBaseAddestratoreActive()) {
         return;
     }
 
+
     baseAddestratoreEntering = true;
     setMessage("Ti avvicini a Coda d'Orso...");
+
 
     try {
         if (basePositionSaveTimer) {
@@ -2404,8 +2914,10 @@ async function enterBaseAddestratore() {
             basePositionSaveTimer = null;
         }
 
+
         basePositionSavePending = false;
         await flushBasePositionSave();
+
 
         const { error } = await db
             .from("characters")
@@ -2415,15 +2927,19 @@ async function enterBaseAddestratore() {
             })
             .eq("id", character.id);
 
+
         if (error) {
             throw error;
         }
 
+
         character.base_x = Number(basePlayerX);
         character.base_y = Number(basePlayerY);
 
+
         // Servizio interno alla Base: current_location resta "base".
         window.location.href = BASE_ADDESTRATORE_PAGE;
+
 
     } catch (error) {
         console.error("Errore ingresso Addestratore dalla Base:", error);
@@ -2433,9 +2949,12 @@ async function enterBaseAddestratore() {
 }
 
 
+
+
 // ============================================================
 // QUEST GIVER - DENTE DI CASTORO
 // ============================================================
+
 
 function isBaseQuestGiverCell(x, y) {
     return (
@@ -2444,25 +2963,31 @@ function isBaseQuestGiverCell(x, y) {
     );
 }
 
+
 function isBaseQuestGiverActive() {
     if (typeof isBaseServiceActive !== "function") {
         return false;
     }
 
+
     return isBaseServiceActive("quest_giver") === true;
 }
+
 
 async function enterBaseQuestGiver() {
     if (baseQuestGiverEntering || !character) {
         return;
     }
 
+
     if (!isBaseQuestGiverActive()) {
         return;
     }
 
+
     baseQuestGiverEntering = true;
     setMessage("Ti avvicini a Dente di Castoro...");
+
 
     try {
         if (basePositionSaveTimer) {
@@ -2470,8 +2995,10 @@ async function enterBaseQuestGiver() {
             basePositionSaveTimer = null;
         }
 
+
         basePositionSavePending = false;
         await flushBasePositionSave();
+
 
         const { error } = await db
             .from("characters")
@@ -2481,15 +3008,19 @@ async function enterBaseQuestGiver() {
             })
             .eq("id", character.id);
 
+
         if (error) {
             throw error;
         }
 
+
         character.base_x = Number(basePlayerX);
         character.base_y = Number(basePlayerY);
 
+
         // Servizio interno alla Base: current_location resta "base".
         window.location.href = BASE_QUEST_GIVER_PAGE;
+
 
     } catch (error) {
         console.error("Errore ingresso Quest Giver dalla Base:", error);
@@ -2499,14 +3030,18 @@ async function enterBaseQuestGiver() {
 }
 
 
+
+
 // ============================================================
 // LOCANDA - FEGATO D'OCA
 // ============================================================
+
 
 function isBaseLocandaCell(
     x,
     y
 ) {
+
 
     return (
         Number(x) ===
@@ -2518,15 +3053,20 @@ function isBaseLocandaCell(
 }
 
 
+
+
 function isBaseLocandaActive() {
+
 
     if (
         typeof isBaseServiceActive !==
         "function"
     ) {
 
+
         return false;
     }
+
 
     return (
         isBaseServiceActive(
@@ -2537,48 +3077,63 @@ function isBaseLocandaActive() {
 }
 
 
+
+
 async function enterBaseLocanda() {
+
 
     if (
         baseLocandaEntering ||
         !character
     ) {
 
+
         return;
     }
+
 
     if (
         !isBaseLocandaActive()
     ) {
 
+
         return;
     }
 
+
     baseLocandaEntering =
         true;
+
 
     setMessage(
         "Entri nella Locanda di Fegato d'Oca..."
     );
 
+
     try {
+
 
         if (
             basePositionSaveTimer
         ) {
 
+
             clearTimeout(
                 basePositionSaveTimer
             );
+
 
             basePositionSaveTimer =
                 null;
         }
 
+
         basePositionSavePending =
             false;
 
+
         await flushBasePositionSave();
+
 
         const {
             error
@@ -2593,6 +3148,7 @@ async function enterBaseLocanda() {
                             basePlayerX
                         ),
 
+
                     base_y:
                         Number(
                             basePlayerY
@@ -2603,19 +3159,23 @@ async function enterBaseLocanda() {
                     character.id
                 );
 
+
         if (error) {
             throw error;
         }
+
 
         character.base_x =
             Number(
                 basePlayerX
             );
 
+
         character.base_y =
             Number(
                 basePlayerY
             );
+
 
         /*
          * La Locanda è un servizio interno al Livello Base.
@@ -2623,18 +3183,23 @@ async function enterBaseLocanda() {
          * per il Runografo.
          */
 
+
         window.location.href =
             BASE_LOCANDA_PAGE;
 
+
     } catch (error) {
+
 
         console.error(
             "Errore ingresso Locanda dalla Base:",
             error
         );
 
+
         baseLocandaEntering =
             false;
+
 
         setMessage(
             "Non riesco ad entrare nella Locanda. Riprova.",
@@ -2642,6 +3207,9 @@ async function enterBaseLocanda() {
         );
     }
 }
+
+
+
 
 
 
@@ -2660,7 +3228,9 @@ async function enterBaseLocanda() {
 // attivo.
 // ============================================================
 
+
 function isPlayerInsideLocandaArea() {
+
 
     return (
         Number(basePlayerX) >= 3 &&
@@ -2671,7 +3241,10 @@ function isPlayerInsideLocandaArea() {
 }
 
 
+
+
 async function refreshBaseInnState() {
+
 
     const {
         data,
@@ -2681,18 +3254,24 @@ async function refreshBaseInnState() {
             "get_inn_state"
         );
 
+
     if (error) {
         throw error;
     }
 
+
     baseInnState =
         data || null;
+
 
     return baseInnState;
 }
 
 
+
+
 function getBaseInnSecondsRemaining() {
+
 
     const target =
         Date.parse(
@@ -2700,11 +3279,13 @@ function getBaseInnSecondsRemaining() {
                 ?.next_regeneration_at
         );
 
+
     if (
         Number.isFinite(
             target
         )
     ) {
+
 
         return Math.max(
             0,
@@ -2719,6 +3300,7 @@ function getBaseInnSecondsRemaining() {
         );
     }
 
+
     return Math.max(
         0,
         Number(
@@ -2729,7 +3311,10 @@ function getBaseInnSecondsRemaining() {
 }
 
 
+
+
 async function updateBaseInnRestState() {
+
 
     if (
         !character
@@ -2737,20 +3322,25 @@ async function updateBaseInnRestState() {
         return;
     }
 
+
     const shouldRest =
         isBaseLocandaActive()
         &&
         isPlayerInsideLocandaArea();
 
+
     if (
         shouldRest
     ) {
+
 
         if (
             !baseInnResting
         ) {
 
+
             try {
+
 
                 const {
                     error
@@ -2759,22 +3349,29 @@ async function updateBaseInnRestState() {
                         "enter_inn"
                     );
 
+
                 if (error) {
                     throw error;
                 }
 
+
                 baseInnResting =
                     true;
 
+
                 await refreshBaseInnState();
 
+
                 startBaseInnTimer();
+
 
                 setMessage(
                     "Ti riposi nella Locanda. Recuperi 1 PF e 1 PM al minuto."
                 );
 
+
             } catch (error) {
+
 
                 console.warn(
                     "Errore ingresso area Locanda:",
@@ -2783,23 +3380,31 @@ async function updateBaseInnRestState() {
             }
         }
 
+
         return;
     }
+
+
 
 
     if (
         baseInnResting
     ) {
 
+
         baseInnResting =
             false;
 
+
         stopBaseInnTimer();
+
 
         baseInnState =
             null;
 
+
         try {
+
 
             const {
                 error
@@ -2808,11 +3413,14 @@ async function updateBaseInnRestState() {
                     "leave_inn"
                 );
 
+
             if (error) {
                 throw error;
             }
 
+
         } catch (error) {
+
 
             console.warn(
                 "Errore uscita area Locanda:",
@@ -2823,13 +3431,18 @@ async function updateBaseInnRestState() {
 }
 
 
+
+
 function startBaseInnTimer() {
 
+
     stopBaseInnTimer();
+
 
     baseInnTimer =
         window.setInterval(
             async () => {
+
 
                 if (
                     !baseInnResting ||
@@ -2838,15 +3451,19 @@ function startBaseInnTimer() {
                     return;
                 }
 
+
                 if (
                     !isBaseLocandaActive() ||
                     !isPlayerInsideLocandaArea()
                 ) {
 
+
                     await updateBaseInnRestState();
+
 
                     return;
                 }
+
 
                 if (
                     getBaseInnSecondsRemaining() >
@@ -2855,7 +3472,9 @@ function startBaseInnTimer() {
                     return;
                 }
 
+
                 await runBaseInnRegenerationTick();
+
 
             },
             1000
@@ -2863,15 +3482,20 @@ function startBaseInnTimer() {
 }
 
 
+
+
 function stopBaseInnTimer() {
+
 
     if (
         baseInnTimer
     ) {
 
+
         clearInterval(
             baseInnTimer
         );
+
 
         baseInnTimer =
             null;
@@ -2879,7 +3503,10 @@ function stopBaseInnTimer() {
 }
 
 
+
+
 async function runBaseInnRegenerationTick() {
+
 
     if (
         baseInnTickBusy
@@ -2887,10 +3514,13 @@ async function runBaseInnRegenerationTick() {
         return;
     }
 
+
     baseInnTickBusy =
         true;
 
+
     try {
+
 
         const {
             data,
@@ -2900,27 +3530,35 @@ async function runBaseInnRegenerationTick() {
                 "inn_regeneration_tick"
             );
 
+
         if (error) {
             throw error;
         }
 
+
         baseInnState =
             data || baseInnState;
+
 
         if (
             character
         ) {
 
+
             character.current_hp =
                 data?.current_pf;
+
 
             character.current_pm =
                 data?.current_pm;
 
+
             updateCharacterPanel();
+
 
             updateBasePresence();
         }
+
 
         const healedPf =
             Math.max(
@@ -2930,6 +3568,7 @@ async function runBaseInnRegenerationTick() {
                 ) || 0
             );
 
+
         const healedPm =
             Math.max(
                 0,
@@ -2938,22 +3577,27 @@ async function runBaseInnRegenerationTick() {
                 ) || 0
             );
 
+
         if (
             healedPf > 0 ||
             healedPm > 0
         ) {
+
 
             setMessage(
                 `Riposo in Locanda: +${healedPf} PF · +${healedPm} PM`
             );
         }
 
+
     } catch (error) {
+
 
         console.warn(
             "Errore rigenerazione area Locanda:",
             error
         );
+
 
         /*
          * Se il server rifiuta il tick perché il personaggio
@@ -2962,12 +3606,16 @@ async function runBaseInnRegenerationTick() {
         baseInnResting =
             false;
 
+
         stopBaseInnTimer();
+
 
         baseInnState =
             null;
 
+
     } finally {
+
 
         baseInnTickBusy =
             false;
@@ -2975,9 +3623,12 @@ async function runBaseInnRegenerationTick() {
 }
 
 
+
+
 // ============================================================
 // BACHECA - INTERAZIONE
 // ============================================================
+
 
 function isBaseNoticeboardCell(
     x,
@@ -2989,6 +3640,8 @@ function isBaseNoticeboardCell(
 }
 
 
+
+
 function isBaseNoticeboardAdjacentToPlayer() {
     if (
         basePlayerX === null ||
@@ -2996,6 +3649,7 @@ function isBaseNoticeboardAdjacentToPlayer() {
     ) {
         return false;
     }
+
 
     for (
         const cellKey
@@ -3009,6 +3663,7 @@ function isBaseNoticeboardAdjacentToPlayer() {
                 .split(",")
                 .map(Number);
 
+
         const distance =
             Math.abs(
                 Number(basePlayerX) -
@@ -3020,6 +3675,7 @@ function isBaseNoticeboardAdjacentToPlayer() {
                 cellY
             );
 
+
         if (
             distance === 1
         ) {
@@ -3027,8 +3683,11 @@ function isBaseNoticeboardAdjacentToPlayer() {
         }
     }
 
+
     return false;
 }
+
+
 
 
 function setupBaseNoticeboard() {
@@ -3037,19 +3696,23 @@ function setupBaseNoticeboard() {
             "base-noticeboard-modal"
         );
 
+
     const closeButton =
         document.getElementById(
             "base-noticeboard-close"
         );
+
 
     const tabs =
         document.querySelectorAll(
             "[data-base-noticeboard-tab]"
         );
 
+
     if (!modal) {
         return;
     }
+
 
     if (closeButton) {
         closeButton.addEventListener(
@@ -3057,6 +3720,7 @@ function setupBaseNoticeboard() {
             closeBaseNoticeboard
         );
     }
+
 
     tabs.forEach(
         tab => {
@@ -3067,6 +3731,7 @@ function setupBaseNoticeboard() {
                         tab.dataset
                             .baseNoticeboardTab;
 
+
                     if (
                         BASE_NOTICEBOARD_CONTENT[
                             tabId
@@ -3075,12 +3740,14 @@ function setupBaseNoticeboard() {
                         baseNoticeboardActiveTab =
                             tabId;
 
+
                         renderBaseNoticeboard();
                     }
                 }
             );
         }
     );
+
 
     modal.addEventListener(
         "click",
@@ -3093,6 +3760,7 @@ function setupBaseNoticeboard() {
             }
         }
     );
+
 
     document.addEventListener(
         "keydown",
@@ -3108,8 +3776,11 @@ function setupBaseNoticeboard() {
         }
     );
 
+
     renderBaseNoticeboard();
 }
+
+
 
 
 function openBaseNoticeboard() {
@@ -3118,19 +3789,25 @@ function openBaseNoticeboard() {
             "base-noticeboard-modal"
         );
 
+
     if (!modal) {
         return;
     }
 
+
     renderBaseNoticeboard();
+
 
     modal.hidden =
         false;
+
 
     document.body.classList.add(
         "base-noticeboard-open"
     );
 }
+
+
 
 
 function closeBaseNoticeboard() {
@@ -3139,17 +3816,22 @@ function closeBaseNoticeboard() {
             "base-noticeboard-modal"
         );
 
+
     if (!modal) {
         return;
     }
 
+
     modal.hidden =
         true;
+
 
     document.body.classList.remove(
         "base-noticeboard-open"
     );
 }
+
+
 
 
 function renderBaseNoticeboard() {
@@ -3158,24 +3840,29 @@ function renderBaseNoticeboard() {
             baseNoticeboardActiveTab
         ];
 
+
     if (!content) {
         return;
     }
+
 
     const title =
         document.getElementById(
             "base-noticeboard-content-title"
         );
 
+
     const list =
         document.getElementById(
             "base-noticeboard-content-list"
         );
 
+
     if (title) {
         title.textContent =
             content.title;
     }
+
 
     if (list) {
         list.innerHTML =
@@ -3192,6 +3879,7 @@ function renderBaseNoticeboard() {
                 .join("");
     }
 
+
     document
         .querySelectorAll(
             "[data-base-noticeboard-tab]"
@@ -3207,6 +3895,8 @@ function renderBaseNoticeboard() {
             }
         );
 }
+
+
 
 
 function escapeBaseNoticeboardHtml(
@@ -3238,9 +3928,12 @@ function escapeBaseNoticeboardHtml(
 }
 
 
+
+
 // ============================================================
 // MOVIMENTO TEST
 // ============================================================
+
 
 function setupBaseMovement() {
     document.addEventListener(
@@ -3248,6 +3941,7 @@ function setupBaseMovement() {
         event => {
             const target =
                 event.target;
+
 
             if (
                 target instanceof HTMLInputElement ||
@@ -3258,8 +3952,10 @@ function setupBaseMovement() {
                 return;
             }
 
+
             let dx = 0;
             let dy = 0;
+
 
             switch (
                 event.key.toLowerCase()
@@ -3269,37 +3965,46 @@ function setupBaseMovement() {
                     dy = -1;
                     break;
 
+
                 case "s":
                 case "arrowdown":
                     dy = 1;
                     break;
+
 
                 case "a":
                 case "arrowleft":
                     dx = -1;
                     break;
 
+
                 case "d":
                 case "arrowright":
                     dx = 1;
                     break;
 
+
                 default:
                     return;
             }
 
+
             event.preventDefault();
+
 
             if (event.repeat) {
                 return;
             }
 
+
             moveBasePlayer(dx, dy);
         }
     );
 
+
     const map =
         document.getElementById("dungeon-map");
+
 
     if (map) {
         map.addEventListener(
@@ -3309,16 +4014,20 @@ function setupBaseMovement() {
                     return;
                 }
 
+
                 const rect =
                     map.getBoundingClientRect();
+
 
                 const cellWidth =
                     rect.width /
                     BASE_MAP_COLUMNS;
 
+
                 const cellHeight =
                     rect.height /
                     BASE_MAP_ROWS;
+
 
                 const clickedX =
                     Math.floor(
@@ -3329,6 +4038,7 @@ function setupBaseMovement() {
                         cellWidth
                     );
 
+
                 const clickedY =
                     Math.floor(
                         (
@@ -3338,13 +4048,16 @@ function setupBaseMovement() {
                         cellHeight
                     );
 
+
                 const dx =
                     clickedX -
                     basePlayerX;
 
+
                 const dy =
                     clickedY -
                     basePlayerY;
+
 
                 if (
                     Math.abs(dx) +
@@ -3354,10 +4067,12 @@ function setupBaseMovement() {
                     return;
                 }
 
+
                 moveBasePlayer(dx, dy);
             }
         );
     }
+
 
     window.addEventListener(
         "resize",
@@ -3367,6 +4082,7 @@ function setupBaseMovement() {
             positionBasePlayerToken();
             positionAllBaseRemotePlayerTokens();
 
+
             if (baseHealModeActive) {
                 renderBaseHealRange();
                 updateBaseHealTargets();
@@ -3374,6 +4090,8 @@ function setupBaseMovement() {
         }
     );
 }
+
+
 
 
 // ============================================================
@@ -3385,9 +4103,12 @@ function setupBaseMovement() {
 // La mappa completa continua ad avere coordinate 27 x 36.
 // ============================================================
 
+
 function setupBaseCamera() {
     updateBaseCamera(true);
 }
+
+
 
 
 function updateBaseCamera(instant = false) {
@@ -3396,10 +4117,12 @@ function updateBaseCamera(instant = false) {
             ".dungeon-map-frame"
         );
 
+
     const map =
         document.getElementById(
             "dungeon-map"
         );
+
 
     if (
         !frame ||
@@ -3410,11 +4133,14 @@ function updateBaseCamera(instant = false) {
         return;
     }
 
+
     const frameRect =
         frame.getBoundingClientRect();
 
+
     const mapRect =
         map.getBoundingClientRect();
+
 
     if (
         frameRect.width <= 0 ||
@@ -3425,13 +4151,16 @@ function updateBaseCamera(instant = false) {
         return;
     }
 
+
     const cellWidth =
         mapRect.width /
         BASE_MAP_COLUMNS;
 
+
     const cellHeight =
         mapRect.height /
         BASE_MAP_ROWS;
+
 
     const playerCenterX =
         (
@@ -3440,6 +4169,7 @@ function updateBaseCamera(instant = false) {
         ) *
         cellWidth;
 
+
     const playerCenterY =
         (
             Number(basePlayerY) +
@@ -3447,13 +4177,16 @@ function updateBaseCamera(instant = false) {
         ) *
         cellHeight;
 
+
     let cameraX =
         playerCenterX -
         frameRect.width / 2;
 
+
     let cameraY =
         playerCenterY -
         frameRect.height / 2;
+
 
     const maxCameraX =
         Math.max(
@@ -3462,12 +4195,14 @@ function updateBaseCamera(instant = false) {
             frameRect.width
         );
 
+
     const maxCameraY =
         Math.max(
             0,
             mapRect.height -
             frameRect.height
         );
+
 
     cameraX =
         Math.max(
@@ -3478,6 +4213,7 @@ function updateBaseCamera(instant = false) {
             )
         );
 
+
     cameraY =
         Math.max(
             0,
@@ -3487,13 +4223,16 @@ function updateBaseCamera(instant = false) {
             )
         );
 
+
     map.style.transition =
         instant
             ? "none"
             : `transform ${BASE_CAMERA_TRANSITION_MS}ms ease-out`;
 
+
     map.style.transform =
         `translate(${-cameraX}px, ${-cameraY}px)`;
+
 
     if (instant) {
         requestAnimationFrame(
@@ -3506,9 +4245,12 @@ function updateBaseCamera(instant = false) {
 }
 
 
+
+
 // ============================================================
 // COLLISIONI LIVELLO BASE
 // ============================================================
+
 
 function isBaseCellWalkable(x, y) {
     if (
@@ -3518,10 +4260,13 @@ function isBaseCellWalkable(x, y) {
         return false;
     }
 
+
     return baseWalkableCells.has(
         `${Number(x)},${Number(y)}`
     );
 }
+
+
 
 
 // ============================================================
@@ -3533,6 +4278,7 @@ function isBaseCellWalkable(x, y) {
 // direzione: da X18 Y9 a X18 Y10 rimane consentito.
 // ============================================================
 
+
 const BASE_BLOCKED_EDGES_BIDIRECTIONAL =
     new Set([
         "7,10|7,9",
@@ -3542,8 +4288,12 @@ const BASE_BLOCKED_EDGES_BIDIRECTIONAL =
     ]);
 
 
+
+
 const BASE_BLOCKED_EDGES_ONE_WAY =
     new Set();
+
+
 
 
 function isBasePassageBlocked(
@@ -3553,11 +4303,15 @@ function isBasePassageBlocked(
     toY
 ) {
 
+
     const directKey =
         `${fromX},${fromY}|${toX},${toY}`;
 
+
     const reverseKey =
         `${toX},${toY}|${fromX},${fromY}`;
+
+
 
 
     if (
@@ -3566,9 +4320,13 @@ function isBasePassageBlocked(
         )
     ) {
 
+
         return true;
 
+
     }
+
+
 
 
     return (
@@ -3583,20 +4341,26 @@ function isBasePassageBlocked(
 }
 
 
+
+
 // ============================================================
 // ESEGUE UN PASSO
 // ============================================================
+
 
 function moveBasePlayer(dx, dy) {
     if (baseHealModeActive) {
         deactivateBaseHealMode();
     }
 
+
     const newX =
         basePlayerX + dx;
 
+
     const newY =
         basePlayerY + dy;
+
 
     if (
         newX < 0 ||
@@ -3608,8 +4372,10 @@ function moveBasePlayer(dx, dy) {
             "Non puoi andare oltre i confini del Livello Base."
         );
 
+
         return false;
     }
+
 
     // ========================================================
     // BACHECA DELLA BASE
@@ -3619,6 +4385,7 @@ function moveBasePlayer(dx, dy) {
     // Tentare di entrarci da una casella adiacente apre il popup.
     // ========================================================
 
+
     if (
         isBaseNoticeboardCell(
             newX,
@@ -3627,8 +4394,10 @@ function moveBasePlayer(dx, dy) {
     ) {
         openBaseNoticeboard();
 
+
         return false;
     }
+
 
     // ========================================================
     // VENDOR - MANO DI SCIMMIA
@@ -3638,6 +4407,7 @@ function moveBasePlayer(dx, dy) {
     // da una casella adiacente, si apre direttamente il negozio.
     // ========================================================
 
+
     if (
         isBaseVendorCell(
             newX,
@@ -3646,8 +4416,11 @@ function moveBasePlayer(dx, dy) {
     ) {
         enterBaseVendor();
 
+
         return false;
     }
+
+
 
 
     // ========================================================
@@ -3665,6 +4438,7 @@ function moveBasePlayer(dx, dy) {
     // a comportarsi normalmente.
     // ========================================================
 
+
     if (
         isBaseRunografoCell(
             newX,
@@ -3674,14 +4448,18 @@ function moveBasePlayer(dx, dy) {
         isBaseRunografoActive()
     ) {
 
+
         enterBaseRunografo();
+
 
         return false;
     }
 
+
     // ========================================================
     // ADDESTRATORE - CODA D'ORSO
     // ========================================================
+
 
     if (
         isBaseAddestratoreCell(newX, newY) &&
@@ -3690,6 +4468,7 @@ function moveBasePlayer(dx, dy) {
         enterBaseAddestratore();
         return false;
     }
+
 
     // ========================================================
     // QUEST GIVER - DENTE DI CASTORO
@@ -3701,6 +4480,7 @@ function moveBasePlayer(dx, dy) {
     // Durante UNBUILT / BUILDING la casella resta libera.
     // ========================================================
 
+
     if (
         isBaseQuestGiverCell(newX, newY) &&
         isBaseQuestGiverActive()
@@ -3708,6 +4488,8 @@ function moveBasePlayer(dx, dy) {
         enterBaseQuestGiver();
         return false;
     }
+
+
 
 
     // ========================================================
@@ -3723,6 +4505,7 @@ function moveBasePlayer(dx, dy) {
     // senza permettere al PG di sovrapporsi al token.
     // ========================================================
 
+
     if (
         isBaseLocandaCell(
             newX,
@@ -3732,14 +4515,18 @@ function moveBasePlayer(dx, dy) {
         isBaseLocandaActive()
     ) {
 
+
         enterBaseLocanda();
+
 
         return false;
     }
 
+
     // ========================================================
     // CANCELLO A SENSO UNICO X18 Y10 -> X18 Y9
     // ========================================================
+
 
     if (
         basePlayerX === 18 &&
@@ -3751,8 +4538,11 @@ function moveBasePlayer(dx, dy) {
             "Questo cancello si può attraversare solo dall'altro lato"
         );
 
+
         return false;
     }
+
+
 
 
     if (
@@ -3767,8 +4557,10 @@ function moveBasePlayer(dx, dy) {
             "Il passaggio è bloccato."
         );
 
+
         return false;
     }
+
 
     // ========================================================
     // CANCELLO CENTRALE X9 Y9 <-> X9 Y10
@@ -3776,6 +4568,7 @@ function moveBasePlayer(dx, dy) {
     // Il passaggio è bloccato finché almeno uno dei due combat
     // Base è disponibile. La funzione vive in eventi_base.js.
     // ========================================================
+
 
     const crossesBaseGate =
         (
@@ -3792,6 +4585,7 @@ function moveBasePlayer(dx, dy) {
             newY === 9
         );
 
+
     if (
         crossesBaseGate &&
         typeof isBaseFilterBlocked === "function" &&
@@ -3801,8 +4595,10 @@ function moveBasePlayer(dx, dy) {
             "Il cancello è chiuso. Si aprirà quando non ci saranno nemici nelle vicinanze"
         );
 
+
         return false;
     }
+
 
     if (
         !isBaseCellWalkable(
@@ -3814,21 +4610,27 @@ function moveBasePlayer(dx, dy) {
             "Il passaggio è bloccato."
         );
 
+
         return false;
     }
 
+
     basePlayerX = newX;
     basePlayerY = newY;
+
 
     positionBasePlayerToken();
     updateBaseCoordinates();
     updateBaseCamera();
 
+
     scheduleBasePositionSave();
+
 
     // Il movimento multiplayer usa esclusivamente Broadcast.
     // Presence resta dedicata a ingresso/uscita e riallineamento.
     broadcastBasePlayerState();
+
 
  if (
     typeof checkBaseTeleportEvent ===
@@ -3836,6 +4638,8 @@ function moveBasePlayer(dx, dy) {
 ) {
     checkBaseTeleportEvent();
 }
+
+
 
 
 // ========================================================
@@ -3848,12 +4652,15 @@ function moveBasePlayer(dx, dy) {
 // due scontri quando il PG si trova nella zona centrale.
 // ========================================================
 
+
 if (
     typeof checkNearbyBaseCombatEvents ===
     "function"
 ) {
     checkNearbyBaseCombatEvents();
 }
+
+
 
 
 // ========================================================
@@ -3867,6 +4674,7 @@ if (
 // mostrare e quale stato del servizio rappresentare.
 // ========================================================
 
+
 if (
     typeof checkBaseServiceArea ===
     "function"
@@ -3878,60 +4686,83 @@ if (
 }
 
 
+
+
 // Aggiorna il riposo della Locanda dopo ogni movimento.
 updateBaseInnRestState();
 
+
 renderBaseTradeNearbyPlayers();
 refreshBaseTradeAdjacencyState();
+
 
 setMessage(
     `Ti muovi nel Livello Base. X ${basePlayerX} · Y ${basePlayerY}`
 );
 
+
 return true;
 
+
 }
+
+
 
 
 // ============================================================
 // SALVATAGGIO POSIZIONE BASE
 // ============================================================
 
+
 function scheduleBasePositionSave() {
+
 
     basePositionSavePending =
         true;
+
+
 
 
     if (
         basePositionSaveTimer
     ) {
 
+
         clearTimeout(
             basePositionSaveTimer
         );
 
+
     }
+
+
 
 
     basePositionSaveTimer =
         setTimeout(
             () => {
 
+
                 flushBasePositionSave();
+
 
             },
             120
         );
 
+
 }
+
+
 
 
 // ============================================================
 // SALVA ULTIMA POSIZIONE NEL DATABASE
 // ============================================================
 
+
 async function flushBasePositionSave() {
+
 
     if (
         !character ||
@@ -3939,38 +4770,54 @@ async function flushBasePositionSave() {
         basePlayerY === null
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     if (
         basePositionSaveRunning
     ) {
 
+
         basePositionSavePending =
             true;
 
+
         return;
 
+
     }
+
+
 
 
     basePositionSaveRunning =
         true;
 
+
     basePositionSavePending =
         false;
+
+
 
 
     const saveX =
         Number(basePlayerX);
 
+
     const saveY =
         Number(basePlayerY);
 
 
+
+
     try {
+
 
         const {
             error
@@ -3979,11 +4826,14 @@ async function flushBasePositionSave() {
                 .from("characters")
                 .update({
 
+
                     base_x:
                         saveX,
 
+
                     base_y:
                         saveY
+
 
                 })
                 .eq(
@@ -3992,21 +4842,31 @@ async function flushBasePositionSave() {
                 );
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
+
+
 
 
         character.base_x =
             saveX;
 
+
         character.base_y =
             saveY;
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore salvataggio posizione Base:",
@@ -4014,15 +4874,22 @@ async function flushBasePositionSave() {
         );
 
 
+
+
         setMessage(
             "Movimento effettuato, ma la posizione non è stata salvata."
         );
 
 
+
+
     } finally {
+
 
         basePositionSaveRunning =
             false;
+
+
 
 
         if (
@@ -4031,29 +4898,40 @@ async function flushBasePositionSave() {
             saveY !== basePlayerY
         ) {
 
+
             flushBasePositionSave();
+
 
         }
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // VOLUME
 // ============================================================
 
+
 const BASE_VOLUME_KEY =
     "palazzo-eterno-base-volume";
+
 
 let baseVolume =
     loadBaseVolume();
 
+
 let baseMusic = null;
+
 
 function startBackgroundMusic(src) {
     if (!src || baseMusic) return;
+
 
     try {
         const audio = new Audio(src);
@@ -4061,6 +4939,7 @@ function startBackgroundMusic(src) {
         audio.preload = "auto";
         audio.volume = baseVolume;
         baseMusic = audio;
+
 
         const tryPlay = () => {
             try {
@@ -4075,7 +4954,9 @@ function startBackgroundMusic(src) {
             }
         };
 
+
         tryPlay();
+
 
         // I browser possono richiedere una prima interazione.
         // Utilizziamo lo stesso comportamento del Dungeon.
@@ -4087,6 +4968,7 @@ function startBackgroundMusic(src) {
     }
 }
 
+
 function loadBaseVolume() {
     try {
         const saved =
@@ -4094,13 +4976,16 @@ function loadBaseVolume() {
                 BASE_VOLUME_KEY
             );
 
+
         // Come nel Dungeon: nessuna preferenza salvata = 35%, non 0%.
         if (saved === null || saved === "") {
             return 0.35;
         }
 
+
         const value =
             Number(saved);
+
 
         return Number.isFinite(value)
             ? Math.max(
@@ -4109,10 +4994,12 @@ function loadBaseVolume() {
             )
             : 0.35;
 
+
     } catch {
         return 0.35;
     }
 }
+
 
 function volumeIcon(volume) {
     if (volume <= 0) return "🔇";
@@ -4120,31 +5007,37 @@ function volumeIcon(volume) {
     return "🔊";
 }
 
+
 function setupBaseVolumeControl() {
     const control =
         document.querySelector(
             ".dungeon-volume-control"
         );
 
+
     const button =
         document.getElementById(
             "dungeon-volume-button"
         );
+
 
     const popover =
         document.getElementById(
             "dungeon-volume-popover"
         );
 
+
     const slider =
         document.getElementById(
             "dungeon-volume-slider"
         );
 
+
     const value =
         document.getElementById(
             "dungeon-volume-value"
         );
+
 
     if (
         !control ||
@@ -4155,21 +5048,26 @@ function setupBaseVolumeControl() {
         return;
     }
 
+
     const updateUI = () => {
         const percentage =
             Math.round(baseVolume * 100);
+
 
         button.textContent =
             volumeIcon(baseVolume);
         button.title = `Volume musica: ${percentage}%`;
 
+
         slider.value =
             String(percentage);
+
 
         if (value) {
             value.textContent =
                 `${percentage}%`;
         }
+
 
         if (baseMusic) {
             baseMusic.volume =
@@ -4177,7 +5075,9 @@ function setupBaseVolumeControl() {
         }
     };
 
+
     updateUI();
+
 
     button.addEventListener(
         "click",
@@ -4185,8 +5085,10 @@ function setupBaseVolumeControl() {
             event.preventDefault();
             event.stopPropagation();
 
+
             popover.hidden =
                 !popover.hidden;
+
 
             button.setAttribute(
                 "aria-expanded",
@@ -4196,6 +5098,7 @@ function setupBaseVolumeControl() {
             );
         }
     );
+
 
     slider.addEventListener(
         "input",
@@ -4209,6 +5112,7 @@ function setupBaseVolumeControl() {
                     )
                 );
 
+
             try {
                 localStorage.setItem(
                     BASE_VOLUME_KEY,
@@ -4216,9 +5120,11 @@ function setupBaseVolumeControl() {
                 );
             } catch {}
 
+
             updateUI();
         }
     );
+
 
     document.addEventListener(
         "click",
@@ -4231,7 +5137,9 @@ function setupBaseVolumeControl() {
                 return;
             }
 
+
             popover.hidden = true;
+
 
             button.setAttribute(
                 "aria-expanded",
@@ -4242,9 +5150,12 @@ function setupBaseVolumeControl() {
 }
 
 
+
+
 // ============================================================
 // RISONANZA · TOP 5
 // ============================================================
+
 
 // Risonanza personale: stesso calcolo della scheda e della Top 5.
 // Un errore RPC non interrompe il caricamento o i movimenti.
@@ -4270,7 +5181,9 @@ async function loadBaseResonanceScore() {
     }
 }
 
+
 async function loadBaseLeaderboard() {
+
 
     const container =
         document.getElementById(
@@ -4278,14 +5191,21 @@ async function loadBaseLeaderboard() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     try {
+
 
         const {
             data,
@@ -4300,11 +5220,17 @@ async function loadBaseLeaderboard() {
             );
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
+
+
 
 
         renderBaseLeaderboard(
@@ -4312,12 +5238,17 @@ async function loadBaseLeaderboard() {
         );
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore caricamento Top 5 Risonanza:",
             error
         );
+
+
 
 
         container.innerHTML =
@@ -4327,9 +5258,13 @@ async function loadBaseLeaderboard() {
                 </div>
             `;
 
+
     }
 
+
 }
+
+
 
 
 function renderBaseLeaderboard(rows) {
@@ -4339,6 +5274,7 @@ function renderBaseLeaderboard(rows) {
         container.innerHTML = '<div class="dungeon-leaderboard-empty">Nessun personaggio vivo in classifica.</div>';
         return;
     }
+
 
     container.innerHTML = rows.map(row => {
         const position = Number(row.posizione) || 0;
@@ -4375,20 +5311,28 @@ function renderBaseLeaderboard(rows) {
 }
 
 
+
+
 // ============================================================
 // REALTIME / PERSONAGGI ONLINE
 // ============================================================
 
+
 async function setupBaseRealtime() {
+
 
     if (
         !character ||
         !currentUser
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     baseChannel =
@@ -4405,6 +5349,8 @@ async function setupBaseRealtime() {
         );
 
 
+
+
     baseChannel.on(
         "presence",
         {
@@ -4413,19 +5359,24 @@ async function setupBaseRealtime() {
         },
         () => {
 
+
             // Presence serve solo a sapere chi è online e ad
             // inizializzare/riallineare i token. Non eliminiamo
             // giocatori durante un normale sync.
             syncBaseRemotePlayers();
             renderBaseOnlinePlayers();
 
+
         }
     );
+
+
 
 
     // ========================================================
     // PRESENCE JOIN
     // ========================================================
+
 
     baseChannel.on(
         "presence",
@@ -4435,8 +5386,10 @@ async function setupBaseRealtime() {
         },
         ({ newPresences }) => {
 
+
             (newPresences || []).forEach(
                 presence => {
+
 
                     if (
                         !presence?.character_id ||
@@ -4445,6 +5398,7 @@ async function setupBaseRealtime() {
                         return;
                     }
 
+
                     if (
                         presence.location &&
                         presence.location !== "base"
@@ -4452,22 +5406,29 @@ async function setupBaseRealtime() {
                         return;
                     }
 
+
                     updateBaseRemotePlayer(
                         presence
                     );
 
+
                 }
             );
 
+
             renderBaseOnlinePlayers();
+
 
         }
     );
 
 
+
+
     // ========================================================
     // PRESENCE LEAVE
     // ========================================================
+
 
     baseChannel.on(
         "presence",
@@ -4477,14 +5438,18 @@ async function setupBaseRealtime() {
         },
         ({ leftPresences }) => {
 
+
             const state =
                 baseChannel.presenceState();
+
 
             (leftPresences || []).forEach(
                 presence => {
 
+
                     const id =
                         presence?.character_id;
+
 
                     if (
                         !id ||
@@ -4492,6 +5457,7 @@ async function setupBaseRealtime() {
                     ) {
                         return;
                     }
+
 
                     // Lo stesso PG può avere più Presence aperte.
                     // Rimuoviamo il token solo quando non ne resta
@@ -4505,41 +5471,52 @@ async function setupBaseRealtime() {
                                 )
                         );
 
+
                     if (stillOnline) {
                         return;
                     }
+
 
                     const token =
                         baseOtherPlayerTokens.get(
                             id
                         );
 
+
                     if (token) {
                         token.remove();
                     }
+
 
                     baseOtherPlayerTokens.delete(
                         id
                     );
 
+
                     baseOtherPlayers.delete(
                         id
                     );
 
+
                 }
             );
+
 
             renderBaseOnlinePlayers();
             renderBaseTradeNearbyPlayers();
             refreshBaseTradeAdjacencyState();
 
+
         }
     );
+
+
 
 
     // ========================================================
     // MOVIMENTO ALTRI GIOCATORI
     // ========================================================
+
 
     baseChannel.on(
         "broadcast",
@@ -4549,12 +5526,15 @@ async function setupBaseRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
+
 
             if (!data) {
                 return;
             }
+
 
             if (
                 data.character_id ===
@@ -4563,12 +5543,14 @@ async function setupBaseRealtime() {
                 return;
             }
 
+
             if (
                 data.location &&
                 data.location !== "base"
             ) {
                 return;
             }
+
 
             console.log(
                 "[RT BASE] RX base-player-move",
@@ -4577,17 +5559,22 @@ async function setupBaseRealtime() {
                 data.y
             );
 
+
             updateBaseRemotePlayer(
                 data
             );
+
 
         }
     );
 
 
+
+
     // ========================================================
     // CURA REMOTA
     // ========================================================
+
 
     baseChannel.on(
         "broadcast",
@@ -4598,9 +5585,11 @@ async function setupBaseRealtime() {
         message => {
             const data = message?.payload;
 
+
             if (!data) {
                 return;
             }
+
 
             if (
                 data.target_character_id === character?.id &&
@@ -4610,14 +5599,18 @@ async function setupBaseRealtime() {
                 updateCharacterPanel();
                 updateBaseActionAvailability();
 
+
                 setMessage(
                     `${data.caster_name || "Un alleato"} ti ha curato di ${Number(data.healed_amount) || 0} PF.`
                 );
+
 
                 updateBasePresence();
             }
         }
     );
+
+
 
 
     baseChannel.on(
@@ -4634,6 +5627,8 @@ async function setupBaseRealtime() {
     );
 
 
+
+
     baseChannel.on(
         "broadcast",
         {
@@ -4648,6 +5643,8 @@ async function setupBaseRealtime() {
     );
 
 
+
+
     baseChannel.on(
         "broadcast",
         {
@@ -4656,23 +5653,33 @@ async function setupBaseRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
 
 
+
+
             if (!data) {
+
 
                 return;
 
+
             }
+
+
 
 
             addBaseChatMessage(
                 data
             );
 
+
         }
     );
+
+
 
 
     await new Promise(
@@ -4681,8 +5688,10 @@ async function setupBaseRealtime() {
             reject
         ) => {
 
+
             baseChannel.subscribe(
                 async status => {
+
 
                     console.log(
                         "Realtime Base:",
@@ -4690,41 +5699,57 @@ async function setupBaseRealtime() {
                     );
 
 
+
+
                     if (
                         status ===
                         "SUBSCRIBED"
                     ) {
 
+
                         baseRealtimeReady =
                             true;
 
 
+
+
                         try {
+
 
                             await baseChannel.track(
                                 getMyBasePresenceData()
                             );
+
 
                             // Comunichiamo subito la posizione corrente
                             // dopo la connessione; se ci siamo mossi durante
                             // il collegamento, viene inviata l'ultima.
                             await broadcastBasePlayerState();
 
+
                             syncBaseRemotePlayers();
                             renderBaseOnlinePlayers();
+
 
                             resolve();
 
 
+
+
                         } catch (error) {
+
 
                             reject(
                                 error
                             );
 
+
                         }
 
+
                     }
+
+
 
 
                     if (
@@ -4732,70 +5757,94 @@ async function setupBaseRealtime() {
                         "CHANNEL_ERROR"
                     ) {
 
+
                         reject(
                             new Error(
                                 "Errore nel canale realtime del Livello Base."
                             )
                         );
 
+
                     }
+
 
                 }
             );
 
+
         }
     );
+
 
 }
 
 
+
+
 function getMyBasePresenceData() {
 
+
     return {
+
 
         character_id:
             character.id,
 
+
         user_id:
             currentUser.id,
+
 
         name:
             character.nome ||
             "Avventuriero",
 
+
         token:
             character.token ||
             "token_1.png",
 
+
         x:
             Number(basePlayerX),
+
 
         y:
             Number(basePlayerY),
 
+
         current_hp:
             character.current_hp,
+
 
         active_combat_id:
             character.active_combat_id ||
             null,
 
+
         in_combat:
             !!character.active_combat_id,
 
+
         location:
             "base",
+
 
         online_at:
             new Date()
                 .toISOString()
 
+
     };
+
 
 }
 
 
+
+
 async function updateBasePresence() {
+
 
     if (
         !baseChannel ||
@@ -4803,39 +5852,54 @@ async function updateBasePresence() {
         !character
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     try {
+
 
         await baseChannel.track(
             getMyBasePresenceData()
         );
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore aggiornamento Presence Base:",
             error
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // BROADCAST POSIZIONE BASE
 // ============================================================
 
+
 async function broadcastBasePlayerState() {
+
 
     if (!character) {
         return;
     }
+
 
     if (
         !baseChannel ||
@@ -4845,7 +5909,9 @@ async function broadcastBasePlayerState() {
         return;
     }
 
+
     try {
+
 
         console.log(
             "[RT BASE] TX base-player-move",
@@ -4854,64 +5920,88 @@ async function broadcastBasePlayerState() {
             basePlayerY
         );
 
+
         await baseChannel.send({
+
 
             type:
                 "broadcast",
 
+
             event:
                 "base-player-move",
 
+
             payload: {
+
 
                 character_id:
                     character.id,
+
 
                 name:
                     character.nome ||
                     "Avventuriero",
 
+
                 token:
                     character.token ||
                     "token_1.png",
 
+
                 x:
                     Number(basePlayerX),
+
 
                 y:
                     Number(basePlayerY),
 
+
                 current_hp:
                     character.current_hp,
+
 
                 active_combat_id:
                     character.active_combat_id ||
                     null,
 
+
                 in_combat:
                     !!character.active_combat_id,
+
 
                 location:
                     "base"
 
+
             }
+
 
         });
 
+
         baseBroadcastPending = false;
+
 
     } catch (error) {
 
+
         baseBroadcastPending = true;
+
 
         console.error(
             "Errore broadcast posizione Base:",
             error
         );
 
+
     }
 
+
 }
+
+
+
 
 
 
@@ -4919,7 +6009,9 @@ async function broadcastBasePlayerState() {
 // SINCRONIZZA TOKEN DEGLI ALTRI GIOCATORI NELLA BASE
 // ============================================================
 
+
 function syncBaseRemotePlayers() {
+
 
     if (
         !baseChannel ||
@@ -4928,17 +6020,22 @@ function syncBaseRemotePlayers() {
         return;
     }
 
+
     const state =
         baseChannel.presenceState();
+
 
     const onlineIds =
         new Set();
 
+
     Object.values(state).forEach(
         presences => {
 
+
             presences.forEach(
                 presence => {
+
 
                     if (
                         !presence ||
@@ -4947,12 +6044,14 @@ function syncBaseRemotePlayers() {
                         return;
                     }
 
+
                     if (
                         presence.character_id ===
                         character.id
                     ) {
                         return;
                     }
+
 
                     // Sicurezza: sulla mappa Base renderizziamo
                     // soltanto Presence dichiarate come Base.
@@ -4963,11 +6062,14 @@ function syncBaseRemotePlayers() {
                         return;
                     }
 
+
                     const x =
                         Number(presence.x);
 
+
                     const y =
                         Number(presence.y);
+
 
                     if (
                         !Number.isFinite(x) ||
@@ -4976,28 +6078,38 @@ function syncBaseRemotePlayers() {
                         return;
                     }
 
+
                     onlineIds.add(
                         presence.character_id
                     );
+
 
                     updateBaseRemotePlayer(
                         presence
                     );
 
+
                 }
             );
 
+
         }
     );
+
 
     // I token NON vengono rimossi durante un normale sync Presence.
     // La rimozione avviene esclusivamente su un vero evento leave.
 
 
+
+
 }
 
 
+
+
 function updateBaseRemotePlayer(data) {
+
 
     if (
         !data ||
@@ -5008,8 +6120,10 @@ function updateBaseRemotePlayer(data) {
         return;
     }
 
+
     const x = Number(data.x);
     const y = Number(data.y);
+
 
     if (
         !Number.isFinite(x) ||
@@ -5018,10 +6132,12 @@ function updateBaseRemotePlayer(data) {
         return;
     }
 
+
     const previous =
         baseOtherPlayers.get(
             data.character_id
         ) || {};
+
 
     baseOtherPlayers.set(
         data.character_id,
@@ -5054,78 +6170,100 @@ function updateBaseRemotePlayer(data) {
         }
     );
 
+
     showBaseRemotePlayerToken(
         data.character_id
     );
 
+
     renderBaseTradeNearbyPlayers();
     refreshBaseTradeAdjacencyState();
+
 
     if (baseHealModeActive) {
         updateBaseHealTargets();
     }
 
+
 }
+
+
 
 
 function showBaseRemotePlayerToken(
     characterId
 ) {
 
+
     const map =
         document.getElementById(
             "dungeon-map"
         );
 
+
     if (!map) {
         return;
     }
+
 
     const player =
         baseOtherPlayers.get(
             characterId
         );
 
+
     if (!player) {
         return;
     }
+
 
     let token =
         baseOtherPlayerTokens.get(
             characterId
         );
 
+
     if (!token) {
+
 
         token =
             document.createElement(
                 "div"
             );
 
+
         token.className =
             "dungeon-player-token other-player-token";
 
+
         token.dataset.characterId =
             characterId;
+
 
         const image =
             document.createElement(
                 "img"
             );
 
+
         image.draggable = false;
 
+
         token.appendChild(image);
+
 
         const label =
             document.createElement(
                 "div"
             );
 
+
         label.className =
             "other-player-name";
 
+
         token.appendChild(label);
+
 
         token.addEventListener(
             "click",
@@ -5134,15 +6272,19 @@ function showBaseRemotePlayerToken(
                     return;
                 }
 
+
                 event.preventDefault();
                 event.stopPropagation();
+
 
                 const currentTarget =
                     baseOtherPlayers.get(characterId);
 
+
                 if (!currentTarget) {
                     return;
                 }
+
 
                 await castBaseHealOnCharacter(
                     characterId,
@@ -5151,22 +6293,28 @@ function showBaseRemotePlayerToken(
             }
         );
 
+
         map.appendChild(token);
+
 
         baseOtherPlayerTokens.set(
             characterId,
             token
         );
 
+
     }
+
 
     const image =
         token.querySelector("img");
+
 
     const label =
         token.querySelector(
             ".other-player-name"
         );
+
 
     if (image) {
         image.src =
@@ -5180,25 +6328,30 @@ function showBaseRemotePlayerToken(
             "Avventuriero";
     }
 
+
     if (label) {
         label.textContent =
             player.name ||
             "Avventuriero";
     }
 
+
     const inCombat =
         player.in_combat === true ||
         !!player.active_combat_id;
+
 
     token.classList.toggle(
         "is-in-combat",
         inCombat
     );
 
+
     token.title =
         inCombat
             ? `${player.name} - IN COMBATTIMENTO`
             : player.name;
+
 
     positionBaseRemotePlayerToken(
         token,
@@ -5206,7 +6359,10 @@ function showBaseRemotePlayerToken(
         player.y
     );
 
+
 }
+
+
 
 
 function positionBaseRemotePlayerToken(
@@ -5215,10 +6371,12 @@ function positionBaseRemotePlayerToken(
     y
 ) {
 
+
     const map =
         document.getElementById(
             "dungeon-map"
         );
+
 
     if (
         !map ||
@@ -5227,8 +6385,10 @@ function positionBaseRemotePlayerToken(
         return;
     }
 
+
     const rect =
         map.getBoundingClientRect();
+
 
     if (
         rect.width <= 0 ||
@@ -5237,13 +6397,16 @@ function positionBaseRemotePlayerToken(
         return;
     }
 
+
     const cellWidth =
         rect.width /
         BASE_MAP_COLUMNS;
 
+
     const cellHeight =
         rect.height /
         BASE_MAP_ROWS;
+
 
     const tokenSize =
         Math.min(
@@ -5251,25 +6414,34 @@ function positionBaseRemotePlayerToken(
             cellHeight
         ) * 0.88;
 
+
     element.style.width =
         `${tokenSize}px`;
+
 
     element.style.height =
         `${tokenSize}px`;
 
+
     element.style.left =
         `${(Number(x) + 0.5) * cellWidth - tokenSize / 2}px`;
+
 
     element.style.top =
         `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
 
+
     element.style.zIndex =
         "19";
+
 
 }
 
 
+
+
 function positionAllBaseRemotePlayerTokens() {
+
 
     for (
         const [
@@ -5278,14 +6450,17 @@ function positionAllBaseRemotePlayerTokens() {
         ] of baseOtherPlayerTokens
     ) {
 
+
         const player =
             baseOtherPlayers.get(
                 characterId
             );
 
+
         if (!player) {
             continue;
         }
+
 
         positionBaseRemotePlayerToken(
             token,
@@ -5293,12 +6468,17 @@ function positionAllBaseRemotePlayerTokens() {
             player.y
         );
 
+
     }
+
 
 }
 
 
+
+
 function renderBaseOnlinePlayers() {
+
 
     const container =
         document.getElementById(
@@ -5306,17 +6486,24 @@ function renderBaseOnlinePlayers() {
         );
 
 
+
+
     if (!container) {
+
 
         return;
 
+
     }
+
+
 
 
     if (
         !baseChannel ||
         !character
     ) {
+
 
         container.innerHTML =
             `
@@ -5325,17 +6512,25 @@ function renderBaseOnlinePlayers() {
                 </div>
             `;
 
+
         return;
 
+
     }
+
+
 
 
     const state =
         baseChannel.presenceState();
 
 
+
+
     const playersById =
         new Map();
+
+
 
 
     Object.values(
@@ -5343,23 +6538,31 @@ function renderBaseOnlinePlayers() {
     ).forEach(
         presences => {
 
+
             presences.forEach(
                 presence => {
+
 
                     if (
                         !presence ||
                         !presence.character_id
                     ) {
 
+
                         return;
 
+
                     }
+
+
 
 
                     const previous =
                         playersById.get(
                             presence.character_id
                         );
+
+
 
 
                     if (
@@ -5374,18 +6577,24 @@ function renderBaseOnlinePlayers() {
                         )
                     ) {
 
+
                         playersById.set(
                             presence.character_id,
                             presence
                         );
 
+
                     }
+
 
                 }
             );
 
+
         }
     );
+
+
 
 
     if (
@@ -5395,12 +6604,16 @@ function renderBaseOnlinePlayers() {
         )
     ) {
 
+
         playersById.set(
             character.id,
             getMyBasePresenceData()
         );
 
+
     }
+
+
 
 
     const players =
@@ -5413,13 +6626,17 @@ function renderBaseOnlinePlayers() {
                     b
                 ) => {
 
+
                     const aIsMe =
                         a.character_id ===
                         character.id;
 
+
                     const bIsMe =
                         b.character_id ===
                         character.id;
+
+
 
 
                     if (
@@ -5427,11 +6644,15 @@ function renderBaseOnlinePlayers() {
                         bIsMe
                     ) {
 
+
                         return aIsMe
                             ? -1
                             : 1;
 
+
                     }
+
+
 
 
                     return String(
@@ -5445,14 +6666,18 @@ function renderBaseOnlinePlayers() {
                         "it"
                     );
 
+
                 }
             );
+
+
 
 
     if (
         players.length ===
         0
     ) {
+
 
         container.innerHTML =
             `
@@ -5461,16 +6686,23 @@ function renderBaseOnlinePlayers() {
                 </div>
             `;
 
+
         return;
 
+
     }
+
+
 
 
     container.replaceChildren();
 
 
+
+
     players.forEach(
         player => {
+
 
             const row =
                 document.createElement(
@@ -5478,8 +6710,12 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             row.className =
                 "dungeon-online-row";
+
+
 
 
             const image =
@@ -5488,8 +6724,12 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             image.className =
                 "dungeon-online-token";
+
+
 
 
             image.src =
@@ -5500,9 +6740,13 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             image.alt =
                 player.name ||
                 "Personaggio";
+
+
 
 
             const info =
@@ -5511,8 +6755,12 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             info.className =
                 "dungeon-online-info";
+
+
 
 
             const name =
@@ -5521,13 +6769,19 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             name.className =
                 "dungeon-online-name";
+
+
 
 
             const isMe =
                 player.character_id ===
                 character.id;
+
+
 
 
             name.textContent =
@@ -5541,18 +6795,26 @@ function renderBaseOnlinePlayers() {
                 }`;
 
 
+
+
             const status =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             status.className =
                 "dungeon-online-status";
 
 
+
+
             status.textContent =
                 "Nel Livello Base";
+
+
 
 
             const dot =
@@ -5561,14 +6823,20 @@ function renderBaseOnlinePlayers() {
                 );
 
 
+
+
             dot.className =
                 "dungeon-online-dot";
+
+
 
 
             info.append(
                 name,
                 status
             );
+
+
 
 
             row.append(
@@ -5578,26 +6846,36 @@ function renderBaseOnlinePlayers() {
             );
 
 
+
+
             container.appendChild(
                 row
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CHAT LIVELLO BASE
 // ============================================================
 
+
 function setupBaseChat() {
+
 
     const input =
         document.getElementById(
             "floor-chat-input"
         );
+
+
 
 
     const button =
@@ -5606,14 +6884,20 @@ function setupBaseChat() {
         );
 
 
+
+
     if (
         !input ||
         !button
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     // base.html nasceva con la chat disabilitata.
@@ -5621,28 +6905,37 @@ function setupBaseChat() {
     input.disabled =
         false;
 
+
     button.disabled =
         false;
 
+
     input.placeholder =
         "Scrivi...";
+
+
 
 
     button.addEventListener(
         "click",
         async () => {
 
+
             await sendBaseChatMessage(
                 input
             );
+
 
         }
     );
 
 
+
+
     input.addEventListener(
         "keydown",
         async event => {
+
 
             if (
                 event.key !==
@@ -5650,25 +6943,36 @@ function setupBaseChat() {
                 event.shiftKey
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             event.preventDefault();
+
+
 
 
             await sendBaseChatMessage(
                 input
             );
 
+
         }
     );
+
 
 }
 
 
+
+
 async function loadBaseChatHistory() {
+
 
     const container =
         document.getElementById(
@@ -5676,14 +6980,21 @@ async function loadBaseChatHistory() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     try {
+
 
         const {
             data,
@@ -5716,18 +7027,28 @@ async function loadBaseChatHistory() {
                 );
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
+
+
 
 
         renderedBaseChatMessageIds.clear();
 
 
+
+
         container.innerHTML =
             "";
+
+
 
 
         const rows =
@@ -5736,10 +7057,13 @@ async function loadBaseChatHistory() {
                 : [];
 
 
+
+
         if (
             rows.length ===
             0
         ) {
+
 
             container.innerHTML =
                 `
@@ -5748,55 +7072,75 @@ async function loadBaseChatHistory() {
                     </div>
                 `;
 
+
             return;
 
+
         }
+
+
 
 
         rows.forEach(
             row => {
 
+
                 addBaseChatMessage(
                     {
+
 
                         id:
                             row.id,
 
+
                         character_id:
                             row.character_id,
+
 
                         name:
                             row.sender_name,
 
+
                         text:
                             row.message_text,
 
+
                         timestamp:
                             row.created_at
+
 
                     },
                     true
                 );
 
+
             }
         );
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore caricamento storico chat Base:",
             error
         );
 
+
     }
 
+
 }
+
+
 
 
 async function sendBaseChatMessage(
     input
 ) {
+
 
     if (
         !input ||
@@ -5804,31 +7148,46 @@ async function sendBaseChatMessage(
         !currentUser
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const messageText =
         input.value.trim();
 
 
+
+
     if (!messageText) {
+
 
         return;
 
+
     }
+
+
 
 
     const originalValue =
         input.value;
 
 
+
+
     input.value =
         "";
 
 
+
+
     try {
+
 
         const {
             data: savedMessage,
@@ -5840,21 +7199,27 @@ async function sendBaseChatMessage(
                 )
                 .insert({
 
+
                     floor_id:
                         BASE_CHAT_FLOOR_ID,
+
 
                     character_id:
                         character.id,
 
+
                     user_id:
                         currentUser.id,
+
 
                     sender_name:
                         character.nome ||
                         "Avventuriero",
 
+
                     message_text:
                         messageText
+
 
                 })
                 .select(`
@@ -5867,36 +7232,50 @@ async function sendBaseChatMessage(
                 .single();
 
 
+
+
         if (error) {
 
+
             throw error;
+
 
         }
 
 
+
+
         const message = {
+
 
             id:
                 savedMessage.id,
 
+
             character_id:
                 savedMessage.character_id,
+
 
             name:
                 savedMessage.sender_name ||
                 character.nome ||
                 "Avventuriero",
 
+
             text:
                 savedMessage.message_text ||
                 messageText,
+
 
             timestamp:
                 savedMessage.created_at ||
                 new Date()
                     .toISOString()
 
+
         };
+
+
 
 
         addBaseChatMessage(
@@ -5904,40 +7283,56 @@ async function sendBaseChatMessage(
         );
 
 
+
+
         if (
             baseChannel &&
             baseRealtimeReady
         ) {
 
+
             try {
 
+
                 await baseChannel.send({
+
 
                     type:
                         "broadcast",
 
+
                     event:
                         "base-chat",
+
 
                     payload:
                         message
 
+
                 });
 
 
+
+
             } catch (broadcastError) {
+
 
                 console.error(
                     "Errore broadcast chat Base:",
                     broadcastError
                 );
 
+
             }
+
 
         }
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore salvataggio chat Base:",
@@ -5945,17 +7340,25 @@ async function sendBaseChatMessage(
         );
 
 
+
+
         input.value =
             originalValue;
+
+
 
 
         setMessage(
             "Non è stato possibile inviare il messaggio."
         );
 
+
     }
 
+
 }
+
+
 
 
 function addBaseChatMessage(
@@ -5963,11 +7366,16 @@ function addBaseChatMessage(
     fromHistory = false
 ) {
 
+
     if (!message) {
+
 
         return;
 
+
     }
+
+
 
 
     const container =
@@ -5976,11 +7384,17 @@ function addBaseChatMessage(
         );
 
 
+
+
     if (!container) {
+
 
         return;
 
+
     }
+
+
 
 
     const messageId =
@@ -5991,6 +7405,8 @@ function addBaseChatMessage(
             : null;
 
 
+
+
     if (
         messageId &&
         renderedBaseChatMessageIds.has(
@@ -5998,18 +7414,26 @@ function addBaseChatMessage(
         )
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     if (messageId) {
+
 
         renderedBaseChatMessageIds.add(
             messageId
         );
 
+
     }
+
+
 
 
     const placeholder =
@@ -6018,11 +7442,17 @@ function addBaseChatMessage(
         );
 
 
+
+
     if (placeholder) {
+
 
         placeholder.remove();
 
+
     }
+
+
 
 
     const row =
@@ -6031,16 +7461,24 @@ function addBaseChatMessage(
         );
 
 
+
+
     row.className =
         "floor-chat-message";
 
 
+
+
     if (messageId) {
+
 
         row.dataset.messageId =
             messageId;
 
+
     }
+
+
 
 
     if (
@@ -6049,11 +7487,15 @@ function addBaseChatMessage(
         character.id
     ) {
 
+
         row.classList.add(
             "mine"
         );
 
+
     }
+
+
 
 
     const name =
@@ -6062,13 +7504,19 @@ function addBaseChatMessage(
         );
 
 
+
+
     name.className =
         "floor-chat-name";
+
+
 
 
     name.textContent =
         message.name ||
         "Avventuriero";
+
+
 
 
     const textElement =
@@ -6077,13 +7525,19 @@ function addBaseChatMessage(
         );
 
 
+
+
     textElement.className =
         "floor-chat-text";
+
+
 
 
     textElement.textContent =
         message.text ||
         "";
+
+
 
 
     row.append(
@@ -6095,25 +7549,37 @@ function addBaseChatMessage(
     );
 
 
+
+
     if (fromHistory) {
+
 
         container.appendChild(
             row
         );
 
+
     } else {
+
 
         container.prepend(
             row
         );
 
+
     }
+
+
 
 
     container.scrollTop =
         0;
 
+
 }
+
+
+
 
 
 
@@ -6123,48 +7589,61 @@ function addBaseChatMessage(
 // Il click/tap sulla mappa resta sempre dedicato al movimento.
 // ============================================================
 
+
 let baseTradeCurrentId = null;
 let baseTradeInviteId = null;
 let baseTradeBusy = false;
 let baseTradePollTimer = null;
 let baseTradeSelectedCharacterId = null;
 
+
 function setupBaseTradeUi() {
     document.getElementById("base-trade-add-item")
         ?.addEventListener("click", addSelectedBaseTradeItem);
 
+
     document.getElementById("base-trade-confirm")
         ?.addEventListener("click", confirmCurrentBaseTrade);
+
 
     document.getElementById("base-trade-cancel")
         ?.addEventListener("click", cancelCurrentBaseTrade);
 
+
     document.getElementById("base-trade-accept")
         ?.addEventListener("click", acceptBaseTradeInvite);
+
 
     document.getElementById("base-trade-decline")
         ?.addEventListener("click", declineBaseTradeInvite);
 
+
     document.getElementById("base-trade-item-select")
         ?.addEventListener("change", updateBaseTradeQuantityLimit);
+
 
     renderBaseTradeNearbyPlayers();
     resetBaseTradePanel();
 }
 
+
 function isBaseTradeInteractionOpen() {
     return false;
 }
 
+
 function isBaseTradeAdjacent(player) {
     if (!player) return false;
+
 
     const distance =
         Math.abs(Number(basePlayerX) - Number(player.x)) +
         Math.abs(Number(basePlayerY) - Number(player.y));
 
+
     return distance === 1;
 }
+
 
 function getAdjacentBaseTradePlayers() {
     return Array.from(baseOtherPlayers.values())
@@ -6176,12 +7655,15 @@ function getAdjacentBaseTradePlayers() {
         .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it"));
 }
 
+
 function renderBaseTradeNearbyPlayers() {
     const container = document.getElementById("base-trade-nearby-players");
     if (!container) return;
 
+
     const players = getAdjacentBaseTradePlayers();
     container.replaceChildren();
+
 
     if (!players.length) {
         const empty = document.createElement("div");
@@ -6191,23 +7673,28 @@ function renderBaseTradeNearbyPlayers() {
         return;
     }
 
+
     players.forEach(player => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "base-trade-nearby-player";
 
+
         if (player.character_id === baseTradeSelectedCharacterId) {
             button.classList.add("selected");
         }
+
 
         const image = document.createElement("img");
         image.src = "../immagini/token/" + (player.token || "token_1.png");
         image.alt = player.name || "Personaggio";
 
+
         const text = document.createElement("span");
         const name = document.createElement("strong");
         name.textContent = player.name || "Avventuriero";
         const state = document.createElement("small");
+
 
         if (baseTradeInviteId && player.character_id === baseTradeSelectedCharacterId) {
             state.textContent = "Richiesta ricevuta";
@@ -6217,16 +7704,20 @@ function renderBaseTradeNearbyPlayers() {
             state.textContent = "Adiacente";
         }
 
+
         text.append(name, state);
         button.append(image, text);
+
 
         button.addEventListener("click", () => selectBaseTradePlayer(player.character_id));
         container.appendChild(button);
     });
 }
 
+
 async function selectBaseTradePlayer(characterId) {
     if (baseTradeBusy) return;
+
 
     const player = baseOtherPlayers.get(characterId);
     if (!player || !isBaseTradeAdjacent(player)) {
@@ -6235,15 +7726,18 @@ async function selectBaseTradePlayer(characterId) {
         return;
     }
 
+
     if (player.in_combat || player.active_combat_id) {
         setMessage("Non puoi scambiare con un personaggio in combattimento.");
         return;
     }
 
+
     // Se esiste già uno scambio con questo giocatore, mostralo.
     const existing = await findBaseTradeWithCharacter(characterId);
     if (existing) {
         baseTradeSelectedCharacterId = characterId;
+
 
         if (existing.status === "pending" && existing.character_b_id === character.id) {
             baseTradeInviteId = existing.id;
@@ -6256,20 +7750,25 @@ async function selectBaseTradePlayer(characterId) {
             startBaseTradePolling();
         }
 
+
         renderBaseTradeNearbyPlayers();
         return;
     }
+
 
     if (baseTradeCurrentId || baseTradeInviteId) {
         setMessage("Hai già uno scambio in corso. Annullalo prima di iniziarne un altro.");
         return;
     }
 
+
     await openBaseTradeForRemotePlayer(characterId);
 }
 
+
 async function findBaseTradeWithCharacter(characterId) {
     if (!character) return null;
+
 
     const { data, error } = await db
         .from("player_trades")
@@ -6280,13 +7779,16 @@ async function findBaseTradeWithCharacter(characterId) {
         .limit(1)
         .maybeSingle();
 
+
     if (error) {
         console.warn("Errore ricerca scambio esistente:", error);
         return null;
     }
 
+
     return data || null;
 }
+
 
 async function openBaseTradeForRemotePlayer(characterId) {
     const player = baseOtherPlayers.get(characterId);
@@ -6295,8 +7797,10 @@ async function openBaseTradeForRemotePlayer(characterId) {
         return;
     }
 
+
     baseTradeBusy = true;
     baseTradeSelectedCharacterId = characterId;
+
 
     try {
         const { data, error } = await db.rpc(
@@ -6304,15 +7808,19 @@ async function openBaseTradeForRemotePlayer(characterId) {
             { p_target_character_id: characterId }
         );
 
+
         if (error) throw error;
+
 
         baseTradeCurrentId = data;
         baseTradeInviteId = null;
+
 
         setBaseTradePanelEnabled(true);
         setBaseTradeStatus(`Richiesta inviata a ${player.name}. In attesa che accetti...`);
         setBaseTradeControlsForStatus("pending-sent");
         clearBaseTradeOffers();
+
 
         await sendBaseTradeBroadcast("base-trade-request", {
             trade_id: data,
@@ -6320,6 +7828,7 @@ async function openBaseTradeForRemotePlayer(characterId) {
             from_name: character.nome || "Avventuriero",
             to_character_id: characterId
         });
+
 
         startBaseTradePolling();
         renderBaseTradeNearbyPlayers();
@@ -6333,8 +7842,10 @@ async function openBaseTradeForRemotePlayer(characterId) {
     }
 }
 
+
 async function sendBaseTradeBroadcast(event, payload) {
     if (!baseChannel || !baseRealtimeReady) return;
+
 
     try {
         await baseChannel.send({ type: "broadcast", event, payload });
@@ -6343,19 +7854,24 @@ async function sendBaseTradeBroadcast(event, payload) {
     }
 }
 
+
 function handleBaseTradeRequestBroadcast(payload) {
     if (!payload || payload.to_character_id !== character?.id) return;
+
 
     const remote = baseOtherPlayers.get(payload.from_character_id);
     if (!remote || !isBaseTradeAdjacent(remote)) return;
 
+
     if (baseTradeCurrentId || baseTradeInviteId) return;
+
 
     baseTradeInviteId = payload.trade_id;
     baseTradeSelectedCharacterId = payload.from_character_id;
     showBaseTradePendingInvite({ id: payload.trade_id });
     renderBaseTradeNearbyPlayers();
 }
+
 
 function showBaseTradePendingInvite() {
     const remote = baseOtherPlayers.get(baseTradeSelectedCharacterId);
@@ -6366,23 +7882,29 @@ function showBaseTradePendingInvite() {
     clearBaseTradeOffers();
 }
 
+
 async function acceptBaseTradeInvite() {
     if (!baseTradeInviteId || baseTradeBusy) return;
 
+
     baseTradeBusy = true;
     const tradeId = baseTradeInviteId;
+
 
     try {
         const { error } = await db.rpc("accept_player_trade", { p_trade_id: tradeId });
         if (error) throw error;
 
+
         baseTradeInviteId = null;
         baseTradeCurrentId = tradeId;
+
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: "accepted"
         });
+
 
         await refreshBaseTradeState();
         startBaseTradePolling();
@@ -6394,20 +7916,25 @@ async function acceptBaseTradeInvite() {
     }
 }
 
+
 async function declineBaseTradeInvite() {
     if (!baseTradeInviteId || baseTradeBusy) return;
 
+
     baseTradeBusy = true;
     const tradeId = baseTradeInviteId;
+
 
     try {
         const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
         if (error) throw error;
 
+
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
+
 
         resetBaseTradeState("Richiesta rifiutata.");
     } catch (error) {
@@ -6418,15 +7945,18 @@ async function declineBaseTradeInvite() {
     }
 }
 
+
 function setBaseTradePanelEnabled(enabled) {
     document.getElementById("base-trade-inline-panel")
         ?.classList.toggle("disabled", !enabled);
 }
 
+
 function setBaseTradeOtherName(name) {
     const el = document.getElementById("base-trade-other-name");
     if (el) el.textContent = name || "ALTRO GIOCATORE";
 }
+
 
 function setBaseTradeControlsForStatus(status) {
     const select = document.getElementById("base-trade-item-select");
@@ -6437,9 +7967,11 @@ function setBaseTradeControlsForStatus(status) {
     const accept = document.getElementById("base-trade-accept");
     const decline = document.getElementById("base-trade-decline");
 
+
     const active = status === "active";
     const pendingReceived = status === "pending-received";
     const hasTrade = status !== "idle";
+
 
     if (select) select.disabled = !active;
     if (qty) qty.disabled = !active;
@@ -6449,8 +7981,10 @@ function setBaseTradeControlsForStatus(status) {
     if (accept) accept.hidden = !pendingReceived;
     if (decline) decline.hidden = !pendingReceived;
 
+
     if (active) populateBaseTradeInventorySelect();
 }
+
 
 function clearBaseTradeOffers() {
     ["base-trade-my-offer", "base-trade-other-offer"].forEach(id => {
@@ -6459,6 +7993,7 @@ function clearBaseTradeOffers() {
             el.innerHTML = '<div class="base-trade-empty">Nessun oggetto offerto.</div>';
         }
     });
+
 
     ["base-trade-my-confirmed", "base-trade-other-confirmed"].forEach(id => {
         const el = document.getElementById(id);
@@ -6469,12 +8004,14 @@ function clearBaseTradeOffers() {
     });
 }
 
+
 function resetBaseTradePanel() {
     setBaseTradePanelEnabled(false);
     setBaseTradeOtherName("ALTRO GIOCATORE");
     setBaseTradeStatus("Seleziona un giocatore adiacente.");
     setBaseTradeControlsForStatus("idle");
     clearBaseTradeOffers();
+
 
     const select = document.getElementById("base-trade-item-select");
     if (select) {
@@ -6486,17 +8023,21 @@ function resetBaseTradePanel() {
     }
 }
 
+
 function populateBaseTradeInventorySelect() {
     const select = document.getElementById("base-trade-item-select");
     if (!select) return;
 
+
     const previous = select.value;
     select.replaceChildren();
+
 
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Scegli un oggetto...";
     select.appendChild(placeholder);
+
 
     characterInventory
         .filter(entry => entry?.item && Number(entry.quantity) > 0)
@@ -6510,24 +8051,30 @@ function populateBaseTradeInventorySelect() {
             select.appendChild(option);
         });
 
+
     if ([...select.options].some(option => option.value === previous)) {
         select.value = previous;
     }
 
+
     updateBaseTradeQuantityLimit();
 }
+
 
 function updateBaseTradeQuantityLimit() {
     const select = document.getElementById("base-trade-item-select");
     const input = document.getElementById("base-trade-item-quantity");
     if (!select || !input) return;
 
+
     const option = select.selectedOptions?.[0];
     const entry = characterInventory.find(row => row.id === select.value);
     const max = Number(option?.dataset?.quantity) || 1;
 
+
     input.max = String(max);
     input.value = String(Math.min(Math.max(1, Number(input.value) || 1), max));
+
 
     if (entry?.equipped_slot) {
         input.value = String(entry.quantity);
@@ -6537,19 +8084,24 @@ function updateBaseTradeQuantityLimit() {
     }
 }
 
+
 async function addSelectedBaseTradeItem() {
     if (!baseTradeCurrentId || baseTradeBusy) return;
 
+
     const select = document.getElementById("base-trade-item-select");
     const input = document.getElementById("base-trade-item-quantity");
+
 
     if (!select?.value) {
         setBaseTradeStatus("Scegli prima un oggetto da offrire.", true);
         return;
     }
 
+
     const quantity = Number(input?.value) || 1;
     baseTradeBusy = true;
+
 
     try {
         const { error } = await db.rpc("add_player_trade_item", {
@@ -6558,6 +8110,7 @@ async function addSelectedBaseTradeItem() {
             p_quantity: quantity
         });
         if (error) throw error;
+
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: baseTradeCurrentId,
@@ -6572,15 +8125,18 @@ async function addSelectedBaseTradeItem() {
     }
 }
 
+
 async function removeBaseTradeItem(tradeItemId) {
     if (!baseTradeCurrentId || baseTradeBusy) return;
     baseTradeBusy = true;
+
 
     try {
         const { error } = await db.rpc("remove_player_trade_item", {
             p_trade_item_id: tradeItemId
         });
         if (error) throw error;
+
 
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: baseTradeCurrentId,
@@ -6595,8 +8151,10 @@ async function removeBaseTradeItem(tradeItemId) {
     }
 }
 
+
 async function refreshBaseTradeState() {
     if (!baseTradeCurrentId || !character) return;
+
 
     const { data: trade, error: tradeError } = await db
         .from("player_trades")
@@ -6604,20 +8162,24 @@ async function refreshBaseTradeState() {
         .eq("id", baseTradeCurrentId)
         .maybeSingle();
 
+
     if (tradeError) {
         console.warn("Errore lettura scambio:", tradeError);
         return;
     }
+
 
     if (!trade) {
         resetBaseTradeState("Scambio non più disponibile.");
         return;
     }
 
+
     if (trade.status === "cancelled") {
         resetBaseTradeState("Lo scambio è stato annullato.");
         return;
     }
+
 
     if (trade.status === "completed") {
         await loadCharacterEquipment();
@@ -6625,14 +8187,17 @@ async function refreshBaseTradeState() {
         return;
     }
 
+
     const otherCharacterId = trade.character_a_id === character.id
         ? trade.character_b_id
         : trade.character_a_id;
+
 
     baseTradeSelectedCharacterId = otherCharacterId;
     const remote = baseOtherPlayers.get(otherCharacterId);
     setBaseTradeOtherName(remote?.name || "ALTRO GIOCATORE");
     setBaseTradePanelEnabled(true);
+
 
     if (trade.status === "pending") {
         if (trade.character_b_id === character.id) {
@@ -6643,18 +8208,22 @@ async function refreshBaseTradeState() {
             return;
         }
 
+
         setBaseTradeControlsForStatus("pending-sent");
         setBaseTradeStatus(`Richiesta inviata a ${remote?.name || "giocatore"}. In attesa che accetti...`);
         renderBaseTradeNearbyPlayers();
         return;
     }
 
+
     baseTradeInviteId = null;
     setBaseTradeControlsForStatus("active");
+
 
     if (remote && !isBaseTradeAdjacent(remote)) {
         setBaseTradeStatus("Vi siete allontanati: riavvicinatevi per confermare.", true);
     }
+
 
     // Dettagli offerta via RPC server-side: il partecipante vede i nomi
     // reali senza ottenere accesso diretto all'inventario dell'altro PG.
@@ -6663,10 +8232,12 @@ async function refreshBaseTradeState() {
         { p_trade_id: trade.id }
     );
 
+
     if (itemsError) {
         console.warn("Errore lettura dettagli oggetti scambio:", itemsError);
         return;
     }
+
 
     const tradeItems = (tradeItemDetails || []).map(row => ({
         id: row.trade_item_id,
@@ -6674,6 +8245,7 @@ async function refreshBaseTradeState() {
         inventory_id: row.inventory_id,
         quantity: row.trade_quantity
     }));
+
 
     const inventoryById = new Map(
         (tradeItemDetails || []).map(row => [
@@ -6692,20 +8264,25 @@ async function refreshBaseTradeState() {
         ])
     );
 
+
     renderBaseTradeOffers(trade, tradeItems, inventoryById, remote);
     renderBaseTradeNearbyPlayers();
 }
+
 
 function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
     const mine = document.getElementById("base-trade-my-offer");
     const theirs = document.getElementById("base-trade-other-offer");
     const confirmButton = document.getElementById("base-trade-confirm");
 
+
     setBaseTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+
 
     const render = (container, ownerId, editable) => {
         if (!container) return;
         container.replaceChildren();
+
 
         const rows = tradeItems.filter(row => row.owner_character_id === ownerId);
         if (!rows.length) {
@@ -6716,14 +8293,17 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
             return;
         }
 
+
         rows.forEach(row => {
             const inv = inventoryById.get(row.inventory_id);
             const card = document.createElement("div");
             card.className = "base-trade-offer-row";
 
+
             const label = document.createElement("span");
             label.textContent = `${inv?.item?.name || "Oggetto"} ×${row.quantity}`;
             card.appendChild(label);
+
 
             if (editable) {
                 const remove = document.createElement("button");
@@ -6735,12 +8315,15 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
                 card.appendChild(remove);
             }
 
+
             container.appendChild(card);
         });
     };
 
+
     const myConfirmed = trade.character_a_id === character.id ? trade.a_confirmed : trade.b_confirmed;
     const otherConfirmed = trade.character_a_id === character.id ? trade.b_confirmed : trade.a_confirmed;
+
 
     render(mine, character.id, true);
     render(theirs,
@@ -6748,23 +8331,28 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
         false
     );
 
+
     const myState = document.getElementById("base-trade-my-confirmed");
     const otherState = document.getElementById("base-trade-other-confirmed");
+
 
     if (myState) {
         myState.textContent = myConfirmed ? "CONFERMATO ✓" : "NON CONFERMATO";
         myState.classList.toggle("confirmed", !!myConfirmed);
     }
 
+
     if (otherState) {
         otherState.textContent = otherConfirmed ? "CONFERMATO ✓" : "NON CONFERMATO";
         otherState.classList.toggle("confirmed", !!otherConfirmed);
     }
 
+
     if (confirmButton) {
         confirmButton.disabled = !!myConfirmed;
         confirmButton.textContent = myConfirmed ? "CONFERMATO" : "CONFERMA";
     }
+
 
     if (myConfirmed && !otherConfirmed) {
         setBaseTradeStatus("Confermato. In attesa dell'altro giocatore...");
@@ -6775,11 +8363,14 @@ function renderBaseTradeOffers(trade, tradeItems, inventoryById, remote) {
     }
 }
 
+
 async function confirmCurrentBaseTrade() {
     if (!baseTradeCurrentId || baseTradeBusy) return;
 
+
     const tradeId = baseTradeCurrentId;
     baseTradeBusy = true;
+
 
     try {
         const { data, error } = await db.rpc("confirm_player_trade", {
@@ -6787,16 +8378,19 @@ async function confirmCurrentBaseTrade() {
         });
         if (error) throw error;
 
+
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: data?.completed ? "completed" : "confirmed"
         });
+
 
         if (data?.completed) {
             await loadCharacterEquipment();
             resetBaseTradeState("Scambio completato.");
             return;
         }
+
 
         await refreshBaseTradeState();
     } catch (error) {
@@ -6808,6 +8402,7 @@ async function confirmCurrentBaseTrade() {
     }
 }
 
+
 async function cancelCurrentBaseTrade() {
     const tradeId = baseTradeCurrentId || baseTradeInviteId;
     if (!tradeId || baseTradeBusy) {
@@ -6815,16 +8410,20 @@ async function cancelCurrentBaseTrade() {
         return;
     }
 
+
     baseTradeBusy = true;
+
 
     try {
         const { error } = await db.rpc("cancel_player_trade", { p_trade_id: tradeId });
         if (error) throw error;
 
+
         await sendBaseTradeBroadcast("base-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
+
 
         resetBaseTradeState("Scambio annullato.");
     } catch (error) {
@@ -6835,8 +8434,10 @@ async function cancelCurrentBaseTrade() {
     }
 }
 
+
 function handleBaseTradeUpdateBroadcast(payload) {
     if (!payload?.trade_id) return;
+
 
     if (payload.kind === "cancelled") {
         if (payload.trade_id === baseTradeCurrentId || payload.trade_id === baseTradeInviteId) {
@@ -6845,10 +8446,12 @@ function handleBaseTradeUpdateBroadcast(payload) {
         return;
     }
 
+
     if (payload.trade_id === baseTradeCurrentId) {
         refreshBaseTradeState();
         return;
     }
+
 
     if (payload.trade_id === baseTradeInviteId && payload.kind === "accepted") {
         baseTradeCurrentId = baseTradeInviteId;
@@ -6858,6 +8461,7 @@ function handleBaseTradeUpdateBroadcast(payload) {
     }
 }
 
+
 function setBaseTradeStatus(text, error = false) {
     const status = document.getElementById("base-trade-status");
     if (!status) return;
@@ -6865,10 +8469,12 @@ function setBaseTradeStatus(text, error = false) {
     status.classList.toggle("error", !!error);
 }
 
+
 function startBaseTradePolling() {
     stopBaseTradePolling();
     baseTradePollTimer = window.setInterval(() => refreshBaseTradeState(), 1500);
 }
+
 
 function stopBaseTradePolling() {
     if (baseTradePollTimer) {
@@ -6876,6 +8482,7 @@ function stopBaseTradePolling() {
         baseTradePollTimer = null;
     }
 }
+
 
 function resetBaseTradeState(message = "") {
     baseTradeCurrentId = null;
@@ -6887,6 +8494,7 @@ function resetBaseTradeState(message = "") {
     if (message) setMessage(message);
 }
 
+
 function refreshBaseTradeAdjacencyState() {
     if (!baseTradeSelectedCharacterId) return;
     const remote = baseOtherPlayers.get(baseTradeSelectedCharacterId);
@@ -6897,8 +8505,10 @@ function refreshBaseTradeAdjacencyState() {
     }
 }
 
+
 async function recoverBaseTradeState() {
     if (!character) return;
+
 
     try {
         const { data, error } = await db
@@ -6910,16 +8520,20 @@ async function recoverBaseTradeState() {
             .limit(1)
             .maybeSingle();
 
+
         if (error || !data) {
             renderBaseTradeNearbyPlayers();
             return;
         }
 
+
         const otherId = data.character_a_id === character.id
             ? data.character_b_id
             : data.character_a_id;
 
+
         baseTradeSelectedCharacterId = otherId;
+
 
         if (data.status === "pending" && data.character_b_id === character.id) {
             baseTradeInviteId = data.id;
@@ -6930,19 +8544,23 @@ async function recoverBaseTradeState() {
             startBaseTradePolling();
         }
 
+
         renderBaseTradeNearbyPlayers();
     } catch (error) {
         console.warn("Impossibile recuperare uno scambio precedente:", error);
     }
 }
 
+
 // ============================================================
 // ESCAPE HTML
 // ============================================================
 
+
 function escapeBaseHtml(
     value
 ) {
+
 
     return String(
         value ??
@@ -6969,29 +8587,39 @@ function escapeBaseHtml(
             "&#039;"
         );
 
+
 }
+
+
 
 
 // ============================================================
 // USCITA PAGINA BASE
 // ============================================================
 
+
 window.addEventListener(
     "beforeunload",
     () => {
+
 
         if (
             basePositionSaveTimer
         ) {
 
+
             clearTimeout(
                 basePositionSaveTimer
             );
 
+
             basePositionSaveTimer =
                 null;
 
+
         }
+
+
 
 
         // Tenta l'ultimo salvataggio prima di uscire.
@@ -7001,15 +8629,19 @@ window.addEventListener(
             basePlayerY !== null
         ) {
 
+
             db
                 .from("characters")
                 .update({
 
+
                     base_x:
                         Number(basePlayerX),
 
+
                     base_y:
                         Number(basePlayerY)
+
 
                 })
                 .eq(
@@ -7023,29 +8655,40 @@ window.addEventListener(
                     () => {}
                 );
 
+
         }
+
+
 
 
         if (
             baseChannel
         ) {
 
+
             try {
+
 
                 baseChannel.untrack();
 
+
             } catch (error) {
+
 
                 console.warn(
                     "Errore chiusura Presence Base:",
                     error
                 );
 
+
             }
+
 
         }
 
+
         stopBaseInnTimer();
+
 
         if (
             typeof destroyBaseServices ===
@@ -7054,5 +8697,85 @@ window.addEventListener(
             destroyBaseServices();
         }
 
+
     }
 );
+
+
+
+
+/* ============================================================
+ * FRUTTO CARNOSO — CONSUMABILE INVENTARIO (BASE / DUNGEON)
+ * La disponibilità dipende esclusivamente dall'inventario reale.
+ * Nessun modulo aggiuntivo richiesto.
+ * ============================================================ */
+let fruitConsumableBusy = false;
+function fruitInventoryRows() {
+    return (Array.isArray(characterInventory) ? characterInventory : [])
+        .filter(row => row?.item?.id === 'frutto_carnoso'
+            && !row.equipped_slot && Number(row.quantity) > 0);
+}
+function ensureFruitConsumableButton() {
+    let button = document.getElementById('dungeon-fruit-button');
+    if (button) return button;
+    const panel = document.querySelector('.dungeon-actions-panel');
+    if (!panel) return null;
+    button = document.createElement('button');
+    button.id = 'dungeon-fruit-button';
+    button.type = 'button';
+    button.className = 'dungeon-action-card';
+    button.hidden = true;
+    button.style.display = 'none';
+    button.title = 'Recupera fino a 10 PF e 10 PM';
+    button.innerHTML =
+        '<span class="action-card-icon">✿</span>' +
+        '<span class="action-card-content"><strong>FRUTTO CARNOSO</strong>' +
+        '<small id="dungeon-fruit-count">x0</small></span>';
+    const pagination = panel.querySelector('.dungeon-action-pagination');
+    panel.insertBefore(button, pagination || null);
+    button.addEventListener('click', useFruitConsumable);
+    return button;
+}
+function updateFruitConsumable() {
+    const button = ensureFruitConsumableButton();
+    if (!button) return;
+    const rows = fruitInventoryRows();
+    const count = rows.reduce((n, row) => n + Number(row.quantity || 0), 0);
+    button.hidden = count === 0;
+    button.style.display = count ? '' : 'none';
+    const countElement = document.getElementById('dungeon-fruit-count');
+    if (countElement) countElement.textContent = 'x' + count;
+    if (!count || fruitConsumableBusy || !character) {
+        button.disabled = true;
+        return;
+    }
+    const stats = getCalculatedStats();
+    const pf = character.current_hp == null ? stats.maxHealth : Number(character.current_hp);
+    const pm = character.current_pm == null ? stats.maxMana : Number(character.current_pm);
+    button.disabled = pf >= stats.maxHealth && pm >= stats.maxMana;
+}
+async function useFruitConsumable() {
+    const button = ensureFruitConsumableButton();
+    if (fruitConsumableBusy || !button || button.disabled || !character || !db) return;
+    const row = fruitInventoryRows()[0];
+    if (!row) { updateFruitConsumable(); return; }
+    fruitConsumableBusy = true;
+    button.disabled = true;
+    try {
+        const { data, error } = await db.rpc('use_piano_ia_fruit', { p_inventory_id: row.id });
+        if (error) throw error;
+        character.current_hp = Number(data.current_pf);
+        character.current_pm = Number(data.current_pm);
+        await loadCharacterEquipment();
+        updateCharacterPanel();
+        await updateBasePresence();
+        setMessage('Mangi un Frutto Carnoso. PF ' + data.current_pf + '/' +
+            data.max_pf + ', PM ' + data.current_pm + '/' + data.max_pm + '.');
+    } catch (error) {
+        console.error('Errore utilizzo Frutto Carnoso:', error);
+        setMessage(error?.message || 'Impossibile utilizzare il Frutto Carnoso.', true);
+    } finally {
+        fruitConsumableBusy = false;
+        updateFruitConsumable();
+    }
+}
