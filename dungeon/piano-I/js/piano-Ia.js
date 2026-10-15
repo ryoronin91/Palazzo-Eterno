@@ -18,7 +18,9 @@
     remotePlayers: new Map(), token: null,
     storageKey: 'palazzo:piano-Ia:guest',
     messageTimeout: null, music: null,
-    ready: false, equipmentBonuses: {}
+    ready: false, equipmentBonuses: {},
+    combatSlots: new Map(), combatTokens: new Map(), combatBusy: false,
+    combatRefreshBusy: false
   };
 
   const viewport = $('map-viewport');
@@ -27,6 +29,7 @@
   const grid = $('map-grid');
   const fogCanvas = $('fog-canvas');
   const entityLayer = $('map-entities');
+  const combatLayer = $('p1-combat-layer');
   const chatBox = $('floor-chat-messages');
   const chatInput = $('floor-chat-input');
   const chatSend = $('floor-chat-send');
@@ -230,6 +233,140 @@
     }
   }
 
+
+  // =============================================================
+  // PIANO I-A — INCONTRI ROTANTI
+  // L'ID stanza viene letto dal bitmask del JSON: nessuna coordinata
+  // di spawn viene indovinata dalla posizione grafica dell'immagine.
+  // =============================================================
+  const COMBAT_FAMILIES = Object.freeze({
+    uccello_parassita: { icon: '🐦', name: 'Uccelli Parassita' },
+    piante_carnivore: { icon: '🌿', name: 'Piante Carnivore' },
+    lucertoloidi: { icon: '🦎', name: 'Pattuglie di Lucertoloidi' },
+    dinosauri: { icon: '🦖', name: 'Dinosauri Selvaggi' },
+    miconidi: { icon: '🍄', name: 'Miconidi Tossici' }
+  });
+
+  function currentRoomNumber() {
+    if (!state.map || !inside(state.x, state.y)) return null;
+    const cell = Number(state.map.cells[state.y + state.offsetY]?.[state.x + state.offsetX]);
+    if (!Number.isFinite(cell) || !(cell & (bits().room ?? 2))) return null;
+    return (cell & (bits().room_id ?? 65472)) >>> 6;
+  }
+
+  function combatTokenPosition(token, x, y) {
+    if (!token || !state.cellPx || !inside(x, y)) return;
+    // Il centro del token coincide con il centro esatto della casella.
+    const diameter = Math.max(13, Math.min(38, state.cellPx * 1.5));
+    token.style.left = `${(x + 0.5) * state.cellPx}px`;
+    token.style.top = `${(y + 0.5) * state.cellPx}px`;
+    token.style.width = `${diameter}px`;
+    token.style.height = `${diameter}px`;
+    token.style.fontSize = `${Math.max(9, Math.min(21, diameter * 0.57))}px`;
+  }
+
+  function renderCombatTokens() {
+    if (!combatLayer) return;
+    const visibleIds = new Set();
+    for (const slot of state.combatSlots.values()) {
+      if (!['active', 'engaged'].includes(slot.status)) continue;
+      const x = Number(slot.x), y = Number(slot.y);
+      if (!inside(x, y) || !walkable(x, y)) continue;
+      const family = COMBAT_FAMILIES[slot.family];
+      if (!family) continue;
+      const id = String(slot.encounter_id || '');
+      if (!id) continue;
+      visibleIds.add(id);
+      let token = state.combatTokens.get(id);
+      if (!token) {
+        token = document.createElement('button');
+        token.type = 'button';
+        token.className = 'p1-combat-token';
+        token.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          enterRoomCombat(id);
+        });
+        combatLayer.appendChild(token);
+        state.combatTokens.set(id, token);
+      }
+      const name = family.name;
+      const difficulty = String(slot.difficulty || 'medio');
+      const remaining = slot.expires_at ? Math.max(0, Math.ceil((new Date(slot.expires_at).getTime() - Date.now()) / 60000)) : null;
+      const timer = slot.status === 'engaged' ? 'combattimento in corso' : `rotazione tra ${remaining ?? '?'} min`;
+      token.className = `p1-combat-token p1-combat-${slot.family} p1-combat-${difficulty}${slot.status === 'engaged' ? ' p1-combat-engaged' : ''}`;
+      token.textContent = family.icon;
+      token.title = `${name} · ${difficulty} · stanza ${slot.room_number} · ${timer}`;
+      token.setAttribute('aria-label', `Combattimento ${name} ${difficulty}, stanza ${slot.room_number}. ${timer}.`);
+      combatTokenPosition(token, x, y);
+    }
+    for (const [id, token] of state.combatTokens) {
+      if (visibleIds.has(id)) continue;
+      token.remove();
+      state.combatTokens.delete(id);
+    }
+    const counter = $('p1-combat-status');
+    if (counter) counter.textContent = `Incontri: ${state.combatSlots.size}/20`;
+  }
+
+  async function refreshCombatSlots() {
+    if (!state.db || !state.character || !state.ready || state.combatRefreshBusy || document.hidden) return;
+    state.combatRefreshBusy = true;
+    try {
+      // L'RPC applica server-side i timer individuali, poi restituisce
+      // l'elenco aggiornato. Non dipende dall'orologio del browser.
+      const { data, error } = await state.db.rpc('p1_get_rotating_combats');
+      if (error) throw error;
+      if (!Array.isArray(data)) throw new Error('Risposta incontri non valida');
+      state.combatSlots = new Map(data.map(slot => [slot.encounter_id, slot]));
+      renderCombatTokens();
+    } catch (error) {
+      console.warn('Piano I-A: incontri non aggiornati:', error);
+      const counter = $('p1-combat-status');
+      if (counter) counter.textContent = 'Incontri non disponibili';
+    } finally {
+      state.combatRefreshBusy = false;
+    }
+  }
+
+  async function enterRoomCombat(encounterId) {
+    if (state.combatBusy || !state.ready || !state.db) return;
+    const slot = state.combatSlots.get(encounterId);
+    if (!slot || !['active', 'engaged'].includes(slot.status)) {
+      toast('Questo incontro è già scomparso.');
+      await refreshCombatSlots();
+      return;
+    }
+    if (currentRoomNumber() !== Number(slot.room_number)) {
+      toast(`Raggiungi la stanza ${slot.room_number} per affrontare questo incontro.`);
+      return;
+    }
+    state.combatBusy = true;
+    try {
+      // Supabase verifica nuovamente posizione, disponibilità e capienza.
+      const { data, error } = await state.db.rpc('p1_enter_room_combat', {
+        p_encounter_id: encounterId
+      });
+      if (error) throw error;
+      if (!data) throw new Error('Nessuna sessione disponibile');
+      window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(data)}`);
+    } catch (error) {
+      toast('Ingresso nel combattimento: ' + (error.message || String(error)));
+      await refreshCombatSlots();
+    } finally {
+      state.combatBusy = false;
+    }
+  }
+
+  function startCombatRefresh() {
+    refreshCombatSlots();
+    // Un'unica richiesta ogni 15 secondi, soltanto quando la pagina è visibile.
+    setInterval(refreshCombatSlots, 15000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshCombatSlots();
+    });
+  }
+
   function resizeMap(instant = false) {
     if (!state.map || !viewport) return;
     const frame = viewport.getBoundingClientRect();
@@ -244,6 +381,7 @@
     layer.style.height = `${state.rows * px}px`;
     layer.style.setProperty('--cell', `${px}px`);
     renderTokens();
+    renderCombatTokens();
     centerCamera(instant);
   }
 
@@ -399,7 +537,7 @@
         if (!entry.equipped_slot || !entry.item) continue;
         for (const name of names) bonuses[`${name}_bonus`] += Number(entry.item[`${name}_bonus`]) || 0;
       }
-    } catch (error) { console.warn('Bonus equipaggiamento non disponibili:', erroror); }
+    } catch (error) { console.warn('Bonus equipaggiamento non disponibili:', error); }
     state.equipmentBonuses = bonuses;
   }
 
@@ -596,6 +734,7 @@
       resizeMap(true);
       loading.hidden = true;
       if (serverReady) status(`Piano I-A · ${state.character?.nome || 'Avventuriero'} · X ${state.x} / Y ${state.y}`);
+      if (serverReady) startCombatRefresh();
       await Promise.allSettled([loadLeaderboard(), connectRealtime()]);
     } catch (err) {
       console.error('Piano Ia:', err);

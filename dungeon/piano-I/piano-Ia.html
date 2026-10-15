@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#07140d">
   <title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
   <link rel="stylesheet" href="../../css/style.css">
-  <link rel="stylesheet" href="css/piano-Ia.css?v=2">
+  <link rel="stylesheet" href="css/piano-Ia.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=8" defer></script>
+  <script src="js/piano-Ia.js?v=9" defer></script>
 
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
@@ -39,7 +39,7 @@
 
     <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
     <div class="prototype-note" id="test-notice">
-      <strong>VERSIONE DI TEST</strong> — Questa build usa 9 ritagli esatti della mappa originale (21 × 27 caselle ciascuno) per verificare l’allineamento col JSON. Disattiva Esplorazione per vedere tutte le sezioni. Gli spostamenti vengono salvati solo su questo browser. Non modificano le coordinate del PG nel database e non attivano eventi o combattimenti.
+      <strong>PIANO I-A</strong> — Sono presenti 20 incontri mobili tra 52 stanze. I token indicano gli incontri disponibili: raggiungi la stanza e tocca il token per combattere. Gli incontri liberi cambiano stanza ogni 15 minuti; quelli vinti ricompaiono dopo 5 minuti.
     </div>
 
     <div class="jungle-layout">
@@ -86,6 +86,7 @@
               <img src="immagini/piano-Ia-08.png?v=3" alt="">
               <img src="immagini/piano-Ia-09.png?v=3" alt="">
             </div>
+            <div class="p1-combat-layer" id="p1-combat-layer" aria-label="Combattimenti del piano"></div>
             <div class="map-grid" id="map-grid" aria-hidden="true"></div>
             <canvas id="fog-canvas" aria-hidden="true"></canvas>
             <div class="map-entities" id="map-entities"></div>
@@ -98,6 +99,7 @@
             <label><input id="toggle-grid" type="checkbox"> Griglia</label>
             <label><input id="toggle-fog" type="checkbox" checked> Esplorazione</label>
           </div>
+          <span id="p1-combat-status" class="p1-combat-status" role="status">Incontri: caricamento…</span>
           <div id="player-coordinates" class="coordinates">X — · Y —</div>
         </div>
         <div class="touch-dpad" aria-label="Comandi di movimento per dispositivi touch">

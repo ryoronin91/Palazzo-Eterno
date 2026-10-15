@@ -1113,12 +1113,15 @@ function setupVictoryExitButton() {
                     "base_combat_right"
                 ]);
 
+            const isPianoIACombat =
+                String(combatSession?.encounter_id || "").startsWith("p1_");
+
             const returnPage =
-                baseCombatEncounterIds.has(
-                    combatSession?.encounter_id
-                )
+                baseCombatEncounterIds.has(combatSession?.encounter_id)
                     ? "base/base.html"
-                    : "dungeon/piano-1/dungeon.html";
+                    : isPianoIACombat
+                        ? "dungeon/piano-Ia/piano-Ia.html"
+                        : "dungeon/piano-1/dungeon.html";
 
             window.location.href =
                 returnPage;
