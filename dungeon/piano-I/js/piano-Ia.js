@@ -267,18 +267,40 @@
     $('player-coordinates').textContent = `X ${state.x} · Y ${state.y} / ${state.cols} × ${state.rows}`;
   }
 
-  function move(dx, dy) {
-    if (!state.ready || state.x === null) return;
-    const x = state.x + dx, y = state.y + dy;
-    if (!walkable(x, y)) { toast('Il sentiero è bloccato.'); return; }
-    state.x = x;
-    state.y = y;
-    positionToken(state.token, x, y);
-    centerCamera();
-    revealAroundPlayer();
+  let movementBusy = false;
+  async function loadServerPosition() {
+    if (!state.db || !state.character) {
+      state.ready = false;
+      status('Accedi con un PG per esplorare il Piano I-A.', true);
+      return false;
+    }
+    const {data,error} = await state.db.rpc('piano_ia_get_position');
+    if (error) throw error;
+    if (!data?.active) {
+      state.ready = false;
+      status('Il tuo PG non è stato ammesso al Piano I-A.', true);
+      return false;
+    }
+    state.x = Number(data.x);
+    state.y = Number(data.y);
     updateCoordinates();
-    saveProgress();
-    broadcastPosition();
+    revealAroundPlayer();
+    return true;
+  }
+
+  async function move(dx, dy) {
+    if (!state.ready || movementBusy || state.x === null || !state.db) return;
+    const x = state.x + dx, y = state.y + dy;
+    if (!walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
+    movementBusy = true;
+    try {
+      const {data,error}=await state.db.rpc('piano_ia_move',{p_x:x,p_y:y});
+      if (error) throw error;
+      state.x=Number(data.x);state.y=Number(data.y);
+      positionToken(state.token,state.x,state.y);
+      centerCamera();revealAroundPlayer();updateCoordinates();saveProgress();broadcastPosition();
+    } catch(err) { toast('Movimento non riuscito: '+(err.message||err)); }
+    finally { movementBusy=false; }
   }
 
   function setZoom(viewCells) {
@@ -549,8 +571,9 @@
       try { await loadCharacter(); }
       catch (err) { console.error('Piano Ia: lettura PG:', err); status('Errore caricamento personaggio. Esplorazione locale disponibile.', true); }
       loadProgress();
+      const serverReady=await loadServerPosition();
       $('character-notes').value = localRead(`${state.storageKey}:notes`, '') || '';
-      state.ready = true;
+      state.ready = serverReady;
       renderTokens();
       resizeMap(true);
       loading.hidden = true;
@@ -579,7 +602,7 @@
   Object.assign(layer.style, {position:'absolute',inset:'0',zIndex:'8',pointerEvents:'none'});
   map.appendChild(layer);
   const label = document.createElement('div');
-  label.textContent = 'Forzieri TEST: connessione…';
+  label.textContent = 'Forzieri: connessione…';
   Object.assign(label.style,{fontSize:'12px',color:'#e8d49b',margin:'6px 0'});
   document.querySelector('.map-footer')?.appendChild(label);
   let chests = [], busy = false;
@@ -593,7 +616,7 @@
     layer.replaceChildren();
     chests.filter(c=>c.available).forEach(c=>{
       const el=document.createElement('div');
-      el.textContent='◆'; el.title=`Frutto Carnoso (TEST) — X ${c.x}, Y ${c.y}`;
+      el.textContent='◆'; el.title=`Frutto Carnoso — X ${c.x}, Y ${c.y}`;
       Object.assign(el.style,{
         position:'absolute',left:((c.x+.5)/COLS*100)+'%',top:((c.y+.5)/ROWS*100)+'%',
         transform:'translate(-50%,-50%)',color:'#ffcd43',fontSize:'clamp(8px, 1.3vw, 20px)',
@@ -604,12 +627,12 @@
   }
   async function refresh() {
     const db=client();
-    if(!db) {notify('Forzieri TEST: Supabase non disponibile');return;}
+    if(!db) {notify('Forzieri: Supabase non disponibile');return;}
     const {data,error}=await db.rpc('piano_ia_chests_refresh');
-    if(error){notify('Forzieri TEST: '+error.message);return;}
+    if(error){notify('Forzieri: '+error.message);return;}
     chests=Array.isArray(data)?data:[];
     render();
-    notify(`Forzieri TEST: ${chests.filter(c=>c.available).length}/12 disponibili • cooldown 30 s`);
+    notify(`Forzieri: ${chests.filter(c=>c.available).length}/12 disponibili • cooldown 5 min`);
   }
   async function collect() {
     if(busy) return;
@@ -620,7 +643,7 @@
     try {
       const {data,error}=await client().rpc('piano_ia_chest_collect',{p_id:chest.id,p_x:p.x,p_y:p.y});
       if(error) notify('Raccolta fallita: '+error.message);
-      else notify(data?.message||data?.reason||'Forziere aggiornato');
+      else { notify(data?.message||data?.reason||'Forziere aggiornato'); if(data?.ok) window.dispatchEvent(new Event('piano-ia-inventory-changed')); }
       await refresh();
     } finally {busy=false;}
   }
@@ -700,6 +723,7 @@
       await refresh();
     }
   });
+  window.addEventListener('piano-ia-inventory-changed',refresh);
   setTimeout(refresh,1600);
   setInterval(refresh,12000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
