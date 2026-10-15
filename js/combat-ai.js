@@ -853,6 +853,17 @@ async function peAIAnimateParasiticBirdEscape(before, after, path) {
     }
 }
 
+// Animazione visiva per assalitori mobili: il server convalida le caselle,
+// poi il client le mostra una alla volta, senza un secondo movimento RPC.
+async function peAIMoveAnimated(enemy, path) {
+    const before = { ...enemy };
+    const after = await peAIMove(enemy, path);
+    if (path?.length && (before.x !== after.x || before.y !== after.y)) {
+        await peAIAnimateParasiticBirdEscape(before, after, path);
+    }
+    return after;
+}
+
 async function peAINewEnemyTurn(enemy) {
     const type=String(enemy.monster_type||'').toLowerCase();
     // Le piante riusano RPC dedicate, preservando integralmente i Goblin.
@@ -956,9 +967,12 @@ async function peAINewEnemyTurn(enemy) {
         const guarded=path.findIndex(p=>getCombatDistance(p.x,p.y,partner.x,partner.y)<=1);
         if(guarded>=0) path=path.slice(0,guarded+1);
     }
-    enemy=await peAIMove(enemy,path);
+    // Compsognati e Guerrieri 2 si avvicinano visibilmente prima di colpire.
+    const skirmisher = type==='compsognato' || type==='lucertoloide_guerriero_2';
+    enemy=skirmisher ? await peAIMoveAnimated(enemy,path) : await peAIMove(enemy,path);
     const dist=getCombatDistance(enemy.x,enemy.y,target.x,target.y);
     if(dist<=range && !enemy.action_used) {
+        if(skirmisher) await new Promise(resolve => setTimeout(resolve,2000));
         if(mode==='special'||mode==='poison') {
             const ability=mode==='poison'?'veleno':plan.ability;
             const outcome=await peAIRpc('cast_enemy_special_ability',{
@@ -970,11 +984,11 @@ async function peAINewEnemyTurn(enemy) {
     // Ritirata dopo l'attacco: usa soltanto il MOV ancora disponibile.
     if((type==='compsognato'||type==='dilofosauro') && mode==='special') {
         const retreat=findAIRetreatPath(enemy,getAliveCombatPlayers(),Number(enemy.movement_remaining)||0);
-        await peAIMove(enemy,retreat);
+        enemy = type==='compsognato' ? await peAIMoveAnimated(enemy,retreat) : await peAIMove(enemy,retreat);
     }
     if(type==='lucertoloide_guerriero_2' && partner && mode==='melee') {
         const retreat=peAIPath(enemy,partner,1,Number(enemy.movement_remaining)||0);
-        await peAIMove(enemy,retreat);
+        enemy=await peAIMoveAnimated(enemy,retreat);
     }
 }
 
