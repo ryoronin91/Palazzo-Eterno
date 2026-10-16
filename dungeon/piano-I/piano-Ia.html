@@ -186,7 +186,9 @@
       </div>
       <div id="p1-camp-recipe" class="base-service-maintenance-box" hidden>
         <h3>CUCINA · LAUTOPASTO</h3>
-        <p class="base-service-note">4 Cosce di uccello stigio · 6 Foglie Nutrienti · 3 Funghetti</p>
+        <p class="base-service-note">4 Cosce di uccello stigio · 6 Foglie Nutrienti · 8 Funghetti · 5 Frutti carnosi</p>
+        <p class="base-service-note"><strong>Consumo del fuoco:</strong> ogni Lautopasto richiede anche 5 riserve di Legname dell’accampamento (15 minuti di autonomia).</p>
+        <p id="p1-camp-cook-warning" class="base-service-warning" hidden></p>
         <button type="button" id="p1-camp-cook" class="base-service-contribute">CUOCI LAUTOPASTO</button>
       </div>
       <div id="p1-camp-refuel" class="base-service-maintenance-box" hidden>
@@ -194,11 +196,32 @@
         <p class="base-service-note">1 Legname ogni 3 minuti. Puoi estendere la riserva oltre un’ora. A zero il campo dovrà essere ricostruito.</p>
         <button type="button" id="p1-camp-fuel-button" class="base-service-contribute">AGGIUNGI LEGNAME</button>
       </div>
+      <div id="p1-camp-feedback" class="p1-camp-feedback" role="status" aria-live="polite" hidden></div>
     </div>
   </section>
 </div>
 <button id="p1-camp-open" type="button" hidden>🏕️ ACCAMPAMENTO</button>
 
+<style>
+ /* Feedback interno alla modale, non sfocato dietro l'overlay */
+ .p1-camp-modal .p1-camp-feedback {
+   margin-top: 14px;
+   padding: 12px 14px;
+   border-radius: 7px;
+   border: 1px solid rgba(137, 188, 105, .65);
+   background: rgba(28, 80, 43, .80);
+   color: #e8ffe0;
+   font-weight: 700;
+   line-height: 1.5;
+   text-align: center;
+ }
+ .p1-camp-modal .p1-camp-feedback.is-error {
+   background: rgba(91, 36, 30, .92);
+   border-color: #e7a68d;
+   color: #fff1e9;
+ }
+ .p1-camp-modal [hidden] { display: none !important; }
+</style>
 <!-- Indicatori provvisori Piano I-A -->
 <style>
 .pia-planning-marker{position:absolute;z-index:10;pointer-events:none;border-radius:50%;box-shadow:0 0 0 1px white;transform:translate(-50%,-50%)}

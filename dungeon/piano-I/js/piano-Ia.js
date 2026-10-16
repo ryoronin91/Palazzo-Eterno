@@ -884,6 +884,17 @@
   }
   const campOverlay=$('p1-camp-overlay');
   const campRows=$('p1-camp-rows');
+  function campFeedback(message, isError=false) {
+    const el=$('p1-camp-feedback');
+    if(!el) { toast(message); return; }
+    el.textContent=message;
+    el.hidden=false;
+    el.classList.toggle('is-error',isError);
+  }
+  function clearCampFeedback() {
+    const el=$('p1-camp-feedback');
+    if(el) { el.hidden=true; el.textContent=''; el.classList.remove('is-error'); }
+  }
   function renderCampModal() {
     if (!campOverlay || !camp.data) return;
     const d=camp.data;
@@ -911,7 +922,13 @@
       button.addEventListener('click',()=>campContribute(r.item_id,remaining,'construction'));
       card.append(head,progress,button);campRows.appendChild(card);
     }
-    $('p1-camp-cook').disabled=camp.busy||!d.active||Number(d.fuel)<5;
+    const notEnoughFuel=d.active && Number(d.fuel)<5;
+    const fuelWarning=$('p1-camp-cook-warning');
+    if(fuelWarning) {
+      fuelWarning.hidden=!notEnoughFuel;
+      fuelWarning.textContent=notEnoughFuel?`Riserva insufficiente: servono 5 Legname, ne rimangono ${d.fuel}. Aggiungi Legname nel mantenimento del fuoco.`:'';
+    }
+    $('p1-camp-cook').disabled=camp.busy||!d.active||notEnoughFuel;
     $('p1-camp-fuel-button').disabled=camp.busy||!d.active;
   }
   async function campRefresh(showErrors=false) {
@@ -921,11 +938,11 @@
       camp.data=data;camp.refreshedAt=Date.now();setupCampPicture();updateCampPicture();
       if(camp.modalOpen) renderCampModal();
       if(data.healing_minutes>0 && data.inside) toast(`Riposo: +${data.healing_minutes*2} PF e PM (fino al massimo)`);
-    } catch(e){if(showErrors) toast('Campo: '+e.message);else console.warn('Aggiornamento accampamento:',e);}
+    } catch(e){if(showErrors) campFeedback('Campo: '+e.message,true);else console.warn('Aggiornamento accampamento:',e);}
   }
   function campOpen() {
     if(!state.ready || !inCamp() || !campOverlay) return;
-    camp.modalOpen=true;campOverlay.hidden=false;renderCampModal();
+    clearCampFeedback();camp.modalOpen=true;campOverlay.hidden=false;renderCampModal();
     $('p1-camp-close').focus({preventScroll:true});
     campRefresh(true);
   }
@@ -940,12 +957,12 @@
     const button=$('p1-camp-quantity-confirm');
     button.onclick=async()=>{
       const n=Number(input.value);
-      if(!Number.isInteger(n)||n<1||n>amount){toast('Quantità non valida');return;}
+      if(!Number.isInteger(n)||n<1||n>amount){campFeedback('Quantità non valida',true);return;}
       camp.busy=true;renderCampModal();button.disabled=true;
       try {
         const {error}=await state.db.rpc('p1_camp_contribute',{p_item_id:itemId,p_quantity:n,p_purpose:purpose});if(error)throw error;
-        $('p1-camp-quantity-panel').hidden=true;toast('Materiali consegnati');await campRefresh(true);
-      } catch(e){toast(e.message||'Contributo non riuscito');}
+        $('p1-camp-quantity-panel').hidden=true;campFeedback('Materiali consegnati');await campRefresh(true);
+      } catch(e){campFeedback(e.message||'Contributo non riuscito',true);}
       finally{camp.busy=false;button.disabled=false;renderCampModal();}
     };
     input.focus({preventScroll:true});
@@ -957,8 +974,8 @@
   $('p1-camp-cook')?.addEventListener('click',async()=>{
     if(camp.busy||!camp.data?.active)return;
     camp.busy=true;renderCampModal();
-    try{const {error}=await state.db.rpc('p1_camp_cook');if(error)throw error;toast('Lautopasto cucinato: consumate 5 riserve di Legname');await campRefresh(true);}
-    catch(e){toast(e.message||'Ingredienti insufficienti');}
+    try{const {error}=await state.db.rpc('p1_camp_cook');if(error)throw error;campFeedback('Lautopasto cucinato! Consumate 5 riserve di Legname.');await campRefresh(true);}
+    catch(e){campFeedback(e.message||'Ingredienti insufficienti',true);}
     finally{camp.busy=false;renderCampModal();}
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&camp.modalOpen){e.preventDefault();campClose();} if(camp.modalOpen && virtualKeys[e.key?.toLowerCase()]) e.stopImmediatePropagation();},true);
