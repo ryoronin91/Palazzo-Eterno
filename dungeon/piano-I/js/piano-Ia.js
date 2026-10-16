@@ -664,9 +664,21 @@
     });
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => resizeMap(true)).observe(viewport);
     else window.addEventListener('resize', () => resizeMap(true));
-    $('save-notes-button').addEventListener('click', () => {
-      localWrite(`${state.storageKey}:notes`, $('character-notes').value);
-      toast('Note salvate in questo browser.');
+    $('save-notes-button').addEventListener('click', async () => {
+      if (!state.db || !state.character) return;
+      const button = $('save-notes-button');
+      const notes = $('character-notes').value;
+      button.disabled = true;
+      try {
+        const { error } = await state.db.from('characters')
+          .update({notes}).eq('id',state.character.id);
+        if (error) throw error;
+        state.character.notes = notes;
+        toast('Note salvate nel personaggio.');
+      } catch (error) {
+        console.error('Note Piano Ia:', error);
+        toast('Errore: note non salvate.');
+      } finally { button.disabled = false; }
     });
     $('floor-chat-form').addEventListener('submit', sendChat);
     setupAudio();
@@ -1067,7 +1079,7 @@
       let serverReady = false;
       try { serverReady = await loadServerPosition(); }
       catch (error) { status('Accesso al Piano I-A non riuscito: '+(error.message || error),true); console.error(error); }
-      $('character-notes').value = localRead(`${state.storageKey}:notes`, '') || '';
+      $('character-notes').value = state.character?.notes || '';
       state.ready = serverReady;
       renderTokens();
       resizeMap(true);

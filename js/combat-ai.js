@@ -12,6 +12,30 @@
 // diagonali comprese.
 // ============================================================
 
+// Ingombro logico: la coordinata (x,y) e' l'angolo in alto a sinistra.
+const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante']);
+function getCombatFootprint(entity) {
+    const large = entity?.entity_type === 'enemy' && COMBAT_LARGE_ENEMY_IDS.has(entity.enemy_id);
+    return large ? 2 : 1;
+}
+function getCombatRectDistance(a, b) {
+    const aw = getCombatFootprint(a), bw = getCombatFootprint(b);
+    const ax = Number(a.x), ay = Number(a.y), bx = Number(b.x), by = Number(b.y);
+    const dx = Math.max(0, bx - (ax + aw - 1), ax - (bx + bw - 1));
+    const dy = Math.max(0, by - (ay + aw - 1), ay - (by + bw - 1));
+    return Math.max(dx, dy);
+}
+function canCombatEntityOccupy(entity, x, y) {
+    const size = getCombatFootprint(entity);
+    if (x < 0 || y < 0 || x + size > COMBAT_COLUMNS || y + size > COMBAT_ROWS) return false;
+    return !Array.from(combatEntities.values()).some(other => {
+        if (other.id === entity.id || other.status !== 'alive' || Number(other.current_hp) <= 0) return false;
+        const otherSize = getCombatFootprint(other);
+        return x < Number(other.x) + otherSize && x + size > Number(other.x) &&
+            y < Number(other.y) + otherSize && y + size > Number(other.y);
+    });
+}
+
 function getCombatDistance(
     x1,
     y1,
@@ -339,27 +363,13 @@ function chooseGoblinTarget(
 // IA GOBLIN BASE - MOVIMENTO
 // ============================================================
 
-function isCombatCellOccupied(
-    x,
-    y,
-    ignoreEntityId = null
-) {
-
-    return Array.from(
-        combatEntities.values()
-    ).some(
-        entity =>
-            entity.id !== ignoreEntityId
-            &&
-            entity.status === "alive"
-            &&
-            Number(entity.current_hp) > 0
-            &&
-            Number(entity.x) === Number(x)
-            &&
-            Number(entity.y) === Number(y)
-    );
-
+function isCombatCellOccupied(x, y, ignoreEntityId = null) {
+    return Array.from(combatEntities.values()).some(entity => {
+        if (entity.id === ignoreEntityId || entity.status !== 'alive' || Number(entity.current_hp) <= 0) return false;
+        const n = getCombatFootprint(entity);
+        return x >= Number(entity.x) && x < Number(entity.x) + n &&
+               y >= Number(entity.y) && y < Number(entity.y) + n;
+    });
 }
 
 
@@ -449,11 +459,7 @@ function chooseGoblinNextStep(
 
             // Casella occupata.
             if (
-                isCombatCellOccupied(
-                    newX,
-                    newY,
-                    goblin.id
-                )
+                !canCombatEntityOccupy(goblin, newX, newY)
             ) {
 
                 return;
@@ -637,7 +643,7 @@ function chooseGoblinMovementPath(
 
 // Distanza in caselle, diagonali comprese.
 function getAIEnemyDistance(a, b) {
-    return getCombatDistance(a.x, a.y, b.x, b.y);
+    return getCombatRectDistance(a, b);
 }
 
 function getAliveAlliedEnemies(enemy = null) {
@@ -708,7 +714,7 @@ function findAIGridPath(enemy, isGoal, maximumSteps = Infinity) {
             const x = current.x + dx, y = current.y + dy;
             if (x < 0 || x >= COMBAT_COLUMNS || y < 0 || y >= COMBAT_ROWS) continue;
             const key = encode(x, y);
-            if (visited.has(key) || isCombatCellOccupied(x, y, enemy.id)) continue;
+            if (visited.has(key) || !canCombatEntityOccupy(enemy, x, y)) continue;
             visited.add(key);
             queue.push({ x, y, path: [...current.path, { x, y, dx, dy }] });
         }
@@ -719,7 +725,7 @@ function findAIGridPath(enemy, isGoal, maximumSteps = Infinity) {
 function findAIPathToRange(enemy, target, range, availableMovement) {
     const steps = Math.max(0, Number(availableMovement) || 0);
     return findAIGridPath(enemy, (x, y) =>
-        getCombatDistance(x, y, target.x, target.y) <= range, steps);
+        getCombatRectDistance({...enemy, x, y}, target) <= range, steps);
 }
 
 // Per il mordi e fuggi: scelta di una casella raggiungibile
@@ -747,7 +753,7 @@ function findAIRetreatPath(enemy, players, availableMovement) {
             const x = current.x + dx, y = current.y + dy;
             if (x < 0 || x >= COMBAT_COLUMNS || y < 0 || y >= COMBAT_ROWS) continue;
             const key = encode(x, y);
-            if (visited.has(key) || isCombatCellOccupied(x, y, enemy.id)) continue;
+            if (visited.has(key) || !canCombatEntityOccupy(enemy, x, y)) continue;
             visited.add(key);
             queue.push({x,y,path:[...current.path,{x,y,dx,dy}]});
         }
@@ -779,7 +785,7 @@ function peAIPath(enemy, target, range, budget) {
     const queue=[{x:+enemy.x,y:+enemy.y,path:[]}];
     const visited=new Set([`${enemy.x},${enemy.y}`]);
     let best=queue[0];
-    const distance=p=>getCombatDistance(p.x,p.y,target.x,target.y);
+    const distance=p=>getCombatRectDistance({...enemy,x:p.x,y:p.y},target);
     for(let i=0;i<queue.length;i++) {
         const current=queue[i];
         if(distance(current)<=range) return current.path;
@@ -788,7 +794,7 @@ function peAIPath(enemy, target, range, budget) {
         if(current.path.length>=budget) continue;
         for(const [dx,dy] of dirs) {
             const x=current.x+dx,y=current.y+dy,k=`${x},${y}`;
-            if(x<0||x>=COMBAT_COLUMNS||y<0||y>=COMBAT_ROWS||visited.has(k)||isCombatCellOccupied(x,y,enemy.id))continue;
+            if(x<0||x>=COMBAT_COLUMNS||y<0||y>=COMBAT_ROWS||visited.has(k)||!canCombatEntityOccupy(enemy,x,y))continue;
             visited.add(k);queue.push({x,y,path:[...current.path,{x,y}]});
         }
     }
@@ -951,7 +957,7 @@ async function peAINewEnemyTurn(enemy) {
         const players=getAliveCombatPlayers().sort((a,b)=>
           Number(b.max_hp)-Number(a.max_hp) ||
           getAIEnemyDistance(enemy,a)-getAIEnemyDistance(enemy,b));
-        target=players.find(p=>getCombatDistance(enemy.x,enemy.y,p.x,p.y)<=1 ||
+        target=players.find(p=>getCombatRectDistance(enemy,p)<=1 ||
           peAIPath(enemy,p,1,Number(enemy.movement_remaining)||0).length>0) || null;
         if(!target) return;
     }
@@ -964,13 +970,13 @@ async function peAINewEnemyTurn(enemy) {
     // Il difensore sceglie un percorso che protegga il compagno ove possibile.
     let path=peAIPath(enemy,target,range,Number(enemy.movement_remaining)||0);
     if(type==='lucertoloide_guerriero_1' && partner && path.length>0) {
-        const guarded=path.findIndex(p=>getCombatDistance(p.x,p.y,partner.x,partner.y)<=1);
+        const guarded=path.findIndex(p=>getCombatRectDistance({...enemy,x:p.x,y:p.y},partner)<=1);
         if(guarded>=0) path=path.slice(0,guarded+1);
     }
     // Compsognati e Guerrieri 2 si avvicinano visibilmente prima di colpire.
     const skirmisher = type==='compsognato' || type==='lucertoloide_guerriero_2';
     enemy=skirmisher ? await peAIMoveAnimated(enemy,path) : await peAIMove(enemy,path);
-    const dist=getCombatDistance(enemy.x,enemy.y,target.x,target.y);
+    const dist=getCombatRectDistance(enemy,target);
     if(dist<=range && !enemy.action_used) {
         if(skirmisher) await new Promise(resolve => setTimeout(resolve,2000));
         if(mode==='special'||mode==='poison') {

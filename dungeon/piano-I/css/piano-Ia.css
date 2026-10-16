@@ -191,3 +191,64 @@ body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
 #p1-camp-overlay .base-service-maintenance-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:12px;border:1px solid rgba(131,170,112,.25);border-radius:8px}
 #p1-camp-overlay .base-service-maintenance-box label{color:#b5c9af;font-size:12px;text-align:center}
 @media(max-width:440px){#p1-camp-overlay .base-service-requirements{grid-template-columns:1fr}}
+
+
+/* ============================================================
+   UNIFICAZIONE PANNELLI CON IL DUNGEON PRINCIPALE - TEMA VERDE
+   Le regole qui sotto non sostituiscono le classi della mappa,
+   per mantenere funzionanti zoom, nebbia, movimento ed eventi.
+   ============================================================ */
+.jungle-page {max-width:none;width:100%;padding:14px 18px 18px;}
+.jungle-header{max-width:1500px;min-height:56px;margin:0 auto 10px;padding:0;grid-template-columns:140px auto 1fr;border-bottom:0;}
+.jungle-heading{text-align:left;display:flex;align-items:baseline;gap:9px;white-space:nowrap;}
+.jungle-kicker{font-size:23px;font-weight:900;letter-spacing:0;margin:0;color:#dcebcf;}
+.jungle-heading h1{font-size:18px;letter-spacing:0;color:#dcebcf;}
+.jungle-heading h1 span{color:#9aca98;font-weight:800;}
+.jungle-header-tools{justify-content:flex-end;}
+.jungle-exit{min-height:34px;border:3px solid #1d3321;border-radius:0;padding:4px 16px;background:#cce2c8;color:#122417;font-size:14px;font-weight:800;}
+.jungle-status{max-width:1500px;margin:auto;text-align:right;}
+.prototype-note{max-width:1500px;}
+.jungle-layout{width:100%;max-width:1500px;margin:auto;grid-template-columns:minmax(310px,350px) minmax(500px,720px) minmax(350px,1fr);gap:12px;align-items:stretch;}
+.jungle-left{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;min-height:0;}
+.jungle-social-column{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0;min-height:0;}
+.jungle-left .jungle-panel{border:3px solid #24452b;border-radius:0;box-shadow:none;background:#12271a;min-width:0;}
+.jungle-left .jungle-panel h2{background:#203e2a;border-bottom:2px solid #24452b;text-align:center;padding:9px 5px;font-size:13px;letter-spacing:.01em;font-weight:900;min-height:43px;}
+.jungle-chat-panel{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.jungle-chat-panel .chat-messages{flex:1 1 auto;height:0!important;min-height:0;overflow-y:auto;scrollbar-gutter:stable;}
+.jungle-chat-panel .chat-form{flex:0 0 auto;}
+.jungle-online-panel,.jungle-ranking-panel{height:100%;display:flex;flex-direction:column;min-height:0;}
+.jungle-online-panel .panel-list,.jungle-ranking-panel .panel-list{flex:1 1 auto;min-height:0;overflow-y:auto;}
+.jungle-map-column{border:3px solid #24452b;border-radius:0;box-shadow:none;background:#0d2014;padding:8px;align-self:start;}
+.jungle-right{display:block;min-width:0;}
+.jungle-character-stack{display:flex;flex-direction:column;gap:0;border:3px solid #24452b;background:#102518;}
+.jungle-character-stack .jungle-panel{border:none;border-radius:0;box-shadow:none;background:transparent;}
+.jungle-character-stack .jungle-panel + .jungle-panel{border-top:2px solid #24452b;}
+.jungle-character-stack .jungle-panel h2{background:#1d3826;font-weight:900;text-align:center;font-size:15px;padding:9px 8px;border-bottom:2px solid #24452b;}
+.hero-headline{padding:12px 14px;}
+.hero-portrait-line{padding:6px 14px 12px;}
+.stats-grid{gap:6px;}
+.stats-grid>div{border-radius:0;}
+.actions-panel{min-height:95px;}
+.notes-panel textarea{min-height:100px;}
+@media(max-width:1250px){
+ .jungle-layout{grid-template-columns:minmax(280px,350px) minmax(360px,1fr);}
+ .jungle-right{grid-column:1/-1;grid-row:2;}
+ .jungle-character-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+ .jungle-character-stack .jungle-panel{border-top:0!important;}
+ .jungle-character-stack .jungle-panel:nth-child(even){border-left:2px solid #24452b;}
+}
+@media(max-width:760px){
+ .jungle-page{padding:7px 8px 18px;}
+ .jungle-header{grid-template-columns:auto 1fr;gap:8px;}
+ .jungle-heading{display:block;text-align:right;white-space:normal;}
+ .jungle-kicker{font-size:18px;}
+ .jungle-heading h1{font-size:14px;}
+ .jungle-layout{display:flex;flex-direction:column;}
+ .jungle-map-column{order:0;width:100%;}
+ .jungle-right{order:1;width:100%;}
+ .jungle-left{order:2;width:100%;min-height:400px;}
+ .jungle-character-stack{display:flex;}
+ .jungle-character-stack .jungle-panel:nth-child(even){border-left:0;}
+ .jungle-left .jungle-chat-panel{min-height:390px;}
+ .jungle-social-column{min-height:390px;}
+}

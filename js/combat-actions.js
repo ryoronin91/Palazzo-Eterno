@@ -350,15 +350,7 @@ function isEntityInCurrentTargetRange(
 
 
     const distance =
-        getCombatDistance(
-
-            player.x,
-            player.y,
-
-            entity.x,
-            entity.y
-
-        );
+        getCombatRectDistance(player, entity);
 
 
     // Cura può essere usata

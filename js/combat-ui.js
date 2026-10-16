@@ -239,20 +239,11 @@ function renderCombatTokens() {
             // DIMENSIONE
             // =================================================
 
-            const size =
-                Math.min(
-                    cellWidth,
-                    cellHeight
-                ) *
-                0.82;
-
-
-            token.style.width =
-                `${size}px`;
-
-
-            token.style.height =
-                `${size}px`;
+            const footprint = getCombatFootprint(entity);
+            const size = Math.min(cellWidth, cellHeight) * footprint * 0.92;
+            token.classList.toggle('combat-token-large', footprint === 2);
+            token.style.width = `${size}px`;
+            token.style.height = `${size}px`;
 
 
             // =================================================
@@ -261,8 +252,8 @@ function renderCombatTokens() {
 
             const pixelPosition =
                 getCombatGridPixelPosition(
-                    entity.x,
-                    entity.y,
+                    Number(entity.x) + (footprint - 1) / 2,
+                    Number(entity.y) + (footprint - 1) / 2,
                     size,
                     size
                 );
