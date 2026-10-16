@@ -735,7 +735,9 @@ document.addEventListener(
 
                     ? "music/boss.mp3"
 
-                    : "music/combat.mp3"
+                    : (String(combatSession?.encounter_id || "").startsWith("p1_")
+                        ? "music/jungle-combat.mp3"
+                        : "music/combat.mp3")
             );
 
 

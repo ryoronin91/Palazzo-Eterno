@@ -494,7 +494,7 @@
   }
 
   function setupAudio() {
-    const audio = new Audio('../../music/dungeon.mp3');
+    const audio = new Audio('../../music/piano-Ia.mp3');
     audio.loop = true;
     audio.preload = 'none';
     audio.volume = (Number(localRead('palazzo:piano-Ia:volume', 35)) || 0) / 100;
