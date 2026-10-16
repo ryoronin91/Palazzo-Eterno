@@ -13,7 +13,7 @@
 // ============================================================
 
 // Ingombro logico: la coordinata (x,y) e' l'angolo in alto a sinistra.
-const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante']);
+const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande']);
 function getCombatFootprint(entity) {
     const large = entity?.entity_type === 'enemy' && COMBAT_LARGE_ENEMY_IDS.has(entity.enemy_id);
     return large ? 2 : 1;

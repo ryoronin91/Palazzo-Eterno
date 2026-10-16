@@ -192,63 +192,39 @@ body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
 #p1-camp-overlay .base-service-maintenance-box label{color:#b5c9af;font-size:12px;text-align:center}
 @media(max-width:440px){#p1-camp-overlay .base-service-requirements{grid-template-columns:1fr}}
 
-
-/* ============================================================
-   UNIFICAZIONE PANNELLI CON IL DUNGEON PRINCIPALE - TEMA VERDE
-   Le regole qui sotto non sostituiscono le classi della mappa,
-   per mantenere funzionanti zoom, nebbia, movimento ed eventi.
-   ============================================================ */
-.jungle-page {max-width:none;width:100%;padding:14px 18px 18px;}
-.jungle-header{max-width:1500px;min-height:56px;margin:0 auto 10px;padding:0;grid-template-columns:140px auto 1fr;border-bottom:0;}
-.jungle-heading{text-align:left;display:flex;align-items:baseline;gap:9px;white-space:nowrap;}
-.jungle-kicker{font-size:23px;font-weight:900;letter-spacing:0;margin:0;color:#dcebcf;}
-.jungle-heading h1{font-size:18px;letter-spacing:0;color:#dcebcf;}
-.jungle-heading h1 span{color:#9aca98;font-weight:800;}
-.jungle-header-tools{justify-content:flex-end;}
-.jungle-exit{min-height:34px;border:3px solid #1d3321;border-radius:0;padding:4px 16px;background:#cce2c8;color:#122417;font-size:14px;font-weight:800;}
-.jungle-status{max-width:1500px;margin:auto;text-align:right;}
-.prototype-note{max-width:1500px;}
-.jungle-layout{width:100%;max-width:1500px;margin:auto;grid-template-columns:minmax(310px,350px) minmax(500px,720px) minmax(350px,1fr);gap:12px;align-items:stretch;}
-.jungle-left{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;min-height:0;}
-.jungle-social-column{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0;min-height:0;}
-.jungle-left .jungle-panel{border:3px solid #24452b;border-radius:0;box-shadow:none;background:#12271a;min-width:0;}
-.jungle-left .jungle-panel h2{background:#203e2a;border-bottom:2px solid #24452b;text-align:center;padding:9px 5px;font-size:13px;letter-spacing:.01em;font-weight:900;min-height:43px;}
-.jungle-chat-panel{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
-.jungle-chat-panel .chat-messages{flex:1 1 auto;height:0!important;min-height:0;overflow-y:auto;scrollbar-gutter:stable;}
-.jungle-chat-panel .chat-form{flex:0 0 auto;}
-.jungle-online-panel,.jungle-ranking-panel{height:100%;display:flex;flex-direction:column;min-height:0;}
-.jungle-online-panel .panel-list,.jungle-ranking-panel .panel-list{flex:1 1 auto;min-height:0;overflow-y:auto;}
-.jungle-map-column{border:3px solid #24452b;border-radius:0;box-shadow:none;background:#0d2014;padding:8px;align-self:start;}
-.jungle-right{display:block;min-width:0;}
-.jungle-character-stack{display:flex;flex-direction:column;gap:0;border:3px solid #24452b;background:#102518;}
-.jungle-character-stack .jungle-panel{border:none;border-radius:0;box-shadow:none;background:transparent;}
-.jungle-character-stack .jungle-panel + .jungle-panel{border-top:2px solid #24452b;}
-.jungle-character-stack .jungle-panel h2{background:#1d3826;font-weight:900;text-align:center;font-size:15px;padding:9px 8px;border-bottom:2px solid #24452b;}
-.hero-headline{padding:12px 14px;}
-.hero-portrait-line{padding:6px 14px 12px;}
-.stats-grid{gap:6px;}
-.stats-grid>div{border-radius:0;}
-.actions-panel{min-height:95px;}
-.notes-panel textarea{min-height:100px;}
-@media(max-width:1250px){
- .jungle-layout{grid-template-columns:minmax(280px,350px) minmax(360px,1fr);}
- .jungle-right{grid-column:1/-1;grid-row:2;}
- .jungle-character-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
- .jungle-character-stack .jungle-panel{border-top:0!important;}
- .jungle-character-stack .jungle-panel:nth-child(even){border-left:2px solid #24452b;}
-}
-@media(max-width:760px){
- .jungle-page{padding:7px 8px 18px;}
- .jungle-header{grid-template-columns:auto 1fr;gap:8px;}
- .jungle-heading{display:block;text-align:right;white-space:normal;}
- .jungle-kicker{font-size:18px;}
- .jungle-heading h1{font-size:14px;}
- .jungle-layout{display:flex;flex-direction:column;}
- .jungle-map-column{order:0;width:100%;}
- .jungle-right{order:1;width:100%;}
- .jungle-left{order:2;width:100%;min-height:400px;}
- .jungle-character-stack{display:flex;}
- .jungle-character-stack .jungle-panel:nth-child(even){border-left:0;}
- .jungle-left .jungle-chat-panel{min-height:390px;}
- .jungle-social-column{min-height:390px;}
-}
+/* =======================================================
+   Piano Ia — pannelli derivati dalla gerarchia del Dungeon.
+   Identici rapporti tra colonne e pannelli; solo tema verde.
+   ======================================================= */
+.piano-ia-dungeon-theme{--pia-edge:#172a1d;--pia-paper:#13281b;--pia-heading:#baddaa;--pia-accent:#88b986;width:100%;max-width:none;padding:14px 18px 18px}
+.piano-ia-dungeon-theme .dungeon-header{display:grid;grid-template-columns:140px minmax(0,1fr) auto;align-items:center;gap:14px;max-width:1500px;margin:0 auto 10px;padding:4px 10px 12px;min-height:70px}
+.piano-ia-dungeon-theme .jungle-heading{text-align:left}
+.piano-ia-dungeon-theme .dungeon-layout{display:grid;grid-template-columns:350px minmax(500px,720px) minmax(430px,1fr);align-items:stretch;gap:12px;width:100%;max-width:1500px;margin:auto}
+.piano-ia-dungeon-theme .dungeon-chat-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-height:0;align-items:stretch}
+.piano-ia-dungeon-theme .dungeon-chat-panel{grid-column:1;grid-row:1;display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+.piano-ia-dungeon-theme .dungeon-social-column{grid-column:2;grid-row:1;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:10px;min-height:0}
+.piano-ia-dungeon-theme .dungeon-online-panel,.piano-ia-dungeon-theme .dungeon-leaderboard-panel{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.piano-ia-dungeon-theme .floor-chat-messages,.piano-ia-dungeon-theme .dungeon-online-list,.piano-ia-dungeon-theme .dungeon-leaderboard-list{flex:1 1 auto;height:auto;max-height:none;min-height:0;overflow-y:auto;overflow-x:hidden;padding:7px}
+.piano-ia-dungeon-theme .floor-chat-controls{flex:none;margin-top:auto}
+.piano-ia-dungeon-theme .dungeon-panel{border:3px solid var(--pia-edge);border-radius:0;background:linear-gradient(155deg,#1a3422,#0f2016);box-shadow:none}
+.piano-ia-dungeon-theme .dungeon-panel-title{padding:9px 5px;border-bottom:2px solid var(--pia-edge);text-align:center;font-size:clamp(11px,1vw,16px);font-weight:900;color:var(--pia-heading);letter-spacing:.02em;background:#203b27}
+.piano-ia-dungeon-theme .dungeon-map-column{min-width:0;display:flex;flex-direction:column;align-self:start;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
+.piano-ia-dungeon-theme .map-heading{min-height:38px;padding:2px 6px 6px}
+.piano-ia-dungeon-theme .dungeon-map-frame{aspect-ratio:1/1;width:100%;border:3px solid var(--pia-edge);background:#050e07}
+.piano-ia-dungeon-theme .dungeon-map-footer{padding:8px 3px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.piano-ia-dungeon-theme .dungeon-character-column{min-width:0;display:flex;flex-direction:column;gap:10px}
+.piano-ia-dungeon-theme .dungeon-character-summary{display:flex;flex-direction:column;min-width:0;gap:0;border:3px solid var(--pia-edge);background:#162b1d}
+.piano-ia-dungeon-theme .dungeon-character-summary .jungle-panel{border:0;border-radius:0;box-shadow:none;background:transparent}
+.piano-ia-dungeon-theme .dungeon-character-summary .hero-panel{border-bottom:2px solid var(--pia-edge)}
+.piano-ia-dungeon-theme .hero-headline{padding:9px 12px}
+.piano-ia-dungeon-theme .stats-panel h2,.piano-ia-dungeon-theme .actions-panel h2,.piano-ia-dungeon-theme .notes-panel h2{border-bottom:2px solid var(--pia-edge);background:#203b27;color:var(--pia-heading);text-align:center}
+.piano-ia-dungeon-theme .quick-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px}
+.piano-ia-dungeon-theme .quick-stat{min-width:0;display:flex;justify-content:space-between;align-items:center;gap:5px;padding:7px 6px;background:#203526;border:1px solid #456448}
+.piano-ia-dungeon-theme .quick-stat-label{font-size:11px;font-weight:800;color:#b8d1b2}
+.piano-ia-dungeon-theme .quick-stat-value{font-size:13px;color:#ecf1df;overflow-wrap:anywhere}
+.piano-ia-dungeon-theme .dungeon-action-column,.piano-ia-dungeon-theme .dungeon-notes-panel{border:3px solid var(--pia-edge);background:#162b1d;border-radius:0}
+.piano-ia-dungeon-theme .prototype-note{max-width:1500px;margin:0 auto 8px}
+.piano-ia-dungeon-theme .prototype-note:not([open]){padding:4px 10px}
+.piano-ia-dungeon-theme .prototype-note summary{cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.07em}
+@media(max-width:1290px){.piano-ia-dungeon-theme .dungeon-layout{grid-template-columns:minmax(235px,1fr) minmax(370px,1.6fr)}.piano-ia-dungeon-theme .dungeon-character-column{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.piano-ia-dungeon-theme .dungeon-notes-panel{grid-column:2}}
+@media(max-width:780px){.piano-ia-dungeon-theme{padding:7px}.piano-ia-dungeon-theme .dungeon-header{grid-template-columns:auto 1fr;gap:8px}.piano-ia-dungeon-theme .jungle-header-tools{grid-column:1/-1;justify-content:space-between}.piano-ia-dungeon-theme .dungeon-layout{display:flex;flex-direction:column}.piano-ia-dungeon-theme .dungeon-map-column{order:0;width:100%}.piano-ia-dungeon-theme .dungeon-character-column{order:1;display:flex;width:100%}.piano-ia-dungeon-theme .dungeon-chat-column{order:2;width:100%;min-height:300px}.piano-ia-dungeon-theme .dungeon-chat-panel{min-height:300px}}

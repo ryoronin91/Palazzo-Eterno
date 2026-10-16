@@ -1,17 +1,17 @@
 <!DOCTYPE html>
+
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#07140d">
-  <title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
-  <link rel="stylesheet" href="../../css/style.css">
-  <link rel="stylesheet" href="css/piano-Ia.css?v=8">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=38" defer></script>
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="#07140d" name="theme-color"/>
+<title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
+<link href="../../css/style.css" rel="stylesheet"/>
+<link href="css/piano-Ia.css?v=100" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/config.js?v=10"></script>
+<script defer="" src="js/piano-Ia.js?v=100"></script>
+<style>
     /* Test mosaico 3x3 per verifica allineamento */
     #map-background{opacity:0 !important;}
     #map-tile-mosaic{position:absolute;inset:0;width:100%;height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;pointer-events:none;z-index:0;}
@@ -20,192 +20,178 @@
   </style>
 </head>
 <body>
-  <main class="jungle-page" id="jungle-app" data-map="piano-Ia.json" data-image="immagini/piano-Ia-01.png">
-    <header class="jungle-header">
-      <a class="jungle-exit" href="../../scheda.html" aria-label="Torna alla scheda">← ESCI</a>
-      <div class="jungle-heading">
-        <span class="jungle-kicker">PALAZZO ETERNO</span>
-        <h1>PIANO I <span>· GIUNGLA PREISTORICA</span></h1>
-      </div>
-      <div class="jungle-header-tools">
-        <div class="audio-control">
-          <button id="audio-toggle" type="button" title="Attiva o disattiva la musica" aria-label="Musica disattivata">♫</button>
-          <label class="sr-only" for="audio-volume">Volume</label>
-          <input id="audio-volume" type="range" min="0" max="100" step="5" value="35">
-        </div>
-        <a href="../../scheda.html" class="sheet-link">SCHEDA PG</a>
-      </div>
-    </header>
-
-    <div id="jungle-status" class="jungle-status" role="status" aria-live="polite">Caricamento del Piano I…</div>
-    <div class="prototype-note" id="test-notice">
-      <strong>PIANO I-A</strong> — Sono presenti 20 incontri mobili tra 52 stanze. I token indicano gli incontri disponibili: raggiungi la stanza e tocca il token per combattere. Gli incontri liberi cambiano stanza ogni 15 minuti; quelli vinti ricompaiono dopo 5 minuti.
-    </div>
-
-    <div class="jungle-layout">
-      <aside class="jungle-left">
-        <section class="jungle-panel jungle-chat-panel">
-          <h2>CHAT</h2>
-          <div id="floor-chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="muted">Connessione in corso…</p></div>
-          <form id="floor-chat-form" class="chat-form" autocomplete="off">
-            <input id="floor-chat-input" type="text" maxlength="300" placeholder="Scrivi un messaggio…" aria-label="Messaggio in chat" disabled>
-            <button id="floor-chat-send" type="submit" disabled aria-label="Invia messaggio">➤</button>
-          </form>
-        </section>
-        <div class="jungle-social-column">
-        <section class="jungle-panel jungle-online-panel">
-          <h2>PERSONAGGI ONLINE <span id="online-count">0</span></h2>
-          <div id="dungeon-online-list" class="panel-list"><p class="muted">In attesa…</p></div>
-        </section>
-        <section class="jungle-panel jungle-ranking-panel">
-          <h2>RISONANZA · TOP 5</h2>
-          <div id="dungeon-leaderboard-list" class="panel-list"><p class="muted">Caricamento…</p></div>
-        </section>
-        </div>
-      </aside>
-
-      <section class="jungle-map-column" aria-label="Esplorazione del Piano I">
-        <div class="map-heading">
-          <div><span class="map-eyebrow">SETTORE IA</span><strong>SENTIERI DELLA GIUNGLA</strong></div>
-          <div class="map-controls">
-            <button id="map-zoom-out" title="Riduci ingrandimento" aria-label="Riduci ingrandimento">−</button>
-            <button id="map-zoom-reset" title="Ripristina zoom 13 × 13">13 × 13</button>
-            <button id="map-zoom-full" title="Visualizza tutte le 63 × 81 caselle" aria-label="Mappa intera">Mappa intera</button>
-            <button id="map-zoom-in" title="Aumenta ingrandimento" aria-label="Aumenta ingrandimento">+</button>
-          </div>
-        </div>
-        <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="Mappa. Usa WASD o le frecce per muoverti">
-          <div class="map-layer" id="map-layer">
-            <img id="map-background" src="immagini/piano-Ia-01.png?v=tile3" alt="Mappa del Piano I" draggable="false">
-            <div id="map-tile-mosaic" aria-hidden="true">
-              <img src="immagini/piano-Ia-01.png?v=3" alt="">
-              <img src="immagini/piano-Ia-02.png?v=3" alt="">
-              <img src="immagini/piano-Ia-03.png?v=3" alt="">
-              <img src="immagini/piano-Ia-04.png?v=3" alt="">
-              <img src="immagini/piano-Ia-05.png?v=3" alt="">
-              <img src="immagini/piano-Ia-06.png?v=3" alt="">
-              <img src="immagini/piano-Ia-07.png?v=3" alt="">
-              <img src="immagini/piano-Ia-08.png?v=3" alt="">
-              <img src="immagini/piano-Ia-09.png?v=3" alt="">
-            </div>
-            <div class="p1-combat-layer" id="p1-combat-layer" aria-label="Combattimenti del piano"></div>
-            <div class="map-grid" id="map-grid" aria-hidden="true"></div>
-            <canvas id="fog-canvas" aria-hidden="true"></canvas>
-            <div class="map-entities" id="map-entities"></div>
-          </div>
-          <div id="map-loading" class="map-loading">Caricamento mappa e griglia…</div>
-        </div>
-        <div class="map-footer">
-          <div class="movement-description"><strong>W A S D</strong> / <strong>← ↑ ↓ →</strong> · oppure clicca una casella adiacente</div>
-          <div class="map-toggles">
-            <label><input id="toggle-grid" type="checkbox"> Griglia</label>
-            <label><input id="toggle-fog" type="checkbox" checked> Esplorazione</label>
-          </div>
-          <span id="p1-combat-status" class="p1-combat-status" role="status">Incontri: caricamento…</span>
-          <div id="player-coordinates" class="coordinates">X — · Y —</div>
-        </div>
-        <div class="touch-dpad" aria-label="Comandi di movimento per dispositivi touch">
-          <span></span><button type="button" data-move="0,-1" aria-label="Su">↑</button><span></span>
-          <button type="button" data-move="-1,0" aria-label="Sinistra">←</button>
-          <button type="button" data-move="0,1" aria-label="Giù">↓</button>
-          <button type="button" data-move="1,0" aria-label="Destra">→</button>
-        </div>
-      </section>
-
-      <aside class="jungle-right">
-        <div class="jungle-character-stack">
-        <section class="jungle-panel hero-panel">
-          <div class="hero-headline"><div><span class="panel-eyebrow">AVVENTURIERO</span><h2 id="character-name">PERSONAGGIO</h2></div><span id="character-level" class="hero-level">LV —</span></div>
-          <div class="hero-portrait-line">
-            <img id="character-token" class="hero-portrait" src="../../immagini/token/token_1.png" alt="Token del personaggio">
-            <div class="hero-vitals"><div><span>VITA</span><strong id="character-hp">—</strong></div><div><span>MANA</span><strong id="character-mana">—</strong></div><div><span>RISONANZA</span><strong id="character-resonance">—</strong></div></div>
-          </div>
-          <a href="../../scheda.html" class="full-sheet">APRI SCHEDA COMPLETA ↗</a>
-        </section>
-        <section class="jungle-panel stats-panel">
-          <h2>STATISTICHE</h2>
-          <div class="stats-grid">
-            <div><span>ATT</span><strong id="stat-att">—</strong></div>
-            <div><span>DIF</span><strong id="stat-dif">—</strong></div>
-            <div><span>MOV</span><strong id="stat-mov">—</strong></div>
-            <div><span>CRT</span><strong id="stat-crt">—</strong></div>
-          </div>
-          <h2 class="subheading">ATTRIBUTI</h2>
-          <div class="stats-grid">
-            <div><span>FOR</span><strong id="attr-for">—</strong></div>
-            <div><span>RES</span><strong id="attr-res">—</strong></div>
-            <div><span>COS</span><strong id="attr-cos">—</strong></div>
-            <div><span>INT</span><strong id="attr-int">—</strong></div>
-            <div><span>DES</span><strong id="attr-des">—</strong></div>
-            <div><span>LCK</span><strong id="attr-lck">—</strong></div>
-          </div>
-        </section>
-        <section class="jungle-panel actions-panel">
-          <h2>ABILITÀ / CONSUMABILI</h2>
-        </section>
-        <section class="jungle-panel notes-panel">
-          <h2>NOTE</h2>
-          <textarea id="character-notes" maxlength="3000" placeholder="Annota indizi, percorsi e scoperte…"></textarea>
-          <button type="button" id="save-notes-button">SALVA NOTE</button>
-        </section>
-        </div>
-      </aside>
-    </div>
-    <div id="jungle-toast" class="jungle-toast" role="status" aria-live="polite"></div>
-  </main>
-
-
-
-<div id="pia-passage-modal" class="combat-event-overlay pia-passage-modal" hidden>
-      <section class="combat-event-modal" role="dialog" aria-modal="true" aria-labelledby="pia-passage-title" aria-describedby="pia-passage-description">
-        <div class="combat-event-icon" aria-hidden="true">🚧</div>
-        <h2 id="pia-passage-title"></h2>
-        <p id="pia-passage-description"></p>
-        <div class="combat-event-warning" id="pia-passage-warning">Un passaggio antico attraversa la giungla.</div>
-        <div class="combat-event-buttons">
-          <button id="pia-passage-cancel" class="combat-event-button combat-event-cancel" type="button">ANNULLA</button>
-          <button id="pia-passage-accept" class="combat-event-button combat-event-enter" type="button">CHIUDI</button>
-        </div>
-      </section>
-    </div>
-
-
-<div id="p1-camp-overlay" class="base-service-overlay" hidden>
-  <section class="base-service-modal p1-camp-modal" role="dialog" aria-modal="true" aria-labelledby="p1-camp-title">
-    <button type="button" id="p1-camp-close" class="base-service-close" aria-label="Chiudi">×</button>
-    <header class="base-service-header">
-      <span class="base-service-eyebrow">PIANO I-A · RADURA</span>
-      <h2 id="p1-camp-title">ACCAMPAMENTO</h2>
-    </header>
-    <div class="base-service-content">
-      <p class="base-service-description">Costruisci un rifugio, alimenta il fuoco e prepara il Lautopasto.</p>
-      <div id="p1-camp-state-label" class="base-service-status base-service-status-unbuilt">CARICAMENTO...</div>
-      <p id="p1-camp-fuel" class="base-service-reserve">Caricamento risorse...</p>
-      <h3 id="p1-camp-requirements-title">MATERIALI NECESSARI</h3>
-      <div id="p1-camp-rows" class="base-service-requirements"></div>
-      <div id="p1-camp-quantity-panel" class="base-service-maintenance-box" hidden>
-        <label id="p1-camp-quantity-label" for="p1-camp-quantity">Quantità</label>
-        <input type="number" id="p1-camp-quantity" class="base-service-quantity" min="1" max="20" step="1" value="1">
-        <button type="button" id="p1-camp-quantity-confirm" class="base-service-contribute">CONFERMA CONTRIBUTO</button>
-      </div>
-      <div id="p1-camp-recipe" class="base-service-maintenance-box" hidden>
-        <h3>CUCINA · LAUTOPASTO</h3>
-        <p class="base-service-note">4 Cosce di uccello parassita · 6 Foglie Nutrienti · 8 Funghetti · 5 Frutti carnosi</p>
-        <p class="base-service-note"><strong>Consumo del fuoco:</strong> ogni Lautopasto richiede anche 5 riserve di Legname dell’accampamento (15 minuti di autonomia).</p>
-        <p id="p1-camp-cook-warning" class="base-service-warning" hidden></p>
-        <button type="button" id="p1-camp-cook" class="base-service-contribute">CUOCI LAUTOPASTO</button>
-      </div>
-      <div id="p1-camp-refuel" class="base-service-maintenance-box" hidden>
-        <h3>MANTENIMENTO DEL FUOCO</h3>
-        <p class="base-service-note">1 Legname ogni 3 minuti. Puoi estendere la riserva oltre un’ora. A zero il campo dovrà essere ricostruito.</p>
-        <button type="button" id="p1-camp-fuel-button" class="base-service-contribute">AGGIUNGI LEGNAME</button>
-      </div>
-      <div id="p1-camp-feedback" class="p1-camp-feedback" role="status" aria-live="polite" hidden></div>
-    </div>
-  </section>
+<main class="jungle-page dungeon-page piano-ia-dungeon-theme" data-image="immagini/piano-Ia-01.png" data-map="piano-Ia.json" id="jungle-app">
+<header class="jungle-header dungeon-header">
+<a aria-label="Torna alla scheda" class="jungle-exit dungeon-exit-button" href="../../scheda.html">← ESCI</a>
+<div class="jungle-heading">
+<span class="jungle-kicker">PALAZZO ETERNO</span>
+<h1>PIANO I <span>· GIUNGLA PREISTORICA</span></h1>
 </div>
-<button id="p1-camp-open" type="button" hidden>🏕️ ACCAMPAMENTO</button>
+<div class="jungle-header-tools">
+<div class="audio-control">
+<button aria-label="Musica disattivata" id="audio-toggle" title="Attiva o disattiva la musica" type="button">♫</button>
+<label class="sr-only" for="audio-volume">Volume</label>
+<input id="audio-volume" max="100" min="0" step="5" type="range" value="35"/>
+</div>
+<a class="sheet-link" href="../../scheda.html">SCHEDA PG</a>
+</div>
+</header>
+<div aria-live="polite" class="jungle-status" id="jungle-status" role="status">Caricamento del Piano I…</div>
+<details class="prototype-note" id="test-notice"><summary>INFORMAZIONI SUGLI INCONTRI</summary>
+<strong>PIANO I-A</strong> — Sono presenti 20 incontri mobili tra 52 stanze. I token indicano gli incontri disponibili: raggiungi la stanza e tocca il token per combattere. Gli incontri liberi cambiano stanza ogni 15 minuti; quelli vinti ricompaiono dopo 5 minuti.
+    </details>
+<div class="jungle-layout dungeon-layout">
+<aside class="jungle-left dungeon-chat-column">
+<section class="jungle-panel jungle-chat-panel dungeon-panel dungeon-chat-panel">
+<div class="dungeon-panel-title">CHAT DEL PIANO</div>
+<div aria-live="polite" class="chat-messages floor-chat-messages" id="floor-chat-messages" role="log"><p class="muted">Connessione in corso…</p></div>
+<form autocomplete="off" class="chat-form floor-chat-controls" id="floor-chat-form">
+<input aria-label="Messaggio in chat" disabled="" id="floor-chat-input" maxlength="300" placeholder="Scrivi un messaggio…" type="text"/>
+<button aria-label="Invia messaggio" disabled="" id="floor-chat-send" type="submit">➤</button>
+</form>
+</section>
 
+
+<div class="dungeon-social-column"><section class="jungle-panel jungle-online-panel dungeon-panel dungeon-online-panel">
+<div class="dungeon-panel-title">PERSONAGGI ONLINE <span id="online-count">0</span></div>
+<div class="panel-list dungeon-online-list" id="dungeon-online-list"><p class="muted">In attesa…</p></div>
+</section><section class="jungle-panel jungle-ranking-panel dungeon-panel dungeon-leaderboard-panel">
+<div class="dungeon-panel-title">RISONANZA · TOP 5</div>
+<div class="panel-list dungeon-leaderboard-list" id="dungeon-leaderboard-list"><p class="muted">Caricamento…</p></div>
+</section></div></aside>
+<section aria-label="Esplorazione del Piano I" class="jungle-map-column dungeon-map-column">
+<div class="map-heading">
+<div><span class="map-eyebrow">SETTORE IA</span><strong>SENTIERI DELLA GIUNGLA</strong></div>
+<div class="map-controls">
+<button aria-label="Riduci ingrandimento" id="map-zoom-out" title="Riduci ingrandimento">−</button>
+<button id="map-zoom-reset" title="Ripristina zoom 13 × 13">13 × 13</button>
+<button aria-label="Mappa intera" id="map-zoom-full" title="Visualizza tutte le 63 × 81 caselle">Mappa intera</button>
+<button aria-label="Aumenta ingrandimento" id="map-zoom-in" title="Aumenta ingrandimento">+</button>
+</div>
+</div>
+<div aria-label="Mappa. Usa WASD o le frecce per muoverti" class="map-viewport dungeon-map-frame" id="map-viewport" tabindex="0">
+<div class="map-layer" id="map-layer">
+<img alt="Mappa del Piano I" draggable="false" id="map-background" src="immagini/piano-Ia-01.png?v=tile3"/>
+<div aria-hidden="true" id="map-tile-mosaic">
+<img alt="" src="immagini/piano-Ia-01.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-02.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-03.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-04.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-05.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-06.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-07.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-08.png?v=3"/>
+<img alt="" src="immagini/piano-Ia-09.png?v=3"/>
+</div>
+<div aria-label="Combattimenti del piano" class="p1-combat-layer" id="p1-combat-layer"></div>
+<div aria-hidden="true" class="map-grid" id="map-grid"></div>
+<canvas aria-hidden="true" id="fog-canvas"></canvas>
+<div class="map-entities" id="map-entities"></div>
+</div>
+<div class="map-loading" id="map-loading">Caricamento mappa e griglia…</div>
+</div>
+<div class="map-footer dungeon-map-footer">
+<div class="movement-description"><strong>W A S D</strong> / <strong>← ↑ ↓ →</strong> · oppure clicca una casella adiacente</div>
+<div class="map-toggles">
+<label><input id="toggle-grid" type="checkbox"/> Griglia</label>
+<label><input checked="" id="toggle-fog" type="checkbox"/> Esplorazione</label>
+</div>
+<span class="p1-combat-status" id="p1-combat-status" role="status">Incontri: caricamento…</span>
+<div class="coordinates" id="player-coordinates">X — · Y —</div>
+</div>
+<div aria-label="Comandi di movimento per dispositivi touch" class="touch-dpad">
+<span></span><button aria-label="Su" data-move="0,-1" type="button">↑</button><span></span>
+<button aria-label="Sinistra" data-move="-1,0" type="button">←</button>
+<button aria-label="Giù" data-move="0,1" type="button">↓</button>
+<button aria-label="Destra" data-move="1,0" type="button">→</button>
+</div>
+</section>
+<aside class="jungle-right dungeon-character-column"><section class="dungeon-character-summary jungle-character-summary"><section class="jungle-panel hero-panel dungeon-character-heading">
+<div class="hero-headline"><div><span class="panel-eyebrow">AVVENTURIERO</span><h2 id="character-name">PERSONAGGIO</h2></div><span class="hero-level" id="character-level">LV —</span></div>
+<div class="hero-portrait-line">
+<img alt="Token del personaggio" class="hero-portrait character-portrait" id="character-token" src="../../immagini/token/token_1.png"/>
+<div class="hero-vitals"><div><span>VITA</span><strong id="character-hp">—</strong></div><div><span>MANA</span><strong id="character-mana">—</strong></div><div><span>RISONANZA</span><strong id="character-resonance">—</strong></div></div>
+</div>
+<a class="full-sheet" href="../../scheda.html">APRI SCHEDA COMPLETA ↗</a>
+</section><section class="jungle-panel stats-panel quick-section">
+<h2>STATISTICHE</h2>
+<div class="stats-grid quick-stat-grid">
+<div class="quick-stat"><span class="quick-stat-label">ATT</span><strong class="quick-stat-value" id="stat-att">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">DIF</span><strong class="quick-stat-value" id="stat-dif">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">MOV</span><strong class="quick-stat-value" id="stat-mov">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">CRT</span><strong class="quick-stat-value" id="stat-crt">—</strong></div>
+</div>
+<h2 class="subheading">ATTRIBUTI</h2>
+<div class="stats-grid quick-stat-grid">
+<div class="quick-stat"><span class="quick-stat-label">FOR</span><strong class="quick-stat-value" id="attr-for">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">RES</span><strong class="quick-stat-value" id="attr-res">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">COS</span><strong class="quick-stat-value" id="attr-cos">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">INT</span><strong class="quick-stat-value" id="attr-int">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">DES</span><strong class="quick-stat-value" id="attr-des">—</strong></div>
+<div class="quick-stat"><span class="quick-stat-label">LCK</span><strong class="quick-stat-value" id="attr-lck">—</strong></div>
+</div>
+</section></section>
+
+
+<section class="jungle-panel actions-panel dungeon-action-column">
+<h2>ABILITÀ / CONSUMABILI</h2>
+</section>
+<section class="jungle-panel notes-panel dungeon-notes-panel">
+<h2>NOTE PERSONALI</h2>
+<textarea id="character-notes" maxlength="3000" placeholder="Annota indizi, percorsi e scoperte…"></textarea>
+<button id="save-notes-button" type="button">SALVA NOTE LOCALI</button>
+</section>
+</aside>
+</div>
+<div aria-live="polite" class="jungle-toast" id="jungle-toast" role="status"></div>
+</main>
+<div class="combat-event-overlay pia-passage-modal" hidden="" id="pia-passage-modal">
+<section aria-describedby="pia-passage-description" aria-labelledby="pia-passage-title" aria-modal="true" class="combat-event-modal" role="dialog">
+<div aria-hidden="true" class="combat-event-icon">🚧</div>
+<h2 id="pia-passage-title"></h2>
+<p id="pia-passage-description"></p>
+<div class="combat-event-warning" id="pia-passage-warning">Un passaggio antico attraversa la giungla.</div>
+<div class="combat-event-buttons">
+<button class="combat-event-button combat-event-cancel" id="pia-passage-cancel" type="button">ANNULLA</button>
+<button class="combat-event-button combat-event-enter" id="pia-passage-accept" type="button">CHIUDI</button>
+</div>
+</section>
+</div>
+<div class="base-service-overlay" hidden="" id="p1-camp-overlay">
+<section aria-labelledby="p1-camp-title" aria-modal="true" class="base-service-modal p1-camp-modal" role="dialog">
+<button aria-label="Chiudi" class="base-service-close" id="p1-camp-close" type="button">×</button>
+<header class="base-service-header">
+<span class="base-service-eyebrow">PIANO I-A · RADURA</span>
+<h2 id="p1-camp-title">ACCAMPAMENTO</h2>
+</header>
+<div class="base-service-content">
+<p class="base-service-description">Costruisci un rifugio, alimenta il fuoco e prepara il Lautopasto.</p>
+<div class="base-service-status base-service-status-unbuilt" id="p1-camp-state-label">CARICAMENTO...</div>
+<p class="base-service-reserve" id="p1-camp-fuel">Caricamento risorse...</p>
+<h3 id="p1-camp-requirements-title">MATERIALI NECESSARI</h3>
+<div class="base-service-requirements" id="p1-camp-rows"></div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-quantity-panel">
+<label for="p1-camp-quantity" id="p1-camp-quantity-label">Quantità</label>
+<input class="base-service-quantity" id="p1-camp-quantity" max="20" min="1" step="1" type="number" value="1"/>
+<button class="base-service-contribute" id="p1-camp-quantity-confirm" type="button">CONFERMA CONTRIBUTO</button>
+</div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-recipe">
+<h3>CUCINA · LAUTOPASTO</h3>
+<p class="base-service-note">4 Cosce di uccello parassita · 6 Foglie Nutrienti · 8 Funghetti · 5 Frutti carnosi</p>
+<p class="base-service-note"><strong>Consumo del fuoco:</strong> ogni Lautopasto richiede anche 5 riserve di Legname dell’accampamento (15 minuti di autonomia).</p>
+<p class="base-service-warning" hidden="" id="p1-camp-cook-warning"></p>
+<button class="base-service-contribute" id="p1-camp-cook" type="button">CUOCI LAUTOPASTO</button>
+</div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-refuel">
+<h3>MANTENIMENTO DEL FUOCO</h3>
+<p class="base-service-note">1 Legname ogni 3 minuti. Puoi estendere la riserva oltre un’ora. A zero il campo dovrà essere ricostruito.</p>
+<button class="base-service-contribute" id="p1-camp-fuel-button" type="button">AGGIUNGI LEGNAME</button>
+</div>
+<div aria-live="polite" class="p1-camp-feedback" hidden="" id="p1-camp-feedback" role="status"></div>
+</div>
+</section>
+</div>
+<button hidden="" id="p1-camp-open" type="button">🏕️ ACCAMPAMENTO</button>
 <style>
  /* Feedback interno alla modale, non sfocato dietro l'overlay */
  .p1-camp-modal .p1-camp-feedback {
