@@ -405,15 +405,6 @@ function renderEnemyTokenContent(
         "Nemico";
 
 
-    if (entity.enemy_id === 'allosauro_dominante') {
-        // Placeholder senza dipendere da un PNG ancora da realizzare.
-        image.remove();
-        token.textContent = '🦖';
-        token.style.fontSize = '26px';
-        token.style.textAlign = 'center';
-        return;
-    }
-
     image.src =
         entity.enemy_id === "goblin_berserk"
             ? "immagini/nemici/berserk.png"
