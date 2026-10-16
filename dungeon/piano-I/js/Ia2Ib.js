@@ -1,5 +1,5 @@
 // Evento delle guardie: sessione INDIVIDUALE, dialogo AI protetto lato server.
-(()=>{'use strict';const $=id=>document.getElementById(id);const db=window.supabaseClient;
+(()=>{'use strict';const $=id=>document.getElementById(id);const db=typeof supabaseClient !== "undefined" ? supabaseClient : null;
 const id=new URLSearchParams(location.search).get('id');let active=true,busy=false,unlocked=false,accessToken=null;
 db?.auth.getSession().then(({data})=>{accessToken=data.session?.access_token||null;}).catch(()=>{});
 const feedback=(msg)=>{$('feedback').textContent=msg;};
