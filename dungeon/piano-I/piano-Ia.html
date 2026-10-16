@@ -1,540 +1,1033 @@
 <!DOCTYPE html>
-
 <html lang="it">
+
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="#07140d" name="theme-color"/>
-<title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
-<link href="../../css/style.css" rel="stylesheet"/>
-<link href="css/piano-Ia.css?v=121" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Palazzo Eterno - Piano 1
+    </title>
+
+
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="../../css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/piano-Ia.css?v=1"
+    >
+
+    <style>
+        .dungeon-player-coordinates {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            letter-spacing: 0.04em;
+            opacity: 0.8;
+        }
+
+        /* =====================================================
+           CAMERA DUNGEON
+           Visuale: 13x13 celle = PG + raggio 6
+        ====================================================== */
+
+        .dungeon-map-frame {
+            position: relative !important;
+            overflow: hidden !important;
+            aspect-ratio: 1 / 1;
+        }
+
+        .dungeon-map {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 176.9230769231% !important;
+            height: 176.9230769231% !important;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+
+        .dungeon-map-image {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: fill;
+        }
+    </style>
+
+
+    <!-- =====================================================
+         SUPABASE
+    ====================================================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="../../js/config.js?v=10"></script>
-<script defer="" src="js/piano-Ia.js?v=121"></script>
-<style>
-    /* Test mosaico 3x3 per verifica allineamento */
-    #map-background{opacity:0 !important;}
-    #map-tile-mosaic{position:absolute;inset:0;width:100%;height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;pointer-events:none;z-index:0;}
-    #map-tile-mosaic img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:fill;image-rendering:auto;}
-    #map-grid,#fog-canvas,.map-entities{z-index:1;}
-  </style>
+
 </head>
+
+
 <body>
-<main class="dungeon-page jungle-page piano-ia-theme" data-image="immagini/piano-Ia-01.png" data-map="piano-Ia.json" id="jungle-app">
-<header class="dungeon-header jungle-header">
-<a aria-label="Torna alla scheda" class="dungeon-exit-button jungle-exit" href="../../scheda.html">← ESCI</a>
-<div class="dungeon-title-block jungle-heading">
-<span class="jungle-kicker">PALAZZO ETERNO</span>
-<h1>PIANO I <span>· GIUNGLA PREISTORICA</span></h1>
-</div>
-<div class="jungle-header-tools">
-<div class="audio-control">
-<button aria-label="Musica disattivata" id="audio-toggle" title="Attiva o disattiva la musica" type="button">♫</button>
-<label class="sr-only" for="audio-volume">Volume</label>
-<input id="audio-volume" max="100" min="0" step="5" type="range" value="35"/>
-</div>
-<a class="sheet-link" href="../../scheda.html">SCHEDA PG</a>
-</div>
-</header>
-<div aria-live="polite" class="jungle-status" id="jungle-status" role="status">Caricamento del Piano I…</div>
-<div class="prototype-note" id="test-notice">
-<strong>PIANO I-A</strong> — Sono presenti 20 incontri mobili tra 52 stanze. I token indicano gli incontri disponibili: raggiungi la stanza e tocca il token per combattere. Gli incontri liberi cambiano stanza ogni 15 minuti; quelli vinti ricompaiono dopo 5 minuti.
-    </div>
-<section class="dungeon-layout jungle-layout">
-<aside class="dungeon-chat-column">
-<!-- =============================================
+
+
+    <!-- =====================================================
+         PAGINA DUNGEON
+    ====================================================== -->
+
+    <main class="dungeon-page">
+
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
+        <header class="dungeon-header">
+
+
+            <a
+                href="../../scheda.html"
+                class="dungeon-exit-button"
+            >
+                ESCI
+            </a>
+
+
+            <div class="dungeon-volume-control">
+
+                <button
+                    id="dungeon-volume-button"
+                    class="dungeon-volume-button"
+                    type="button"
+                    aria-label="Regola volume musica"
+                    aria-expanded="false"
+                    title="Volume musica"
+                >
+                    🔊
+                </button>
+
+                <div
+                    id="dungeon-volume-popover"
+                    class="dungeon-volume-popover"
+                    hidden
+                >
+                    <input
+                        id="dungeon-volume-slider"
+                        class="dungeon-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value="35"
+                        aria-label="Volume musica"
+                    >
+
+                    <span
+                        id="dungeon-volume-value"
+                        class="dungeon-volume-value"
+                    >
+                        35%
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="dungeon-title-block">
+
+                <h1>
+                    PALAZZO ETERNO
+                </h1>
+
+                <div class="dungeon-floor-title">
+                    PIANO 1
+                </div>
+
+            </div>
+
+
+            <div
+                id="dungeon-message"
+                class="dungeon-message"
+            >
+                Caricamento...
+            </div>
+
+
+        </header>
+
+
+
+        <!-- =================================================
+             LAYOUT PRINCIPALE
+        ================================================== -->
+
+        <section class="dungeon-layout">
+
+
+            <!-- =============================================
+                 SINISTRA
+                 CHAT + ONLINE + TOP 5
+            ============================================== -->
+
+            <aside class="dungeon-chat-column">
+
+
+                <!-- =============================================
                      RISONANZA · TOP 5
                 ============================================== -->
-<!-- =============================================
+
+
+
+                <!-- =============================================
                      ONLINE + TOP 5
                 ============================================== -->
-<section class="dungeon-panel dungeon-chat-panel">
-<div class="dungeon-panel-title">
+
+
+                    <section class="dungeon-panel dungeon-chat-panel">
+
+
+                        <div class="dungeon-panel-title">
 
                             CHAT
 
                         </div>
-<div aria-live="polite" class="floor-chat-messages" id="floor-chat-messages" role="log">
-<div class="chat-placeholder">
+
+
+                        <div
+                            id="floor-chat-messages"
+                            class="floor-chat-messages"
+                        >
+
+                            <div class="chat-placeholder">
 
                                 Nessun messaggio.
 
                             </div>
-</div>
-<form autocomplete="off" class="floor-chat-controls chat-form" id="floor-chat-form">
-<input autocomplete="off" class="floor-chat-input" disabled="" id="floor-chat-input" maxlength="300" placeholder="Scrivi..." type="text"/>
-<button aria-label="Invia messaggio" class="floor-chat-send" disabled="" id="floor-chat-send" type="submit">
+
+                        </div>
+
+
+                        <div class="floor-chat-controls">
+
+
+                            <input
+                                id="floor-chat-input"
+                                class="floor-chat-input"
+                                type="text"
+                                maxlength="300"
+                                autocomplete="off"
+                                placeholder="Scrivi..."
+                            >
+
+
+                            <button
+                                id="floor-chat-send"
+                                class="floor-chat-send"
+                                type="button"
+                                aria-label="Invia messaggio"
+                            >
                                 ➤
                             </button>
-</form>
-</section>
-<div class="dungeon-social-column">
-<section class="dungeon-panel dungeon-online-panel">
-<div class="dungeon-panel-title">
+
+
+                        </div>
+
+
+                    </section>
+
+                <div class="dungeon-social-column">
+
+
+                    <section class="dungeon-panel dungeon-online-panel">
+
+                        <div class="dungeon-panel-title">
                             PERSONAGGI ONLINE
                         </div>
-<div class="dungeon-online-list" id="dungeon-online-list">
-<div class="dungeon-online-empty">
+
+                        <div
+                            id="dungeon-online-list"
+                            class="dungeon-online-list"
+                        >
+                            <div class="dungeon-online-empty">
                                 Connessione...
                             </div>
-</div>
-</section>
-<section class="dungeon-panel dungeon-leaderboard-panel">
-<div class="dungeon-panel-title">
+                        </div>
+
+                    </section>
+
+
+                <section class="dungeon-panel dungeon-leaderboard-panel">
+
+                    <div class="dungeon-panel-title">
                         RISONANZA · TOP 5
                     </div>
-<div class="dungeon-leaderboard-list" id="dungeon-leaderboard-list">
-<div class="dungeon-leaderboard-empty">
+
+                    <div
+                        id="dungeon-leaderboard-list"
+                        class="dungeon-leaderboard-list"
+                    >
+                        <div class="dungeon-leaderboard-empty">
                             Caricamento classifica...
                         </div>
-</div>
-</section>
-</div>
-</aside>
-<section aria-label="Esplorazione del Piano I" class="dungeon-map-column jungle-map-column">
-<div class="map-heading">
-<div><span class="map-eyebrow">SETTORE IA</span><strong>SENTIERI DELLA GIUNGLA</strong></div>
-<div class="map-controls">
-<button aria-label="Riduci ingrandimento" id="map-zoom-out" title="Riduci ingrandimento">−</button>
-<button id="map-zoom-reset" title="Ripristina zoom 13 × 13">13 × 13</button>
-<button aria-label="Mappa intera" id="map-zoom-full" title="Visualizza tutte le 63 × 81 caselle">Mappa intera</button>
-<button aria-label="Aumenta ingrandimento" id="map-zoom-in" title="Aumenta ingrandimento">+</button>
-</div>
-</div>
-<div aria-label="Mappa. Usa WASD o le frecce per muoverti" class="map-viewport dungeon-map-frame" id="map-viewport" tabindex="0">
-<div class="map-layer" id="map-layer">
-<img alt="Mappa del Piano I" draggable="false" id="map-background" src="immagini/piano-Ia-01.png?v=tile3"/>
-<div aria-hidden="true" id="map-tile-mosaic">
-<img alt="" src="immagini/piano-Ia-01.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-02.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-03.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-04.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-05.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-06.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-07.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-08.png?v=3"/>
-<img alt="" src="immagini/piano-Ia-09.png?v=3"/>
-</div>
-<div aria-label="Combattimenti del piano" class="p1-combat-layer" id="p1-combat-layer"></div>
-<div aria-hidden="true" class="map-grid" id="map-grid"></div>
-<canvas aria-hidden="true" id="fog-canvas"></canvas>
-<div class="map-entities" id="map-entities"></div>
-</div>
-<div class="map-loading" id="map-loading">Caricamento mappa e griglia…</div>
-</div>
-<div class="map-footer dungeon-map-footer">
-<div class="movement-description"><strong>W A S D</strong> / <strong>← ↑ ↓ →</strong> · oppure clicca una casella adiacente</div>
-<div class="map-toggles">
-<label><input id="toggle-grid" type="checkbox"/> Griglia</label>
-<label><input checked="" id="toggle-fog" type="checkbox"/> Esplorazione</label>
-</div>
-<span class="p1-combat-status" id="p1-combat-status" role="status">Incontri: caricamento…</span>
-<div class="coordinates" id="player-coordinates">X — · Y —</div>
-</div>
-<div aria-label="Comandi di movimento per dispositivi touch" class="touch-dpad">
-<span></span><button aria-label="Su" data-move="0,-1" type="button">↑</button><span></span>
-<button aria-label="Sinistra" data-move="-1,0" type="button">←</button>
-<button aria-label="Giù" data-move="0,1" type="button">↓</button>
-<button aria-label="Destra" data-move="1,0" type="button">→</button>
-</div>
-</section>
-<aside class="dungeon-character-column">
-<!-- =========================================
+                    </div>
+
+                </section>
+
+
+
+
+                </div>
+
+
+            </aside>
+
+
+
+            <!-- =============================================
+                 CENTRO
+                 MAPPA
+            ============================================== -->
+
+            <section class="dungeon-map-column">
+
+
+                <div class="dungeon-map-frame">
+
+
+                    <div
+                        id="dungeon-map"
+                        class="dungeon-map"
+                    >
+
+
+                        <!--
+                            L'immagine della mappa rimane
+                            separata dai token.
+                        -->
+
+                        <img
+                            id="dungeon-map-image"
+                            class="dungeon-map-image"
+                            src="immagini/piano-Ia-01.png?v=1"
+                            alt="Mappa del Piano Ia"
+                            draggable="false"
+                        >
+
+
+                        <!--
+                            I token vengono inseriti qui
+                            dal JavaScript.
+                        -->
+
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =========================================
+                     COMANDI
+                ========================================== -->
+
+                <div class="dungeon-map-footer">
+
+
+                    <div class="movement-help">
+
+                        <span class="movement-key">
+                            W
+                        </span>
+
+                        <span class="movement-key">
+                            A
+                        </span>
+
+                        <span class="movement-key">
+                            S
+                        </span>
+
+                        <span class="movement-key">
+                            D
+                        </span>
+
+
+                        <span class="movement-description">
+
+                            Muoviti con WASD, frecce
+                            o clicca una casella adiacente.
+
+                        </span>
+
+                    </div>
+
+                    <div
+                        id="dungeon-player-coordinates"
+                        class="dungeon-player-coordinates"
+                    >
+                        Coordinate PG: X -- · Y --
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =============================================
+                 DESTRA
+            ============================================== -->
+
+            <aside class="dungeon-character-column">
+
+
+                <!-- =========================================
                      BLOCCO PERSONAGGIO
                 ========================================== -->
-<section class="dungeon-character-summary">
-<!-- NOME -->
-<div class="dungeon-character-heading">
-<div class="dungeon-character-name" id="character-name">
+
+                <section class="dungeon-character-summary">
+
+
+                    <!-- NOME -->
+
+                    <div class="dungeon-character-heading">
+                        <div
+                        id="character-name"
+                        class="dungeon-character-name"
+                    >
                         PERSONAGGIO
                     </div>
-<span aria-label="Risonanza personale" class="dungeon-character-resonance" id="character-resonance">✧ Risonanza: —</span>
-</div>
-<!-- =====================================
+                        <span id="character-resonance" class="dungeon-character-resonance" aria-label="Risonanza personale">✧ Risonanza: —</span>
+                    </div>
+
+
+
+                    <!-- =====================================
                          PARTE SUPERIORE
                     ====================================== -->
-<div class="character-summary-top">
-<!-- ===============================
+
+                    <div class="character-summary-top">
+
+
+                        <!-- ===============================
                              RITRATTO
                         ================================ -->
-<div class="character-portrait-wrapper">
-<img alt="Personaggio" class="character-portrait" draggable="false" id="character-token" src=""/>
-</div>
-<!-- ===============================
+
+                        <div class="character-portrait-wrapper">
+
+
+                            <img
+                                id="character-token"
+                                class="character-portrait"
+                                src=""
+                                alt="Personaggio"
+                                draggable="false"
+                            >
+
+
+                        </div>
+
+
+
+                        <!-- ===============================
                              APRI SCHEDA
                         ================================ -->
-<a class="open-sheet-button" href="../../scheda.html">
+
+                        <a
+                            href="../../scheda.html"
+                            class="open-sheet-button"
+                        >
                             APRI SCHEDA
                         </a>
-</div>
-<!-- =====================================
+
+
+                    </div>
+
+
+
+                    <!-- =====================================
                          STATISTICHE
                     ====================================== -->
-<div class="quick-section">
-<div class="quick-section-title">
+
+                    <div class="quick-section">
+
+
+                        <div class="quick-section-title">
                             STATISTICHE
                         </div>
-<div class="quick-stat-grid">
-<!-- ATT -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+
+                        <div class="quick-stat-grid">
+
+
+                            <!-- ATT -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     ATT
                                 </span>
-<strong class="quick-stat-value" id="stat-att">
+
+                                <strong
+                                    id="attack-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- DIF -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- DIF -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     DIF
                                 </span>
-<strong class="quick-stat-value" id="stat-dif">
+
+                                <strong
+                                    id="defense-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- VITA -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- VITA -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     VITA
                                 </span>
-<strong class="quick-stat-value" id="character-hp">
+
+                                <strong
+                                    id="health-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- MANA -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- MANA -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     MANA
                                 </span>
-<strong class="quick-stat-value" id="character-mana">
+
+                                <strong
+                                    id="mana-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- MOV -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- MOV -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     MOV
                                 </span>
-<strong class="quick-stat-value" id="stat-mov">
+
+                                <strong
+                                    id="movement-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- CRT -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- CRT -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     CRT
                                 </span>
-<strong class="quick-stat-value" id="stat-crt">
+
+                                <strong
+                                    id="critical-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-</div>
-</div>
-<!-- =====================================
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- =====================================
                          ATTRIBUTI
                     ====================================== -->
-<div class="quick-section">
-<div class="quick-section-title">
+
+                    <div class="quick-section">
+
+
+                        <div class="quick-section-title">
                             ATTRIBUTI
                         </div>
-<div class="quick-stat-grid">
-<!-- FOR -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+
+                        <div class="quick-stat-grid">
+
+
+                            <!-- FOR -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     FOR
                                 </span>
-<strong class="quick-stat-value" id="attr-for">
+
+                                <strong
+                                    id="forza-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- RES -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- RES -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     RES
                                 </span>
-<strong class="quick-stat-value" id="attr-res">
+
+                                <strong
+                                    id="resistenza-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- COS -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- COS -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     COS
                                 </span>
-<strong class="quick-stat-value" id="attr-cos">
+
+                                <strong
+                                    id="costituzione-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- INT -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- INT -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     INT
                                 </span>
-<strong class="quick-stat-value" id="attr-int">
+
+                                <strong
+                                    id="intelligenza-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- DES -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- DES -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     DES
                                 </span>
-<strong class="quick-stat-value" id="attr-des">
+
+                                <strong
+                                    id="destrezza-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-<!-- LCK -->
-<div class="quick-stat">
-<span class="quick-stat-label">
+
+                            </div>
+
+
+                            <!-- LCK -->
+
+                            <div class="quick-stat">
+
+                                <span class="quick-stat-label">
                                     LCK
                                 </span>
-<strong class="quick-stat-value" id="attr-lck">
+
+                                <strong
+                                    id="fortuna-display"
+                                    class="quick-stat-value"
+                                >
                                     -
                                 </strong>
-</div>
-</div>
-</div>
-<!-- =====================================
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+
+                    <!-- =====================================
                          SCAMBIO TRA GIOCATORI
                     ====================================== -->
-<section class="dungeon-trade-inline-section">
-<div class="quick-section-title">GIOCATORI VICINI</div>
-<div class="dungeon-trade-nearby-list" id="dungeon-trade-nearby-players">
-<div class="dungeon-trade-inline-empty">Nessun giocatore adiacente.</div>
-</div>
-</section>
-<section class="dungeon-trade-inline-section">
-<div class="quick-section-title">SCAMBIO</div>
-<div class="dungeon-trade-inline-panel disabled" id="dungeon-trade-inline-panel">
-<div class="dungeon-trade-inline-status" id="dungeon-trade-status">
+
+                    <section class="dungeon-trade-inline-section">
+                        <div class="quick-section-title">GIOCATORI VICINI</div>
+                        <div id="dungeon-trade-nearby-players" class="dungeon-trade-nearby-list">
+                            <div class="dungeon-trade-inline-empty">Nessun giocatore adiacente.</div>
+                        </div>
+                    </section>
+
+                    <section class="dungeon-trade-inline-section">
+                        <div class="quick-section-title">SCAMBIO</div>
+
+                        <div id="dungeon-trade-inline-panel" class="dungeon-trade-inline-panel disabled">
+                            <div id="dungeon-trade-status" class="dungeon-trade-inline-status">
                                 Seleziona un giocatore adiacente.
                             </div>
-<div class="dungeon-trade-inline-grid">
-<div class="dungeon-trade-inline-side">
-<div class="dungeon-trade-inline-side-title">LA TUA OFFERTA</div>
-<div class="dungeon-trade-confirm-state" id="dungeon-trade-my-confirmed">NON CONFERMATO</div>
-<div class="dungeon-trade-offer-list" id="dungeon-trade-my-offer"></div>
-</div>
-<div class="dungeon-trade-inline-side">
-<div class="dungeon-trade-inline-side-title" id="dungeon-trade-other-name">ALTRO GIOCATORE</div>
-<div class="dungeon-trade-confirm-state" id="dungeon-trade-other-confirmed">NON CONFERMATO</div>
-<div class="dungeon-trade-offer-list" id="dungeon-trade-other-offer"></div>
-</div>
-</div>
-<div class="dungeon-trade-add-box">
-<select aria-label="Oggetto da offrire" class="dungeon-trade-select" disabled="" id="dungeon-trade-item-select"></select>
-<input aria-label="Quantità da offrire" class="dungeon-trade-quantity" disabled="" id="dungeon-trade-item-quantity" min="1" type="number" value="1"/>
-<button class="dungeon-trade-button compact" disabled="" id="dungeon-trade-add-item" type="button">AGGIUNGI</button>
-</div>
-<div class="dungeon-trade-inline-actions">
-<button class="dungeon-trade-button secondary" hidden="" id="dungeon-trade-decline" type="button">RIFIUTA</button>
-<button class="dungeon-trade-button primary" hidden="" id="dungeon-trade-accept" type="button">ACCETTA</button>
-<button class="dungeon-trade-button secondary" disabled="" id="dungeon-trade-cancel" type="button">ANNULLA</button>
-<button class="dungeon-trade-button primary" disabled="" id="dungeon-trade-confirm" type="button">CONFERMA</button>
-</div>
-</div>
-</section>
-<!--
+
+                            <div class="dungeon-trade-inline-grid">
+                                <div class="dungeon-trade-inline-side">
+                                    <div class="dungeon-trade-inline-side-title">LA TUA OFFERTA</div>
+                                    <div id="dungeon-trade-my-confirmed" class="dungeon-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="dungeon-trade-my-offer" class="dungeon-trade-offer-list"></div>
+                                </div>
+
+                                <div class="dungeon-trade-inline-side">
+                                    <div id="dungeon-trade-other-name" class="dungeon-trade-inline-side-title">ALTRO GIOCATORE</div>
+                                    <div id="dungeon-trade-other-confirmed" class="dungeon-trade-confirm-state">NON CONFERMATO</div>
+                                    <div id="dungeon-trade-other-offer" class="dungeon-trade-offer-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="dungeon-trade-add-box">
+                                <select id="dungeon-trade-item-select" class="dungeon-trade-select" aria-label="Oggetto da offrire" disabled></select>
+                                <input id="dungeon-trade-item-quantity" class="dungeon-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire" disabled>
+                                <button id="dungeon-trade-add-item" class="dungeon-trade-button compact" type="button" disabled>AGGIUNGI</button>
+                            </div>
+
+                            <div class="dungeon-trade-inline-actions">
+                                <button id="dungeon-trade-decline" class="dungeon-trade-button secondary" type="button" hidden>RIFIUTA</button>
+                                <button id="dungeon-trade-accept" class="dungeon-trade-button primary" type="button" hidden>ACCETTA</button>
+                                <button id="dungeon-trade-cancel" class="dungeon-trade-button secondary" type="button" disabled>ANNULLA</button>
+                                <button id="dungeon-trade-confirm" class="dungeon-trade-button primary" type="button" disabled>CONFERMA</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!--
                         Manteniamo questo elemento nascosto
                         per compatibilità con eventuale codice
                         precedente.
                     -->
-<span hidden="" id="character-level">
+
+                    <span
+                        id="character-level"
+                        hidden
+                    >
                         1
                     </span>
-<span hidden="" id="character-name-panel"></span>
-</section>
-<!-- =========================================
+
+
+                    <span
+                        id="character-name-panel"
+                        hidden
+                    ></span>
+
+
+                </section>
+
+
+
+                <!-- =========================================
                      SEPARATORE
                 ========================================== -->
-<div class="dungeon-side-divider"></div>
-<!-- =========================================
+
+                <div class="dungeon-side-divider"></div>
+
+
+
+                <!-- =========================================
                      AZIONI + NOTE
                 ========================================== -->
-<section class="dungeon-action-column">
-<!-- =====================================
+
+                <section class="dungeon-action-column">
+
+
+                    <!-- =====================================
                          ABILITÀ / CONSUMABILI
                     ====================================== -->
-<div class="dungeon-actions-panel" hidden="">
-<div class="dungeon-actions-title">
+
+                    <div class="dungeon-actions-panel">
+
+
+                        <div class="dungeon-actions-title">
 
                             ABILITÀ / CONSUMABILI
 
                         </div>
-<!-- ===============================
+
+
+
+                        <!-- ===============================
                              SLOT 1 - CURA
                         ================================ -->
-<button class="dungeon-action-card" data-action="heal" disabled="" id="dungeon-heal-button" title="Funzione da integrare nel Piano Ia" type="button">
-<span class="action-card-icon">
+
+                        <button
+                            id="dungeon-heal-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            data-action="heal"
+                        >
+
+
+                            <span class="action-card-icon">
                                 ✦
                             </span>
-<span class="action-card-content">
-<strong>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
                                     CURA
                                 </strong>
-<small>
+
+                                <small>
                                     2 PM
                                 </small>
-</span>
-</button>
-<!-- ===============================
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
                              SLOT 2 - POZIONE VITA
                         ================================ -->
-<button class="dungeon-action-card" data-action="health-potion" disabled="" id="dungeon-health-potion-button" title="Funzione da integrare nel Piano Ia" type="button">
-<span class="action-card-icon">
+
+                        <button
+                            id="dungeon-health-potion-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            data-action="health-potion"
+                        >
+
+
+                            <span class="action-card-icon">
                                 ♥
                             </span>
-<span class="action-card-content">
-<strong>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
                                     POZIONE DI VITA
                                 </strong>
-<small id="dungeon-health-potion-count">
+
+                                <small
+                                    id="dungeon-health-potion-count"
+                                >
                                     x0
                                 </small>
-</span>
-</button>
-<!-- ===============================
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
                              SLOT 3 - POZIONE MANA
                         ================================ -->
-<button class="dungeon-action-card" data-action="mana-potion" disabled="" id="dungeon-mana-potion-button" title="Funzione da integrare nel Piano Ia" type="button">
-<span class="action-card-icon">
+
+                        <button
+                            id="dungeon-mana-potion-button"
+                            class="dungeon-action-card"
+                            type="button"
+                            data-action="mana-potion"
+                        >
+
+
+                            <span class="action-card-icon">
                                 ◆
                             </span>
-<span class="action-card-content">
-<strong>
+
+
+                            <span class="action-card-content">
+
+                                <strong>
                                     POZIONE DI MANA
                                 </strong>
-<small id="dungeon-mana-potion-count">
+
+                                <small
+                                    id="dungeon-mana-potion-count"
+                                >
                                     x0
                                 </small>
-</span>
-</button>
-<!-- ===============================
+
+                            </span>
+
+
+                        </button>
+
+
+
+                        <!-- ===============================
                              PAGINAZIONE
                         ================================ -->
-<div class="dungeon-action-pagination">
-<button aria-label="Pagina precedente" class="action-page-button" disabled="" id="dungeon-actions-prev" title="Funzione da integrare nel Piano Ia" type="button">
+
+                        <div class="dungeon-action-pagination">
+
+
+                            <button
+                                id="dungeon-actions-prev"
+                                class="action-page-button"
+                                type="button"
+                                disabled
+                                aria-label="Pagina precedente"
+                            >
                                 ‹
                             </button>
-<span class="action-page-number" id="dungeon-actions-page">
+
+
+                            <span
+                                id="dungeon-actions-page"
+                                class="action-page-number"
+                            >
                                 1
                             </span>
-<button aria-label="Pagina successiva" class="action-page-button" disabled="" id="dungeon-actions-next" title="Funzione da integrare nel Piano Ia" type="button">
+
+
+                            <button
+                                id="dungeon-actions-next"
+                                class="action-page-button"
+                                type="button"
+                                disabled
+                                aria-label="Pagina successiva"
+                            >
                                 ›
                             </button>
-</div>
-</div>
-<!-- =====================================
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- =====================================
                          NOTE
                     ====================================== -->
-<div class="dungeon-notes-panel">
-<div class="dungeon-actions-title">
+
+                    <div class="dungeon-notes-panel">
+
+
+                        <div class="dungeon-actions-title">
 
                             NOTE
 
                         </div>
-<textarea class="dungeon-notes" id="character-notes" maxlength="3000" placeholder="Scrivi qui le tue note..."></textarea>
-<button class="save-notes-button" id="save-notes-button" type="button">SALVA NOTE</button>
-</div>
-</section>
-</aside>
-</section>
-<div aria-live="polite" class="jungle-toast" id="jungle-toast" role="status"></div>
-</main>
-<div class="combat-event-overlay pia-passage-modal" hidden="" id="pia-passage-modal">
-<section aria-describedby="pia-passage-description" aria-labelledby="pia-passage-title" aria-modal="true" class="combat-event-modal" role="dialog">
-<div aria-hidden="true" class="combat-event-icon">🚧</div>
-<h2 id="pia-passage-title"></h2>
-<p id="pia-passage-description"></p>
-<div class="combat-event-warning" id="pia-passage-warning">Un passaggio antico attraversa la giungla.</div>
-<div class="combat-event-buttons">
-<button class="combat-event-button combat-event-cancel" id="pia-passage-cancel" type="button">ANNULLA</button>
-<button class="combat-event-button combat-event-enter" id="pia-passage-accept" type="button">CHIUDI</button>
-</div>
-</section>
-</div>
-<div class="base-service-overlay" hidden="" id="p1-camp-overlay">
-<section aria-labelledby="p1-camp-title" aria-modal="true" class="base-service-modal p1-camp-modal" role="dialog">
-<button aria-label="Chiudi" class="base-service-close" id="p1-camp-close" type="button">×</button>
-<header class="base-service-header">
-<span class="base-service-eyebrow">PIANO I-A · RADURA</span>
-<h2 id="p1-camp-title">ACCAMPAMENTO</h2>
-</header>
-<div class="base-service-content">
-<p class="base-service-description">Costruisci un rifugio, alimenta il fuoco e prepara il Lautopasto.</p>
-<div class="base-service-status base-service-status-unbuilt" id="p1-camp-state-label">CARICAMENTO...</div>
-<p class="base-service-reserve" id="p1-camp-fuel">Caricamento risorse...</p>
-<h3 id="p1-camp-requirements-title">MATERIALI NECESSARI</h3>
-<div class="base-service-requirements" id="p1-camp-rows"></div>
-<div class="base-service-maintenance-box" hidden="" id="p1-camp-quantity-panel">
-<label for="p1-camp-quantity" id="p1-camp-quantity-label">Quantità</label>
-<input class="base-service-quantity" id="p1-camp-quantity" max="20" min="1" step="1" type="number" value="1"/>
-<button class="base-service-contribute" id="p1-camp-quantity-confirm" type="button">CONFERMA CONTRIBUTO</button>
-</div>
-<div class="base-service-maintenance-box" hidden="" id="p1-camp-recipe">
-<h3>CUCINA · LAUTOPASTO</h3>
-<p class="base-service-note">4 Cosce di uccello parassita · 6 Foglie Nutrienti · 8 Funghetti · 5 Frutti carnosi</p>
-<p class="base-service-note"><strong>Consumo del fuoco:</strong> ogni Lautopasto richiede anche 5 riserve di Legname dell’accampamento (15 minuti di autonomia).</p>
-<p class="base-service-warning" hidden="" id="p1-camp-cook-warning"></p>
-<button class="base-service-contribute" id="p1-camp-cook" type="button">CUOCI LAUTOPASTO</button>
-</div>
-<div class="base-service-maintenance-box" hidden="" id="p1-camp-refuel">
-<h3>MANTENIMENTO DEL FUOCO</h3>
-<p class="base-service-note">1 Legname ogni 3 minuti. Puoi estendere la riserva oltre un’ora. A zero il campo dovrà essere ricostruito.</p>
-<button class="base-service-contribute" id="p1-camp-fuel-button" type="button">AGGIUNGI LEGNAME</button>
-</div>
-<div aria-live="polite" class="p1-camp-feedback" hidden="" id="p1-camp-feedback" role="status"></div>
-</div>
-</section>
-</div>
-<button hidden="" id="p1-camp-open" type="button">🏕️ ACCAMPAMENTO</button>
-<style>
- /* Feedback interno alla modale, non sfocato dietro l'overlay */
- .p1-camp-modal .p1-camp-feedback {
-   margin-top: 14px;
-   padding: 12px 14px;
-   border-radius: 7px;
-   border: 1px solid rgba(137, 188, 105, .65);
-   background: rgba(28, 80, 43, .80);
-   color: #e8ffe0;
-   font-weight: 700;
-   line-height: 1.5;
-   text-align: center;
- }
- .p1-camp-modal .p1-camp-feedback.is-error {
-   background: rgba(91, 36, 30, .92);
-   border-color: #e7a68d;
-   color: #fff1e9;
- }
- .p1-camp-modal [hidden] { display: none !important; }
-</style>
-<!-- Indicatori provvisori Piano I-A -->
-<style>
-.pia-planning-marker{position:absolute;z-index:10;pointer-events:none;border-radius:50%;box-shadow:0 0 0 1px white;transform:translate(-50%,-50%)}
-.pia-planning-camp{position:absolute;z-index:9;pointer-events:none;background:rgba(45,210,90,.35);border:1px solid #37eb70}
-#pia-planning-toggle{cursor:pointer;padding:5px 9px;border:1px solid #9e8750;border-radius:5px;background:#203523;color:#f0df9a;font-size:12px}
-</style>
-<script>
-(()=>{'use strict';
-const cols=63,rows=81,layer=document.getElementById('map-layer'),controls=document.querySelector('.map-controls');
-if(!layer||!controls)return;
-const overlay=document.createElement('div');overlay.id='pia-planning-overlay';
-Object.assign(overlay.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'10'});
-const points=[
-{ x:27,y:32,name:'Allosauro Dominante',color:'#ff3838'},
-{ x:0,y:67,name:'Guardie lucertoloidi',color:'#38aaff'},
-{ x:61,y:79,name:'Ingresso sud-est',color:'#ffd449'},
-{ x:57,y:61,name:'Ingresso est inferiore',color:'#ffd449'},
-{ x:61,y:29,name:'Ingresso est',color:'#ffd449'},
-{ x:59,y:3,name:'Ingresso nord-est',color:'#ffd449'}];
-for(const p of points){const el=document.createElement('div');el.className='pia-planning-marker';el.title=p.name;
-Object.assign(el.style,{left:((p.x+.5)/cols*100)+'%',top:((p.y+.5)/rows*100)+'%',width:(100/cols)+'%',height:(100/rows)+'%',background:p.color});overlay.appendChild(el)}
-layer.appendChild(overlay);
-const b=document.createElement('button');b.id='pia-planning-toggle';b.type='button';b.textContent='Eventi: ON';b.setAttribute('aria-pressed','true');
-b.addEventListener('click',()=>{const visible=overlay.style.display!=='none';overlay.style.display=visible?'none':'';b.textContent=visible?'Eventi: OFF':'Eventi: ON';b.setAttribute('aria-pressed',String(!visible))});controls.appendChild(b);
-})();
-</script>
-<!-- Fine indicatori -->
+
+
+                        <textarea
+                            id="character-notes"
+                            class="dungeon-notes"
+                            maxlength="3000"
+                            placeholder="Scrivi qui le tue note..."
+                        ></textarea>
+
+
+                        <button
+                            id="save-notes-button"
+                            class="save-notes-button"
+                            type="button"
+                        >
+                            SALVA NOTE
+                        </button>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </aside>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- =====================================================
+         SCRIPT
+    ====================================================== -->
+
+    <script src="js/piano-Ia.js?v=1"></script>
+
+    <script src="../piano-1/js/eventi.js?v=17"></script>
+
+    <script src="../../js/map-sidebar-layout.js?v=1"></script>
+
 </body>
+
 </html>
