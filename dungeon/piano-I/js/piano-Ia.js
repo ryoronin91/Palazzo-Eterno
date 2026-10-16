@@ -563,7 +563,7 @@
   async function tokenEncounter(kind, payload) {
     if (movementBusy || !$('pia-passage-modal')?.hidden) return;
     const options = {
-      guard: {title:'GUARDIE DEL VARCO',message:'Tra la fitta vegetazione scorgi un varco nella parete rocciosa. Quattro imponenti lucertoloidi ne sorvegliano l'ingresso, scrutando con aria minacciosa chiunque osi avvicinarsi.',acceptLabel:'AVVICINATI',cancelLabel:'VAI VIA'},
+      guard: {title:'GUARDIE DEL VARCO',message:'Tra la fitta vegetazione scorgi un varco nella parete rocciosa. Quattro imponenti lucertoloidi e un allosauro corazzato ne sorvegliano l’ingresso, scrutando con aria minacciosa chiunque osi avvicinarsi.',acceptLabel:'AVVICINATI',cancelLabel:'VAI VIA'},
       fruit: {title:'FRUTTO CARNOSO',message:'Hai trovato un frutto particolarmente carnoso',acceptLabel:'RACCOGLI',cancelLabel:'VAI VIA'},
       combat: {title:'INCONTRO NELLA GIUNGLA',message:'La giungla è un luogo pericoloso e le creature che lo abitano ti vogliono morto',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'},
       boss: {title:'!!BOSS FIGHT!!',message:'Un gigantesco e arrabbiato Allosauro blocca strada per raggiungere la radura dell’accampamento',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'}
@@ -1138,9 +1138,16 @@
     if(!chest) return;
     busy=true;
     try {
-      const {data,error}=await client().rpc('piano_ia_chest_collect',{p_id:chest.id,p_x:p.x,p_y:p.y});
+      const {data,error}=await client().rpc('piano_ia_chest_collect',{p_id:chest.id,p_x:Number(chest.x),p_y:Number(chest.y)});
       if(error) notify('Raccolta fallita: '+error.message);
-      else { notify(data?.message||data?.reason||'Forziere aggiornato'); if(data?.ok) window.dispatchEvent(new Event('piano-ia-inventory-changed')); }
+      else {
+        notify(data?.message||data?.reason||'Forziere aggiornato');
+        if(data?.ok) {
+          chest.available=false;
+          render();
+          window.dispatchEvent(new Event('piano-ia-inventory-changed'));
+        }
+      }
       await refresh();
     } finally {busy=false;}
   }
