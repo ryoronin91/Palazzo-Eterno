@@ -500,15 +500,43 @@
     audio.volume = (Number(localRead('palazzo:piano-Ia:volume', 35)) || 0) / 100;
     $('audio-volume').value = Math.round(audio.volume * 100);
     state.music = audio;
+    let manuallyPaused = false;
     const setLabel = () => {
       $('audio-toggle').textContent = audio.paused ? '♫' : '♪';
       $('audio-toggle').setAttribute('aria-label', audio.paused ? 'Attiva la musica' : 'Disattiva la musica');
     };
+    const tryStartMusic = async () => {
+      if (manuallyPaused || !audio.paused) return;
+      try {
+        await audio.play();
+        setLabel();
+        document.removeEventListener('pointerdown', tryStartMusic);
+        document.removeEventListener('keydown', tryStartMusic);
+      } catch (error) {
+        // L'autoplay può essere vietato: ritentiamo al primo gesto del giocatore.
+        console.debug('Musica Piano I-A in attesa di interazione:', error);
+      }
+    };
     $('audio-toggle').addEventListener('click', async () => {
-      try { if (audio.paused) await audio.play(); else audio.pause(); }
-      catch (_) { toast('Impossibile avviare la musica.'); }
+      if (!audio.paused) {
+        manuallyPaused = true;
+        audio.pause();
+      } else {
+        manuallyPaused = false;
+        try {
+          await audio.play();
+          document.removeEventListener('pointerdown', tryStartMusic);
+          document.removeEventListener('keydown', tryStartMusic);
+        } catch (error) {
+          console.warn('Impossibile riprodurre piano-Ia.mp3:', error);
+          toast('Musica non disponibile: verifica il file piano-Ia.mp3.');
+        }
+      }
       setLabel();
     });
+    document.addEventListener('pointerdown', tryStartMusic);
+    document.addEventListener('keydown', tryStartMusic);
+    tryStartMusic();
     $('audio-volume').addEventListener('input', e => {
       audio.volume = Number(e.target.value) / 100;
       localWrite('palazzo:piano-Ia:volume', Number(e.target.value));

@@ -337,101 +337,71 @@ function setupCombatVolumeControl() {
 }
 
 
-function startBackgroundMusic(
-    source
-) {
+// Piano I-A: l'audio va riattivato dopo un gesto valido del browser.
+// Gli eventi restano registrati finche' l'avvio non riesce.
+let combatAudioUnlockCleanup = null;
 
-    if (
-        pageBackgroundMusic ||
-        !source
-    ) {
+function startBackgroundMusic(source) {
+    if (!source) return;
 
-        return;
-
+    if (pageBackgroundMusic) {
+        if (pageBackgroundMusic.dataset?.source === source) return;
+        pageBackgroundMusic.pause();
+        pageBackgroundMusic = null;
     }
 
-
-    pageBackgroundMusic =
-        new Audio(
-            source
-        );
-
-
-    pageBackgroundMusic.loop =
-        true;
-
-
-    pageBackgroundMusic.volume =
-        combatMusicVolume;
-
-    pageBackgroundMusic.muted =
-        combatMusicVolume <= 0;
-
-    pageBackgroundMusic.preload =
-        "auto";
-
-
+    const audio = new Audio(source);
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = combatMusicVolume;
+    audio.muted = combatMusicVolume <= 0;
+    pageBackgroundMusic = audio;
     updateCombatVolumeUI();
 
+    const button = document.getElementById('combat-volume-button');
+    let playing = false;
+    let playPending = false;
 
-    const tryPlay =
-        async () => {
-
-            if (
-                !pageBackgroundMusic
-            ) {
-
-                return;
-
-            }
-
-
-            try {
-
-                await pageBackgroundMusic.play();
-
-            } catch (
-                error
-            ) {
-
-                // I browser possono bloccare l'autoplay finché
-                // il giocatore non interagisce con la pagina.
-
-            }
-
-        };
-
-
-    tryPlay();
-
-
-    const unlockAudio =
-        () => {
-
-            tryPlay();
-
-        };
-
-
-    document.addEventListener(
-        "pointerdown",
-        unlockAudio,
-        {
-            once: true
+    const tryPlay = async () => {
+        if (pageBackgroundMusic !== audio || playing || playPending || combatMusicVolume <= 0) return;
+        playPending = true;
+        try {
+            await audio.play();
+            playing = true;
+            if (button) button.title = `Musica attiva — volume ${Math.round(combatMusicVolume * 100)}%`;
+            cleanup();
+        } catch (error) {
+            // NotAllowedError: autoplay bloccato, riprova ai prossimi click/tap.
+            // NotSupportedError / MEDIA_ERR_SRC_NOT_SUPPORTED: URL o formato non valido.
+            if (button) button.title = `Musica non avviata (${error?.name || 'errore'}). Tocca per riprovare.`;
+            console.warn('[Audio combattimento] Impossibile riprodurre:', source, error);
+        } finally {
+            playPending = false;
         }
-    );
+    };
 
+    const onGesture = () => { void tryPlay(); };
+    const cleanup = () => {
+        document.removeEventListener('pointerdown', onGesture, true);
+        document.removeEventListener('keydown', onGesture, true);
+        document.removeEventListener('click', onGesture, true);
+        if (combatAudioUnlockCleanup === cleanup) combatAudioUnlockCleanup = null;
+    };
+    if (combatAudioUnlockCleanup) combatAudioUnlockCleanup();
+    combatAudioUnlockCleanup = cleanup;
 
-    document.addEventListener(
-        "keydown",
-        unlockAudio,
-        {
-            once: true
-        }
-    );
-
+    // Capture: parte prima dei gestori che possono interrompere propagazione.
+    document.addEventListener('pointerdown', onGesture, true);
+    document.addEventListener('keydown', onGesture, true);
+    document.addEventListener('click', onGesture, true);
+    audio.addEventListener('error', () => {
+        const code = audio.error?.code;
+        console.error('[Audio combattimento] File MP3 non caricato:', source, 'codice', code);
+        if (button) button.title = `Errore caricamento musica (${code ?? '?'}): ${source}`;
+    });
+    // Il cambio del volume e' un gesto esplicito, ed e' gia' gestito nello slider.
+    void tryPlay();
 }
-
 
 // ============================================================
 // PALAZZO ETERNO
