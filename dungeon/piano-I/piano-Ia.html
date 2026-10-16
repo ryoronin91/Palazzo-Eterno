@@ -1039,11 +1039,46 @@
 
 
 
+<div class="base-service-overlay" hidden="" id="p1-camp-overlay">
+<section aria-labelledby="p1-camp-title" aria-modal="true" class="base-service-modal p1-camp-modal" role="dialog">
+<button aria-label="Chiudi" class="base-service-close" id="p1-camp-close" type="button">×</button>
+<header class="base-service-header">
+<span class="base-service-eyebrow">PIANO I-A · RADURA</span>
+<h2 id="p1-camp-title">ACCAMPAMENTO</h2>
+</header>
+<div class="base-service-content">
+<p class="base-service-description">Costruisci un rifugio, alimenta il fuoco e prepara il Lautopasto.</p>
+<div class="base-service-status base-service-status-unbuilt" id="p1-camp-state-label">CARICAMENTO...</div>
+<p class="base-service-reserve" id="p1-camp-fuel">Caricamento risorse...</p>
+<h3 id="p1-camp-requirements-title">MATERIALI NECESSARI</h3>
+<div class="base-service-requirements" id="p1-camp-rows"></div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-quantity-panel">
+<label for="p1-camp-quantity" id="p1-camp-quantity-label">Quantità</label>
+<input class="base-service-quantity" id="p1-camp-quantity" max="20" min="1" step="1" type="number" value="1"/>
+<button class="base-service-contribute" id="p1-camp-quantity-confirm" type="button">CONFERMA CONTRIBUTO</button>
+</div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-recipe">
+<h3>CUCINA · LAUTOPASTO</h3>
+<p class="base-service-note">4 Cosce di uccello parassita · 6 Foglie Nutrienti · 8 Funghetti · 5 Frutti carnosi</p>
+<p class="base-service-note"><strong>Consumo del fuoco:</strong> ogni Lautopasto richiede anche 5 riserve di Legname dell’accampamento (15 minuti di autonomia).</p>
+<p class="base-service-warning" hidden="" id="p1-camp-cook-warning"></p>
+<button class="base-service-contribute" id="p1-camp-cook" type="button">CUOCI LAUTOPASTO</button>
+</div>
+<div class="base-service-maintenance-box" hidden="" id="p1-camp-refuel">
+<h3>MANTENIMENTO DEL FUOCO</h3>
+<p class="base-service-note">1 Legname ogni 3 minuti. Puoi estendere la riserva oltre un’ora. A zero il campo dovrà essere ricostruito.</p>
+<button class="base-service-contribute" id="p1-camp-fuel-button" type="button">AGGIUNGI LEGNAME</button>
+</div>
+<div aria-live="polite" class="p1-camp-feedback" hidden="" id="p1-camp-feedback" role="status"></div>
+</div>
+</section>
+</div>
+<button hidden="" id="p1-camp-open" type="button">🏕️ ACCAMPAMENTO</button>
     <!-- =====================================================
          SCRIPT
     ====================================================== -->
 
-    <script src="js/piano-Ia.js?v=encounters1"></script>
+    <script src="js/piano-Ia.js?v=fruitcamp1"></script>
 
     <script src="../piano-1/js/eventi.js?v=17"></script>
 

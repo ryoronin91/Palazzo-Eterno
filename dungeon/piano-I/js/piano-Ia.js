@@ -882,6 +882,7 @@ document.addEventListener(
             setupDungeonCamera();
             await setupPiaZoomAndExploration();
             piaCombatStart();
+            piaSpecialStart();
 
 
 
@@ -4694,6 +4695,7 @@ async function processMovementQueue() {
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    if(await piaSpecialTryInteract(nx,ny)) return false;
     if(await piaCombatTryInteract(nx,ny)) return false;
     if(nx<0||ny<0||nx>=MAP_COLUMNS||ny>=MAP_ROWS||!canMoveTo(nx,ny)){
         setMessage('Il passaggio e` bloccato.');return false;
@@ -4704,6 +4706,7 @@ async function performMovement(dx,dy) {
         playerX=Number(data.x);playerY=Number(data.y);
         showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
         piaCombatMoved();
+        piaSpecialMoved();
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         setMessage(`Giungla Bassa - X ${playerX} Y ${playerY}`);
         return true;
@@ -15250,4 +15253,166 @@ function piaCombatStart() {
     piaCombat.timer=setInterval(piaCombatRefresh,15000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)piaCombatRefresh()});
     window.addEventListener('resize',piaCombatRender,{passive:true});
+}
+
+
+// ============================================================
+// PIANO IA — FRUTTO CARNOSO + PASSAGGIO E ACCAMPAMENTO
+// Interazioni collegate alle RPC originali. Indipendente dai combat.
+// ============================================================
+const piaSpecial={chests:[],tokens:new Map(),busy:false,ready:false,camp:null,campBusy:false,campOpen:false,lastInside:false};
+function piaSpecialNotify(message,error=false){ if(typeof setMessage==='function')setMessage(message,error); }
+const piaSpecialEl=id=>document.getElementById(id);
+const piaSpecialInsideCamp=()=>playerX>=28&&playerX<=30&&playerY>=34&&playerY<=36;
+const piaSpecialNear=(x,y)=>Math.abs(playerX-x)+Math.abs(playerY-y)<=1;
+function piaSpecialDialog(title,message,confirm=true){
+  return new Promise(resolve=>{
+    const wrapper=document.createElement('div');wrapper.className='pia-special-dialog';
+    const section=document.createElement('section');section.className='pia-special-box';section.setAttribute('role','dialog');section.setAttribute('aria-modal','true');
+    const h=document.createElement('h2');h.textContent=title;
+    const p=document.createElement('p');p.textContent=message;
+    const actions=document.createElement('div');actions.className='pia-special-actions';
+    const cancel=document.createElement('button');cancel.textContent=confirm?'VAI VIA':'CHIUDI';
+    const accept=document.createElement('button');accept.textContent='CONFERMA';
+    actions.append(cancel);if(confirm)actions.append(accept);
+    section.append(h,p,actions);wrapper.append(section);document.body.appendChild(wrapper);
+    const done=v=>{document.removeEventListener('keydown',keys,true);wrapper.remove();resolve(v)};
+    const keys=e=>{if(e.key==='Escape'){e.stopImmediatePropagation();e.preventDefault();done(false)}else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.stopImmediatePropagation();e.preventDefault()}};
+    document.addEventListener('keydown',keys,true);
+    cancel.onclick=()=>done(false);accept.onclick=()=>done(true);
+    wrapper.addEventListener('click',e=>{if(e.target===wrapper)done(false)});
+    cancel.focus();
+  });
+}
+function piaSpecialMapPosition(el,x,y,w=1,h=1){
+  el.style.left=(100*x/MAP_COLUMNS)+'%';el.style.top=(100*y/MAP_ROWS)+'%';
+  el.style.width=(100*w/MAP_COLUMNS)+'%';el.style.height=(100*h/MAP_ROWS)+'%';
+}
+function piaSpecialRenderFruit(){
+  const map=piaSpecialEl('dungeon-map');if(!map)return;
+  const active=new Set();
+  for(const c of piaSpecial.chests){
+    if(!c.available)continue;
+    const id=String(c.id),x=Number(c.x),y=Number(c.y);
+    if(!Number.isInteger(x)||!Number.isInteger(y))continue;
+    active.add(id);
+    let el=piaSpecial.tokens.get(id);
+    if(!el){el=document.createElement('button');el.type='button';el.className='pia-fruit-token';el.textContent='🍎';el.title='Frutto Carnoso';el.setAttribute('aria-label','Raccogli Frutto Carnoso');el.addEventListener('click',()=>piaSpecialCollect(id));map.appendChild(el);piaSpecial.tokens.set(id,el)}
+    piaSpecialMapPosition(el,x,y);
+    el.style.fontSize='clamp(10px,1vw,18px)';
+  }
+  for(const [id,el] of piaSpecial.tokens)if(!active.has(id)){el.remove();piaSpecial.tokens.delete(id)}
+}
+async function piaSpecialRefreshFruit(){
+  if(!piaSpecial.ready||document.hidden)return;
+  const {data,error}=await db.rpc('piano_ia_chests_refresh');
+  if(error){console.warn('Frutti Piano Ia:',error.message);return}
+  piaSpecial.chests=Array.isArray(data)?data:[];piaSpecialRenderFruit();
+}
+async function piaSpecialCollect(id){
+  const c=piaSpecial.chests.find(r=>String(r.id)===String(id)&&r.available);
+  if(!c||piaSpecial.busy||!piaSpecialNear(Number(c.x),Number(c.y))){piaSpecialNotify('Avvicinati al Frutto Carnoso.');return}
+  if(!await piaSpecialDialog('FRUTTO CARNOSO','Hai trovato un frutto particolarmente carnoso. Vuoi raccoglierlo?'))return;
+  piaSpecial.busy=true;
+  try{
+    const {data,error}=await db.rpc('piano_ia_chest_collect',{p_id:c.id,p_x:Number(c.x),p_y:Number(c.y)});
+    if(error)throw error;
+    piaSpecialNotify(data?.message||data?.reason||(data?.ok?'Frutto raccolto.':'Impossibile raccogliere il frutto.'),!data?.ok);
+    if(data?.ok){window.dispatchEvent(new Event('piano-ia-inventory-changed'));await loadCharacterEquipment();updateDungeonConsumables()}
+    await piaSpecialRefreshFruit();
+  }catch(e){piaSpecialNotify('Frutto Carnoso: '+e.message,true)}finally{piaSpecial.busy=false}
+}
+function piaSpecialCampPicture(){
+  const map=piaSpecialEl('dungeon-map');if(!map)return;
+  let img=piaSpecialEl('p1-camp-image');
+  if(!img){img=document.createElement('img');img.id='p1-camp-image';img.className='pia-camp-image';img.alt='Accampamento';img.draggable=false;img.onerror=()=>{img.style.opacity='0'};img.onload=()=>{img.style.opacity='1'};map.appendChild(img)}
+  piaSpecialMapPosition(img,28,34,3,3);
+  const source='immagini/'+(piaSpecial.camp?.built?'campB.png':'campA.png');
+  if(img.getAttribute('src')!==source)img.src=source;
+}
+function piaSpecialCampFeedback(msg,error=false){let el=piaSpecialEl('p1-camp-feedback');if(!el)return;el.hidden=false;el.textContent=msg;el.classList.toggle('is-error',error)}
+function piaSpecialRenderCamp(){
+  const d=piaSpecial.camp;if(!d)return;
+  const state=piaSpecialEl('p1-camp-state-label');state.textContent=d.active?'ATTIVO · FUOCO ACCESO':'NON COSTRUITO';state.className='base-service-status '+(d.active?'base-service-status-active':'base-service-status-unbuilt');
+  piaSpecialEl('p1-camp-fuel').textContent=d.built?`Riserva: ${d.fuel} Legname · circa ${Number(d.fuel)*3} minuti`:'Contribuisci ai materiali per accendere il campo.';
+  piaSpecialEl('p1-camp-recipe').hidden=!d.active;piaSpecialEl('p1-camp-refuel').hidden=!d.active;
+  piaSpecialEl('p1-camp-requirements-title').hidden=!!d.built;
+  const rows=piaSpecialEl('p1-camp-rows');rows.replaceChildren();
+  if(!d.built)for(const r of d.requirements||[]){
+    const needed=Math.max(1,Number(r.needed)||1),given=Math.max(0,Number(r.contributed)||0),remaining=Math.max(0,needed-given);
+    const card=document.createElement('div');card.className='base-service-requirement'+(remaining?'':' is-complete');
+    const head=document.createElement('div');head.className='base-service-requirement-head';
+    const name=document.createElement('strong');name.textContent=r.name||r.item_id;
+    const progress=document.createElement('span');progress.textContent=`${given}/${needed}`;head.append(name,progress);
+    const bar=document.createElement('div');bar.className='base-service-progress';const fill=document.createElement('span');fill.style.width=Math.min(100,given/needed*100)+'%';bar.append(fill);
+    const b=document.createElement('button');b.type='button';b.className='base-service-contribute';b.textContent=remaining?'CONTRIBUISCI':'COMPLETATO';b.disabled=!remaining||piaSpecial.campBusy;b.onclick=()=>piaSpecialQuantity(r.item_id,remaining,'construction');
+    card.append(head,bar,b);rows.append(card);
+  }
+  const insufficient=d.active&&Number(d.fuel)<5,warning=piaSpecialEl('p1-camp-cook-warning');warning.hidden=!insufficient;
+  warning.textContent=insufficient?'Servono almeno 5 riserve di Legname.':'';
+  piaSpecialEl('p1-camp-cook').disabled=piaSpecial.campBusy||!d.active||insufficient;
+  piaSpecialEl('p1-camp-fuel-button').disabled=piaSpecial.campBusy||!d.active;
+}
+async function piaSpecialCampRefresh(){
+  if(!piaSpecial.ready||!db)return;
+  const {data,error}=await db.rpc('p1_camp_state');
+  if(error){console.warn('Accampamento Ia:',error.message);return}
+  piaSpecial.camp=data;piaSpecialCampPicture();if(piaSpecial.campOpen)piaSpecialRenderCamp();
+}
+function piaSpecialCampOpen(){
+  if(!piaSpecialInsideCamp())return;
+  piaSpecial.campOpen=true;piaSpecialEl('p1-camp-overlay').hidden=false;
+  piaSpecialEl('p1-camp-feedback').hidden=true;
+  piaSpecialRenderCamp();piaSpecialCampRefresh();piaSpecialEl('p1-camp-close').focus();
+}
+function piaSpecialCampClose(){piaSpecial.campOpen=false;piaSpecialEl('p1-camp-overlay').hidden=true}
+function piaSpecialQuantity(item,limit,purpose){
+  const panel=piaSpecialEl('p1-camp-quantity-panel'),input=piaSpecialEl('p1-camp-quantity');
+  input.min='1';input.max=String(limit);input.value=String(Math.min(1,limit));
+  piaSpecialEl('p1-camp-quantity-label').textContent=purpose==='fuel'?'Quanto Legname vuoi aggiungere?':'Quante unità vuoi consegnare?';
+  panel.hidden=false;
+  piaSpecialEl('p1-camp-quantity-confirm').onclick=async()=>{
+    const n=Number(input.value);if(!Number.isInteger(n)||n<1||n>limit){piaSpecialCampFeedback('Quantità non valida.',true);return}
+    piaSpecial.campBusy=true;
+    try{const {error}=await db.rpc('p1_camp_contribute',{p_item_id:item,p_quantity:n,p_purpose:purpose});if(error)throw error;panel.hidden=true;piaSpecialCampFeedback('Materiali consegnati.');await piaSpecialCampRefresh()}
+    catch(e){piaSpecialCampFeedback(e.message,true)}finally{piaSpecial.campBusy=false;piaSpecialRenderCamp()}
+  };input.focus();
+}
+function piaSpecialMoved(){
+  if(!piaSpecial.ready)return;
+  const inside=piaSpecialInsideCamp();piaSpecialEl('p1-camp-open').hidden=!inside;
+  if(inside&&!piaSpecial.lastInside)piaSpecialCampOpen();
+  piaSpecial.lastInside=inside;
+  if(inside)piaSpecialCampRefresh();
+}
+async function piaSpecialTryInteract(nx,ny){
+  if(!piaSpecial.ready)return false;
+  if(piaSpecial.campOpen)return true;
+  const fruit=piaSpecial.chests.find(c=>c.available&&Number(c.x)===nx&&Number(c.y)===ny);
+  if(fruit){await piaSpecialCollect(String(fruit.id));return true}
+  // Passaggio speciale originale: X25,Y35 -> X26,Y35 è bloccato.
+  if(playerX===25&&playerY===35&&nx===26&&ny===35){await piaSpecialDialog('PASSAGGIO BLOCCATO','Da questo lato non puoi raggiungere la radura dell’accampamento.',false);return true}
+  // Da est a ovest X27,Y35 -> X26,Y35 si arriva a X25,Y35 (senza ritorno).
+  if(playerX===27&&playerY===35&&nx===26&&ny===35){
+    if(!await piaSpecialDialog('SENTIERO SENZA RITORNO','Attraversando questo passaggio arriverai a X25 Y35 e non potrai tornare indietro lungo questa strada. Vuoi procedere?'))return true;
+    try{const {data,error}=await db.rpc('piano_ia_move',{p_x:25,p_y:35});if(error)throw error;
+      playerX=Number(data.x);playerY=Number(data.y);showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();piaSpecialMoved();
+      if(typeof broadcastDungeonPosition==='function')broadcastDungeonPosition();piaSpecialNotify('Hai attraversato il passaggio senza ritorno.');
+    }catch(e){piaSpecialNotify('Passaggio: '+e.message,true)}return true;
+  }
+  return false;
+}
+function piaSpecialStart(){
+  if(piaSpecial.ready)return;piaSpecial.ready=true;
+  piaSpecialEl('p1-camp-close')?.addEventListener('click',piaSpecialCampClose);
+  piaSpecialEl('p1-camp-open')?.addEventListener('click',piaSpecialCampOpen);
+  piaSpecialEl('p1-camp-overlay')?.addEventListener('click',e=>{if(e.target===piaSpecialEl('p1-camp-overlay'))piaSpecialCampClose()});
+  piaSpecialEl('p1-camp-fuel-button')?.addEventListener('click',()=>piaSpecialQuantity('legname',1000,'fuel'));
+  piaSpecialEl('p1-camp-cook')?.addEventListener('click',async()=>{if(piaSpecial.campBusy)return;piaSpecial.campBusy=true;try{const {error}=await db.rpc('p1_camp_cook');if(error)throw error;piaSpecialCampFeedback('Lautopasto cucinato!');await piaSpecialCampRefresh()}catch(e){piaSpecialCampFeedback(e.message,true)}finally{piaSpecial.campBusy=false;piaSpecialRenderCamp()}});
+  document.addEventListener('keydown',e=>{if(piaSpecial.campOpen){if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();piaSpecialCampClose()}else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation()}}},true);
+  piaSpecialCampPicture();piaSpecialCampRefresh();piaSpecialRefreshFruit();
+  piaSpecial.lastInside=piaSpecialInsideCamp();piaSpecialEl('p1-camp-open').hidden=!piaSpecial.lastInside;
+  if(piaSpecial.lastInside)piaSpecialCampOpen();
+  setInterval(()=>{piaSpecialRefreshFruit();piaSpecialCampRefresh()},15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){piaSpecialRefreshFruit();piaSpecialCampRefresh()}});
 }

@@ -3870,3 +3870,59 @@ body {
 .pia-encounter-actions {display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .pia-encounter-actions button {cursor:pointer;padding:10px 18px;border:2px solid #9ec393;background:#264a32;color:#ecf7e5;font-weight:800}
 .pia-encounter-actions button:hover {background:#3d6748}
+
+/* Accampamento del Piano Ia — stile originale */
+/* ACCAMPAMENTO IA: asset 3x3 e pannello coerente con gli eventi del Dungeon */
+.p1-camp-image{position:absolute;z-index:0;pointer-events:none;object-fit:fill;max-width:none;user-select:none;}
+#p1-camp-overlay[hidden],#p1-camp-overlay [hidden]{display:none!important}
+.p1-camp-modal{max-height:90vh;overflow-y:auto;}
+.p1-camp-row{display:grid;grid-template-columns:1fr auto;align-items:center;text-align:left;gap:8px;margin-bottom:9px;color:#e5d9b5;font-size:14px}
+.p1-camp-row .combat-event-button{padding:5px 12px;min-height:35px}
+#p1-camp-quantity-panel{display:grid;gap:10px;margin:12px 0 18px;color:#e5d9b5}
+#p1-camp-quantity{width:100%;padding:10px;background:#0b190f;color:#e8ddb8;border:1px solid #71895b;border-radius:5px}
+#p1-camp-recipe,#p1-camp-refuel{margin:16px 0}
+#p1-camp-recipe button,#p1-camp-refuel button{width:100%}
+
+#p1-camp-open[hidden]{display:none!important}
+#p1-camp-open{position:fixed;bottom:22px;right:22px;z-index:8000;padding:12px 18px;background:linear-gradient(#35583b,#173021);border:1px solid #b09a61;border-radius:8px;color:#f0dfb0;box-shadow:0 5px 20px #000a;font-weight:700}
+
+/* ACCAMPAMENTO · layout dei vendor della Base, palette Piano I-A */
+body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
+#p1-camp-overlay[hidden],#p1-camp-overlay [hidden]{display:none!important}
+#p1-camp-overlay.base-service-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box;background:rgba(0,12,5,.76);backdrop-filter:blur(3px)}
+#p1-camp-overlay .base-service-modal{position:relative;width:min(500px,calc(100vw - 40px));max-height:calc(100vh - 60px);overflow-x:hidden;overflow-y:auto;padding:20px;box-sizing:border-box;border:1px solid rgba(131,170,112,.65);border-radius:10px;background:linear-gradient(180deg,rgba(27,48,34,.98),rgba(10,22,14,.99));box-shadow:0 24px 70px rgba(0,0,0,.7),inset 0 0 35px rgba(116,170,118,.06);color:#eee9d7;text-align:left}
+#p1-camp-overlay .base-service-content{overflow:visible}
+#p1-camp-overlay .base-service-close{position:absolute;top:10px;right:12px;width:36px;height:36px;border:0;background:transparent;color:#d8bc78;font-size:28px;line-height:1;cursor:pointer;z-index:2}
+#p1-camp-overlay .base-service-header{padding:0 28px;margin-bottom:12px;text-align:center}
+#p1-camp-overlay .base-service-eyebrow{display:block;margin-bottom:5px;color:#98ad96;font-size:11px;font-weight:700;letter-spacing:.15em;text-align:center}
+#p1-camp-overlay .base-service-header h2{margin:0;color:#e2c98c;font-size:clamp(24px,4vw,32px);text-align:center}
+#p1-camp-overlay .base-service-description{margin:12px 0 14px;color:#eee9d7;font-size:14px;line-height:1.5;text-align:center}
+#p1-camp-overlay .base-service-content h3{margin:12px 0 10px;color:#d8bc78;font-size:16px;text-align:center}
+#p1-camp-overlay .base-service-note{margin:10px 0 0;color:#b5c9af;font-size:12px;line-height:1.45;text-align:center}
+#p1-camp-overlay .base-service-status{display:table;min-height:28px;margin:0 auto 12px;padding:5px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;text-align:center}
+#p1-camp-overlay .base-service-status-unbuilt{background:rgba(74,106,67,.32)}
+#p1-camp-overlay .base-service-status-active{background:rgba(79,132,80,.28)}
+#p1-camp-overlay .base-service-reserve{margin:0 0 14px;color:#bed0ad;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-requirements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#p1-camp-overlay .base-service-requirement{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid rgba(143,183,126,.28);border-radius:8px;background:rgba(255,255,255,.025)}
+#p1-camp-overlay .base-service-requirement.is-complete{opacity:.75}
+#p1-camp-overlay .base-service-requirement-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin-bottom:2px}
+#p1-camp-overlay .base-service-requirement-head strong{min-width:0;color:#eee9d7;font-size:13px;line-height:1.2}
+#p1-camp-overlay .base-service-requirement-head span{flex-shrink:0;color:#d8bc78;font-size:12px;font-variant-numeric:tabular-nums}
+#p1-camp-overlay .base-service-progress{height:7px;overflow:hidden;margin-bottom:3px;border-radius:999px;background:rgba(255,255,255,.08)}
+#p1-camp-overlay .base-service-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#416d43,#88b986);transition:width .18s ease}
+#p1-camp-overlay .base-service-quantity{width:100%;min-width:0;padding:9px 10px;border:1px solid rgba(131,170,112,.4);border-radius:6px;outline:none;background:rgba(0,0,0,.32);color:#eee9d7;font:inherit;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-quantity:focus{border-color:#88b986}
+#p1-camp-overlay .base-service-contribute{width:100%;min-width:0;padding:9px 8px;border:1px solid rgba(131,170,112,.58);border-radius:6px;background:rgba(48,96,56,.46);color:#f0e8ce;font:inherit;font-size:13px;font-weight:800;letter-spacing:.03em;white-space:normal;text-align:center;cursor:pointer}
+#p1-camp-overlay .base-service-contribute:hover{background:rgba(65,121,69,.62)}
+#p1-camp-overlay .base-service-contribute:disabled{opacity:.5;cursor:not-allowed}
+#p1-camp-overlay .base-service-maintenance-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:12px;border:1px solid rgba(131,170,112,.25);border-radius:8px}
+#p1-camp-overlay .base-service-maintenance-box label{color:#b5c9af;font-size:12px;text-align:center}
+@media(max-width:440px){#p1-camp-overlay .base-service-requirements{grid-template-columns:1fr}}
+
+
+.pia-fruit-token{position:absolute;z-index:55;transform:translate(-50%,-50%);border:1px solid #b8e49f;border-radius:50%;padding:0;background:#244a2a;color:#e7ffd7;cursor:pointer;pointer-events:auto;box-shadow:0 0 7px #000d;display:flex;align-items:center;justify-content:center;line-height:1}
+.pia-fruit-token:hover{filter:brightness(1.4)}
+.pia-camp-image{position:absolute;z-index:4;pointer-events:none;object-fit:fill;max-width:none}
+.pia-special-dialog[hidden]{display:none!important}.pia-special-dialog{position:fixed;inset:0;z-index:10040;background:#001009bd;display:flex;align-items:center;justify-content:center;padding:20px}.pia-special-box{width:min(420px,95vw);padding:24px;border:2px solid #75ad70;border-radius:9px;background:#142c1b;color:#e9ffe6;box-shadow:0 15px 80px #000c;text-align:center}.pia-special-box h2{margin:0 0 14px}.pia-special-box p{line-height:1.5}.pia-special-actions{display:flex;justify-content:center;gap:12px;margin-top:18px}.pia-special-actions button{padding:10px 16px;background:#376a3e;border:1px solid #a0d093;border-radius:5px;color:#fff;cursor:pointer}
+#p1-camp-feedback{padding:9px;color:#ddf3d7}#p1-camp-feedback.is-error{color:#ffc7bf}
