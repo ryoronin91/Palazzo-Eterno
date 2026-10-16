@@ -15828,24 +15828,30 @@ async function useFruitConsumable() {
 // Zoom mappa: variabile soltanto grafica, non cambia coordinate e RPC.
 let peCameraCells = 13;
 function peSetCameraCells(value) {
-    peCameraCells = Math.max(7, Math.min(23, Math.round(value)));
+    // Stesso principio del Piano Ia: ridimensiona direttamente la mappa.
+    peCameraCells = Math.max(5, Math.min(23, Math.round(value)));
     const map = document.getElementById('dungeon-map');
-    const frame = document.querySelector('.dungeon-map-frame');
-    if (!map || !frame) return;
+    if (!map) return;
+
     map.style.setProperty('--pe-camera-cells', String(peCameraCells));
-    const full = peCameraCells === 23;
+    map.style.setProperty('width', `${23 * 100 / peCameraCells}%`, 'important');
+    map.style.setProperty('height', `${23 * 100 / peCameraCells}%`, 'important');
+
     const reset = document.getElementById('pe-zoom-reset');
     if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
-    const step = document.getElementById('pe-zoom-full');
-    if (step) step.setAttribute('aria-pressed', String(full));
-    const syncDungeonZoom = () => {
+    const full = document.getElementById('pe-zoom-full');
+    if (full) full.setAttribute('aria-pressed', String(peCameraCells === 23));
+
+    const syncZoom = () => {
         updateDungeonCamera(true);
         repositionAllTokens();
         updateFogOfWar();
     };
-    syncDungeonZoom();
-    requestAnimationFrame(() => requestAnimationFrame(syncDungeonZoom));
+    // Ricalcolo immediato + una volta completato il layout del browser.
+    syncZoom();
+    requestAnimationFrame(syncZoom);
 }
+
 function peSetupZoom() {
     document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
     document.getElementById('pe-zoom-out')?.addEventListener('click', () => peSetCameraCells(peCameraCells + 2));

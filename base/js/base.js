@@ -8782,26 +8782,32 @@ async function useFruitConsumable() {
 // Zoom mappa: variabile soltanto grafica, non cambia coordinate e RPC.
 let peCameraCells = 13;
 function peSetCameraCells(value) {
-    peCameraCells = Math.max(7, Math.min(36, Math.round(value)));
+    // Stesso principio del Piano Ia: ridimensiona direttamente la mappa.
+    peCameraCells = Math.max(5, Math.min(36, Math.round(value)));
     const map = document.getElementById('dungeon-map');
-    const frame = document.querySelector('.dungeon-map-frame');
-    if (!map || !frame) return;
+    if (!map) return;
+
     map.style.setProperty('--pe-camera-cells', String(peCameraCells));
-    const full = peCameraCells === 36;
+    map.style.setProperty('width', `${27 * 100 / peCameraCells}%`, 'important');
+    map.style.setProperty('height', `${36 * 100 / peCameraCells}%`, 'important');
+
     const reset = document.getElementById('pe-zoom-reset');
     if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
-    const step = document.getElementById('pe-zoom-full');
-    if (step) step.setAttribute('aria-pressed', String(full));
-    const syncBaseZoom = () => {
+    const full = document.getElementById('pe-zoom-full');
+    if (full) full.setAttribute('aria-pressed', String(peCameraCells === 36));
+
+    const syncZoom = () => {
         updateBaseCamera(true);
         positionBasePlayerToken();
         positionAllBaseRemotePlayerTokens();
         positionBaseStaticDecorations();
         if (baseHealModeActive) renderBaseHealRange();
     };
-    syncBaseZoom();
-    requestAnimationFrame(() => requestAnimationFrame(syncBaseZoom));
+    // Ricalcolo immediato + una volta completato il layout del browser.
+    syncZoom();
+    requestAnimationFrame(syncZoom);
 }
+
 function peSetupZoom() {
     document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
     document.getElementById('pe-zoom-out')?.addEventListener('click', () => peSetCameraCells(peCameraCells + 2));
