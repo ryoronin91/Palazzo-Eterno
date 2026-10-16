@@ -2906,7 +2906,7 @@ body {
     background-color: #0c100d;
     background-image:
         linear-gradient(rgba(6, 8, 6, 0.58), rgba(6, 8, 6, 0.72)),
-        url("../../../immagini/bg.png");
+        url("../../../immagini/bgI.png");
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
