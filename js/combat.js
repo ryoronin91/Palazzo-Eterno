@@ -1287,6 +1287,16 @@ async function loadCombatSession() {
             map.dataset.gridInsetTop = "0.033";
             map.dataset.gridInsetBottom = "0.033";
 
+        } else if (
+            typeof data?.encounter_id === "string" &&
+            data.encounter_id.startsWith("p1_")
+        ) {
+
+            // Piano Ia: cambia solo la grafica della mappa.
+            // La griglia del combattimento resta invariata.
+            map.style.backgroundImage =
+                'url("immagini/combat/combat_map_Ia.png")';
+
         } else {
 
             map.style.backgroundImage = "";
