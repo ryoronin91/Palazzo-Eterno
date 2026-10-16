@@ -266,6 +266,29 @@
     token.style.fontSize = `${Math.max(9, Math.min(21, diameter * 0.57))}px`;
   }
 
+  // Guardie della frontiera I-A / I-B: ogni personaggio entra in una stanza individuale.
+  let guardToken=null, guardBusy=false;
+  function renderGuardToken() {
+    if (!combatLayer || !state.cellPx) return;
+    if(!guardToken) {
+      guardToken=document.createElement('button');
+      guardToken.type='button';guardToken.className='p1-combat-token p1-guard-token';
+      guardToken.textContent='🛡️';guardToken.title='Guardie del Varco · interagisci a X 0 Y 67';
+      guardToken.setAttribute('aria-label',guardToken.title);
+      guardToken.addEventListener('click',enterGuardEvent);combatLayer.appendChild(guardToken);
+    }
+    combatTokenPosition(guardToken,0,67);
+  }
+  async function enterGuardEvent() {
+    if(!state.ready || guardBusy) return;
+    if(state.x!==0 || state.y!==67) {toast('Raggiungi X 0 · Y 67 per parlare con le guardie.');return;}
+    guardBusy=true;
+    try {
+      const {data,error}=await state.db.rpc('ia2ib_open');
+      if(error)throw error;
+      window.location.assign('Ia2Ib.html?id='+encodeURIComponent(data.id));
+    } catch(e) {toast('Guardie: '+(e.message||e));guardBusy=false;}
+  }
   // Allosauro Dominante: stato e disponibilità condivisi lato Supabase.
   function renderBossToken() {
     if (!combatLayer || !state.cellPx) return;
@@ -295,7 +318,7 @@
       const {data, error} = await state.db.rpc('p1_get_allosauro_state');
       if (error) throw error;
       state.bossState = data;
-      renderBossToken();
+      renderBossToken(); renderGuardToken();
     } catch (error) { console.warn('Stato Allosauro non disponibile:', error); }
   }
 
@@ -435,7 +458,7 @@
     layer.style.setProperty('--cell', `${px}px`);
     renderTokens();
     renderCombatTokens();
-    renderBossToken();
+    renderBossToken(); renderGuardToken();
     centerCamera(instant);
   }
 
