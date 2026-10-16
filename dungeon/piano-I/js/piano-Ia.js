@@ -495,7 +495,7 @@
     ok.textContent = confirm ? 'ATTRAVERSA' : 'CHIUDI';
     cancel.hidden = !confirm;
     const warning = $('pia-passage-warning');
-    if (warning) { warning.hidden = !confirm; warning.textContent = 'Una volta attraversato il sentiero, non potrai tornare indietro da questa strada.'; }
+    if (warning) { warning.hidden = false; warning.textContent = confirm ? 'ATTENZIONE: da questo sentiero non è possibile tornare indietro.' : 'Il passaggio è chiuso da questo lato.'; }
     modal.hidden = false;
 
     return new Promise(resolve => {
@@ -535,7 +535,7 @@
   }
 
   async function move(dx, dy) {
-    if (!state.ready || movementBusy || state.x === null || !state.db) return;
+    if (!state.ready || movementBusy || !$('pia-passage-modal')?.hidden || state.x === null || !state.db) return;
     const x = state.x + dx, y = state.y + dy;
     const passageBlocked = x === 26 && y === 35 && state.y === 35 && state.x === 25;
     const oneWay = x === 26 && y === 35 && state.y === 35 && state.x === 27;
