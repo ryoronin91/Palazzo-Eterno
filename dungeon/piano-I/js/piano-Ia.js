@@ -227,6 +227,7 @@
   function renderTokens() {
     if (!state.token) state.token = makeToken(state.character?.token, true, state.character?.nome || 'Esploratore');
     positionToken(state.token, state.x, state.y);
+    updateCampPicture();
     for (const [id, info] of state.remotePlayers) {
       if (!info.token) info.token = makeToken(info.image, false, info.name);
       positionToken(info.token, info.x, info.y);
@@ -535,7 +536,7 @@
   }
 
   async function move(dx, dy) {
-    if (!state.ready || movementBusy || !$('pia-passage-modal')?.hidden || state.x === null || !state.db) return;
+    if (!state.ready || camp.modalOpen || movementBusy || !$('pia-passage-modal')?.hidden || state.x === null || !state.db) return;
     const x = state.x + dx, y = state.y + dy;
     const passageBlocked = x === 26 && y === 35 && state.y === 35 && state.x === 25;
     const oneWay = x === 26 && y === 35 && state.y === 35 && state.x === 27;
@@ -562,7 +563,7 @@
       if (error) throw error;
       state.x=Number(data.x);state.y=Number(data.y);
       positionToken(state.token,state.x,state.y);
-      centerCamera();revealAroundPlayer();updateCoordinates();saveProgress();broadcastPosition();
+      centerCamera();revealAroundPlayer();updateCoordinates();saveProgress();broadcastPosition();afterCampMove();
     } catch(err) { toast('Movimento non riuscito: '+(err.message||err)); }
     finally { movementBusy=false; }
   }
@@ -856,6 +857,111 @@
     });
   }
 
+  // ACCAMPAMENTO DEL PIANO I-A · interfaccia e sincronizzazione server.
+  const CAMP_AREA = { minX:28,maxX:30,minY:34,maxY:36 };
+  const camp = { data:null, image:null, busy:false, modalOpen:false, previousInside:false, refreshedAt:0 };
+  const inCamp = () => state.x>=28 && state.x<=30 && state.y>=34 && state.y<=36;
+
+  function updateCampPicture() {
+    if (!camp.image || !state.cellPx) return;
+    camp.image.style.left = `${28*state.cellPx}px`;
+    camp.image.style.top = `${34*state.cellPx}px`;
+    camp.image.style.width = `${3*state.cellPx}px`;
+    camp.image.style.height = `${3*state.cellPx}px`;
+    const built = !!camp.data?.built;
+    const filename = built ? 'campB.png' : 'campA.png';
+    const next = `immagini/${filename}`;
+    if (camp.image.getAttribute('src')!==next) camp.image.src=next;
+    camp.image.title=built ? 'Accampamento costruito' : 'Accampamento da costruire';
+  }
+  function setupCampPicture() {
+    if (camp.image) return;
+    const el=document.createElement('img');el.id='p1-camp-image';el.alt='Accampamento';
+    el.draggable=false;el.className='p1-camp-image';
+    el.onerror=()=>{ el.style.opacity='0'; console.warn('Immagine accampamento non caricata; caricare campA.png e campB.png'); };
+    el.onload=()=>{el.style.opacity='1';};
+    layer.appendChild(el);camp.image=el;updateCampPicture();
+  }
+  const campOverlay=$('p1-camp-overlay');
+  const campRows=$('p1-camp-rows');
+  function renderCampModal() {
+    if (!campOverlay || !camp.data) return;
+    const d=camp.data;
+    const statusText=d.active?'FUOCO ACCESO':'ACCAMPAMENTO DA COSTRUIRE';
+    $('p1-camp-state-label').textContent=statusText;
+    $('p1-camp-fuel').textContent=d.built?`${d.fuel}/20 Legname · ${d.fuel*3} minuti nominali residui`:'Attendere il completamento dei contributi';
+    const recipe=$('p1-camp-recipe');recipe.hidden=!d.built;
+    const addFuel=$('p1-camp-refuel');addFuel.hidden=!d.active;
+    campRows.replaceChildren();
+    if (!d.built) for(const r of (d.requirements||[])) {
+      const row=document.createElement('div');row.className='p1-camp-row';
+      const label=document.createElement('span');label.textContent=`${r.name}: ${r.contributed}/${r.needed}`;
+      const button=document.createElement('button');button.type='button';button.className='combat-event-button combat-event-enter';button.textContent='VERSA';
+      button.disabled=camp.busy||Number(r.contributed)>=Number(r.needed);
+      button.addEventListener('click',()=>campContribute(r.item_id,Math.max(1,Number(r.needed)-Number(r.contributed)),'construction'));
+      row.append(label,button);campRows.appendChild(row);
+    }
+    $('p1-camp-cook').disabled=camp.busy||!d.active;
+    $('p1-camp-fuel-button').disabled=camp.busy||!d.active||d.fuel>=20;
+  }
+  async function campRefresh(showErrors=false) {
+    if(!state.ready||!state.db) return;
+    try {
+      const {data,error}=await state.db.rpc('p1_camp_state');if(error)throw error;
+      camp.data=data;camp.refreshedAt=Date.now();setupCampPicture();updateCampPicture();
+      if(camp.modalOpen) renderCampModal();
+      if(data.healing_minutes>0 && data.inside) toast(`Riposo: +${data.healing_minutes*2} PF e PM (fino al massimo)`);
+    } catch(e){if(showErrors) toast('Campo: '+e.message);else console.warn('Aggiornamento accampamento:',e);}
+  }
+  function campOpen() {
+    if(!state.ready || !inCamp() || !campOverlay) return;
+    camp.modalOpen=true;campOverlay.hidden=false;renderCampModal();
+    $('p1-camp-close').focus({preventScroll:true});
+    campRefresh(true);
+  }
+  function campClose(){camp.modalOpen=false;campOverlay.hidden=true;viewport.focus({preventScroll:true});}
+  async function campContribute(itemId,amount,purpose) {
+    if(camp.busy)return;
+    const text=purpose==='fuel'?'Quanto Legname vuoi aggiungere (massimo fino a 20 nel fuoco)?':'Quante unità vuoi consegnare?';
+    // Input numerico nel popup: nessun prompt di sistema.
+    const input=$('p1-camp-quantity');input.max=String(amount);input.min='1';input.value=String(amount);
+    $('p1-camp-quantity-label').textContent=text;
+    $('p1-camp-quantity-panel').hidden=false;
+    const button=$('p1-camp-quantity-confirm');
+    button.onclick=async()=>{
+      const n=Number(input.value);
+      if(!Number.isInteger(n)||n<1||n>amount){toast('Quantità non valida');return;}
+      camp.busy=true;renderCampModal();button.disabled=true;
+      try {
+        const {error}=await state.db.rpc('p1_camp_contribute',{p_item_id:itemId,p_quantity:n,p_purpose:purpose});if(error)throw error;
+        $('p1-camp-quantity-panel').hidden=true;toast('Materiali consegnati');await campRefresh(true);
+      } catch(e){toast(e.message||'Contributo non riuscito');}
+      finally{camp.busy=false;button.disabled=false;renderCampModal();}
+    };
+    input.focus({preventScroll:true});
+  }
+  $('p1-camp-close')?.addEventListener('click',campClose);
+  $('p1-camp-open')?.addEventListener('click',campOpen);
+  campOverlay?.addEventListener('click',event=>{if(event.target===campOverlay)campClose();});
+  $('p1-camp-refuel')?.addEventListener('click',()=>campContribute('legname',Math.max(1,20-(camp.data?.fuel||0)),'fuel'));
+  $('p1-camp-cook')?.addEventListener('click',async()=>{
+    if(camp.busy||!camp.data?.active)return;
+    camp.busy=true;renderCampModal();
+    try{const {error}=await state.db.rpc('p1_camp_cook');if(error)throw error;toast('Lautopasto cucinato e aggiunto all’inventario');await campRefresh(true);}
+    catch(e){toast(e.message||'Ingredienti insufficienti');}
+    finally{camp.busy=false;renderCampModal();}
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&camp.modalOpen){e.preventDefault();campClose();} if(camp.modalOpen && virtualKeys[e.key?.toLowerCase()]) e.stopImmediatePropagation();},true);
+  setInterval(()=>{if(state.ready) {updateCampPicture();campRefresh();}},15000);
+  function afterCampMove() {
+    if(!state.ready)return;
+    const nowInside=inCamp();
+    if(nowInside&&!camp.previousInside) campOpen();
+    camp.previousInside=nowInside;
+    if($('p1-camp-open')) $('p1-camp-open').hidden=!nowInside;
+    campRefresh();
+  }
+
   // Il pulsante ESCI riporta davvero il PG alla Base nel database.
   document.querySelector('.jungle-exit')?.addEventListener('click', async event => {
     if (!state.db || !state.character || !state.ready) return;
@@ -888,7 +994,7 @@
       resizeMap(true);
       loading.hidden = true;
       if (serverReady) status(`Piano I-A · ${state.character?.nome || 'Avventuriero'} · X ${state.x} / Y ${state.y}`);
-      if (serverReady) startCombatRefresh();
+      if (serverReady) { startCombatRefresh(); camp.previousInside=false; await campRefresh(true); if(inCamp()) campOpen(); if($('p1-camp-open')) $('p1-camp-open').hidden=!inCamp(); }
       await Promise.allSettled([loadLeaderboard(), connectRealtime()]);
     } catch (err) {
       console.error('Piano Ia:', err);

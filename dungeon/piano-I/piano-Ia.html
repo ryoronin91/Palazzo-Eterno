@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#07140d">
   <title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
   <link rel="stylesheet" href="../../css/style.css">
-  <link rel="stylesheet" href="css/piano-Ia.css?v=5">
+  <link rel="stylesheet" href="css/piano-Ia.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=16" defer></script>
+  <script src="js/piano-Ia.js?v=18" defer></script>
 
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
@@ -165,6 +165,28 @@
       </section>
     </div>
 
+
+<div id="p1-camp-overlay" class="combat-event-overlay pia-passage-modal" hidden>
+  <section class="combat-event-modal p1-camp-modal" role="dialog" aria-modal="true" aria-labelledby="p1-camp-title">
+    <div class="combat-event-icon">🏕️</div>
+    <h2 id="p1-camp-title">ACCAMPAMENTO</h2>
+    <p id="p1-camp-state-label">CARICAMENTO...</p>
+    <div id="p1-camp-fuel" class="combat-event-warning">Caricamento risorse...</div>
+    <div id="p1-camp-rows"></div>
+    <div id="p1-camp-quantity-panel" hidden>
+      <label id="p1-camp-quantity-label" for="p1-camp-quantity">Quantità</label>
+      <input type="number" id="p1-camp-quantity" min="1" max="20" step="1" value="1">
+      <button type="button" id="p1-camp-quantity-confirm" class="combat-event-button combat-event-enter">CONFERMA CONTRIBUTO</button>
+    </div>
+    <div id="p1-camp-recipe" hidden><p>LAUTOPASTO: 4 Cosce di uccello stigio, 6 Foglie Nutrienti, 3 Funghetti.</p>
+      <button type="button" id="p1-camp-cook" class="combat-event-button combat-event-enter">CUOCI LAUTOPASTO</button>
+    </div>
+    <div id="p1-camp-refuel" hidden><button type="button" id="p1-camp-fuel-button" class="combat-event-button combat-event-enter">AGGIUNGI LEGNAME</button></div>
+    <div class="combat-event-buttons"><button type="button" id="p1-camp-close" class="combat-event-button combat-event-cancel">CHIUDI</button></div>
+  </section>
+</div>
+<button id="p1-camp-open" type="button" hidden>🏕️ ACCAMPAMENTO</button>
+
 <!-- Indicatori provvisori Piano I-A -->
 <style>
 .pia-planning-marker{position:absolute;z-index:10;pointer-events:none;border-radius:50%;box-shadow:0 0 0 1px white;transform:translate(-50%,-50%)}
@@ -186,9 +208,7 @@ const points=[
 { x:59,y:3,name:'Ingresso nord-est',color:'#ffd449'}];
 for(const p of points){const el=document.createElement('div');el.className='pia-planning-marker';el.title=p.name;
 Object.assign(el.style,{left:((p.x+.5)/cols*100)+'%',top:((p.y+.5)/rows*100)+'%',width:(100/cols)+'%',height:(100/rows)+'%',background:p.color});overlay.appendChild(el)}
-const camp=document.createElement('div');camp.className='pia-planning-camp';camp.title='Accampamento Lautopasto';
-Object.assign(camp.style,{left:(28/cols*100)+'%',top:(34/rows*100)+'%',width:(3/cols*100)+'%',height:(3/rows*100)+'%'});
-overlay.appendChild(camp);layer.appendChild(overlay);
+layer.appendChild(overlay);
 const b=document.createElement('button');b.id='pia-planning-toggle';b.type='button';b.textContent='Eventi: ON';b.setAttribute('aria-pressed','true');
 b.addEventListener('click',()=>{const visible=overlay.style.display!=='none';overlay.style.display=visible?'none':'';b.textContent=visible?'Eventi: OFF':'Eventi: ON';b.setAttribute('aria-pressed',String(!visible))});controls.appendChild(b);
 })();
