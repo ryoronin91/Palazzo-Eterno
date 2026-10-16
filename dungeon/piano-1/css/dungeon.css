@@ -3906,8 +3906,3 @@ body {
 .pe-master-explore { display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12px; }
 .pe-master-explore[hidden] { display:none !important; }
 
-/* Controlli zoom: nessun cambiamento al layout delle colonne. */
-.pe-zoom-tools {display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 7px 0}
-.pe-zoom-tools button {font:700 12px inherit;border:2px solid #17130f;background:#eee4ca;color:#17130f;padding:5px 9px;cursor:pointer;min-height:30px}
-.pe-zoom-tools button:hover {background:#dfcea3}
-.pe-zoom-tools button[aria-pressed="true"] {outline:2px solid #a58942;outline-offset:-3px}

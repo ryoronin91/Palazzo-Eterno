@@ -2179,12 +2179,79 @@ async function initializeBasePlayer() {
 
 
 function positionBasePlayerToken() {
-    if (!basePlayerToken || basePlayerX === null || basePlayerY === null) return;
-    basePlayerToken.style.width = `${88 / BASE_MAP_COLUMNS}%`;
-    basePlayerToken.style.height = `${88 / BASE_MAP_ROWS}%`;
-    basePlayerToken.style.left = `${(Number(basePlayerX) + 0.06) * 100 / BASE_MAP_COLUMNS}%`;
-    basePlayerToken.style.top = `${(Number(basePlayerY) + 0.06) * 100 / BASE_MAP_ROWS}%`;
-    basePlayerToken.style.zIndex = "20";
+    const map =
+        document.getElementById("dungeon-map");
+
+
+    if (
+        !map ||
+        !basePlayerToken
+    ) {
+        return;
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) * 0.88;
+
+
+    basePlayerToken.style.width =
+        `${tokenSize}px`;
+
+
+    basePlayerToken.style.height =
+        `${tokenSize}px`;
+
+
+    basePlayerToken.style.left =
+        `${
+            (
+                basePlayerX +
+                0.5
+            ) *
+            cellWidth -
+            tokenSize / 2
+        }px`;
+
+
+    basePlayerToken.style.top =
+        `${
+            (
+                basePlayerY +
+                0.5
+            ) *
+            cellHeight -
+            tokenSize / 2
+        }px`;
+
+
+    basePlayerToken.style.zIndex =
+        "20";
 }
 
 
@@ -2355,19 +2422,92 @@ function renderBaseStaticDecorations() {
 
 
 function positionBaseStaticDecorations() {
-    BASE_STATIC_DECORATIONS.forEach(decoration => {
-        const element = baseStaticDecorationElements.get(decoration.id);
-        if (!element) return;
-        element.style.left = `${decoration.x * 100 / BASE_MAP_COLUMNS}%`;
-        element.style.top = `${decoration.y * 100 / BASE_MAP_ROWS}%`;
-        element.style.width = `${decoration.width * 100 / BASE_MAP_COLUMNS}%`;
-        element.style.height = `${decoration.height * 100 / BASE_MAP_ROWS}%`;
-        element.style.zIndex = String(decoration.zIndex ?? 6);
-        if (decoration.id === "locanda") {
-            element.style.transform = "translateY(-10px) scale(1.12)";
-            element.style.transformOrigin = "center center";
+    const map =
+        document.getElementById("dungeon-map");
+
+
+    if (!map) {
+        return;
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+
+    BASE_STATIC_DECORATIONS.forEach(
+        decoration => {
+
+
+            const element =
+                baseStaticDecorationElements.get(
+                    decoration.id
+                );
+
+
+            if (!element) {
+                return;
+            }
+
+
+            element.style.left =
+                `${decoration.x * cellWidth}px`;
+
+
+            element.style.top =
+                `${decoration.y * cellHeight}px`;
+
+
+            element.style.width =
+                `${decoration.width * cellWidth}px`;
+
+
+            element.style.height =
+                `${decoration.height * cellHeight}px`;
+
+
+            element.style.zIndex =
+                String(
+                    decoration.zIndex ?? 6
+                );
+
+
+                if (
+    decoration.id ===
+    "locanda"
+) {
+    const scale = 1.12;
+
+
+    element.style.transform =
+        `translateY(-10px) scale(${scale})`;
+
+
+    element.style.transformOrigin =
+        "center center";
+}
+
+
         }
-    });
+    );
 }
 
 
@@ -6225,13 +6365,76 @@ function showBaseRemotePlayerToken(
 
 
 
-function positionBaseRemotePlayerToken(element, x, y) {
-    if (!element) return;
-    element.style.width = `${88 / BASE_MAP_COLUMNS}%`;
-    element.style.height = `${88 / BASE_MAP_ROWS}%`;
-    element.style.left = `${(Number(x) + 0.06) * 100 / BASE_MAP_COLUMNS}%`;
-    element.style.top = `${(Number(y) + 0.06) * 100 / BASE_MAP_ROWS}%`;
-    element.style.zIndex = "19";
+function positionBaseRemotePlayerToken(
+    element,
+    x,
+    y
+) {
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+    if (
+        !map ||
+        !element
+    ) {
+        return;
+    }
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+        return;
+    }
+
+
+    const cellWidth =
+        rect.width /
+        BASE_MAP_COLUMNS;
+
+
+    const cellHeight =
+        rect.height /
+        BASE_MAP_ROWS;
+
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) * 0.88;
+
+
+    element.style.width =
+        `${tokenSize}px`;
+
+
+    element.style.height =
+        `${tokenSize}px`;
+
+
+    element.style.left =
+        `${(Number(x) + 0.5) * cellWidth - tokenSize / 2}px`;
+
+
+    element.style.top =
+        `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
+
+
+    element.style.zIndex =
+        "19";
+
+
 }
 
 
@@ -8576,42 +8779,3 @@ async function useFruitConsumable() {
         updateFruitConsumable();
     }
 }
-// Zoom mappa: variabile soltanto grafica, non cambia coordinate e RPC.
-let peCameraCells = 13;
-function peSetCameraCells(value) {
-    // Stesso principio del Piano Ia: ridimensiona direttamente la mappa.
-    peCameraCells = Math.max(5, Math.min(36, Math.round(value)));
-    const map = document.getElementById('dungeon-map');
-    if (!map) return;
-
-    map.style.setProperty('--pe-camera-cells', String(peCameraCells));
-    map.style.setProperty('width', `${27 * 100 / peCameraCells}%`, 'important');
-    map.style.setProperty('height', `${36 * 100 / peCameraCells}%`, 'important');
-
-    const reset = document.getElementById('pe-zoom-reset');
-    if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
-    const full = document.getElementById('pe-zoom-full');
-    if (full) full.setAttribute('aria-pressed', String(peCameraCells === 36));
-
-    const syncZoom = () => {
-        updateBaseCamera(true);
-        positionBasePlayerToken();
-        positionAllBaseRemotePlayerTokens();
-        positionBaseStaticDecorations();
-        if (baseHealModeActive) renderBaseHealRange();
-    };
-    // Ricalcolo immediato + una volta completato il layout del browser.
-    syncZoom();
-    requestAnimationFrame(syncZoom);
-}
-
-function peSetupZoom() {
-    document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
-    document.getElementById('pe-zoom-out')?.addEventListener('click', () => peSetCameraCells(peCameraCells + 2));
-    document.getElementById('pe-zoom-reset')?.addEventListener('click', () => peSetCameraCells(13));
-    document.getElementById('pe-zoom-full')?.addEventListener('click', () => peSetCameraCells(36));
-    peSetCameraCells(13);
-}
-document.addEventListener('DOMContentLoaded', () => {
-    requestAnimationFrame(peSetupZoom);
-});

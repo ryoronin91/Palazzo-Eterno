@@ -4104,14 +4104,123 @@ function showToken(
 // ============================================================
 
 
-function positionTokenElement(element, x, y) {
-    if (!element) return;
-    // Coordinate percentuali: il token scala insieme alla mappa senza attendere
-    // il successivo movimento, refresh realtime o ridisegno dei pixel.
-    element.style.width = `${90 / MAP_COLUMNS}%`;
-    element.style.height = `${90 / MAP_ROWS}%`;
-    element.style.left = `${(Number(x) + 0.05) * 100 / MAP_COLUMNS}%`;
-    element.style.top = `${(Number(y) + 0.05) * 100 / MAP_ROWS}%`;
+function positionTokenElement(
+    element,
+    x,
+    y
+) {
+
+
+    const map =
+        document.getElementById(
+            "dungeon-map"
+        );
+
+
+
+
+    if (
+        !map ||
+        !element
+    ) {
+
+
+        return;
+
+
+    }
+
+
+
+
+    const rect =
+        map.getBoundingClientRect();
+
+
+
+
+    if (
+        rect.width <= 0 ||
+        rect.height <= 0
+    ) {
+
+
+        return;
+
+
+    }
+
+
+
+
+    const cellWidth =
+        rect.width /
+        MAP_COLUMNS;
+
+
+
+
+    const cellHeight =
+        rect.height /
+        MAP_ROWS;
+
+
+
+
+    // Il token occupa il 90% della casella.
+    // È totalmente indipendente dal ritratto laterale.
+
+
+    const tokenSize =
+        Math.min(
+            cellWidth,
+            cellHeight
+        ) *
+        0.90;
+
+
+
+
+    element.style.width =
+        `${tokenSize}px`;
+
+
+
+
+    element.style.height =
+        `${tokenSize}px`;
+
+
+
+
+    element.style.left =
+        `${
+            (
+                Number(x) +
+                0.5
+            )
+            *
+            cellWidth
+            -
+            tokenSize / 2
+        }px`;
+
+
+
+
+    element.style.top =
+        `${
+            (
+                Number(y) +
+                0.5
+            )
+            *
+            cellHeight
+            -
+            tokenSize / 2
+        }px`;
+
+
 }
 
 
@@ -15716,44 +15825,6 @@ async function useFruitConsumable() {
         updateFruitConsumable();
     }
 }
-// Zoom mappa: variabile soltanto grafica, non cambia coordinate e RPC.
-let peCameraCells = 13;
-function peSetCameraCells(value) {
-    // Stesso principio del Piano Ia: ridimensiona direttamente la mappa.
-    peCameraCells = Math.max(5, Math.min(23, Math.round(value)));
-    const map = document.getElementById('dungeon-map');
-    if (!map) return;
-
-    map.style.setProperty('--pe-camera-cells', String(peCameraCells));
-    map.style.setProperty('width', `${23 * 100 / peCameraCells}%`, 'important');
-    map.style.setProperty('height', `${23 * 100 / peCameraCells}%`, 'important');
-
-    const reset = document.getElementById('pe-zoom-reset');
-    if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
-    const full = document.getElementById('pe-zoom-full');
-    if (full) full.setAttribute('aria-pressed', String(peCameraCells === 23));
-
-    const syncZoom = () => {
-        updateDungeonCamera(true);
-        repositionAllTokens();
-        updateFogOfWar();
-    };
-    // Ricalcolo immediato + una volta completato il layout del browser.
-    syncZoom();
-    requestAnimationFrame(syncZoom);
-}
-
-function peSetupZoom() {
-    document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
-    document.getElementById('pe-zoom-out')?.addEventListener('click', () => peSetCameraCells(peCameraCells + 2));
-    document.getElementById('pe-zoom-reset')?.addEventListener('click', () => peSetCameraCells(13));
-    document.getElementById('pe-zoom-full')?.addEventListener('click', () => peSetCameraCells(23));
-    peSetCameraCells(13);
-}
-document.addEventListener('DOMContentLoaded', () => {
-    requestAnimationFrame(peSetupZoom);
-});
-
 // Il controllo e' solo client-side: la nebbia originale continua a essere registrata.
 // Il ruolo e' letto dalla tabella Supabase, mai dedotto dalla UI.
 let peMasterExploreActive = false;
