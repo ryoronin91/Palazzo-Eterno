@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // BASE.JS
 //
@@ -8792,8 +8792,15 @@ function peSetCameraCells(value) {
     if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
     const step = document.getElementById('pe-zoom-full');
     if (step) step.setAttribute('aria-pressed', String(full));
-    updateBaseCamera(true);
-    
+    const syncBaseZoom = () => {
+        updateBaseCamera(true);
+        positionBasePlayerToken();
+        positionAllBaseRemotePlayerTokens();
+        positionBaseStaticDecorations();
+        if (baseHealModeActive) renderBaseHealRange();
+    };
+    syncBaseZoom();
+    requestAnimationFrame(() => requestAnimationFrame(syncBaseZoom));
 }
 function peSetupZoom() {
     document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));

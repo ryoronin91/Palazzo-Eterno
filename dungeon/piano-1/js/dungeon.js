@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // DUNGEON.JS
 // VERSIONE NUOVA INTERFACCIA
@@ -15838,8 +15838,13 @@ function peSetCameraCells(value) {
     if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
     const step = document.getElementById('pe-zoom-full');
     if (step) step.setAttribute('aria-pressed', String(full));
-    updateDungeonCamera(true);
-    updateFogOfWar()
+    const syncDungeonZoom = () => {
+        updateDungeonCamera(true);
+        repositionAllTokens();
+        updateFogOfWar();
+    };
+    syncDungeonZoom();
+    requestAnimationFrame(() => requestAnimationFrame(syncDungeonZoom));
 }
 function peSetupZoom() {
     document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
