@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/piano-Ia.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=12" defer></script>
+  <script src="js/piano-Ia.js?v=15" defer></script>
 
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
@@ -149,6 +149,37 @@
     </div>
     <div id="jungle-toast" class="jungle-toast" role="status" aria-live="polite"></div>
   </main>
+
+
+<style>
+/* Stesso design di .combat-event-* in dungeon.css, senza dipendenza dal CSS del Dungeon */
+.pia-passage-modal[hidden], .pia-passage-modal [hidden] {display:none!important;}
+.pia-passage-modal {position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.78);}
+.pia-passage-modal .combat-event-modal {width:min(430px,100%);padding:28px;box-sizing:border-box;border:1px solid #725831;border-radius:12px;background:linear-gradient(180deg,#201812,#100d0a);box-shadow:0 20px 60px rgba(0,0,0,.8);color:#eee1c7;text-align:center;}
+.pia-passage-modal .combat-event-icon {margin-bottom:10px;color:#c79b50;font-size:42px;}
+.pia-passage-modal .combat-event-modal h2 {margin:0 0 14px;color:#e0bd7b;letter-spacing:1.5px;}
+.pia-passage-modal .combat-event-modal p {margin:0 0 18px;color:#d2c5b0;line-height:1.5;}
+.pia-passage-modal .combat-event-warning {margin-bottom:22px;padding:14px;border:1px solid #623c2b;border-radius:8px;background:rgba(95,26,20,.2);color:#d7b0a4;font-size:13px;line-height:1.5;}
+.pia-passage-modal .combat-event-buttons {display:grid;gap:10px;}
+.pia-passage-modal .combat-event-button {min-height:44px;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;}
+.pia-passage-modal .combat-event-enter {border:1px solid #885136;background:linear-gradient(180deg,#6d3423,#472116);color:#ffe4cf;}
+.pia-passage-modal .combat-event-enter:hover {background:linear-gradient(180deg,#83422c,#552619);}
+.pia-passage-modal .combat-event-cancel {border:1px solid #66563c;background:linear-gradient(180deg,#352819,#241b12);color:#eeddb8;}
+.pia-passage-modal .combat-event-cancel:hover {background:linear-gradient(180deg,#45341f,#2d2115);}
+.pia-passage-modal .combat-event-button:focus-visible {outline:2px solid #e0bd7b;outline-offset:2px;}
+</style>
+<div id="pia-passage-modal" class="pia-passage-modal combat-event-overlay" hidden>
+      <section class="combat-event-modal" role="dialog" aria-modal="true" aria-labelledby="pia-passage-title" aria-describedby="pia-passage-description">
+        <div class="combat-event-icon" aria-hidden="true">🚧</div>
+        <h2 id="pia-passage-title"></h2>
+        <p id="pia-passage-description"></p>
+        <div class="combat-event-warning" id="pia-passage-warning">Un passaggio antico attraversa la giungla.</div>
+        <div class="combat-event-buttons">
+          <button id="pia-passage-cancel" class="combat-event-button combat-event-cancel" type="button">ANNULLA</button>
+          <button id="pia-passage-accept" class="combat-event-button combat-event-enter" type="button">CHIUDI</button>
+        </div>
+      </section>
+    </div>
 
 <!-- Indicatori provvisori Piano I-A -->
 <style>

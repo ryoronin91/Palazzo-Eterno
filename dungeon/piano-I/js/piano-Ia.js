@@ -479,19 +479,85 @@
     return true;
   }
 
+  // Finestre del gioco: nessun alert/confirm nativo del browser.
+  function showPassageDialog({ title, message, confirm = false }) {
+    const modal = $('pia-passage-modal');
+    const heading = $('pia-passage-title');
+    const description = $('pia-passage-description');
+    const ok = $('pia-passage-accept');
+    const cancel = $('pia-passage-cancel');
+    if (!modal || !heading || !description || !ok || !cancel) {
+      throw new Error('Finestra del passaggio non presente nella pagina.');
+    }
+
+    heading.textContent = title;
+    description.textContent = message;
+    ok.textContent = confirm ? 'ATTRAVERSA' : 'CHIUDI';
+    cancel.hidden = !confirm;
+    const warning = $('pia-passage-warning');
+    if (warning) { warning.hidden = !confirm; warning.textContent = 'Una volta attraversato il sentiero, non potrai tornare indietro da questa strada.'; }
+    modal.hidden = false;
+
+    return new Promise(resolve => {
+      const previousFocus = document.activeElement;
+      let settled = false;
+      const finish = accepted => {
+        if (settled) return;
+        settled = true;
+        modal.hidden = true;
+        ok.removeEventListener('click', accept);
+        cancel.removeEventListener('click', reject);
+        modal.removeEventListener('click', backdrop);
+        document.removeEventListener('keydown', onKeyDown, true);
+        if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+        resolve(accepted);
+      };
+      const accept = () => finish(true);
+      const reject = () => finish(false);
+      const backdrop = event => {
+        if (event.target === modal) finish(false);
+      };
+      const onKeyDown = event => {
+        if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+        if (event.key === 'Tab') {
+          const focusable = confirm ? [cancel, ok] : [ok];
+          const current = focusable.indexOf(document.activeElement);
+          event.preventDefault();
+          focusable[(current + (event.shiftKey ? focusable.length - 1 : 1)) % focusable.length].focus();
+        }
+      };
+      ok.addEventListener('click', accept);
+      cancel.addEventListener('click', reject);
+      modal.addEventListener('click', backdrop);
+      document.addEventListener('keydown', onKeyDown, true);
+      (confirm ? cancel : ok).focus({ preventScroll: true });
+    });
+  }
+
   async function move(dx, dy) {
     if (!state.ready || movementBusy || state.x === null || !state.db) return;
     const x = state.x + dx, y = state.y + dy;
-    if (x === 26 && y === 35 && state.y === 35 && state.x === 25) {
-      window.alert('Il passaggio per la radura dell’accampamento è bloccato da questo lato.');
-      return;
-    }
+    const passageBlocked = x === 26 && y === 35 && state.y === 35 && state.x === 25;
     const oneWay = x === 26 && y === 35 && state.y === 35 && state.x === 27;
-    if (oneWay && !window.confirm('Sembra che da qui si riesca a raggiungere X 25 · Y 35, ma non sarà possibile tornare indietro da questa strada. Vuoi procedere?')) return;
-    if (!oneWay && !walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
-    const destinationX = oneWay ? 25 : x;
+    if (!passageBlocked && !oneWay && !walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
     movementBusy = true;
     try {
+      if (passageBlocked) {
+        await showPassageDialog({
+          title: 'PASSAGGIO BLOCCATO',
+          message: 'Il passaggio per la radura dell’accampamento è bloccato da questo lato.'
+        });
+        return;
+      }
+      if (oneWay) {
+        const accepted = await showPassageDialog({
+          title: 'SENTIERO SENZA RITORNO',
+          message: 'Sembra che da qui si riesca a raggiungere X 25 · Y 35, ma non sarà possibile tornare indietro da questa strada. Vuoi procedere?',
+          confirm: true
+        });
+        if (!accepted) return;
+      }
+      const destinationX = oneWay ? 25 : x;
       const {data,error}=await state.db.rpc('piano_ia_move',{p_x:destinationX,p_y:y});
       if (error) throw error;
       state.x=Number(data.x);state.y=Number(data.y);
