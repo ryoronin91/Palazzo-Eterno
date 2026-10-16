@@ -275,13 +275,13 @@
       guardToken.type='button';guardToken.className='p1-combat-token p1-guard-token';
       guardToken.textContent='🛡️';guardToken.title='Guardie del Varco · interagisci a X 0 Y 67';
       guardToken.setAttribute('aria-label',guardToken.title);
-      guardToken.addEventListener('click',enterGuardEvent);combatLayer.appendChild(guardToken);
+      guardToken.addEventListener('click',()=>tokenEncounter('guard'));combatLayer.appendChild(guardToken);
     }
     combatTokenPosition(guardToken,0,67);
   }
   async function enterGuardEvent() {
     if(!state.ready || guardBusy) return;
-    if(state.x!==0 || state.y!==67) {toast('Raggiungi X 0 · Y 67 per parlare con le guardie.');return;}
+    if(Math.abs(state.x-0)+Math.abs(state.y-67)>1) {toast('Avvicinati alle guardie.');return;}
     guardBusy=true;
     try {
       const {data,error}=await state.db.rpc('ia2ib_open');
@@ -304,7 +304,7 @@
       token.textContent = '🦖';
       token.title = 'Allosauro Dominante · Boss del Piano I-A';
       token.setAttribute('aria-label', token.title);
-      token.addEventListener('click', enterBossCombat);
+      token.addEventListener('click', () => tokenEncounter('boss'));
       combatLayer.appendChild(token);
       state.bossToken = token;
     }
@@ -359,7 +359,7 @@
         token.addEventListener('click', event => {
           event.preventDefault();
           event.stopPropagation();
-          enterRoomCombat(id);
+          tokenEncounter('combat',id);
         });
         combatLayer.appendChild(token);
         state.combatTokens.set(id, token);
@@ -411,8 +411,8 @@
       await refreshCombatSlots();
       return;
     }
-    if (currentRoomNumber() !== Number(slot.room_number)) {
-      toast(`Raggiungi la stanza ${slot.room_number} per affrontare questo incontro.`);
+    if (Math.abs(state.x-Number(slot.x))+Math.abs(state.y-Number(slot.y))>1) {
+      toast('Avvicinati al token del combattimento.');
       return;
     }
     state.combatBusy = true;
@@ -504,7 +504,7 @@
   }
 
   // Finestre del gioco: nessun alert/confirm nativo del browser.
-  function showPassageDialog({ title, message, confirm = false }) {
+  function showPassageDialog({ title, message, confirm = false, acceptLabel = null, cancelLabel = null, hideWarning = false }) {
     const modal = $('pia-passage-modal');
     const heading = $('pia-passage-title');
     const description = $('pia-passage-description');
@@ -516,10 +516,11 @@
 
     heading.textContent = title;
     description.textContent = message;
-    ok.textContent = confirm ? 'ATTRAVERSA' : 'CHIUDI';
+    ok.textContent = acceptLabel || (confirm ? 'ATTRAVERSA' : 'CHIUDI');
+    cancel.textContent = cancelLabel || 'VAI VIA';
     cancel.hidden = !confirm;
     const warning = $('pia-passage-warning');
-    if (warning) { warning.hidden = false; warning.textContent = confirm ? 'ATTENZIONE: da questo sentiero non è possibile tornare indietro.' : 'Il passaggio è chiuso da questo lato.'; }
+    if (warning) { warning.hidden = hideWarning; warning.textContent = confirm ? 'ATTENZIONE: da questo sentiero non è possibile tornare indietro.' : 'Il passaggio è chiuso da questo lato.'; }
     modal.hidden = false;
 
     return new Promise(resolve => {
@@ -558,9 +559,37 @@
     });
   }
 
+  app.addEventListener('pia-fruit-interact', event => tokenEncounter('fruit',event.detail));
+  async function tokenEncounter(kind, payload) {
+    if (movementBusy || !$('pia-passage-modal')?.hidden) return;
+    const options = {
+      guard: {title:'GUARDIE DEL VARCO',message:'Sembra che ci sia un varco in una parete rocciosa che permette di lasciare questa zona. Però pare sorvegliato',acceptLabel:'AVVICINATI',cancelLabel:'VAI VIA'},
+      fruit: {title:'FRUTTO CARNOSO',message:'Hai trovato un frutto particolarmente carnoso',acceptLabel:'RACCOGLI',cancelLabel:'VAI VIA'},
+      combat: {title:'INCONTRO NELLA GIUNGLA',message:'La giungla è un luogo pericoloso e le creature che lo abitano ti vogliono morto',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'},
+      boss: {title:'!!BOSS FIGHT!!',message:'Un gigantesco e arrabbiato Allosauro blocca strada per raggiungere la radura dell’accampamento',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'}
+    };
+    const choice = await showPassageDialog({...options[kind],confirm:true,hideWarning:true});
+    if (!choice) return;
+    if (kind==='guard') return enterGuardEvent();
+    if (kind==='boss') return enterBossCombat();
+    if (kind==='combat') return enterRoomCombat(payload);
+    if (kind==='fruit') return window.piaFruitCollect?.(payload);
+  }
+
   async function move(dx, dy) {
     if (!state.ready || camp.modalOpen || movementBusy || !$('pia-passage-modal')?.hidden || state.x === null || !state.db) return;
     const x = state.x + dx, y = state.y + dy;
+    // Le caselle occupate dai token non sono attraversabili.
+    if (x===0 && y===67) { await tokenEncounter('guard'); return; }
+    if (x===27 && y===32 && (state.bossState?.available || state.bossState?.in_combat)) {
+      await tokenEncounter('boss'); return;
+    }
+    const fruit = window.piaFruitAt?.(x,y);
+    if (fruit) { await tokenEncounter('fruit',fruit.id); return; }
+    const encounter = [...state.combatSlots.values()].find(slot =>
+      ['active','engaged'].includes(slot.status) && Number(slot.x)===x && Number(slot.y)===y);
+    if (encounter) { await tokenEncounter('combat',encounter.encounter_id); return; }
+
     const passageBlocked = x === 26 && y === 35 && state.y === 35 && state.x === 25;
     const oneWay = x === 26 && y === 35 && state.y === 35 && state.x === 27;
     if (!passageBlocked && !oneWay && !walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
@@ -1087,8 +1116,9 @@
       Object.assign(el.style,{
         position:'absolute',left:((c.x+.5)/COLS*100)+'%',top:((c.y+.5)/ROWS*100)+'%',
         transform:'translate(-50%,-50%)',color:'#ffcd43',fontSize:'clamp(8px, 1.3vw, 20px)',
-        textShadow:'0 0 3px #000, 0 0 5px #000',pointerEvents:'none'
+        textShadow:'0 0 3px #000, 0 0 5px #000',pointerEvents:'auto',cursor:'pointer'
       });
+      el.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();const p=pos();if(!p||Math.abs(p.x-c.x)+Math.abs(p.y-c.y)>1){notify('Avvicinati al frutto.');return;}root.dispatchEvent(new CustomEvent('pia-fruit-interact',{detail:c.id}));});
       layer.appendChild(el);
     });
   }
@@ -1101,10 +1131,10 @@
     render();
     notify(`Forzieri: ${chests.filter(c=>c.available).length}/12 disponibili • cooldown 5 min`);
   }
-  async function collect() {
+  async function collect(chestId = null) {
     if(busy) return;
     const p=pos(); if(!p) return;
-    const chest=chests.find(c=>c.available&&c.x===p.x&&c.y===p.y);
+    const chest=chests.find(c=>c.available && (chestId===null ? (c.x===p.x&&c.y===p.y) : c.id===chestId) && Math.abs(c.x-p.x)+Math.abs(c.y-p.y)<=1);
     if(!chest) return;
     busy=true;
     try {
@@ -1115,8 +1145,8 @@
     } finally {busy=false;}
   }
   // Il prototipo conserva le coordinate localmente: leggiamo quelle mostrate sulla mappa.
-  const coords=$('player-coordinates');
-  if(coords){new MutationObserver(()=>{collect();}).observe(coords,{childList:true,characterData:true,subtree:true});}
+  window.piaFruitAt=(x,y)=>chests.find(c=>c.available&&Number(c.x)===x&&Number(c.y)===y)||null;
+  window.piaFruitCollect=collect;
   // Poll leggero condiviso; il DB rigenera soltanto se il timer è scaduto.
   setInterval(refresh,10000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
