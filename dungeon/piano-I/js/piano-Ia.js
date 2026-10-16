@@ -563,7 +563,7 @@
   async function tokenEncounter(kind, payload) {
     if (movementBusy || !$('pia-passage-modal')?.hidden) return;
     const options = {
-      guard: {title:'GUARDIE DEL VARCO',message:'Sembra che ci sia un varco in una parete rocciosa che permette di lasciare questa zona. Però pare sorvegliato',acceptLabel:'AVVICINATI',cancelLabel:'VAI VIA'},
+      guard: {title:'GUARDIE DEL VARCO',message:'Tra la fitta vegetazione scorgi un varco nella parete rocciosa. Quattro imponenti lucertoloidi ne sorvegliano l'ingresso, scrutando con aria minacciosa chiunque osi avvicinarsi.',acceptLabel:'AVVICINATI',cancelLabel:'VAI VIA'},
       fruit: {title:'FRUTTO CARNOSO',message:'Hai trovato un frutto particolarmente carnoso',acceptLabel:'RACCOGLI',cancelLabel:'VAI VIA'},
       combat: {title:'INCONTRO NELLA GIUNGLA',message:'La giungla è un luogo pericoloso e le creature che lo abitano ti vogliono morto',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'},
       boss: {title:'!!BOSS FIGHT!!',message:'Un gigantesco e arrabbiato Allosauro blocca strada per raggiungere la radura dell’accampamento',acceptLabel:'COMBATTI',cancelLabel:'VAI VIA'}
