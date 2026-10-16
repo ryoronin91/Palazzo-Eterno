@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#07140d">
   <title>Palazzo Eterno — Piano I · Giungla Preistorica</title>
   <link rel="stylesheet" href="../../css/style.css">
-  <link rel="stylesheet" href="css/piano-Ia.css?v=6">
+  <link rel="stylesheet" href="css/piano-Ia.css?v=7">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/config.js?v=10"></script>
-  <script src="js/piano-Ia.js?v=18" defer></script>
+  <script src="js/piano-Ia.js?v=22" defer></script>
 
   <style>
     /* Test mosaico 3x3 per verifica allineamento */
@@ -166,23 +166,35 @@
     </div>
 
 
-<div id="p1-camp-overlay" class="combat-event-overlay pia-passage-modal" hidden>
-  <section class="combat-event-modal p1-camp-modal" role="dialog" aria-modal="true" aria-labelledby="p1-camp-title">
-    <div class="combat-event-icon">🏕️</div>
-    <h2 id="p1-camp-title">ACCAMPAMENTO</h2>
-    <p id="p1-camp-state-label">CARICAMENTO...</p>
-    <div id="p1-camp-fuel" class="combat-event-warning">Caricamento risorse...</div>
-    <div id="p1-camp-rows"></div>
-    <div id="p1-camp-quantity-panel" hidden>
-      <label id="p1-camp-quantity-label" for="p1-camp-quantity">Quantità</label>
-      <input type="number" id="p1-camp-quantity" min="1" max="20" step="1" value="1">
-      <button type="button" id="p1-camp-quantity-confirm" class="combat-event-button combat-event-enter">CONFERMA CONTRIBUTO</button>
+<div id="p1-camp-overlay" class="base-service-overlay" hidden>
+  <section class="base-service-modal p1-camp-modal" role="dialog" aria-modal="true" aria-labelledby="p1-camp-title">
+    <button type="button" id="p1-camp-close" class="base-service-close" aria-label="Chiudi">×</button>
+    <header class="base-service-header">
+      <span class="base-service-eyebrow">PIANO I-A · RADURA</span>
+      <h2 id="p1-camp-title">ACCAMPAMENTO</h2>
+    </header>
+    <div class="base-service-content">
+      <p class="base-service-description">Costruisci un rifugio, alimenta il fuoco e prepara il Lautopasto.</p>
+      <div id="p1-camp-state-label" class="base-service-status base-service-status-unbuilt">CARICAMENTO...</div>
+      <p id="p1-camp-fuel" class="base-service-reserve">Caricamento risorse...</p>
+      <h3 id="p1-camp-requirements-title">MATERIALI NECESSARI</h3>
+      <div id="p1-camp-rows" class="base-service-requirements"></div>
+      <div id="p1-camp-quantity-panel" class="base-service-maintenance-box" hidden>
+        <label id="p1-camp-quantity-label" for="p1-camp-quantity">Quantità</label>
+        <input type="number" id="p1-camp-quantity" class="base-service-quantity" min="1" max="20" step="1" value="1">
+        <button type="button" id="p1-camp-quantity-confirm" class="base-service-contribute">CONFERMA CONTRIBUTO</button>
+      </div>
+      <div id="p1-camp-recipe" class="base-service-maintenance-box" hidden>
+        <h3>CUCINA · LAUTOPASTO</h3>
+        <p class="base-service-note">4 Cosce di uccello stigio · 6 Foglie Nutrienti · 3 Funghetti</p>
+        <button type="button" id="p1-camp-cook" class="base-service-contribute">CUOCI LAUTOPASTO</button>
+      </div>
+      <div id="p1-camp-refuel" class="base-service-maintenance-box" hidden>
+        <h3>MANTENIMENTO DEL FUOCO</h3>
+        <p class="base-service-note">1 Legname ogni 3 minuti. A zero il campo dovrà essere ricostruito.</p>
+        <button type="button" id="p1-camp-fuel-button" class="base-service-contribute">AGGIUNGI LEGNAME</button>
+      </div>
     </div>
-    <div id="p1-camp-recipe" hidden><p>LAUTOPASTO: 4 Cosce di uccello stigio, 6 Foglie Nutrienti, 3 Funghetti.</p>
-      <button type="button" id="p1-camp-cook" class="combat-event-button combat-event-enter">CUOCI LAUTOPASTO</button>
-    </div>
-    <div id="p1-camp-refuel" hidden><button type="button" id="p1-camp-fuel-button" class="combat-event-button combat-event-enter">AGGIUNGI LEGNAME</button></div>
-    <div class="combat-event-buttons"><button type="button" id="p1-camp-close" class="combat-event-button combat-event-cancel">CHIUDI</button></div>
   </section>
 </div>
 <button id="p1-camp-open" type="button" hidden>🏕️ ACCAMPAMENTO</button>

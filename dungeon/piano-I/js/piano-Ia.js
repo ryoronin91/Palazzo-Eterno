@@ -887,19 +887,29 @@
   function renderCampModal() {
     if (!campOverlay || !camp.data) return;
     const d=camp.data;
-    const statusText=d.active?'FUOCO ACCESO':'ACCAMPAMENTO DA COSTRUIRE';
-    $('p1-camp-state-label').textContent=statusText;
-    $('p1-camp-fuel').textContent=d.built?`${d.fuel}/20 Legname · ${d.fuel*3} minuti nominali residui`:'Attendere il completamento dei contributi';
-    const recipe=$('p1-camp-recipe');recipe.hidden=!d.built;
-    const addFuel=$('p1-camp-refuel');addFuel.hidden=!d.active;
+    const status=$('p1-camp-state-label');
+    status.textContent=d.active?'ATTIVO · FUOCO ACCESO':'NON COSTRUITO';
+    status.className='base-service-status '+(d.active?'base-service-status-active':'base-service-status-unbuilt');
+    $('p1-camp-fuel').textContent=d.built?`Riserva: ${d.fuel}/20 Legname · circa ${d.fuel*3} minuti`:'Contribuisci ai materiali per accendere il campo.';
+    $('p1-camp-recipe').hidden=!d.active;
+    $('p1-camp-refuel').hidden=!d.active;
+    $('p1-camp-requirements-title').hidden=!!d.built;
     campRows.replaceChildren();
     if (!d.built) for(const r of (d.requirements||[])) {
-      const row=document.createElement('div');row.className='p1-camp-row';
-      const label=document.createElement('span');label.textContent=`${r.name}: ${r.contributed}/${r.needed}`;
-      const button=document.createElement('button');button.type='button';button.className='combat-event-button combat-event-enter';button.textContent='VERSA';
-      button.disabled=camp.busy||Number(r.contributed)>=Number(r.needed);
-      button.addEventListener('click',()=>campContribute(r.item_id,Math.max(1,Number(r.needed)-Number(r.contributed)),'construction'));
-      row.append(label,button);campRows.appendChild(row);
+      const total=Math.max(1,Number(r.needed)||1);
+      const contributed=Math.max(0,Number(r.contributed)||0);
+      const remaining=Math.max(0,total-contributed);
+      const card=document.createElement('div');card.className='base-service-requirement'+(remaining===0?' is-complete':'');
+      const head=document.createElement('div');head.className='base-service-requirement-head';
+      const title=document.createElement('strong');title.textContent=r.name||r.item_id;
+      const count=document.createElement('span');count.textContent=`${contributed}/${total}`;
+      head.append(title,count);
+      const progress=document.createElement('div');progress.className='base-service-progress';
+      const fill=document.createElement('span');fill.style.width=`${Math.min(100,contributed/total*100)}%`;progress.appendChild(fill);
+      const button=document.createElement('button');button.type='button';button.className='base-service-contribute';button.textContent=remaining?'CONTRIBUISCI':'COMPLETATO';
+      button.disabled=camp.busy||remaining===0;
+      button.addEventListener('click',()=>campContribute(r.item_id,remaining,'construction'));
+      card.append(head,progress,button);campRows.appendChild(card);
     }
     $('p1-camp-cook').disabled=camp.busy||!d.active;
     $('p1-camp-fuel-button').disabled=camp.busy||!d.active||d.fuel>=20;

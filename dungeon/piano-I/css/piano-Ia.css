@@ -157,3 +157,37 @@ a{color:inherit;text-decoration:none}
 
 #p1-camp-open[hidden]{display:none!important}
 #p1-camp-open{position:fixed;bottom:22px;right:22px;z-index:8000;padding:12px 18px;background:linear-gradient(#35583b,#173021);border:1px solid #b09a61;border-radius:8px;color:#f0dfb0;box-shadow:0 5px 20px #000a;font-weight:700}
+
+/* ACCAMPAMENTO · layout dei vendor della Base, palette Piano I-A */
+body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
+#p1-camp-overlay[hidden],#p1-camp-overlay [hidden]{display:none!important}
+#p1-camp-overlay.base-service-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box;background:rgba(0,12,5,.76);backdrop-filter:blur(3px)}
+#p1-camp-overlay .base-service-modal{position:relative;width:min(500px,calc(100vw - 40px));max-height:calc(100vh - 60px);overflow-x:hidden;overflow-y:auto;padding:20px;box-sizing:border-box;border:1px solid rgba(131,170,112,.65);border-radius:10px;background:linear-gradient(180deg,rgba(27,48,34,.98),rgba(10,22,14,.99));box-shadow:0 24px 70px rgba(0,0,0,.7),inset 0 0 35px rgba(116,170,118,.06);color:#eee9d7;text-align:left}
+#p1-camp-overlay .base-service-content{overflow:visible}
+#p1-camp-overlay .base-service-close{position:absolute;top:10px;right:12px;width:36px;height:36px;border:0;background:transparent;color:#d8bc78;font-size:28px;line-height:1;cursor:pointer;z-index:2}
+#p1-camp-overlay .base-service-header{padding:0 28px;margin-bottom:12px;text-align:center}
+#p1-camp-overlay .base-service-eyebrow{display:block;margin-bottom:5px;color:#98ad96;font-size:11px;font-weight:700;letter-spacing:.15em;text-align:center}
+#p1-camp-overlay .base-service-header h2{margin:0;color:#e2c98c;font-size:clamp(24px,4vw,32px);text-align:center}
+#p1-camp-overlay .base-service-description{margin:12px 0 14px;color:#eee9d7;font-size:14px;line-height:1.5;text-align:center}
+#p1-camp-overlay .base-service-content h3{margin:12px 0 10px;color:#d8bc78;font-size:16px;text-align:center}
+#p1-camp-overlay .base-service-note{margin:10px 0 0;color:#b5c9af;font-size:12px;line-height:1.45;text-align:center}
+#p1-camp-overlay .base-service-status{display:table;min-height:28px;margin:0 auto 12px;padding:5px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;text-align:center}
+#p1-camp-overlay .base-service-status-unbuilt{background:rgba(74,106,67,.32)}
+#p1-camp-overlay .base-service-status-active{background:rgba(79,132,80,.28)}
+#p1-camp-overlay .base-service-reserve{margin:0 0 14px;color:#bed0ad;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-requirements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#p1-camp-overlay .base-service-requirement{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid rgba(143,183,126,.28);border-radius:8px;background:rgba(255,255,255,.025)}
+#p1-camp-overlay .base-service-requirement.is-complete{opacity:.75}
+#p1-camp-overlay .base-service-requirement-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin-bottom:2px}
+#p1-camp-overlay .base-service-requirement-head strong{min-width:0;color:#eee9d7;font-size:13px;line-height:1.2}
+#p1-camp-overlay .base-service-requirement-head span{flex-shrink:0;color:#d8bc78;font-size:12px;font-variant-numeric:tabular-nums}
+#p1-camp-overlay .base-service-progress{height:7px;overflow:hidden;margin-bottom:3px;border-radius:999px;background:rgba(255,255,255,.08)}
+#p1-camp-overlay .base-service-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#416d43,#88b986);transition:width .18s ease}
+#p1-camp-overlay .base-service-quantity{width:100%;min-width:0;padding:9px 10px;border:1px solid rgba(131,170,112,.4);border-radius:6px;outline:none;background:rgba(0,0,0,.32);color:#eee9d7;font:inherit;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-quantity:focus{border-color:#88b986}
+#p1-camp-overlay .base-service-contribute{width:100%;min-width:0;padding:9px 8px;border:1px solid rgba(131,170,112,.58);border-radius:6px;background:rgba(48,96,56,.46);color:#f0e8ce;font:inherit;font-size:13px;font-weight:800;letter-spacing:.03em;white-space:normal;text-align:center;cursor:pointer}
+#p1-camp-overlay .base-service-contribute:hover{background:rgba(65,121,69,.62)}
+#p1-camp-overlay .base-service-contribute:disabled{opacity:.5;cursor:not-allowed}
+#p1-camp-overlay .base-service-maintenance-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:12px;border:1px solid rgba(131,170,112,.25);border-radius:8px}
+#p1-camp-overlay .base-service-maintenance-box label{color:#b5c9af;font-size:12px;text-align:center}
+@media(max-width:440px){#p1-camp-overlay .base-service-requirements{grid-template-columns:1fr}}
