@@ -1046,6 +1046,48 @@ async function runEnemyAI(
 
     try {
 
+        // Allosauro Dominante: l'intero turno è atomico lato database.
+        if (monsterType === 'allosauro_dominante') {
+            const { data, error } = await db.rpc('p1_run_allosauro_turn', {
+                p_combat_id: combatId
+            });
+            if (error) throw error;
+            if (data?.executed) {
+                const stage = data.aggressive ? 'AGGRESSIVO' : 'TERRITORIALE';
+                addCombatLog(`Allosauro Dominante · ${stage} · bersaglio: ${data.target_name || 'nessuno'}`);
+                for (const action of data.actions || []) {
+                    if (action?.executed === false) continue;
+                    const type = action.type || 'azione';
+                    if (type === 'melee') {
+                        addCombatLog(`Allosauro attacca ${action.target_name}: ${action.hit ? `${action.damage} danni` : 'MANCATO'}.`);
+                    } else if (type === 'repulsione') {
+                        addCombatLog(`Allosauro usa Repulsione su ${action.target_name}${action.moved ? ': bersaglio respinto.' : ': movimento bloccato.'}`);
+                    } else if (type === 'sanguinamento') {
+                        addCombatLog(`Allosauro applica Sanguinamento su ${action.target_name}.`);
+                    } else if (type === 'arma_potenziata') {
+                        addCombatLog('Allosauro usa Arma Potenziata!');
+                    }
+                }
+            }
+            await loadCombatSession();
+            await Promise.all([loadCombatEntities(),loadCombatEffects()]);
+            lastCombatEntitiesSnapshot = createCombatSnapshot();
+            renderCombat();
+            if (combatSession?.status === 'active') {
+                const {error: finishError} = await db.rpc('finish_enemy_turn', {
+                    p_combat_id:combatId,
+                    p_enemy_entity_id:currentEntity.id,
+                    p_round_number:Number(combatSession.round_number)
+                });
+                if (finishError) throw finishError;
+                await loadCombatSession();
+                await loadCombatEntities();
+                lastCombatEntitiesSnapshot = createCombatSnapshot();
+                renderCombat();
+            }
+            return;
+        }
+
         // ====================================================
         // BERSERK DI PUZZACINTA — IA TATTICA SERVER-SIDE
         // ====================================================

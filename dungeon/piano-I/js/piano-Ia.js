@@ -20,7 +20,7 @@
     messageTimeout: null, music: null,
     ready: false, equipmentBonuses: {},
     combatSlots: new Map(), combatTokens: new Map(), combatBusy: false,
-    combatRefreshBusy: false
+    combatRefreshBusy: false, bossState: null, bossToken: null, bossBusy: false
   };
 
   const viewport = $('map-viewport');
@@ -265,6 +265,56 @@
     token.style.fontSize = `${Math.max(9, Math.min(21, diameter * 0.57))}px`;
   }
 
+  // Allosauro Dominante: stato e disponibilità condivisi lato Supabase.
+  function renderBossToken() {
+    if (!combatLayer || !state.cellPx) return;
+    const visible = state.bossState?.available === true || state.bossState?.in_combat === true;
+    if (!visible) {
+      state.bossToken?.remove(); state.bossToken = null;
+      return;
+    }
+    if (!state.bossToken) {
+      const token = document.createElement('button');
+      token.type = 'button';
+      token.className = 'p1-combat-token p1-boss-token';
+      token.textContent = '🦖';
+      token.title = 'Allosauro Dominante · Boss del Piano I-A';
+      token.setAttribute('aria-label', token.title);
+      token.addEventListener('click', enterBossCombat);
+      combatLayer.appendChild(token);
+      state.bossToken = token;
+    }
+    state.bossToken.title = state.bossState?.in_combat ? 'Allosauro Dominante · Combattimento in corso' : 'Allosauro Dominante · Affronta il boss';
+    combatTokenPosition(state.bossToken, 27, 32);
+  }
+
+  async function refreshBossState() {
+    if (!state.db || !state.ready || document.hidden) return;
+    try {
+      const {data, error} = await state.db.rpc('p1_get_allosauro_state');
+      if (error) throw error;
+      state.bossState = data;
+      renderBossToken();
+    } catch (error) { console.warn('Stato Allosauro non disponibile:', error); }
+  }
+
+  async function enterBossCombat() {
+    if (state.combatBusy || state.bossBusy || !state.ready) return;
+    if (Math.max(Math.abs(state.x - 27), Math.abs(state.y - 32)) > 1) {
+      toast('Avvicinati all’Allosauro per affrontarlo.'); return;
+    }
+    state.bossBusy = true;
+    try {
+      const {data,error} = await state.db.rpc('p1_enter_allosauro_combat');
+      if (error) throw error;
+      if (!data) throw new Error('Sessione non disponibile');
+      window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(data)}`);
+    } catch(error) {
+      toast('Allosauro: ' + (error.message || error));
+      await refreshBossState();
+    } finally { state.bossBusy = false; }
+  }
+
   function renderCombatTokens() {
     if (!combatLayer) return;
     const visibleIds = new Set();
@@ -360,10 +410,12 @@
 
   function startCombatRefresh() {
     refreshCombatSlots();
+    refreshBossState();
     // Un'unica richiesta ogni 15 secondi, soltanto quando la pagina è visibile.
     setInterval(refreshCombatSlots, 15000);
+    setInterval(refreshBossState, 15000);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshCombatSlots();
+      if (!document.hidden) { refreshCombatSlots(); refreshBossState(); }
     });
   }
 
@@ -382,6 +434,7 @@
     layer.style.setProperty('--cell', `${px}px`);
     renderTokens();
     renderCombatTokens();
+    renderBossToken();
     centerCamera(instant);
   }
 
@@ -429,10 +482,17 @@
   async function move(dx, dy) {
     if (!state.ready || movementBusy || state.x === null || !state.db) return;
     const x = state.x + dx, y = state.y + dy;
-    if (!walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
+    if (x === 26 && y === 35 && state.y === 35 && state.x === 25) {
+      window.alert('Il passaggio per la radura dell’accampamento è bloccato da questo lato.');
+      return;
+    }
+    const oneWay = x === 26 && y === 35 && state.y === 35 && state.x === 27;
+    if (oneWay && !window.confirm('Sembra che da qui si riesca a raggiungere X 25 · Y 35, ma non sarà possibile tornare indietro da questa strada. Vuoi procedere?')) return;
+    if (!oneWay && !walkable(x,y)) { toast('Il sentiero è bloccato.'); return; }
+    const destinationX = oneWay ? 25 : x;
     movementBusy = true;
     try {
-      const {data,error}=await state.db.rpc('piano_ia_move',{p_x:x,p_y:y});
+      const {data,error}=await state.db.rpc('piano_ia_move',{p_x:destinationX,p_y:y});
       if (error) throw error;
       state.x=Number(data.x);state.y=Number(data.y);
       positionToken(state.token,state.x,state.y);

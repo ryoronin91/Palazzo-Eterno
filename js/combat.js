@@ -701,7 +701,8 @@ document.addEventListener(
             startBackgroundMusic(
                 combatSession?.encounter_id ===
                     "combat_boss" ||
-                combatSession?.encounter_id === "combat_rare_puzzacinta"
+                combatSession?.encounter_id === "combat_rare_puzzacinta" ||
+                combatSession?.encounter_id === "p1_allosauro_dominante"
 
                     ? "music/boss.mp3"
 
