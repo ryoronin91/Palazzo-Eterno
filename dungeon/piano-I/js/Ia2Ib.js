@@ -18,7 +18,17 @@ bubble('player',msg);bubble('npc',data.reply);unlocked=!!data.food_unlocked;$('f
 }catch(err){feedback('Dialogo non riuscito: '+(err.message||err));}finally{setBusy(false);}});
 async function pass(method){if(busy)return;setBusy(true);try{const data=await rpc('ia2ib_pass',{p_id:id,p_method:method});if(!data.passed)throw Error('Passaggio negato');active=false;location.assign('piano-Ib.html');}catch(err){feedback(err.message||'Le guardie ti impediscono il passaggio');setBusy(false);}}
 $('food').addEventListener('click',()=>pass('food'));$('pass').addEventListener('click',()=>pass('pass'));
-$('attack').addEventListener('click',()=>feedback('Combattimento delle guardie in preparazione: le statistiche e l’arena devono ancora essere definite. Nessuna risorsa è stata consumata.'));
+$('attack').addEventListener('click',async()=>{
+  if(busy)return;
+  setBusy(true);
+  feedback('Le guardie estraggono le armi. Preparazione del combattimento…');
+  try {
+    const combatId=await rpc('ia2ib_attack',{p_id:id});
+    if(!combatId)throw Error('Sessione di combattimento non disponibile');
+    active=false; // Non eliminare l'istanza: serve a riconoscere la vittoria.
+    location.assign('../../combat.html?combat_id='+encodeURIComponent(combatId));
+  }catch(err){feedback('Impossibile iniziare lo scontro: '+(err.message||err));setBusy(false);}
+});
 if(!id||!db){feedback('Sessione non valida. Torna al Piano I-A.');setBusy(true);return;}
 refresh().catch(e=>{feedback('Sessione scaduta o non valida: '+e.message);setBusy(true);});
 window.addEventListener('pagehide',()=>{

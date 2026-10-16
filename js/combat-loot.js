@@ -1116,12 +1116,19 @@ function setupVictoryExitButton() {
             const isPianoIACombat =
                 String(combatSession?.encounter_id || "").startsWith("p1_");
 
+            const isGuardCombat =
+                String(combatSession?.encounter_id || "").startsWith("ia2ib_guard_");
+
             const returnPage =
-                baseCombatEncounterIds.has(combatSession?.encounter_id)
-                    ? "base/base.html"
-                    : isPianoIACombat
-                        ? "dungeon/piano-I/piano-Ia.html"
-                        : "dungeon/piano-1/dungeon.html";
+                isGuardCombat
+                    ? (combatSession?.status === "victory"
+                        ? "dungeon/piano-I/piano-Ib.html"
+                        : "dungeon/piano-I/piano-Ia.html")
+                    : baseCombatEncounterIds.has(combatSession?.encounter_id)
+                        ? "base/base.html"
+                        : isPianoIACombat
+                            ? "dungeon/piano-I/piano-Ia.html"
+                            : "dungeon/piano-1/dungeon.html";
 
             window.location.href =
                 returnPage;
