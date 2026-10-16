@@ -125,21 +125,146 @@ a{color:inherit;text-decoration:none}
 .p1-combat-status{font:700 .72rem 'Segoe UI',sans-serif;color:#dfc987;white-space:nowrap}
 
 
-/* PALAZZO ETERNO - POPUP RADURA
-   Riproduzione delle regole .combat-event-* di dungeon/piano-1/css/dungeon.css.
-   Non modifica i popup del Dungeon; applica lo stesso aspetto sul Piano I-A.
-*/
-.pia-passage-modal[hidden], .pia-passage-modal [hidden] { display: none !important; }
-.combat-event-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.78); }
-.combat-event-modal { width: min(430px,100%); padding: 28px; box-sizing: border-box; border: 1px solid #725831; border-radius: 12px; background: linear-gradient(180deg,#201812,#100d0a); box-shadow: 0 20px 60px rgba(0,0,0,.8); color: #eee1c7; text-align: center; }
-.combat-event-icon { margin-bottom: 10px; color: #c79b50; font-size: 42px; }
-.combat-event-modal h2 { margin: 0 0 14px; color: #e0bd7b; letter-spacing: 1.5px; }
-.combat-event-modal p { margin: 0 0 18px; color: #d2c5b0; line-height: 1.5; }
-.combat-event-warning { margin-bottom: 22px; padding: 14px; border: 1px solid #623c2b; border-radius: 8px; background: rgba(95,26,20,.2); color: #d7b0a4; font-size: 13px; line-height: 1.5; }
-.combat-event-buttons { display: grid; gap: 10px; }
-.combat-event-button { min-height: 44px; padding: 10px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-.combat-event-enter { border: 1px solid #885136; background: linear-gradient(180deg,#6d3423,#472116); color: #ffe4cf; }
-.combat-event-enter:hover { background: linear-gradient(180deg,#83422c,#552619); }
-.combat-event-cancel { border: 1px solid #66563c; background: linear-gradient(180deg,#352819,#241b12); color: #eeddb8; }
-.combat-event-cancel:hover { background: linear-gradient(180deg,#45341f,#2d2115); }
-.combat-event-button:focus-visible { outline: 2px solid #e0bd7b; outline-offset: 2px; }
+
+/* ============================================================
+   PALAZZO ETERNO - POPUP RADURA
+   Stile identico al Dungeon, colori del Piano I-A.
+   ============================================================ */
+
+.pia-passage-modal[hidden],
+.pia-passage-modal [hidden] {
+    display: none !important;
+}
+
+/* SFONDO OSCURATO */
+.combat-event-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 8, 3, 0.78);
+}
+
+/* FINESTRA PRINCIPALE */
+.combat-event-modal {
+    width: min(430px, 100%);
+    padding: 28px;
+    box-sizing: border-box;
+
+    border: 1px solid #536e49;
+    border-radius: 12px;
+
+    background: linear-gradient(
+        180deg,
+        #1b3022,
+        #0b170f
+    );
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+
+    color: #eee9d7;
+    text-align: center;
+}
+
+/* ICONA */
+.combat-event-icon {
+    margin-bottom: 10px;
+    color: #d8bc78;
+    font-size: 42px;
+}
+
+/* TITOLO */
+.combat-event-modal h2 {
+    margin: 0 0 14px;
+    color: #e2c98c;
+    letter-spacing: 1.5px;
+}
+
+/* DESCRIZIONE */
+.combat-event-modal p {
+    margin: 0 0 18px;
+    color: #c4d4bc;
+    line-height: 1.5;
+}
+
+/* RIQUADRO DEL MESSAGGIO */
+.combat-event-warning {
+    margin-bottom: 22px;
+    padding: 14px;
+
+    border: 1px solid #52734b;
+    border-radius: 8px;
+
+    background: rgba(48, 91, 54, 0.22);
+
+    color: #c4d4bc;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* CONTENITORE PULSANTI */
+.combat-event-buttons {
+    display: grid;
+    gap: 10px;
+}
+
+/* STILE BASE PULSANTI */
+.combat-event-button {
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* PULSANTE CONFERMA / ATTRAVERSA */
+.combat-event-enter {
+    border: 1px solid #83aa70;
+
+    background: linear-gradient(
+        180deg,
+        #416d43,
+        #29482c
+    );
+
+    color: #f2e8c9;
+}
+
+.combat-event-enter:hover {
+    background: linear-gradient(
+        180deg,
+        #518653,
+        #345c37
+    );
+}
+
+/* PULSANTE ANNULLA / INDIETRO */
+.combat-event-cancel {
+    border: 1px solid #536e49;
+
+    background: linear-gradient(
+        180deg,
+        #283d2c,
+        #18271c
+    );
+
+    color: #e6d8b2;
+}
+
+.combat-event-cancel:hover {
+    background: linear-gradient(
+        180deg,
+        #35543a,
+        #213626
+    );
+}
+
+/* ACCESSIBILITÀ TASTIERA */
+.combat-event-button:focus-visible {
+    outline: 2px solid #d8bc78;
+    outline-offset: 2px;
+}
+
