@@ -890,7 +890,7 @@
     const status=$('p1-camp-state-label');
     status.textContent=d.active?'ATTIVO · FUOCO ACCESO':'NON COSTRUITO';
     status.className='base-service-status '+(d.active?'base-service-status-active':'base-service-status-unbuilt');
-    $('p1-camp-fuel').textContent=d.built?`Riserva: ${d.fuel}/20 Legname · circa ${d.fuel*3} minuti`:'Contribuisci ai materiali per accendere il campo.';
+    $('p1-camp-fuel').textContent=d.built?`Riserva: ${d.fuel} Legname · circa ${d.fuel*3} minuti`:'Contribuisci ai materiali per accendere il campo.';
     $('p1-camp-recipe').hidden=!d.active;
     $('p1-camp-refuel').hidden=!d.active;
     $('p1-camp-requirements-title').hidden=!!d.built;
@@ -911,8 +911,8 @@
       button.addEventListener('click',()=>campContribute(r.item_id,remaining,'construction'));
       card.append(head,progress,button);campRows.appendChild(card);
     }
-    $('p1-camp-cook').disabled=camp.busy||!d.active;
-    $('p1-camp-fuel-button').disabled=camp.busy||!d.active||d.fuel>=20;
+    $('p1-camp-cook').disabled=camp.busy||!d.active||Number(d.fuel)<5;
+    $('p1-camp-fuel-button').disabled=camp.busy||!d.active;
   }
   async function campRefresh(showErrors=false) {
     if(!state.ready||!state.db) return;
@@ -932,7 +932,7 @@
   function campClose(){camp.modalOpen=false;campOverlay.hidden=true;viewport.focus({preventScroll:true});}
   async function campContribute(itemId,amount,purpose) {
     if(camp.busy)return;
-    const text=purpose==='fuel'?'Quanto Legname vuoi aggiungere (massimo fino a 20 nel fuoco)?':'Quante unità vuoi consegnare?';
+    const text=purpose==='fuel'?'Quanto Legname vuoi aggiungere alla riserva del campo?':'Quante unità vuoi consegnare?';
     // Input numerico nel popup: nessun prompt di sistema.
     const input=$('p1-camp-quantity');input.max=String(amount);input.min='1';input.value=String(amount);
     $('p1-camp-quantity-label').textContent=text;
@@ -953,11 +953,11 @@
   $('p1-camp-close')?.addEventListener('click',campClose);
   $('p1-camp-open')?.addEventListener('click',campOpen);
   campOverlay?.addEventListener('click',event=>{if(event.target===campOverlay)campClose();});
-  $('p1-camp-refuel')?.addEventListener('click',()=>campContribute('legname',Math.max(1,20-(camp.data?.fuel||0)),'fuel'));
+  $('p1-camp-refuel')?.addEventListener('click',()=>campContribute('legname',1000,'fuel'));
   $('p1-camp-cook')?.addEventListener('click',async()=>{
     if(camp.busy||!camp.data?.active)return;
     camp.busy=true;renderCampModal();
-    try{const {error}=await state.db.rpc('p1_camp_cook');if(error)throw error;toast('Lautopasto cucinato e aggiunto all’inventario');await campRefresh(true);}
+    try{const {error}=await state.db.rpc('p1_camp_cook');if(error)throw error;toast('Lautopasto cucinato: consumate 5 riserve di Legname');await campRefresh(true);}
     catch(e){toast(e.message||'Ingredienti insufficienti');}
     finally{camp.busy=false;renderCampModal();}
   });
