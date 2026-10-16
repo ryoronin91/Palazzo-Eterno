@@ -880,6 +880,7 @@ document.addEventListener(
 
 
             setupDungeonCamera();
+            await setupPiaZoomAndExploration();
 
 
 
@@ -3804,6 +3805,7 @@ function updateDungeonCamera(
 
     map.style.transform =
         `translate(${-cameraX}px, ${-cameraY}px)`;
+    if (piaFogReady) piaRenderFog();
 
 
 
@@ -4698,7 +4700,7 @@ async function performMovement(dx,dy) {
         const {data,error}=await db.rpc('piano_ia_move',{p_x:nx,p_y:ny});
         if(error) throw error;
         playerX=Number(data.x);playerY=Number(data.y);
-        showToken(playerX,playerY);updateDungeonCamera();
+        showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         setMessage(`Giungla Bassa - X ${playerX} Y ${playerY}`);
         return true;
@@ -14961,4 +14963,96 @@ async function useFruitConsumable() {
         fruitConsumableBusy = false;
         updateFruitConsumable();
     }
+}
+
+// ============================================================
+// PIANO IA — ZOOM E NEBBIA (la griglia e il layout restano invariati)
+// ============================================================
+let piaViewCells = 13;
+let piaFogReady = false;
+let piaMaster = false;
+let piaNoFog = false;
+let piaVisited = new Set();
+let piaFogElement = null;
+let piaLastFogPosition = '';
+
+function piaRevealAroundPlayer() {
+    if (!piaFogReady || playerX == null || playerY == null) return;
+    const mark = `${playerX},${playerY}`;
+    if (mark === piaLastFogPosition) return;
+    piaLastFogPosition = mark;
+    for (let y = Math.max(0, playerY - 6); y <= Math.min(MAP_ROWS - 1, playerY + 6); y++) {
+        for (let x = Math.max(0, playerX - 6); x <= Math.min(MAP_COLUMNS - 1, playerX + 6); x++) {
+            piaVisited.add(`${x},${y}`);
+        }
+    }
+    try {
+        localStorage.setItem(`palazzo:piano-Ia:fog:${character.id}`, JSON.stringify([...piaVisited]));
+    } catch (_) { /* Storage opzionale */ }
+}
+
+function piaRenderFog() {
+    if (!piaFogReady || !piaFogElement) return;
+    piaRevealAroundPlayer();
+    const ctx = piaFogElement.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, MAP_COLUMNS, MAP_ROWS);
+    if (piaMaster && piaNoFog) return;
+    for (let y = 0; y < MAP_ROWS; y++) {
+        for (let x = 0; x < MAP_COLUMNS; x++) {
+            const distance = Math.max(Math.abs(x - playerX), Math.abs(y - playerY));
+            if (distance <= 6) continue;
+            ctx.fillStyle = piaVisited.has(`${x},${y}`) ? 'rgba(3,13,6,0.64)' : 'rgba(2,9,4,0.97)';
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+}
+
+async function setupPiaZoomAndExploration() {
+    const map = document.getElementById('dungeon-map');
+    const toolbar = document.querySelector('.pia-map-toolbar');
+    if (!map || !toolbar) return;
+    const setZoom = value => {
+        piaViewCells = Math.max(5, Math.min(81, Math.round(value)));
+        map.style.setProperty('--pia-view-cells', String(piaViewCells));
+        map.style.setProperty('width', `${MAP_COLUMNS * 100 / piaViewCells}%`, 'important');
+        map.style.setProperty('height', `${MAP_ROWS * 100 / piaViewCells}%`, 'important');
+        const reset = document.getElementById('pia-zoom-reset');
+        if (reset) reset.title = `Visuale attuale: ${piaViewCells} caselle`;
+        updateDungeonCamera(true);
+        repositionAllTokens();
+    };
+    document.getElementById('pia-zoom-out').addEventListener('click', () => setZoom(piaViewCells + (piaViewCells < 20 ? 2 : 8)));
+    document.getElementById('pia-zoom-in').addEventListener('click', () => setZoom(piaViewCells - (piaViewCells <= 20 ? 2 : 8)));
+    document.getElementById('pia-zoom-reset').addEventListener('click', () => setZoom(13));
+    document.getElementById('pia-zoom-full').addEventListener('click', () => setZoom(81));
+
+    piaFogElement = document.createElement('canvas');
+    piaFogElement.id = 'pia-fog-overlay';
+    piaFogElement.width = MAP_COLUMNS;
+    piaFogElement.height = MAP_ROWS;
+    piaFogElement.setAttribute('aria-hidden', 'true');
+    map.appendChild(piaFogElement);
+    try {
+        const stored = JSON.parse(localStorage.getItem(`palazzo:piano-Ia:fog:${character.id}`) || '[]');
+        if (Array.isArray(stored)) piaVisited = new Set(stored.filter(v => typeof v === 'string'));
+    } catch (_) { piaVisited = new Set(); }
+    // I controlli Master vengono mostrati solo dopo verifica del ruolo sul server.
+    try {
+        if (currentUser?.id) {
+            const { data, error } = await db.from('user_roles').select('role').eq('user_id', currentUser.id).maybeSingle();
+            if (!error && data?.role === 'master') {
+                piaMaster = true;
+                document.getElementById('pia-master-exploration').hidden = false;
+                document.getElementById('pia-master-no-fog').addEventListener('change', e => {
+                    piaNoFog = e.target.checked === true;
+                    piaRenderFog();
+                });
+            }
+        }
+    } catch (error) { console.warn('Permessi esplorazione non disponibili:', error); }
+    piaFogReady = true;
+    piaRevealAroundPlayer();
+    setZoom(13);
+    piaRenderFog();
 }
