@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // DUNGEON.JS
 // VERSIONE NUOVA INTERFACCIA
@@ -881,6 +881,7 @@ document.addEventListener(
 
             setupDungeonCamera();
             await setupPiaZoomAndExploration();
+            piaCombatStart();
 
 
 
@@ -4693,6 +4694,7 @@ async function processMovementQueue() {
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    if(await piaCombatTryInteract(nx,ny)) return false;
     if(nx<0||ny<0||nx>=MAP_COLUMNS||ny>=MAP_ROWS||!canMoveTo(nx,ny)){
         setMessage('Il passaggio e` bloccato.');return false;
     }
@@ -4701,6 +4703,7 @@ async function performMovement(dx,dy) {
         if(error) throw error;
         playerX=Number(data.x);playerY=Number(data.y);
         showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
+        piaCombatMoved();
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         setMessage(`Giungla Bassa - X ${playerX} Y ${playerY}`);
         return true;
@@ -15021,6 +15024,7 @@ async function setupPiaZoomAndExploration() {
         if (reset) reset.title = `Visuale attuale: ${piaViewCells} caselle`;
         updateDungeonCamera(true);
         repositionAllTokens();
+        piaCombatRender();
     };
     document.getElementById('pia-zoom-out').addEventListener('click', () => setZoom(piaViewCells + (piaViewCells < 20 ? 2 : 8)));
     document.getElementById('pia-zoom-in').addEventListener('click', () => setZoom(piaViewCells - (piaViewCells <= 20 ? 2 : 8)));
@@ -15055,4 +15059,195 @@ async function setupPiaZoomAndExploration() {
     piaRevealAroundPlayer();
     setZoom(13);
     piaRenderFog();
+}
+
+
+
+// ============================================================
+// PIANO I-A — EVENTI E INCONTRI ROTANTI (compatibilità RPC preesistenti)
+// Modulo isolato: nessuna modifica alla logica del Piano 1.
+// ============================================================
+const piaCombat = {
+    slots: new Map(), tokens: new Map(), boss: null,
+    updating: false, entering: false, ready: false, timer: null,
+    stateKnown: false
+};
+const PIA_COMBAT_FAMILIES = Object.freeze({
+    uccello_parassita: ['🐦','Uccelli Parassita'],
+    piante_carnivore: ['🌿','Piante Carnivore'],
+    lucertoloidi: ['🦎','Pattuglie di Lucertoloidi'],
+    dinosauri: ['🦖','Dinosauri Selvaggi'],
+    miconidi: ['🍄','Miconidi Tossici']
+});
+
+function piaCombatDialog(title, description, actionLabel = 'COMBATTI') {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className='pia-encounter-overlay';
+        overlay.setAttribute('role','dialog');
+        overlay.setAttribute('aria-modal','true');
+        overlay.setAttribute('aria-label',title);
+        const card=document.createElement('section');card.className='pia-encounter-card';
+        const h=document.createElement('h2');h.textContent=title;
+        const p=document.createElement('p');p.textContent=description;
+        const controls=document.createElement('div');controls.className='pia-encounter-actions';
+        const cancel=document.createElement('button');cancel.type='button';cancel.textContent='VAI VIA';
+        const accept=document.createElement('button');accept.type='button';accept.textContent=actionLabel;
+        controls.append(cancel,accept);card.append(h,p,controls);overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        const oldFocus=document.activeElement;
+        const done = result => {
+            overlay.removeEventListener('click',backdrop);
+            document.removeEventListener('keydown',key,true);
+            overlay.remove();
+            if(oldFocus?.isConnected)oldFocus.focus({preventScroll:true});
+            resolve(result);
+        };
+        const backdrop = e => {if(e.target===overlay)done(false)};
+        const key=e=>{
+            if(e.key==='Escape'){e.preventDefault();e.stopPropagation();done(false)}
+            else if(e.key==='Tab'){e.preventDefault();(document.activeElement===cancel?accept:cancel).focus()}
+            else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopPropagation()}
+        };
+        cancel.addEventListener('click',()=>done(false));
+        accept.addEventListener('click',()=>done(true));
+        overlay.addEventListener('click',backdrop);
+        document.addEventListener('keydown',key,true);
+        cancel.focus({preventScroll:true});
+    });
+}
+function piaCombatNotice(message,error=false) {
+    if(typeof setMessage==='function')setMessage(message,error);
+}
+function piaCombatPoint(el,x,y) {
+    const map=document.getElementById('dungeon-map');
+    if(!map || !el)return;
+    // Relativi alla mappa intera, anche con zoom massimo o camera spostata.
+    el.style.left=((x+.5)/MAP_COLUMNS*100)+'%';
+    el.style.top=((y+.5)/MAP_ROWS*100)+'%';
+    el.style.width=(100/MAP_COLUMNS*1.5)+'%';
+    el.style.height=(100/MAP_ROWS*1.5)+'%';
+    el.style.fontSize=`clamp(11px, ${Math.max(11,Math.min(22,map.offsetWidth/MAP_COLUMNS*0.92))}px, 22px)`;
+}
+function piaCombatMakeToken(id,icon,cls,title,fn) {
+    let el=piaCombat.tokens.get(id);
+    if(!el) {
+        el=document.createElement('button');el.type='button';
+        el.className='pia-encounter-token '+cls;
+        el.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();fn()});
+        document.getElementById('dungeon-map')?.appendChild(el);
+        piaCombat.tokens.set(id,el);
+    }
+    el.textContent=icon;el.title=title;el.setAttribute('aria-label',title);
+    return el;
+}
+function piaCombatRender() {
+    if(!piaCombat.ready)return;
+    const active=new Set();
+    for(const slot of piaCombat.slots.values()) {
+        if(!['active','engaged'].includes(slot.status))continue;
+        const family=PIA_COMBAT_FAMILIES[slot.family];
+        const x=Number(slot.x),y=Number(slot.y),id=String(slot.encounter_id||'');
+        if(!family || !id || !Number.isInteger(x) || !Number.isInteger(y) ||x<0||x>=MAP_COLUMNS||y<0||y>=MAP_ROWS)continue;
+        const key='room:'+id;active.add(key);
+        const detail=`${family[1]} · ${slot.difficulty||'medio'} · stanza ${slot.room_number||'?'}${slot.status==='engaged'?' · combattimento in corso':''}`;
+        const el=piaCombatMakeToken(key,family[0],'pia-encounter-room',detail,()=>piaCombatRoom(id));
+        piaCombatPoint(el,x,y);
+    }
+    if(piaCombat.boss?.available===true||piaCombat.boss?.in_combat===true){
+        const key='boss';active.add(key);
+        const el=piaCombatMakeToken(key,'🦖','pia-encounter-boss','Allosauro Dominante · Boss · X 27 Y 32',piaCombatBoss);
+        piaCombatPoint(el,27,32);
+    }
+    const key='guard';active.add(key);
+    const guard=piaCombatMakeToken(key,'🛡️','pia-encounter-guard','Guardie del Varco · X 0 Y 67',piaCombatGuard);
+    piaCombatPoint(guard,0,67);
+    for(const [id,el] of piaCombat.tokens){if(!active.has(id)){el.remove();piaCombat.tokens.delete(id)}}
+    const counter=document.getElementById('pia-encounter-count');
+    if(counter)counter.textContent=`Incontri: ${piaCombat.slots.size}/20`;
+}
+async function piaCombatRefresh() {
+    if(piaCombat.updating || !piaCombat.ready || document.hidden || !db || !character)return;
+    piaCombat.updating=true;
+    try {
+        const [rooms,boss]=await Promise.allSettled([
+            db.rpc('p1_get_rotating_combats'),
+            db.rpc('p1_get_allosauro_state')
+        ]);
+        if(rooms.status==='fulfilled' && !rooms.value.error && Array.isArray(rooms.value.data)){
+            piaCombat.slots=new Map(rooms.value.data.map(s=>[String(s.encounter_id),s]));
+        }else console.warn('Incontri Piano Ia non disponibili',rooms);
+        if(boss.status==='fulfilled' && !boss.value.error){piaCombat.boss=boss.value.data;piaCombat.stateKnown=true;}
+        else console.warn('Stato boss Piano Ia non disponibile',boss);
+        piaCombatRender();
+    }finally {piaCombat.updating=false}
+}
+function piaCombatAdjacent(x,y,diagonal=false){
+    const dx=Math.abs(playerX-x),dy=Math.abs(playerY-y);
+    return diagonal?Math.max(dx,dy)<=1:dx+dy<=1;
+}
+async function piaCombatEnter(rpc,args,title) {
+    if(piaCombat.entering)return;
+    piaCombat.entering=true;
+    try {
+        const result=await db.rpc(rpc,args);
+        if(result.error)throw result.error;
+        if(!result.data)throw new Error('Nessuna sessione disponibile');
+        const id=typeof result.data==='string'?result.data:result.data.combat_id;
+        if(!id)throw new Error('Identificativo combattimento assente');
+        window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(id)}`);
+    }catch(error){
+        console.error(title,error);piaCombatNotice(title+': '+(error?.message||error),true);
+        await piaCombatRefresh();
+    }finally{piaCombat.entering=false}
+}
+async function piaCombatRoom(id) {
+    const slot=piaCombat.slots.get(String(id));
+    if(!slot||!['active','engaged'].includes(slot.status))return;
+    if(!piaCombatAdjacent(Number(slot.x),Number(slot.y))){piaCombatNotice('Avvicinati al combattimento.');return}
+    const family=PIA_COMBAT_FAMILIES[slot.family];
+    if(!await piaCombatDialog('INCONTRO NELLA GIUNGLA',`La giungla è pericolosa. ${family?.[1]||'Creature ostili'} ti sbarrano il cammino. Vuoi combattere?`))return;
+    await piaCombatEnter('p1_enter_room_combat',{p_encounter_id:id},'Ingresso nel combattimento');
+}
+async function piaCombatBoss() {
+    if(!piaCombatAdjacent(27,32,true)){piaCombatNotice('Avvicinati all’Allosauro.');return}
+    if(!piaCombat.boss?.available && !piaCombat.boss?.in_combat){piaCombatNotice('L’Allosauro non è disponibile.');return}
+    if(!await piaCombatDialog('!! BOSS FIGHT !!','Un gigantesco Allosauro Dominante blocca la strada verso la radura dell’accampamento. Vuoi affrontarlo?'))return;
+    await piaCombatEnter('p1_enter_allosauro_combat',{},'Allosauro Dominante');
+}
+async function piaCombatGuard() {
+    if(!piaCombatAdjacent(0,67)){piaCombatNotice('Avvicinati alle guardie.');return}
+    if(!await piaCombatDialog('GUARDIE DEL VARCO','Quattro lucertoloidi e un allosauro corazzato sorvegliano il passaggio verso il settore successivo.','AVVICINATI'))return;
+    if(piaCombat.entering)return;
+    piaCombat.entering=true;
+    try {
+        const {data,error}=await db.rpc('ia2ib_open');
+        if(error)throw error;
+        if(!data?.id)throw new Error('Varco non disponibile');
+        window.location.assign('Ia2Ib.html?id='+encodeURIComponent(data.id));
+    }catch(error){piaCombatNotice('Guardie: '+(error?.message||error),true)}
+    finally{piaCombat.entering=false}
+}
+async function piaCombatTryInteract(x,y) {
+    // Previene di occupare una casella già impegnata da un combattimento.
+    if(!piaCombat.ready ||piaCombat.entering)return false;
+    if(x===0&&y===67){await piaCombatGuard();return true}
+    if(x===27&&y===32&&(piaCombat.boss?.available||piaCombat.boss?.in_combat)){
+        await piaCombatBoss();return true;
+    }
+    for(const slot of piaCombat.slots.values()){
+        if(['active','engaged'].includes(slot.status)&&Number(slot.x)===x&&Number(slot.y)===y){
+            await piaCombatRoom(String(slot.encounter_id));return true;
+        }
+    }
+    return false;
+}
+function piaCombatMoved(){/* La prossimità viene verificata dal server e all'interazione. */}
+function piaCombatStart() {
+    if(piaCombat.ready)return;
+    piaCombat.ready=true;
+    piaCombatRefresh();
+    piaCombat.timer=setInterval(piaCombatRefresh,15000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)piaCombatRefresh()});
+    window.addEventListener('resize',piaCombatRender,{passive:true});
 }
