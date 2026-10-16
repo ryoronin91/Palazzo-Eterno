@@ -12020,6 +12020,7 @@ function updateFogOfWar() {
 
 
     renderFogOfWar();
+    if (fogCanvas) fogCanvas.style.display = peMasterExploreActive ? "none" : "";
 
 
     updateRemoteTokensVisibility();
@@ -15824,3 +15825,52 @@ async function useFruitConsumable() {
         updateFruitConsumable();
     }
 }
+// Zoom mappa: variabile soltanto grafica, non cambia coordinate e RPC.
+let peCameraCells = 13;
+function peSetCameraCells(value) {
+    peCameraCells = Math.max(7, Math.min(23, Math.round(value)));
+    const map = document.getElementById('dungeon-map');
+    const frame = document.querySelector('.dungeon-map-frame');
+    if (!map || !frame) return;
+    map.style.setProperty('--pe-camera-cells', String(peCameraCells));
+    const full = peCameraCells === 23;
+    const reset = document.getElementById('pe-zoom-reset');
+    if (reset) reset.textContent = `${peCameraCells} × ${peCameraCells}`;
+    const step = document.getElementById('pe-zoom-full');
+    if (step) step.setAttribute('aria-pressed', String(full));
+    updateDungeonCamera(true);
+    updateFogOfWar()
+}
+function peSetupZoom() {
+    document.getElementById('pe-zoom-in')?.addEventListener('click', () => peSetCameraCells(peCameraCells - 2));
+    document.getElementById('pe-zoom-out')?.addEventListener('click', () => peSetCameraCells(peCameraCells + 2));
+    document.getElementById('pe-zoom-reset')?.addEventListener('click', () => peSetCameraCells(13));
+    document.getElementById('pe-zoom-full')?.addEventListener('click', () => peSetCameraCells(23));
+    peSetCameraCells(13);
+}
+document.addEventListener('DOMContentLoaded', () => {
+    requestAnimationFrame(peSetupZoom);
+});
+
+// Il controllo e' solo client-side: la nebbia originale continua a essere registrata.
+// Il ruolo e' letto dalla tabella Supabase, mai dedotto dalla UI.
+let peMasterExploreActive = false;
+async function peSetupMasterExplore() {
+    const wrap = document.getElementById('pe-master-explore-wrap');
+    const checkbox = document.getElementById('pe-master-explore');
+    if (!wrap || !checkbox) return;
+    try {
+        const { data: authData, error: authError } = await db.auth.getUser();
+        if (authError || !authData?.user?.id) return;
+        const { data, error } = await db.from('user_roles')
+            .select('role').eq('user_id', authData.user.id).maybeSingle();
+        if (error || data?.role !== 'master') return;
+        wrap.hidden = false;
+        checkbox.addEventListener('change', () => {
+            peMasterExploreActive = checkbox.checked;
+            if (fogCanvas) fogCanvas.style.display = peMasterExploreActive ? 'none' : '';
+            if (!peMasterExploreActive) updateFogOfWar();
+        });
+    } catch (error) { console.warn('Permessi master non disponibili', error); }
+}
+document.addEventListener('DOMContentLoaded', peSetupMasterExplore);
