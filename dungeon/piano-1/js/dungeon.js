@@ -4104,123 +4104,14 @@ function showToken(
 // ============================================================
 
 
-function positionTokenElement(
-    element,
-    x,
-    y
-) {
-
-
-    const map =
-        document.getElementById(
-            "dungeon-map"
-        );
-
-
-
-
-    if (
-        !map ||
-        !element
-    ) {
-
-
-        return;
-
-
-    }
-
-
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-
-
-    if (
-        rect.width <= 0 ||
-        rect.height <= 0
-    ) {
-
-
-        return;
-
-
-    }
-
-
-
-
-    const cellWidth =
-        rect.width /
-        MAP_COLUMNS;
-
-
-
-
-    const cellHeight =
-        rect.height /
-        MAP_ROWS;
-
-
-
-
-    // Il token occupa il 90% della casella.
-    // È totalmente indipendente dal ritratto laterale.
-
-
-    const tokenSize =
-        Math.min(
-            cellWidth,
-            cellHeight
-        ) *
-        0.90;
-
-
-
-
-    element.style.width =
-        `${tokenSize}px`;
-
-
-
-
-    element.style.height =
-        `${tokenSize}px`;
-
-
-
-
-    element.style.left =
-        `${
-            (
-                Number(x) +
-                0.5
-            )
-            *
-            cellWidth
-            -
-            tokenSize / 2
-        }px`;
-
-
-
-
-    element.style.top =
-        `${
-            (
-                Number(y) +
-                0.5
-            )
-            *
-            cellHeight
-            -
-            tokenSize / 2
-        }px`;
-
-
+function positionTokenElement(element, x, y) {
+    if (!element) return;
+    // Coordinate percentuali: il token scala insieme alla mappa senza attendere
+    // il successivo movimento, refresh realtime o ridisegno dei pixel.
+    element.style.width = `${90 / MAP_COLUMNS}%`;
+    element.style.height = `${90 / MAP_ROWS}%`;
+    element.style.left = `${(Number(x) + 0.05) * 100 / MAP_COLUMNS}%`;
+    element.style.top = `${(Number(y) + 0.05) * 100 / MAP_ROWS}%`;
 }
 
 

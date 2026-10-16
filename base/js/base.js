@@ -2179,79 +2179,12 @@ async function initializeBasePlayer() {
 
 
 function positionBasePlayerToken() {
-    const map =
-        document.getElementById("dungeon-map");
-
-
-    if (
-        !map ||
-        !basePlayerToken
-    ) {
-        return;
-    }
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-    if (
-        rect.width <= 0 ||
-        rect.height <= 0
-    ) {
-        return;
-    }
-
-
-    const cellWidth =
-        rect.width /
-        BASE_MAP_COLUMNS;
-
-
-    const cellHeight =
-        rect.height /
-        BASE_MAP_ROWS;
-
-
-    const tokenSize =
-        Math.min(
-            cellWidth,
-            cellHeight
-        ) * 0.88;
-
-
-    basePlayerToken.style.width =
-        `${tokenSize}px`;
-
-
-    basePlayerToken.style.height =
-        `${tokenSize}px`;
-
-
-    basePlayerToken.style.left =
-        `${
-            (
-                basePlayerX +
-                0.5
-            ) *
-            cellWidth -
-            tokenSize / 2
-        }px`;
-
-
-    basePlayerToken.style.top =
-        `${
-            (
-                basePlayerY +
-                0.5
-            ) *
-            cellHeight -
-            tokenSize / 2
-        }px`;
-
-
-    basePlayerToken.style.zIndex =
-        "20";
+    if (!basePlayerToken || basePlayerX === null || basePlayerY === null) return;
+    basePlayerToken.style.width = `${88 / BASE_MAP_COLUMNS}%`;
+    basePlayerToken.style.height = `${88 / BASE_MAP_ROWS}%`;
+    basePlayerToken.style.left = `${(Number(basePlayerX) + 0.06) * 100 / BASE_MAP_COLUMNS}%`;
+    basePlayerToken.style.top = `${(Number(basePlayerY) + 0.06) * 100 / BASE_MAP_ROWS}%`;
+    basePlayerToken.style.zIndex = "20";
 }
 
 
@@ -2422,92 +2355,19 @@ function renderBaseStaticDecorations() {
 
 
 function positionBaseStaticDecorations() {
-    const map =
-        document.getElementById("dungeon-map");
-
-
-    if (!map) {
-        return;
-    }
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-    if (
-        rect.width <= 0 ||
-        rect.height <= 0
-    ) {
-        return;
-    }
-
-
-    const cellWidth =
-        rect.width /
-        BASE_MAP_COLUMNS;
-
-
-    const cellHeight =
-        rect.height /
-        BASE_MAP_ROWS;
-
-
-    BASE_STATIC_DECORATIONS.forEach(
-        decoration => {
-
-
-            const element =
-                baseStaticDecorationElements.get(
-                    decoration.id
-                );
-
-
-            if (!element) {
-                return;
-            }
-
-
-            element.style.left =
-                `${decoration.x * cellWidth}px`;
-
-
-            element.style.top =
-                `${decoration.y * cellHeight}px`;
-
-
-            element.style.width =
-                `${decoration.width * cellWidth}px`;
-
-
-            element.style.height =
-                `${decoration.height * cellHeight}px`;
-
-
-            element.style.zIndex =
-                String(
-                    decoration.zIndex ?? 6
-                );
-
-
-                if (
-    decoration.id ===
-    "locanda"
-) {
-    const scale = 1.12;
-
-
-    element.style.transform =
-        `translateY(-10px) scale(${scale})`;
-
-
-    element.style.transformOrigin =
-        "center center";
-}
-
-
+    BASE_STATIC_DECORATIONS.forEach(decoration => {
+        const element = baseStaticDecorationElements.get(decoration.id);
+        if (!element) return;
+        element.style.left = `${decoration.x * 100 / BASE_MAP_COLUMNS}%`;
+        element.style.top = `${decoration.y * 100 / BASE_MAP_ROWS}%`;
+        element.style.width = `${decoration.width * 100 / BASE_MAP_COLUMNS}%`;
+        element.style.height = `${decoration.height * 100 / BASE_MAP_ROWS}%`;
+        element.style.zIndex = String(decoration.zIndex ?? 6);
+        if (decoration.id === "locanda") {
+            element.style.transform = "translateY(-10px) scale(1.12)";
+            element.style.transformOrigin = "center center";
         }
-    );
+    });
 }
 
 
@@ -6365,76 +6225,13 @@ function showBaseRemotePlayerToken(
 
 
 
-function positionBaseRemotePlayerToken(
-    element,
-    x,
-    y
-) {
-
-
-    const map =
-        document.getElementById(
-            "dungeon-map"
-        );
-
-
-    if (
-        !map ||
-        !element
-    ) {
-        return;
-    }
-
-
-    const rect =
-        map.getBoundingClientRect();
-
-
-    if (
-        rect.width <= 0 ||
-        rect.height <= 0
-    ) {
-        return;
-    }
-
-
-    const cellWidth =
-        rect.width /
-        BASE_MAP_COLUMNS;
-
-
-    const cellHeight =
-        rect.height /
-        BASE_MAP_ROWS;
-
-
-    const tokenSize =
-        Math.min(
-            cellWidth,
-            cellHeight
-        ) * 0.88;
-
-
-    element.style.width =
-        `${tokenSize}px`;
-
-
-    element.style.height =
-        `${tokenSize}px`;
-
-
-    element.style.left =
-        `${(Number(x) + 0.5) * cellWidth - tokenSize / 2}px`;
-
-
-    element.style.top =
-        `${(Number(y) + 0.5) * cellHeight - tokenSize / 2}px`;
-
-
-    element.style.zIndex =
-        "19";
-
-
+function positionBaseRemotePlayerToken(element, x, y) {
+    if (!element) return;
+    element.style.width = `${88 / BASE_MAP_COLUMNS}%`;
+    element.style.height = `${88 / BASE_MAP_ROWS}%`;
+    element.style.left = `${(Number(x) + 0.06) * 100 / BASE_MAP_COLUMNS}%`;
+    element.style.top = `${(Number(y) + 0.06) * 100 / BASE_MAP_ROWS}%`;
+    element.style.zIndex = "19";
 }
 
 
