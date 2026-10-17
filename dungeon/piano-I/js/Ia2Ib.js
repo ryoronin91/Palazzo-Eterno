@@ -3,7 +3,15 @@
 const id=new URLSearchParams(location.search).get('id');let active=true,busy=false,unlocked=false,accessToken=null;
 db?.auth.getSession().then(({data})=>{accessToken=data.session?.access_token||null;}).catch(()=>{});
 const feedback=(msg)=>{$('feedback').textContent=msg;};
-function bubble(who,message){const el=document.createElement('div');el.className='bubble '+who;el.textContent=message;$('messages').appendChild(el);$('messages').scrollTop=$('messages').scrollHeight;}
+function bubble(who,message){
+ const el=document.createElement('div');el.className='bubble '+who;
+ let text=String(message??'');
+ if(who==='npc'){
+   // Separa il brontolio dalla battuta precedente, anche nelle risposte salvate.
+   text=text.replace(/\s*(\*?GRR{3,}[A-ZROOWL!]*\*?\s*\(Il suo stomaco brontola rumorosamente\.\))/gi,'\n\n$1');
+ }
+ el.textContent=text;$('messages').appendChild(el);$('messages').scrollTop=$('messages').scrollHeight;
+}
 async function rpc(name,args){const {data,error}=await db.rpc(name,args);if(error)throw error;return data;}
 function setBusy(v){busy=v;$('send').disabled=v;$('pass').disabled=v;$('food').disabled=v;$('attack').disabled=v;}
 const SCENE_IMAGES={initial:'immagini/gateA.png',food:'immagini/gateB.png',attack:'immagini/gateC.png'};
