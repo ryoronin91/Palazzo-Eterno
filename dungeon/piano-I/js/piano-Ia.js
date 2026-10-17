@@ -14982,21 +14982,47 @@ let piaVisited = new Set();
 let piaFogElement = null;
 let piaLastFogPosition = '';
 
+// Celle visibili adesso, separate dallo storico esplorato.
+let piaVisibleNow = new Set();
+function piaBlocksSight(x, y) { return !canMoveTo(x, y); }
+function piaHasLineOfSight(targetX, targetY) {
+    if (targetX === playerX && targetY === playerY) return true;
+    const dx = targetX - playerX, dy = targetY - playerY;
+    const stepX = Math.sign(dx), stepY = Math.sign(dy);
+    const absX = Math.abs(dx), absY = Math.abs(dy);
+    let x = playerX, y = playerY, ix = 0, iy = 0;
+    while (ix < absX || iy < absY) {
+        const comparison = (1 + 2 * ix) * absY - (1 + 2 * iy) * absX;
+        if (comparison === 0) {
+            if (piaBlocksSight(x + stepX, y) && piaBlocksSight(x, y + stepY)) return false;
+            x += stepX; y += stepY; ix++; iy++;
+        } else if (comparison < 0) { x += stepX; ix++; }
+        else { y += stepY; iy++; }
+        if (x === targetX && y === targetY) return true;
+        if (piaBlocksSight(x, y)) return false;
+    }
+    return true;
+}
 function piaRevealAroundPlayer() {
     if (!piaFogReady || playerX == null || playerY == null) return;
-    const mark = `${playerX},${playerY}`;
+    const mark = playerX + ',' + playerY;
     if (mark === piaLastFogPosition) return;
     piaLastFogPosition = mark;
+    piaVisibleNow = new Set();
+    let changed = false;
     for (let y = Math.max(0, playerY - 6); y <= Math.min(MAP_ROWS - 1, playerY + 6); y++) {
         for (let x = Math.max(0, playerX - 6); x <= Math.min(MAP_COLUMNS - 1, playerX + 6); x++) {
-            piaVisited.add(`${x},${y}`);
+            if (!piaHasLineOfSight(x, y)) continue;
+            const key = x + ',' + y;
+            piaVisibleNow.add(key);
+            if (!piaVisited.has(key)) { piaVisited.add(key); changed = true; }
         }
     }
-    try {
-        localStorage.setItem(`palazzo:piano-Ia:fog:${character.id}`, JSON.stringify([...piaVisited]));
-    } catch (_) { /* Storage opzionale */ }
+    if (changed) {
+        try { localStorage.setItem('palazzo:piano-Ia:fog:' + character.id, JSON.stringify([...piaVisited])); }
+        catch (_) { /* Storage opzionale */ }
+    }
 }
-
 function piaRenderFog() {
     if (!piaFogReady || !piaFogElement) return;
     piaRevealAroundPlayer();
@@ -15006,9 +15032,8 @@ function piaRenderFog() {
     if (piaMaster && piaNoFog) return;
     for (let y = 0; y < MAP_ROWS; y++) {
         for (let x = 0; x < MAP_COLUMNS; x++) {
-            const distance = Math.max(Math.abs(x - playerX), Math.abs(y - playerY));
-            if (distance <= 6) continue;
-            ctx.fillStyle = piaVisited.has(`${x},${y}`) ? 'rgba(3,13,6,0.64)' : 'rgba(2,9,4,0.97)';
+            if (piaVisibleNow.has(x + ',' + y)) continue;
+            ctx.fillStyle = piaVisited.has(x + ',' + y) ? 'rgba(3,13,6,0.64)' : 'rgba(2,9,4,0.97)';
             ctx.fillRect(x, y, 1, 1);
         }
     }
