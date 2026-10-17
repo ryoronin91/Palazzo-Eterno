@@ -15153,8 +15153,8 @@ function piaCombatPoint(el,x,y) {
     // Relativi alla mappa intera, anche con zoom massimo o camera spostata.
     el.style.left=((x+.5)/MAP_COLUMNS*100)+'%';
     el.style.top=((y+.5)/MAP_ROWS*100)+'%';
-    el.style.width=(100/MAP_COLUMNS*1.5)+'%';
-    el.style.height=(100/MAP_ROWS*1.5)+'%';
+    el.style.width=(100/MAP_COLUMNS*1.0)+'%';
+    el.style.height=(100/MAP_ROWS*1.0)+'%';
     el.style.fontSize=`clamp(11px, ${Math.max(11,Math.min(22,map.offsetWidth/MAP_COLUMNS*0.92))}px, 22px)`;
 }
 function piaCombatMakeToken(id,icon,cls,title,fn) {
