@@ -1,6 +1,6 @@
 // ============================================================
 // PALAZZO ETERNO
-// PIANO-IA.JS
+// DUNGEON.JS
 // VERSIONE NUOVA INTERFACCIA
 // ============================================================
 
@@ -15226,7 +15226,26 @@ function piaCombatRender() {
         piaCombatPoint(el,27,32);
     }
     const key='guard';active.add(key);
-    const guard=piaCombatMakeToken(key,'🛡️','pia-encounter-guard','Guardie del Varco · X 0 Y 67',piaCombatGuard);
+    const guard=piaCombatMakeToken(key,'','pia-encounter-guard','Guardie del Varco · X 0 Y 67',piaCombatGuard);
+    // Token grafico della scena Guardie del Varco.
+    let guardImage=guard.querySelector('img');
+    if(!guardImage){
+        guardImage=document.createElement('img');
+        guardImage.src='immagini/Ia2Ib.png';
+        guardImage.alt='';
+        guardImage.draggable=false;
+        guardImage.style.width='100%';
+        guardImage.style.height='100%';
+        guardImage.style.objectFit='contain';
+        guardImage.style.display='block';
+        guardImage.style.pointerEvents='none';
+        guard.appendChild(guardImage);
+    }
+    guard.style.padding='0';
+    guard.style.background='transparent';
+    guard.style.border='none';
+    guard.style.boxShadow='none';
+    guard.style.overflow='visible';
     piaCombatPoint(guard,0,67);
     for(const [id,el] of piaCombat.tokens){if(!active.has(id)){el.remove();piaCombat.tokens.delete(id)}}
     const counter=document.getElementById('pia-encounter-count');
