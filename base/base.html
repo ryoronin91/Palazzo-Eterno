@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/base.css?v=zoom-29"
+        href="css/base.css?v=zoom-43"
     >
 
     <link
@@ -61,8 +61,8 @@
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            width: 207.6923076923% !important;
-            height: 276.9230769231% !important;
+            width: calc(100% * 27 / var(--base-view-cells, 13)) !important;
+            height: calc(100% * 36 / var(--base-view-cells, 13)) !important;
             transform-origin: 0 0;
             will-change: transform;
         }
@@ -310,7 +310,13 @@
             ============================================== -->
 
             <section class="dungeon-map-column">
-<div class="dungeon-map-frame">
+<div class="base-map-toolbar" aria-label="Controlli visuale mappa">
+                    <button type="button" id="base-zoom-out" title="Allontana visuale">−</button>
+                    <button type="button" id="base-zoom-reset">13 × 13</button>
+                    <button type="button" id="base-zoom-full">Mappa intera</button>
+                    <button type="button" id="base-zoom-in" title="Avvicina visuale">+</button>
+                </div>
+                <div class="dungeon-map-frame">
 
 
                     <div
@@ -1070,7 +1076,7 @@
     ====================================================== -->
 
     <script src="../components/bacheca.js?v=2"></script>
-    <script src="js/base.js?v=zoom-42"></script>
+    <script src="js/base.js?v=zoom-43"></script>
     <script src="js/eventi_base.js?v=2"></script>
 
 

@@ -25,6 +25,7 @@ const BASE_CAMERA_VISIBLE_CELLS =
 
 
 const BASE_CAMERA_TRANSITION_MS = 170;
+let baseViewCells = BASE_CAMERA_VISIBLE_CELLS;
 
 
 let currentUser = null;
@@ -4105,7 +4106,35 @@ function setupBaseMovement() {
 
 
 function setupBaseCamera() {
-    updateBaseCamera(true);
+    // Stessi quattro comandi e stessi passi di zoom del Piano I-A.
+    const map = document.getElementById('dungeon-map');
+    const toolbar = document.querySelector('.base-map-toolbar');
+    if (!map || !toolbar) {
+        updateBaseCamera(true);
+        return;
+    }
+    const setZoom = value => {
+        baseViewCells = Math.max(5, Math.min(BASE_MAP_ROWS, Math.round(value)));
+        map.style.setProperty('--base-view-cells', String(baseViewCells));
+        map.style.setProperty('width', `${BASE_MAP_COLUMNS * 100 / baseViewCells}%`, 'important');
+        map.style.setProperty('height', `${BASE_MAP_ROWS * 100 / baseViewCells}%`, 'important');
+        const reset = document.getElementById('base-zoom-reset');
+        if (reset) reset.title = `Visuale attuale: ${baseViewCells} caselle`;
+        updateBaseCamera(true);
+        positionBasePlayerToken();
+        positionAllBaseRemotePlayerTokens();
+        positionBaseStaticDecorations();
+        // Le celle evidenziate di Cura sono calcolate in pixel sulla griglia.
+        if (baseHealModeActive) {
+            renderBaseHealRange();
+            updateBaseHealTargets();
+        }
+    };
+    document.getElementById('base-zoom-out').addEventListener('click', () => setZoom(baseViewCells + (baseViewCells < 20 ? 2 : 8)));
+    document.getElementById('base-zoom-in').addEventListener('click', () => setZoom(baseViewCells - (baseViewCells <= 20 ? 2 : 8)));
+    document.getElementById('base-zoom-reset').addEventListener('click', () => setZoom(13));
+    document.getElementById('base-zoom-full').addEventListener('click', () => setZoom(BASE_MAP_ROWS));
+    setZoom(13);
 }
 
 

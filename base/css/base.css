@@ -4800,3 +4800,9 @@ body.base-trade-open {
 .pe-master-explore { display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12px; }
 .pe-master-explore[hidden] { display:none !important; }
 
+
+/* BASE — controlli zoom copiati dal Piano I-A (senza nebbia / Master). */
+.dungeon-map {width:calc(100% * 27 / var(--base-view-cells,13)) !important;height:calc(100% * 36 / var(--base-view-cells,13)) !important;}
+.base-map-toolbar {display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:7px;}
+.base-map-toolbar button {font:700 11px/1.3 Arial,sans-serif;color:#d8ead7;background:#173822;border:1px solid #56855d;padding:6px 9px;border-radius:3px;white-space:nowrap;cursor:pointer;}
+.base-map-toolbar button:hover {background:#275637;}
