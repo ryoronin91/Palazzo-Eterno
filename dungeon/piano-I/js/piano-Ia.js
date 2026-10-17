@@ -15184,7 +15184,26 @@ function piaCombatRender() {
     }
     if(piaCombat.boss?.available===true||piaCombat.boss?.in_combat===true){
         const key='boss';active.add(key);
-        const el=piaCombatMakeToken(key,'🦖','pia-encounter-boss','Allosauro Dominante · Boss · X 27 Y 32',piaCombatBoss);
+        const el=piaCombatMakeToken(key,'','pia-encounter-boss','Allosauro Dominante · Boss · X 27 Y 32',piaCombatBoss);
+        // Token grafico definitivo: riutilizza l'asset già usato dal boss.
+        let image=el.querySelector('img');
+        if(!image){
+            image=document.createElement('img');
+            image.src='../../immagini/nemici/allosauro_dominante.png';
+            image.alt=''; // L'etichetta accessibile è già sul pulsante.
+            image.draggable=false;
+            image.style.width='100%';
+            image.style.height='100%';
+            image.style.objectFit='contain';
+            image.style.display='block';
+            image.style.pointerEvents='none';
+            el.appendChild(image);
+        }
+        el.style.padding='0';
+        el.style.background='transparent';
+        el.style.border='none';
+        el.style.boxShadow='none';
+        el.style.overflow='visible';
         piaCombatPoint(el,27,32);
     }
     const key='guard';active.add(key);
