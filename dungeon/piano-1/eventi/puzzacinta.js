@@ -66,7 +66,10 @@ function render() {
     const rows = Array.isArray(state?.questions) ? state.questions : [];
     const log = $("rare-messages");
     log.replaceChildren();
-    if (!rows.length) {
+    // Battuta iniziale fissa di Puzzacinta, senza consumare alcuna domanda.
+    if (visible && phase === "dialogue") {
+        appendBubble("PUZZACINTA", "Avvicinati presto!! Mi sta alle calcagna..", "npc");
+    } else if (!rows.length) {
         const empty = document.createElement("p");
         empty.className = "rare-empty";
         empty.textContent = "L'oscurità trattiene il fiato in attesa di una domanda…";
