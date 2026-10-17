@@ -3906,3 +3906,10 @@ body {
 .pe-master-explore { display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12px; }
 .pe-master-explore[hidden] { display:none !important; }
 
+
+
+/* Piano 1 — controlli zoom come Piano I-A, palette ambrata. */
+.dungeon-map {width:calc(100% * 23 / var(--dungeon-view-cells,13)) !important;height:calc(100% * 23 / var(--dungeon-view-cells,13)) !important;}
+.dungeon-map-toolbar {display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:7px;}
+.dungeon-map-toolbar button {font:700 11px/1.3 Arial,sans-serif;color:#f5dfb3;background:#352819;border:1px solid #a98145;padding:6px 9px;border-radius:3px;white-space:nowrap;cursor:pointer;}
+.dungeon-map-toolbar button:hover {background:#574021;border-color:#d4af67;}

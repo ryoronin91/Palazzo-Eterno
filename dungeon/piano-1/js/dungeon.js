@@ -3721,14 +3721,37 @@ function openMonkeySignPrompt() {
 // ============================================================
 
 
+let dungeonViewCells = 13;
+
 function setupDungeonCamera() {
-
-
-    updateDungeonCamera(
-        true
-    );
-
-
+    // Stessi quattro comandi e stessi passi di zoom del Piano I-A.
+    const map = document.getElementById('dungeon-map');
+    const toolbar = document.querySelector('.dungeon-map-toolbar');
+    if (!map || !toolbar) {
+        updateDungeonCamera(true);
+        return;
+    }
+    const setZoom = value => {
+        dungeonViewCells = Math.max(5, Math.min(MAP_ROWS, Math.round(value)));
+        map.style.setProperty('--dungeon-view-cells', String(dungeonViewCells));
+        map.style.setProperty('width', `${MAP_COLUMNS * 100 / dungeonViewCells}%`, 'important');
+        map.style.setProperty('height', `${MAP_ROWS * 100 / dungeonViewCells}%`, 'important');
+        const reset = document.getElementById('dungeon-zoom-reset');
+        if (reset) reset.title = `Visuale attuale: ${dungeonViewCells} caselle`;
+        updateDungeonCamera(true);
+        repositionAllTokens();
+        // Come nella Base: i token dei combat richiedono il ricalcolo in pixel.
+        if (typeof repositionCombatEvents === 'function') {
+            repositionCombatEvents();
+        }
+        // Conserva la nebbia di guerra esistente, ricalcolata con la nuova scala.
+        if (fogCanvas) updateFogOfWar();
+    };
+    document.getElementById('dungeon-zoom-out').addEventListener('click', () => setZoom(dungeonViewCells + (dungeonViewCells < 20 ? 2 : 8)));
+    document.getElementById('dungeon-zoom-in').addEventListener('click', () => setZoom(dungeonViewCells - (dungeonViewCells <= 20 ? 2 : 8)));
+    document.getElementById('dungeon-zoom-reset').addEventListener('click', () => setZoom(13));
+    document.getElementById('dungeon-zoom-full').addEventListener('click', () => setZoom(MAP_ROWS));
+    setZoom(13);
 }
 
 
@@ -4332,7 +4355,9 @@ window.addEventListener(
 
 
         repositionAllTokens();
-
+        if (typeof repositionCombatEvents === 'function') {
+            repositionCombatEvents();
+        }
 
         updateFogOfWar();
 
