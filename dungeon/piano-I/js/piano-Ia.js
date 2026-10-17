@@ -1,6 +1,6 @@
 // ============================================================
 // PALAZZO ETERNO
-// DUNGEON.JS
+// PIANO-IA.JS
 // VERSIONE NUOVA INTERFACCIA
 // ============================================================
 
@@ -15179,7 +15179,26 @@ function piaCombatRender() {
         if(!family || !id || !Number.isInteger(x) || !Number.isInteger(y) ||x<0||x>=MAP_COLUMNS||y<0||y>=MAP_ROWS)continue;
         const key='room:'+id;active.add(key);
         const detail=`${family[1]} · ${slot.difficulty||'medio'} · stanza ${slot.room_number||'?'}${slot.status==='engaged'?' · combattimento in corso':''}`;
-        const el=piaCombatMakeToken(key,family[0],'pia-encounter-room',detail,()=>piaCombatRoom(id));
+        const el=piaCombatMakeToken(key,'','pia-encounter-room',detail,()=>piaCombatRoom(id));
+        // Immagine condivisa per tutti gli incontri normali della Giungla Bassa.
+        let image=el.querySelector('img');
+        if(!image){
+            image=document.createElement('img');
+            image.src='immagini/combat-Ia.png';
+            image.alt='';
+            image.draggable=false;
+            image.style.width='100%';
+            image.style.height='100%';
+            image.style.objectFit='contain';
+            image.style.display='block';
+            image.style.pointerEvents='none';
+            el.appendChild(image);
+        }
+        el.style.padding='0';
+        el.style.background='transparent';
+        el.style.border='none';
+        el.style.boxShadow='none';
+        el.style.overflow='visible';
         piaCombatPoint(el,x,y);
     }
     if(piaCombat.boss?.available===true||piaCombat.boss?.in_combat===true){
@@ -15341,9 +15360,19 @@ function piaSpecialRenderFruit(){
     if(!Number.isInteger(x)||!Number.isInteger(y))continue;
     active.add(id);
     let el=piaSpecial.tokens.get(id);
-    if(!el){el=document.createElement('button');el.type='button';el.className='pia-fruit-token';el.textContent='🍎';el.title='Frutto Carnoso';el.setAttribute('aria-label','Raccogli Frutto Carnoso');el.addEventListener('click',()=>piaSpecialCollect(id));map.appendChild(el);piaSpecial.tokens.set(id,el)}
+    if(!el){
+      el=document.createElement('button');el.type='button';el.className='pia-fruit-token';
+      el.title='Frutto Carnoso';el.setAttribute('aria-label','Raccogli Frutto Carnoso');
+      const image=document.createElement('img');
+      image.src='immagini/frutto.png';image.alt='';image.draggable=false;
+      image.style.width='100%';image.style.height='100%';image.style.objectFit='contain';
+      image.style.display='block';image.style.pointerEvents='none';
+      el.appendChild(image);
+      el.style.padding='0';el.style.background='transparent';el.style.border='none';
+      el.style.boxShadow='none';el.style.overflow='visible';
+      el.addEventListener('click',()=>piaSpecialCollect(id));map.appendChild(el);piaSpecial.tokens.set(id,el);
+    }
     piaSpecialMapPosition(el,x,y);
-    el.style.fontSize='clamp(10px,1vw,18px)';
   }
   for(const [id,el] of piaSpecial.tokens)if(!active.has(id)){el.remove();piaSpecial.tokens.delete(id)}
 }
