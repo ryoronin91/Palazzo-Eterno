@@ -4082,6 +4082,9 @@ function setupBaseMovement() {
             positionBaseStaticDecorations();
             positionBasePlayerToken();
             positionAllBaseRemotePlayerTokens();
+            if (typeof repositionBaseCombatEvents === "function") {
+                repositionBaseCombatEvents();
+            }
 
 
             if (baseHealModeActive) {
@@ -4124,6 +4127,10 @@ function setupBaseCamera() {
         positionBasePlayerToken();
         positionAllBaseRemotePlayerTokens();
         positionBaseStaticDecorations();
+        // I combat usano coordinate in pixel: ricalcolale ad ogni zoom.
+        if (typeof repositionBaseCombatEvents === "function") {
+            repositionBaseCombatEvents();
+        }
         // Le celle evidenziate di Cura sono calcolate in pixel sulla griglia.
         if (baseHealModeActive) {
             renderBaseHealRange();
