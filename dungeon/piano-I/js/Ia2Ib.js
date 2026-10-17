@@ -1,6 +1,19 @@
 // Evento delle guardie: sessione INDIVIDUALE, dialogo AI protetto lato server.
 (()=>{'use strict';const $=id=>document.getElementById(id);const db=typeof supabaseClient !== "undefined" ? supabaseClient : null;
 const id=new URLSearchParams(location.search).get('id');let active=true,busy=false,unlocked=false,accessToken=null;
+// Stesso sottofondo di Piano I-A; i browser possono richiedere una prima interazione.
+const gateMusic = new Audio('../../music/piano-Ia.mp3');
+gateMusic.loop = true;
+try {
+  const saved = Number(localStorage.getItem('palazzo-eterno-dungeon-volume'));
+  gateMusic.volume = Number.isFinite(saved) && localStorage.getItem('palazzo-eterno-dungeon-volume') !== null ? Math.max(0,Math.min(1,saved)) : 0.35;
+} catch (_) { gateMusic.volume = 0.35; }
+function tryGateMusic(){ gateMusic.play().catch(()=>{}); }
+tryGateMusic();
+document.addEventListener('pointerdown',tryGateMusic,{once:true});
+document.addEventListener('keydown',tryGateMusic,{once:true});
+window.addEventListener('pagehide',()=>{gateMusic.pause();});
+
 db?.auth.getSession().then(({data})=>{accessToken=data.session?.access_token||null;}).catch(()=>{});
 const feedback=(msg)=>{$('feedback').textContent=msg;};
 function bubble(who,message){
