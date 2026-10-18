@@ -8859,9 +8859,76 @@ function updateSpatialCoinAction() {
         Boolean(character.active_combat_id) || character.current_location === "combat";
 }
 
+
+// Popup coerente con gli eventi del dungeon: niente finestre native del browser.
+function confirmSpatialCoinTeleport() {
+    return new Promise(resolve => {
+        const overlay = document.createElement("div");
+        overlay.className = "combat-event-overlay spatial-coin-overlay";
+        overlay.setAttribute("role", "presentation");
+
+        const modal = document.createElement("div");
+        modal.className = "combat-event-modal spatial-coin-modal";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "spatial-coin-modal-title");
+
+        modal.innerHTML = `
+            <div class="combat-event-icon" aria-hidden="true">✦</div>
+            <h2 id="spatial-coin-modal-title">MONETA SPAZIALE</h2>
+            <p>Vuoi teletrasportarti al Livello Base?</p>
+            <div class="combat-event-warning">
+                Il teletrasporto consuma una Moneta Spaziale.
+            </div>
+            <div class="combat-event-buttons">
+                <button type="button" class="combat-event-button combat-event-cancel" data-spatial-cancel>ANNULLA</button>
+                <button type="button" class="combat-event-button combat-event-confirm" data-spatial-confirm>TELETRASPORTATI</button>
+            </div>
+        `;
+
+        // Stesso linguaggio grafico dei popup dungeon; fallback anche per la Base.
+        overlay.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.78);box-sizing:border-box;";
+        modal.style.cssText = "width:min(460px,100%);max-height:90vh;overflow-y:auto;box-sizing:border-box;padding:28px 24px;text-align:center;background:linear-gradient(160deg,#30271c,#171713);color:#f5e9cf;border:2px solid #9e7d40;border-radius:12px;box-shadow:0 14px 55px rgba(0,0,0,.85);";
+        modal.querySelector(".combat-event-icon").style.cssText = "font-size:42px;color:#d9b66e;margin-bottom:10px;";
+        modal.querySelector("h2").style.cssText = "font-size:23px;letter-spacing:.08em;color:#e6c480;margin:5px 0 14px;";
+        modal.querySelector("p").style.cssText = "font-size:16px;line-height:1.55;margin:0 0 15px;";
+        modal.querySelector(".combat-event-warning").style.cssText = "background:rgba(187,140,57,.12);border:1px solid rgba(218,176,100,.4);border-radius:6px;padding:12px;font-size:14px;line-height:1.5;";
+        const buttons = modal.querySelector(".combat-event-buttons");
+        buttons.style.cssText = "display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:23px;";
+        buttons.querySelectorAll("button").forEach(button => {
+            button.style.cssText = "min-width:140px;padding:11px 15px;border-radius:6px;border:1px solid #977945;font-weight:700;letter-spacing:.04em;cursor:pointer;color:#f9edcf;background:#483a26;";
+        });
+        buttons.querySelector("[data-spatial-confirm]").style.background = "#72582e";
+
+        const previousFocus = document.activeElement;
+        function finish(result) {
+            document.removeEventListener("keydown", onKeyDown, true);
+            overlay.remove();
+            if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+            resolve(result);
+        }
+        function onKeyDown(event) {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                finish(false);
+            }
+        }
+        buttons.querySelector("[data-spatial-cancel]").addEventListener("click", () => finish(false));
+        buttons.querySelector("[data-spatial-confirm]").addEventListener("click", () => finish(true));
+        overlay.addEventListener("click", event => {
+            if (event.target === overlay) finish(false);
+        });
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        document.addEventListener("keydown", onKeyDown, true);
+        buttons.querySelector("[data-spatial-cancel]").focus();
+    });
+}
+
 async function useSpatialCoinFromMap() {
     if (spatialCoinInProgress || !character) return;
-    if (!window.confirm("Consumare una Moneta Spaziale e teletrasportarsi alla Base?")) return;
+    if (!await confirmSpatialCoinTeleport()) return;
     spatialCoinInProgress = true;
     updateSpatialCoinAction();
     try {

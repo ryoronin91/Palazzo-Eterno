@@ -1202,8 +1202,16 @@ document.addEventListener(
             }
 
 
+            // Le abilità avanzate non sono selezionabili alla creazione.
+            // Restano disponibili nel gioco e ai personaggi che già le possiedono.
+            const excludedStartingAbilities = new Set([
+                "sanguinamento",
+                "veleno",
+                "succhiasangue"
+            ]);
+
             availableAbilities =
-                data || [];
+                (data || []).filter(ability => !excludedStartingAbilities.has(ability.id));
 
 
             console.log(
