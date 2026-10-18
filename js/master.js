@@ -7601,6 +7601,37 @@ async function saveMasterNoticeboard() {
 // - diagnostica base_services / RLS
 // ============================================================
 
+// Ultimo accesso all'account (Supabase Auth), accessibile solo al Master.
+const masterPlayerLastSignIns = new Map();
+let masterPlayerLastSignInsAvailable = false;
+
+async function loadMasterPlayerLastSignIns() {
+    try {
+        const { data, error } = await db.rpc("master_get_player_last_sign_ins");
+        if (error) throw error;
+        masterPlayerLastSignIns.clear();
+        (Array.isArray(data) ? data : []).forEach(entry => {
+            if (entry.character_id) masterPlayerLastSignIns.set(entry.character_id, entry.last_sign_in_at || null);
+        });
+        masterPlayerLastSignInsAvailable = true;
+    } catch (error) {
+        masterPlayerLastSignInsAvailable = false;
+        console.warn("Ultimo accesso non disponibile nel Master:", error);
+    }
+}
+
+function masterFormatLastSignIn(characterId) {
+    if (!masterPlayerLastSignInsAvailable) return "Ultimo accesso: non disponibile";
+    const value = masterPlayerLastSignIns.get(characterId);
+    if (!value) return "Ultimo accesso: mai registrato";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Ultimo accesso: non disponibile";
+    return "Ultimo accesso: " + date.toLocaleString("it-IT", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
+}
+
 let masterControlAllPlayers = [];
 let masterControlServicesError = null;
 let masterControlRegularCombatStates = new Map();
@@ -7809,6 +7840,7 @@ async function loadMasterControlCenter() {
         await Promise.all([
             loadAllMasterCharacters(),
             loadMasterControlAllPlayers(),
+            loadMasterPlayerLastSignIns(),
             loadMasterBossPassword(),
             loadMasterCooldownStates(),
             loadMasterTrapStates(),
@@ -9389,7 +9421,10 @@ function renderMasterControlPlayers() {
         title.textContent=`${p.nome || "Avventuriero"} · Lv ${Number(p.livello)||1}`;
         const status=document.createElement("small");
         status.innerHTML=`<span class="master-pg-dot ${p.online ? "is-online" : ""}">${p.online ? "●" : "○"}</span> ${p.online ? "Online" : "Offline"} · ${masterFloorDisplayName(p.floor)}`;
-        info.append(title,status);button.append(icon,info);
+        const lastAccess=document.createElement("small");
+        lastAccess.className="master-pg-last-sign-in";
+        lastAccess.textContent=masterFormatLastSignIn(p.character_id);
+        info.append(title,status,lastAccess);button.append(icon,info);
         button.addEventListener("click",()=>masterPgOpenSheet(p.character_id));
         container.appendChild(button);
     }
