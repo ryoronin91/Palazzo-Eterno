@@ -5319,12 +5319,10 @@ function renderBaseLeaderboard(rows) {
         const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeBaseHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
-            const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
-            // Ogni pagina parte da una cartella differente rispetto alla root.
-            const path = goblin ? "../immagini/stemmi/boss_goblin.png"
-                : rawPath.startsWith("immagini/") ? "../" + rawPath : rawPath;
+            // Usa l'icona restituita da Supabase (Goblin, Berserk o entrambi).
+            // La pagina parte da una sottocartella rispetto alla root.
+            const path = rawPath.startsWith("immagini/") ? "../" + rawPath : rawPath;
             const iconPath = escapeBaseHtml(path);
             const floorNumber = Number(badge?.floor_number) || 0;
             const title = escapeBaseHtml(floorNumber > 0 ? `${badge?.badge_name || badge?.display_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || badge?.display_name || "Boss sconfitto");

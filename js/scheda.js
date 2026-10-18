@@ -642,10 +642,9 @@ function renderSheetLeaderboard(rows) {
         const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeSheetLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
-            const bossId = String(badge?.boss_id || "");
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
+            // Lo stemma è scelto da Supabase in base ai boss sconfitti.
             const rawPath = String(badge?.icon_path || "").trim();
-            const iconPath = escapeSheetLeaderboardHtml(goblin ? "immagini/stemmi/boss_goblin.png" : rawPath);
+            const iconPath = escapeSheetLeaderboardHtml(rawPath);
             const floorNumber = Number(badge?.floor_number) || 0;
             const title = escapeSheetLeaderboardHtml(floorNumber > 0 ? `${badge?.badge_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || "Boss sconfitto");
             if (!iconPath) return `<span class="sheet-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
@@ -768,10 +767,8 @@ function renderSheetHonors(badges) {
         fallback.textContent = "🛡";
         fallback.setAttribute("aria-hidden", "true");
 
-        const bossInfo = String(badge?.boss_id || "") + " " + String(badge?.badge_name || "");
-        const imagePath = /goblin/i.test(bossInfo)
-            ? "immagini/stemmi/boss_goblin.png"
-            : String(badge?.icon_path || "").trim();
+        // Usa lo stemma restituito dal profilo Risonanza.
+        const imagePath = String(badge?.icon_path || "").trim();
         if (imagePath) {
             const image = document.createElement("img");
             image.alt = "";
