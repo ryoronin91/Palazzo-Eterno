@@ -8076,6 +8076,7 @@ function updateDungeonConsumables() {
 
 
     updateFruitConsumable();
+    updateSpatialCoinAction();
     updateDungeonActionAvailability();
 
 
@@ -15505,4 +15506,67 @@ function piaSpecialStart(){
   if(piaSpecial.lastInside)piaSpecialCampOpen();
   setInterval(()=>{piaSpecialRefreshFruit();piaSpecialCampRefresh()},15000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){piaSpecialRefreshFruit();piaSpecialCampRefresh()}});
+}
+
+const SPATIAL_COIN_BASE_URL = "../../base/base.html";
+
+
+// ============================================================
+// MONETA SPAZIALE - CONSUMABILE COMUNE ALLE TRE MAPPE
+// ============================================================
+let spatialCoinInProgress = false;
+
+function updateSpatialCoinAction() {
+    const manaButton = document.getElementById("dungeon-mana-potion-button");
+    if (!manaButton || !manaButton.parentElement) return;
+
+    let button = document.getElementById("dungeon-spatial-coin-button");
+    if (!button) {
+        button = document.createElement("button");
+        button.type = "button";
+        button.id = "dungeon-spatial-coin-button";
+        button.className = "dungeon-action-card";
+        button.dataset.action = "spatial-coin";
+        button.title = "Consuma una Moneta Spaziale per tornare alla Base";
+        const icon = document.createElement("span");
+        icon.className = "action-card-icon";
+        icon.textContent = "✦";
+        const content = document.createElement("span");
+        content.className = "action-card-content";
+        const name = document.createElement("strong");
+        name.textContent = "MONETA SPAZIALE";
+        const amount = document.createElement("small");
+        amount.id = "dungeon-spatial-coin-count";
+        content.append(name, amount);
+        button.append(icon, content);
+        manaButton.insertAdjacentElement("afterend", button);
+        button.addEventListener("click", useSpatialCoinFromMap);
+    }
+
+    const quantity = (Array.isArray(characterInventory) ? characterInventory : [])
+        .filter(entry => entry?.item?.id === "moneta_spaziale")
+        .reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
+    const count = document.getElementById("dungeon-spatial-coin-count");
+    if (count) count.textContent = `x${quantity}`;
+    button.disabled = spatialCoinInProgress || quantity < 1 || !character ||
+        Boolean(character.active_combat_id) || character.current_location === "combat";
+}
+
+async function useSpatialCoinFromMap() {
+    if (spatialCoinInProgress || !character) return;
+    if (!window.confirm("Consumare una Moneta Spaziale e teletrasportarsi alla Base?")) return;
+    spatialCoinInProgress = true;
+    updateSpatialCoinAction();
+    try {
+        const { data, error } = await db.rpc("use_spatial_coin");
+        if (error) throw error;
+        if (!data?.ok) throw new Error("Teletrasporto non riuscito.");
+        // Il server ha già consumato la moneta e aggiornato la posizione.
+        window.location.replace(SPATIAL_COIN_BASE_URL);
+    } catch (error) {
+        console.error("Errore utilizzo Moneta Spaziale:", error);
+        window.alert(error?.message || "Impossibile utilizzare la Moneta Spaziale.");
+        spatialCoinInProgress = false;
+        updateSpatialCoinAction();
+    }
 }
