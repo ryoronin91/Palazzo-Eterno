@@ -77,7 +77,7 @@ function controls(){
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
 async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderToken();controls();zoom(13);
- initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
+ initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 // --- OROLOGIO · CHAT, TOP 5 E PRESENCE (fase 2) ---
 const floorId='orologio', channelName='palazzo-eterno-orologio';
@@ -103,16 +103,48 @@ async function sendChat(){const input=$('floor-chat-input');if(!input||busy)retu
 try{const {data,error}=await socialDb().from('dungeon_chat_messages').insert({floor_id:floorId,character_id:own().id,user_id:user.id,sender_name:own().nome||'Avventuriero',message_text:value}).select('id,character_id,sender_name,message_text,created_at').single();if(error)throw error;chatRow(data);input.value='';}
 catch(e){message('Chat: '+e.message,true);}finally{busy=false;input.disabled=false;input.focus();}}
 function setupChat(){const input=$('floor-chat-input'),send=$('floor-chat-send');if(!input||!send)return;input.disabled=false;send.disabled=false;input.placeholder='Scrivi...';send.addEventListener('click',sendChat);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});}
-function renderTop(rows){const c=$('dungeon-leaderboard-list');if(!c)return;c.innerHTML='';if(!rows?.length){c.textContent='Nessun personaggio in classifica.';return;}
-for(const r of rows){const num=Number(r.posizione)||0,score=Number(r.score)||0;const badges=Array.isArray(r.boss_badges)?r.boss_badges:[];const div=document.createElement('div');div.className='dungeon-leaderboard-row';
-const main=document.createElement('div');main.className='dungeon-leaderboard-main';main.innerHTML=`<span class="dungeon-leaderboard-position">#${num}</span><span class="dungeon-leaderboard-name">${esc(r.character_name||'Avventuriero')}</span><span class="dungeon-leaderboard-score">${score.toLocaleString('it-IT')}</span>`;
-const b=document.createElement('div');b.className='dungeon-leaderboard-badges';for(const v of badges){if(!v.icon_path)continue;const icon=document.createElement('img');icon.className='dungeon-leaderboard-badge';const p=String(v.icon_path);icon.src=p.startsWith('immagini/')?'../'+p:p;icon.alt=v.badge_name||'Boss';icon.title=v.badge_name||'Boss sconfitto';icon.loading='lazy';b.append(icon);}
-div.append(main,b);c.append(div);}}
+function renderTop(rows){
+ const c=$('dungeon-leaderboard-list');if(!c)return;
+ c.replaceChildren();
+ if(!rows?.length){c.textContent='Nessun personaggio vivo in classifica.';return;}
+ for(const r of rows){
+   const num=Number(r.posizione)||0,score=Number(r.score)||0;
+   const row=document.createElement('div');row.className='dungeon-leaderboard-row';
+   const main=document.createElement('div');main.className='dungeon-leaderboard-main';
+   const rank=document.createElement('span');rank.className='dungeon-leaderboard-position';rank.textContent='#'+num;
+   const name=document.createElement('span');name.className='dungeon-leaderboard-name';name.textContent=r.character_name||'Avventuriero';name.title=name.textContent;
+   const total=document.createElement('span');total.className='dungeon-leaderboard-score';total.textContent=score.toLocaleString('it-IT');
+   main.append(rank,name,total);row.append(main);
+   const badges=document.createElement('div');badges.className='dungeon-leaderboard-badges';
+   for(const badge of Array.isArray(r.boss_badges)?r.boss_badges:[]){
+     const wrap=document.createElement('span');wrap.className='dungeon-leaderboard-badge-wrap';
+     wrap.title=(badge.badge_name||badge.display_name||'Boss sconfitto')+(Number(badge.floor_number)>0?' · Piano '+badge.floor_number:'');
+     const img=document.createElement('img');img.className='dungeon-leaderboard-badge';img.alt=wrap.title;
+     const raw=String(badge.icon_path||'').trim();
+     const fallback=document.createElement('span');fallback.className='dungeon-leaderboard-badge-fallback';fallback.textContent='🛡';fallback.hidden=!!raw;
+     if(raw){img.src=raw.startsWith('immagini/')?'../'+raw:raw;img.onerror=()=>{img.hidden=true;fallback.hidden=false;};wrap.append(img);}
+     wrap.append(fallback);badges.append(wrap);
+   }
+   if(!badges.children.length){const none=document.createElement('span');none.className='dungeon-leaderboard-no-badges';none.textContent='Nessuna onorificenza';badges.append(none);}
+   row.append(badges);c.append(row);
+ }
+}
 async function leaderboard(){try{const [top,profile]=await Promise.all([socialDb().rpc('get_living_characters_leaderboard_with_badges',{p_limit:5}),socialDb().rpc('get_my_resonance_profile')]);if(top.error)throw top.error;renderTop(top.data||[]);const value=Number(profile.data?.score??own()?.score);const el=$('character-resonance');if(el)el.textContent='✧ Risonanza: '+(Number.isFinite(value)?value.toLocaleString('it-IT'):'—');}catch(e){console.warn('Top 5:',e);const el=$('dungeon-leaderboard-list');if(el)el.textContent='Classifica temporaneamente non disponibile.'}}
 const peers=new Map(),tokens=new Map();
 function presencePayload(){return {character_id:own().id,user_id:user.id,name:own().nome||'Avventuriero',token:own().token||'token_1.png',x:current().x,y:current().y,location:floorId,online_at:new Date().toISOString()};}
 function coords(e,p){const g=state().grid; e.style.left=((g.gridX+p.x*g.cellWidthPx)/g.imageWidth*100)+'%';e.style.top=((g.gridY+p.y*g.cellHeightPx)/g.imageHeight*100)+'%';e.style.width=(g.cellWidthPx/g.imageWidth*100)+'%';e.style.height=(g.cellHeightPx/g.imageHeight*100)+'%';}
-function renderOnline(){const c=$('dungeon-online-list');if(!c)return;c.replaceChildren();for(const p of [presencePayload(),...peers.values()]){const row=document.createElement('div');row.className='dungeon-online-player';row.textContent=p.name+(p.character_id===own().id?' (tu)':'');c.append(row);}}
+function renderOnline(){
+ const c=$('dungeon-online-list');if(!c||!own()||!user)return;
+ c.replaceChildren();
+ for(const p of [presencePayload(),...peers.values()]){
+   const row=document.createElement('div');row.className='dungeon-online-player';
+   const img=document.createElement('img');img.className='orologio-online-avatar';
+   img.src=tokenPath(p.token);img.alt='';img.loading='lazy';
+   img.onerror=()=>{img.onerror=null;img.src='../immagini/token/token_1.png';};
+   const label=document.createElement('span');label.textContent=p.name+(p.character_id===own().id?' (tu)':'');
+   row.append(img,label);c.append(row);
+ }
+}
 function syncPeers(){if(!channel)return;const s=channel.presenceState();const next=new Map();for(const vals of Object.values(s)){for(const p of vals||[]){if(p.character_id&&p.character_id!==own().id&&p.location===floorId)next.set(p.character_id,p);}}
 peers.clear();for(const [id,p] of next)peers.set(id,p);for(const [id,e] of tokens)if(!next.has(id)){e.remove();tokens.delete(id);}
 for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createElement('div');el.className='orologio-other-token';const img=document.createElement('img');img.src=tokenPath(p.token);const name=document.createElement('span');name.className='other-player-name';name.textContent=p.name;el.append(img,name);$('dungeon-map').append(el);tokens.set(id,el);}coords(el,p);}renderOnline();}
@@ -126,5 +158,69 @@ setupChat();await Promise.allSettled([history(),leaderboard()]);try{await presen
 document.addEventListener('orologio:move',moved);window.addEventListener('beforeunload',()=>{if(channel)socialDb().removeChannel(channel)});setInterval(leaderboard,90000);
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
+
+// STANZA OROLOGIO — abilità e consumabili, senza RPC Cura non compatibili.
+let inventoryRows=[],knownAbilities=[],actionsBusy=false;
+const statMax=type=>{
+ const attr=type==='hp'?'costituzione':'intelligenza';
+ const equipped=Number(bonuses[attr]||0);
+ return Math.ceil(5*Math.max(1,Math.min(30,(Number(own()?.[attr])||1)+equipped))/2);
+};
+const owned=id=>knownAbilities.some(r=>r.ability_id===id||r.ability?.id===id);
+function itemFor(type){return inventoryRows.find(r=>Number(r.quantity)>0&&r.item&&r.item.id!=='frutto_carnoso'&&(type==='hp'?Number(r.item.heal_pf)>0:Number(r.item.heal_pm)>0));}
+function actionButton(id){return $(id);}
+function actionRefresh(){
+ const heal=actionButton('dungeon-heal-button');if(heal){heal.style.display=owned('cura')?'':'none';heal.disabled=true;heal.title='Cura richiede l’adattamento della RPC alle coordinate della Stanza dell’Orologio';
+ const small=heal.querySelector('small');const a=knownAbilities.find(r=>r.ability_id==='cura'||r.ability?.id==='cura');if(small)small.textContent=(a?.ability?.pm_cost??2)+' PM · non disponibile';}
+ for(const [type,id,countId] of [['hp','dungeon-health-potion-button','dungeon-health-potion-count'],['pm','dungeon-mana-potion-button','dungeon-mana-potion-count']]){
+   const item=itemFor(type);const el=actionButton(id);const count=$(countId);
+   if(count)count.textContent='x'+(item?Number(item.quantity):0);
+   if(el)el.disabled=actionsBusy||!item||(Number(own()?.[type==='hp'?'current_hp':'current_pm'])>=statMax(type));
+ }
+ const payday=$('dungeon-giorno-paga-button');if(payday){payday.style.display=owned('giorno_paga')?'':'none';payday.disabled=actionsBusy||!owned('giorno_paga');}
+}
+async function actionData(){
+ const [i,a]=await Promise.all([
+  socialDb().from('character_inventory').select('id,quantity,item:items(id,name,heal_pf,heal_pm)').eq('character_id',own().id),
+  socialDb().from('character_abilities').select('ability_id,level,ability:abilities(id,name,pm_cost)').eq('character_id',own().id)
+ ]);
+ if(i.error)throw i.error;if(a.error)throw a.error;
+ inventoryRows=i.data||[];knownAbilities=a.data||[];actionRefresh();
+}
+async function drink(type){
+ if(actionsBusy)return;const row=itemFor(type);if(!row)return;
+ const currentKey=type==='hp'?'current_hp':'current_pm', maximum=statMax(type);
+ const before=own()[currentKey]==null?maximum:Number(own()[currentKey]);if(before>=maximum)return;
+ actionsBusy=true;actionRefresh();
+ try{
+   // Stessa RPC inventario della Base; aggiorna prima l'inventario sul server.
+   const used=await socialDb().rpc('use_inventory_item',{p_inventory_id:row.id});if(used.error)throw used.error;
+   const amount=Number(type==='hp'?row.item.heal_pf:row.item.heal_pm)||0;
+   const next=Math.min(maximum,before+amount);
+   const result=await socialDb().from('characters').update({[currentKey]:next}).eq('id',own().id);
+   if(result.error)throw result.error;
+   own()[currentKey]=next;updateCharacter();message(`Recuperi ${next-before} ${type==='hp'?'PF':'PM'}.`);
+ }catch(e){console.error('Pozione Orologio:',e);message('Errore consumabile: '+e.message,true);}
+ finally{actionsBusy=false;await actionData().catch(console.warn);}
+}
+async function castPayday(){
+ if(actionsBusy||!owned('giorno_paga'))return;actionsBusy=true;actionRefresh();
+ try{const result=await socialDb().rpc('cast_giorno_paga_outside_combat',{p_character_id:own().id});
+ if(result.error)throw result.error;if(result.data?.current_pm!=null)own().current_pm=Number(result.data.current_pm);
+ updateCharacter();message('Giorno Paga attivato.');}
+ catch(e){message('Giorno Paga: '+e.message,true);}
+ finally{actionsBusy=false;actionRefresh();}
+}
+async function initActions(){
+ const heal=$('dungeon-heal-button');if(heal)heal.disabled=true;
+ const mana=$('dungeon-mana-potion-button');
+ if(mana&&!$('dungeon-giorno-paga-button')){
+  const btn=mana.cloneNode(true);btn.id='dungeon-giorno-paga-button';btn.dataset.action='giorno-paga';btn.querySelector('strong').textContent='GIORNO PAGA';btn.querySelector('.action-card-icon').textContent='¤';
+  btn.querySelector('small').textContent='3 PM';btn.style.display='none';mana.after(btn);btn.addEventListener('click',castPayday);
+ }
+ $('dungeon-health-potion-button')?.addEventListener('click',()=>drink('hp'));
+ $('dungeon-mana-potion-button')?.addEventListener('click',()=>drink('pm'));
+ await actionData();
+}
 document.addEventListener('DOMContentLoaded',init);
 })();

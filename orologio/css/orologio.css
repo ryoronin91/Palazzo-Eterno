@@ -4828,15 +4828,17 @@ body.base-trade-open {
 .dungeon-map .orologio-token { position:absolute; z-index:40; pointer-events:none; }
 .dungeon-map .orologio-token img { width:100%;height:100%;object-fit:contain;display:block; }
 
-/* Il motore JS calibra le dimensioni sulla griglia realmente disegnata. */
-.dungeon-map { aspect-ratio:1/1 !important; }
-
-/* OROLOGIO — Token degli altri giocatori e azioni sociali */
-.dungeon-map .orologio-other-token {position:absolute;z-index:38;pointer-events:none;display:flex;align-items:center;justify-content:center}
-.dungeon-map .orologio-other-token img {width:100%;height:100%;object-fit:contain}
-.dungeon-map .orologio-other-token .other-player-name {max-width:110px;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;background:#201a17d9;color:#fff;padding:2px 4px;font-size:9px}
-.orologio-action-notice{font-size:11px;line-height:1.4;padding:8px;margin:6px 0;background:#eee4ca;border:1px solid #a18f68}
-
-/* Stanza Orologio: pedine remote */
-.orologio-other-token {position:absolute;display:flex;align-items:center;justify-content:center;z-index:35;pointer-events:none;}
-.orologio-other-token img {width:100%;height:100%;object-fit:contain;}
+/* STANZA OROLOGIO — lato sociale leggibile anche su desktop */
+@media (min-width:1150px){
+ .dungeon-layout {grid-template-columns:minmax(440px,470px) minmax(490px,720px) minmax(430px,1fr) !important;max-width:1750px !important;}
+ .dungeon-chat-column {grid-template-columns:minmax(160px,0.82fr) minmax(240px,1.18fr) !important;}
+ .dungeon-chat-column .dungeon-social-column {min-width:0;}
+}
+.dungeon-leaderboard-main {grid-template-columns:30px minmax(0,1fr) auto !important;gap:7px;min-width:0;}
+.dungeon-leaderboard-name {font-size:12px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dungeon-leaderboard-position {font-size:12px!important;white-space:nowrap;}
+.dungeon-leaderboard-score {font-size:12px!important;white-space:nowrap;}
+.dungeon-leaderboard-badge-fallback[hidden] {display:none!important;}
+.dungeon-online-player {display:flex!important;align-items:center;gap:7px;min-width:0;overflow:hidden;font-size:12px;}
+.dungeon-online-player > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.orologio-online-avatar {width:28px;height:28px;object-fit:contain;flex:0 0 28px;border-radius:50%;}

@@ -26,7 +26,7 @@
 
     <link
         rel="stylesheet"
-        href="css/orologio.css?v=5"
+        href="css/orologio.css?v=8"
     >
 
     <style>
@@ -41,7 +41,7 @@
         /* =====================================================
            CAMERA STANZA DELL’OROLOGIO
            Visuale: 13x13 celle = PG + raggio 6
-           Mappa completa: 29 colonne x 29 righe
+           Mappa completa: 30 colonne x 30 righe
         ====================================================== */
 
         .dungeon-map-frame {
@@ -54,8 +54,8 @@
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            width: calc(100% * 29 / var(--orologio-view-cells, 13)) !important;
-            height: calc(100% * 29 / var(--orologio-view-cells, 13)) !important;
+            width: calc(100% * 30 / var(--orologio-view-cells, 13)) !important;
+            height: calc(100% * 30 / var(--orologio-view-cells, 13)) !important;
             transform-origin: 0 0;
             will-change: transform;
         }
@@ -185,7 +185,7 @@
 
 
                 <!-- =============================================
-                     CLASSIFICA (IN PREPARAZIONE)
+                     RISONANZA · TOP 5
                 ============================================== -->
 
 
@@ -273,7 +273,7 @@
                 <section class="dungeon-panel dungeon-leaderboard-panel">
 
                     <div class="dungeon-panel-title">
-                        CLASSIFICA (IN PREPARAZIONE)
+                        RISONANZA · TOP 5
                     </div>
 
                     <div
@@ -731,7 +731,7 @@
                     <section class="base-trade-inline-section" hidden>
                         <div class="quick-section-title">GIOCATORI VICINI</div>
                         <div id="base-trade-nearby-players" class="base-trade-nearby-list">
-                            <div class="base-trade-inline-empty">Scambi disponibili in una futura versione.</div>
+                            <div class="base-trade-inline-empty">Nessun giocatore adiacente.</div>
                         </div>
                     </section>
 
@@ -1025,6 +1025,6 @@
 
 
     </main>
-    <script src="js/orologio.js?v=6"></script>
+    <script src="js/orologio.js?v=8"></script>
 </body>
 </html>
