@@ -96,7 +96,7 @@ async function init(){try{message('Caricamento Stanza dell’Orologio...');await
 const floorId='orologio', channelName='palazzo-eterno-orologio';
 const state=()=>({player,pos,grid:{gridX,gridY,cellWidthPx,cellHeightPx,imageWidth,imageHeight}});
 const socialDb=()=>supabaseClient;
-let user=null,channel=null,busy=false;
+let user=null,channel=null,globalChannel=null,busy=false;
 const seen=new Set();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -157,21 +157,81 @@ const peers=new Map(),tokens=new Map();
 function presencePayload(){return {character_id:own().id,user_id:user.id,name:own().nome||'Avventuriero',token:own().token||'token_1.png',x:current().x,y:current().y,location:floorId,online_at:new Date().toISOString()};}
 function coords(e,p){const g=state().grid; e.style.left=((g.gridX+p.x*g.cellWidthPx)/g.imageWidth*100)+'%';e.style.top=((g.gridY+p.y*g.cellHeightPx)/g.imageHeight*100)+'%';e.style.width=(g.cellWidthPx/g.imageWidth*100)+'%';e.style.height=(g.cellHeightPx/g.imageHeight*100)+'%';}
 const CLOCK_LOCATION_LABELS={orologio:'STANZA DELL’OROLOGIO',base:'LIVELLO BASE',dungeon:'PIANO 1',dungeon_Ia:'GIUNGLA BASSA',dungeon_Ib:'PIANO I-B',combat:'COMBATTIMENTO',vendor:'MERCANTE'};
+// Global Presence contains all logged-in characters (Base, Dungeon, Piano I-A, etc.).
+// The room-specific channel is used ONLY for positions and map tokens.
+const GLOBAL_CHANNEL='palazzo-eterno-online-globale-v1';
+const GLOBAL_LOCATION_LABELS={
+  base:'Base', dungeon:'Dungeon', dungeon_Ia:'I - Giungla Bassa',
+  dungeon_Ib:'I - Piano B', orologio:'Stanza dell’Orologio',
+  vendor:'Base', combat:'In combattimento'
+};
+function globalPayload(){
+ return {character_id:own().id,name:own().nome||'Avventuriero',
+  token:own().token||'token_1.png',location:'orologio',in_combat:false,
+  online_at:new Date().toISOString()};
+}
+function globalCharacters(){
+ const latest=new Map();
+ if(globalChannel){
+  for(const group of Object.values(globalChannel.presenceState()||{})){
+   for(const p of group||[]){
+    if(!p?.character_id)continue;
+    const old=latest.get(p.character_id);
+    if(!old || String(p.online_at||'')>=String(old.online_at||''))latest.set(p.character_id,p);
+   }
+  }
+ }
+ // Fallback limited to the room, only when the global channel has not connected.
+ if(!globalChannel){for(const p of peers.values())latest.set(p.character_id,p);}
+ // The current page is authoritative about our own character's location.
+ if(own())latest.set(own().id,globalPayload());
+ return [...latest.values()].sort((a,b)=>{
+  if(a.character_id===own().id)return -1;
+  if(b.character_id===own().id)return 1;
+  return String(a.name||'').localeCompare(String(b.name||''),'it');
+ });
+}
 function renderOnline(){
  const c=$('orologio-online-list');if(!c||!own()||!user)return;
- const people=[presencePayload(),...peers.values()].filter(p=>p&&p.character_id);
- const uniq=[...new Map(people.map(p=>[p.character_id,p])).values()];
- uniq.sort((a,b)=>a.character_id===own().id?-1:b.character_id===own().id?1:String(a.name||'').localeCompare(String(b.name||''),'it'));
+ const online=globalCharacters();
  c.replaceChildren();
- for(const p of uniq){
+ if(!online.length){c.innerHTML='<div class="dungeon-online-empty">Nessun personaggio online.</div>';return;}
+ for(const p of online){
   const row=document.createElement('div');row.className='dungeon-online-row';
-  const img=document.createElement('img');img.className='dungeon-online-token';safeTokenImage(img,p.token);img.alt='';
+  const img=document.createElement('img');img.className='dungeon-online-token';safeTokenImage(img,p.token);img.alt=p.name||'PG';
   const info=document.createElement('div');info.className='dungeon-online-info';
-  const name=document.createElement('div');name.className='dungeon-online-name';name.textContent=(p.name||'Avventuriero')+(p.character_id===own().id?' (tu)':'');name.title=name.textContent;
-  const loc=document.createElement('div');loc.className='dungeon-online-status';loc.textContent=CLOCK_LOCATION_LABELS[p.location]||String(p.location||'UBICAZIONE NON DISPONIBILE').toUpperCase();
-  const dot=document.createElement('span');dot.className='orologio-online-dot';dot.title='Presente nella Stanza dell’Orologio';
+  const name=document.createElement('div');name.className='dungeon-online-name';
+  name.textContent=(p.name||'Avventuriero')+(p.character_id===own().id?' (tu)':'');name.title=name.textContent;
+  const loc=document.createElement('div');loc.className='dungeon-online-status';
+  loc.textContent=(GLOBAL_LOCATION_LABELS[p.location]||'Posizione non disponibile')+(p.in_combat?' · In combattimento':'');
+  const dot=document.createElement('span');dot.className='dungeon-online-dot';
   info.append(name,loc);row.append(img,info,dot);c.append(row);
  }
+}
+async function setupOrologioGlobalPresence(){
+ globalChannel=socialDb().channel(GLOBAL_CHANNEL, {config:{presence:{key:own().id}}});
+ for(const event of ['sync','join','leave'])globalChannel.on('presence',{event},renderOnline);
+ await new Promise((resolve,reject)=>{
+  let settled=false;
+  globalChannel.subscribe(async status=>{
+   if(status==='SUBSCRIBED'){
+    try{await globalChannel.track(globalPayload());renderOnline();if(!settled){settled=true;resolve();}}
+    catch(e){if(!settled){settled=true;reject(e);}}
+   }else if((status==='TIMED_OUT'||status==='CHANNEL_ERROR')&&!settled){settled=true;reject(new Error('Presence globale: '+status));}
+  });
+ });
+}
+function syncPanelsWithMap(){
+ const frame=document.querySelector('.dungeon-map-frame');
+ const social=document.querySelector('.dungeon-layout > .dungeon-chat-column');
+ if(!frame||!social)return;
+ const update=()=>{
+  if(window.innerWidth<=760){social.style.removeProperty('--palazzo-map-panel-height');return;}
+  social.style.setProperty('--palazzo-map-panel-height', Math.round(frame.getBoundingClientRect().height)+'px');
+ };
+ update();
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(update).observe(frame);
+ window.addEventListener('resize',update,{passive:true});
 }
 function syncPeers(){if(!channel)return;const s=channel.presenceState();const next=new Map();for(const vals of Object.values(s)){for(const p of vals||[]){if(p.character_id&&p.character_id!==own().id&&p.location===floorId)next.set(p.character_id,p);}}
 peers.clear();for(const [id,p] of next)peers.set(id,p);for(const [id,e] of tokens)if(!next.has(id)){e.remove();tokens.delete(id);}
@@ -182,8 +242,18 @@ channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'dungeon_cha
 await new Promise((resolve,reject)=>{channel.subscribe(async status=>{if(status==='SUBSCRIBED'){try{await channel.track(presencePayload());syncPeers();resolve();}catch(e){reject(e)}}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')reject(new Error('Presence non disponibile: '+status));});});}
 async function moved(){if(!channel)return;const p=presencePayload();try{await channel.track(p);await channel.send({type:'broadcast',event:'player-move',payload:p});}catch(e){console.warn('Movimento Presence:',e)}}
 async function initSocial(){if(!socialDb()||!own())return;try{const res=await socialDb().auth.getUser();user=res.data?.user;if(!user)return;
-setupChat();await Promise.allSettled([history(),leaderboard()]);try{await presence();}catch(e){console.warn('Presence:',e);const c=$('orologio-online-list');if(c)c.textContent='Personaggi online temporaneamente non disponibili.';}
-document.addEventListener('orologio:move',()=>{renderOnline();void moved();});window.addEventListener('focus',()=>{if(channel){syncPeers();void channel.track(presencePayload());}});window.addEventListener('beforeunload',()=>{if(channel)socialDb().removeChannel(channel)});setInterval(leaderboard,90000);
+setupChat();syncPanelsWithMap();await Promise.allSettled([history(),leaderboard()]);try{await setupOrologioGlobalPresence();}catch(e){console.warn("Presence globale:",e);}try{await presence();}catch(e){console.warn('Presence:',e);const c=$('orologio-online-list');if(c && !globalChannel)c.textContent='Personaggi online temporaneamente non disponibili.';}
+document.addEventListener('orologio:move',()=>{void moved();});
+window.addEventListener('focus',()=>{
+ if(channel){syncPeers();void channel.track(presencePayload());}
+ if(globalChannel){void globalChannel.track(globalPayload());renderOnline();}
+});
+window.addEventListener('beforeunload',()=>{
+ if(channel){void channel.untrack();void socialDb().removeChannel(channel);}
+ if(globalChannel){void globalChannel.untrack();void socialDb().removeChannel(globalChannel);}
+});
+setInterval(()=>{renderOnline();},2500);
+setInterval(leaderboard,90000);
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
 
