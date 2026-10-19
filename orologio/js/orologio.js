@@ -89,7 +89,16 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 
 const own=()=>state()?.player;
 const current=()=>state()?.pos;
-const tokenPath=t=>'../immagini/token/'+String(t||'token_1.png').split('/').pop();
+const tokenPath=t=>{
+ const raw=String(t??'').trim();
+ const name=raw.split(/[\/]/).pop().split('?')[0].split('#')[0];
+ const valid=/^token_\d+\.png$/i.test(name)?name:'token_1.png';
+ return new URL('../immagini/token/'+valid,document.baseURI).href;
+};
+function safeTokenImage(img,t){
+ img.onerror=null; img.src=tokenPath(t);
+ img.onerror=()=>{img.onerror=null;img.src=tokenPath('token_1.png');};
+}
 function chatRow(r){const c=$('floor-chat-messages');if(!c||!r)return;
 const id=String(r.id||'');if(id&&seen.has(id))return;if(id)seen.add(id);
 if(c.querySelector('.chat-placeholder'))c.replaceChildren();
@@ -134,27 +143,26 @@ const peers=new Map(),tokens=new Map();
 function presencePayload(){return {character_id:own().id,user_id:user.id,name:own().nome||'Avventuriero',token:own().token||'token_1.png',x:current().x,y:current().y,location:floorId,online_at:new Date().toISOString()};}
 function coords(e,p){const g=state().grid; e.style.left=((g.gridX+p.x*g.cellWidthPx)/g.imageWidth*100)+'%';e.style.top=((g.gridY+p.y*g.cellHeightPx)/g.imageHeight*100)+'%';e.style.width=(g.cellWidthPx/g.imageWidth*100)+'%';e.style.height=(g.cellHeightPx/g.imageHeight*100)+'%';}
 function renderOnline(){
- const c=$('dungeon-online-list');if(!c||!own()||!user)return;
+ const c=$('orologio-online-list');if(!c||!own()||!user)return;
  c.replaceChildren();
  for(const p of [presencePayload(),...peers.values()]){
    const row=document.createElement('div');row.className='dungeon-online-player';
    const img=document.createElement('img');img.className='orologio-online-avatar';
-   img.src=tokenPath(p.token);img.alt='';img.loading='lazy';
-   img.onerror=()=>{img.onerror=null;img.src='../immagini/token/token_1.png';};
+   safeTokenImage(img,p.token);img.alt='';img.loading='lazy';
    const label=document.createElement('span');label.textContent=p.name+(p.character_id===own().id?' (tu)':'');
    row.append(img,label);c.append(row);
  }
 }
 function syncPeers(){if(!channel)return;const s=channel.presenceState();const next=new Map();for(const vals of Object.values(s)){for(const p of vals||[]){if(p.character_id&&p.character_id!==own().id&&p.location===floorId)next.set(p.character_id,p);}}
 peers.clear();for(const [id,p] of next)peers.set(id,p);for(const [id,e] of tokens)if(!next.has(id)){e.remove();tokens.delete(id);}
-for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createElement('div');el.className='orologio-other-token';const img=document.createElement('img');img.src=tokenPath(p.token);const name=document.createElement('span');name.className='other-player-name';name.textContent=p.name;el.append(img,name);$('dungeon-map').append(el);tokens.set(id,el);}coords(el,p);}renderOnline();}
+for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createElement('div');el.className='orologio-other-token';const img=document.createElement('img');safeTokenImage(img,p.token);const name=document.createElement('span');name.className='other-player-name';name.textContent=p.name;el.append(img,name);$('dungeon-map').append(el);tokens.set(id,el);}coords(el,p);}renderOnline();}
 async function presence(){channel=socialDb().channel(channelName,{config:{presence:{key:own().id},broadcast:{self:false}}});channel.on('presence',{event:'sync'},syncPeers);
 channel.on('broadcast',{event:'player-move'},({payload:p})=>{if(!p||!peers.has(p.character_id))return;peers.set(p.character_id,p);const t=tokens.get(p.character_id);if(t)coords(t,p);renderOnline();});
 channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'dungeon_chat_messages',filter:'floor_id=eq.'+floorId},({new:r})=>chatRow(r));
 await new Promise((resolve,reject)=>{channel.subscribe(async status=>{if(status==='SUBSCRIBED'){try{await channel.track(presencePayload());resolve();}catch(e){reject(e)}}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')reject(new Error('Presence non disponibile: '+status));});});}
 async function moved(){if(!channel)return;const p=presencePayload();try{await channel.track(p);await channel.send({type:'broadcast',event:'player-move',payload:p});}catch(e){console.warn('Movimento Presence:',e)}}
 async function initSocial(){if(!socialDb()||!own())return;try{const res=await socialDb().auth.getUser();user=res.data?.user;if(!user)return;
-setupChat();await Promise.allSettled([history(),leaderboard()]);try{await presence();}catch(e){console.warn('Presence:',e);const c=$('dungeon-online-list');if(c)c.textContent='Personaggi online temporaneamente non disponibili.';}
+setupChat();await Promise.allSettled([history(),leaderboard()]);try{await presence();}catch(e){console.warn('Presence:',e);const c=$('orologio-online-list');if(c)c.textContent='Personaggi online temporaneamente non disponibili.';}
 document.addEventListener('orologio:move',moved);window.addEventListener('beforeunload',()=>{if(channel)socialDb().removeChannel(channel)});setInterval(leaderboard,90000);
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
@@ -177,11 +185,12 @@ function actionRefresh(){
    if(count)count.textContent='x'+(item?Number(item.quantity):0);
    if(el)el.disabled=actionsBusy||!item||(Number(own()?.[type==='hp'?'current_hp':'current_pm'])>=statMax(type));
  }
+ updateExtraConsumables();
  const payday=$('dungeon-giorno-paga-button');if(payday){payday.style.display=owned('giorno_paga')?'':'none';payday.disabled=actionsBusy||!owned('giorno_paga');}
 }
 async function actionData(){
  const [i,a]=await Promise.all([
-  socialDb().from('character_inventory').select('id,quantity,item:items(id,name,heal_pf,heal_pm)').eq('character_id',own().id),
+  socialDb().from('character_inventory').select('id,quantity,equipped_slot,item:items(id,name,heal_pf,heal_pm)').eq('character_id',own().id),
   socialDb().from('character_abilities').select('ability_id,level,ability:abilities(id,name,pm_cost)').eq('character_id',own().id)
  ]);
  if(i.error)throw i.error;if(a.error)throw a.error;
@@ -211,8 +220,50 @@ async function castPayday(){
  catch(e){message('Giorno Paga: '+e.message,true);}
  finally{actionsBusy=false;actionRefresh();}
 }
+
+// Consumabili condivisi, mantenendo le RPC server-side di Palazzo Eterno.
+function addExtraButton(id,title,icon,text,onClick){
+ let button=$(id);if(button)return button;
+ const panel=document.querySelector('.dungeon-actions-panel');if(!panel)return null;
+ button=document.createElement('button');button.id=id;button.className='dungeon-action-card';button.type='button';
+ const ico=document.createElement('span');ico.className='action-card-icon';ico.textContent=icon;
+ const txt=document.createElement('span');txt.className='action-card-content';
+ const strong=document.createElement('strong');strong.textContent=title;
+ const small=document.createElement('small');small.textContent=text;
+ txt.append(strong,small);button.append(ico,txt);
+ panel.insertBefore(button,panel.querySelector('.dungeon-action-pagination'));
+ button.addEventListener('click',onClick);
+ return button;
+}
+function quantityOf(id){return inventoryRows.filter(r=>r.item?.id===id&&!r.equipped_slot).reduce((n,r)=>n+(Number(r.quantity)||0),0);}
+function updateExtraConsumables(){
+ const f=$('dungeon-fruit-button'),s=$('dungeon-spatial-coin-button');
+ if(f){const q=quantityOf('frutto_carnoso');f.style.display=q?'':'none';f.disabled=actionsBusy||!q||(Number(own()?.current_hp)>=statMax('hp')&&Number(own()?.current_pm)>=statMax('pm'));f.querySelector('small').textContent='x'+q;}
+ if(s){const q=quantityOf('moneta_spaziale');s.style.display=q?'':'none';s.disabled=actionsBusy||!q||Boolean(own()?.active_combat_id);s.querySelector('small').textContent='x'+q;}
+}
+async function eatFruit(){
+ if(actionsBusy)return;const row=inventoryRows.find(r=>r.item?.id==='frutto_carnoso'&&!r.equipped_slot&&Number(r.quantity)>0);if(!row)return;
+ actionsBusy=true;actionRefresh();
+ try{const {data,error}=await socialDb().rpc('use_piano_ia_fruit',{p_inventory_id:row.id});if(error)throw error;
+  if(data?.current_pf!=null)own().current_hp=Number(data.current_pf);
+  if(data?.current_pm!=null)own().current_pm=Number(data.current_pm);
+  updateCharacter();message('Frutto Carnoso utilizzato. PF e PM aggiornati.');
+ }catch(e){console.error('Frutto Orologio:',e);message(e.message||'Frutto non disponibile qui.',true);}
+ finally{actionsBusy=false;await actionData().catch(console.warn);}
+}
+async function spatialCoin(){
+ if(actionsBusy||!quantityOf('moneta_spaziale')||!window.confirm('Usare una Moneta Spaziale per tornare alla Base?'))return;
+ actionsBusy=true;actionRefresh();
+ try{const {data,error}=await socialDb().rpc('use_spatial_coin');if(error)throw error;
+ if(data?.ok===false)throw new Error('Teletrasporto non riuscito.');
+ window.location.replace('../base/base.html');
+ }catch(e){console.error('Moneta Spaziale Orologio:',e);message(e.message||'Impossibile usare la Moneta Spaziale.',true);actionsBusy=false;await actionData().catch(console.warn);}
+}
+
 async function initActions(){
  const heal=$('dungeon-heal-button');if(heal)heal.disabled=true;
+ addExtraButton('dungeon-fruit-button','FRUTTO CARNOSO','✿','x0',eatFruit);
+ addExtraButton('dungeon-spatial-coin-button','MONETA SPAZIALE','✦','x0',spatialCoin);
  const mana=$('dungeon-mana-potion-button');
  if(mana&&!$('dungeon-giorno-paga-button')){
   const btn=mana.cloneNode(true);btn.id='dungeon-giorno-paga-button';btn.dataset.action='giorno-paga';btn.querySelector('strong').textContent='GIORNO PAGA';btn.querySelector('.action-card-icon').textContent='¤';

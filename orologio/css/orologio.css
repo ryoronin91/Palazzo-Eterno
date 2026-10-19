@@ -4842,3 +4842,9 @@ body.base-trade-open {
 .dungeon-online-player {display:flex!important;align-items:center;gap:7px;min-width:0;overflow:hidden;font-size:12px;}
 .dungeon-online-player > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .orologio-online-avatar {width:28px;height:28px;object-fit:contain;flex:0 0 28px;border-radius:50%;}
+
+/* OROLOGIO V9: Lista Presence autonoma per evitare collisioni con il renderer globale. */
+#orologio-online-list{min-height:0;overflow:auto;max-width:100%;}
+#orologio-online-list .dungeon-online-player{display:flex;align-items:center;gap:8px;min-width:0;}
+#orologio-online-list .orologio-online-avatar{width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px;object-fit:contain;border-radius:50%;}
+#orologio-online-list .dungeon-online-player span{min-width:0;overflow-wrap:anywhere;}
