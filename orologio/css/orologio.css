@@ -4836,3 +4836,7 @@ body.base-trade-open {
 .dungeon-map .orologio-other-token img {width:100%;height:100%;object-fit:contain}
 .dungeon-map .orologio-other-token .other-player-name {max-width:110px;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;background:#201a17d9;color:#fff;padding:2px 4px;font-size:9px}
 .orologio-action-notice{font-size:11px;line-height:1.4;padding:8px;margin:6px 0;background:#eee4ca;border:1px solid #a18f68}
+
+/* Stanza Orologio: pedine remote */
+.orologio-other-token {position:absolute;display:flex;align-items:center;justify-content:center;z-index:35;pointer-events:none;}
+.orologio-other-token img {width:100%;height:100%;object-fit:contain;}
