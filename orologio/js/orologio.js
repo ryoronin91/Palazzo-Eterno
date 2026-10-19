@@ -118,7 +118,7 @@ function renderClockNumerals(){
 const CLOCK_HAND_CONFIG = {
   image: 'immagini/lancetta.png',
   x: 14,
-  y: 3,
+  y: 13,
   offsetX: 0,
   offsetY: 0,
   widthCells: 2,
