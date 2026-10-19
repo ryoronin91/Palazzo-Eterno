@@ -116,15 +116,15 @@ function renderClockNumerals(){
 // Non modifica collisioni, movimento o stato dei 12 numeri.
 // ============================================================
 const CLOCK_HAND_CONFIG = {
-  image: 'immagini/lancetta.png',
-  x: 14,
-  y: 13,
-  offsetX: 0,
-  offsetY: 0,
-  widthCells: 2,
-  heightCells: 11,
-  rotationDeg: 0,
-  opacity: 1
+    image: 'immagini/lancetta.png',
+    x: 14,
+    y: 3,
+    offsetX: -1.75,
+    offsetY: -4.20,
+    widthCells: 3.60,
+    heightCells: 19.80,
+    rotationDeg: 0,
+    opacity: 1
 };
 
 // Utile per piccoli aggiustamenti dalla console, senza modificare il file:
