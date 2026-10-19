@@ -1,25 +1,29 @@
 {
   "id": "palazzo_eterno_stanza_orologio",
   "name": "Palazzo Eterno - Stanza dell’Orologio",
-  "version": 3,
+  "version": 4,
   "image": "immagini/stanza_orologio.png",
   "grid": {
     "columns": 29,
     "rows": 29,
     "origin": "top-left",
     "coordinate_format": "x,y",
-    "cell_size_px": 43.45,
-    "offset_x_px": 20,
-    "offset_y_px": 20,
+    "cell_size_px": 43.44,
+    "offset_x_px": 19,
+    "offset_y_px": 19,
     "image_width_px": 1254,
-    "image_height_px": 1254
+    "image_height_px": 1254,
+    "cell_width_px": 43.44,
+    "cell_height_px": 44.78
   },
   "notes": [
-    "Griglia calibrata sulle linee del pavimento dell’immagine 1254×1254: passo circa 43,45 pixel, origine circa 20 pixel.",
     "Il movimento usa offset_x_px, offset_y_px e cell_size_px; non suddivide semplicemente l’immagine in celle uniformi partendo da zero.",
     "Anello e quattro corridoi percorribili; zona centrale bloccata.",
     "Le coordinate partono da x0,y0; nessun salvataggio sulle coordinate del Livello Base.",
-    "Correzione basata sul markup utente del 2026-10-19: croci verdi forzate come percorribili, croci rosse forzate come non percorribili."
+    "Correzione basata sul markup utente del 2026-10-19: croci verdi forzate come percorribili, croci rosse forzate come non percorribili.",
+    "Ricalibrato sulla nuova immagine finale della Stanza dell’Orologio (1254×1254), con allineamento separato su asse X e asse Y.",
+    "La mappa usa 29×29 celle logiche; larghezza cella ≈ 43.44 px, altezza cella ≈ 44.78 px, offset iniziale ≈ 19 px.",
+    "Le caselle percorribili/non percorribili restano quelle corrette secondo il markup utente con croci verdi e rosse."
   ],
   "areas": [
     {
