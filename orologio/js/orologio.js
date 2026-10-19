@@ -106,6 +106,63 @@ function renderClockNumerals(){
   }
 }
 
+// ============================================================
+// LANCETTA — CONFIGURAZIONE RAPIDA
+// Modifica SOLO questi valori per regolare la posizione, senza
+// toccare il resto del file. X/Y = angolo in alto a sinistra.
+// offsetX / offsetY = spostamento fine, in frazioni di casella
+// (esempio: -0.25 = un quarto di casella a sinistra).
+// widthCells / heightCells = ingombro grafico in caselle.
+// Non modifica collisioni, movimento o stato dei 12 numeri.
+// ============================================================
+const CLOCK_HAND_CONFIG = {
+  image: 'immagini/lancetta.png',
+  x: 14,
+  y: 3,
+  offsetX: 0,
+  offsetY: 0,
+  widthCells: 2,
+  heightCells: 11,
+  rotationDeg: 0,
+  opacity: 1
+};
+
+// Utile per piccoli aggiustamenti dalla console, senza modificare il file:
+// OrologioLancetta.offsetX = -0.25; OrologioLancetta.render();
+window.OrologioLancetta = Object.assign(CLOCK_HAND_CONFIG, {
+  render: renderClockHand
+});
+
+function renderClockHand(){
+  const map=$('dungeon-map');
+  if(!map)return;
+  let hand=$('orologio-lancetta');
+  if(!hand){
+    hand=document.createElement('img');
+    hand.id='orologio-lancetta';
+    hand.alt='Lancetta dell’Orologio';
+    hand.draggable=false;
+    map.appendChild(hand);
+  }
+  const cfg=CLOCK_HAND_CONFIG;
+  hand.src=cfg.image;
+  Object.assign(hand.style,{
+    position:'absolute',
+    left:((gridX+(Number(cfg.x)+Number(cfg.offsetX))*cellWidthPx)/imageWidth*100)+'%',
+    top:((gridY+(Number(cfg.y)+Number(cfg.offsetY))*cellHeightPx)/imageHeight*100)+'%',
+    width:(Number(cfg.widthCells)*cellWidthPx/imageWidth*100)+'%',
+    height:(Number(cfg.heightCells)*cellHeightPx/imageHeight*100)+'%',
+    objectFit:'contain',
+    objectPosition:'center top',
+    transform:'rotate('+Number(cfg.rotationDeg)+'deg)',
+    transformOrigin:'center center',
+    opacity:String(cfg.opacity),
+    zIndex:'14',
+    pointerEvents:'none',
+    userSelect:'none'
+  });
+}
+
 function renderToken(){const map=$('dungeon-map');if(!map)return;
  token=document.createElement('div');token.className='dungeon-player-token orologio-token';
  const img=document.createElement('img');img.src='../immagini/token/'+(player.token||'token_1.png');img.alt=player.nome||'PG';img.draggable=false;token.appendChild(img);map.appendChild(token);positionToken();}
@@ -145,7 +202,7 @@ function controls(){
  $('dungeon-map')?.addEventListener('click',e=>{const map=$('dungeon-map');const rect=map.getBoundingClientRect();const x=Math.floor((((e.clientX-rect.left)/rect.width)*imageWidth-gridX)/cellWidthPx),y=Math.floor((((e.clientY-rect.top)/rect.height)*imageHeight-gridY)/cellHeightPx);if(Math.abs(x-pos.x)+Math.abs(y-pos.y)===1)move(x-pos.x,y-pos.y);});
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
-async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderClockNumerals();renderToken();controls();zoom(13);queueOrologioPosition();
+async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderClockNumerals();renderClockHand();renderToken();controls();zoom(13);queueOrologioPosition();
  initOrologioNotes().catch(e=>console.warn('Note Orologio:',e));initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 // --- OROLOGIO · CHAT, TOP 5 E PRESENCE (fase 2) ---
