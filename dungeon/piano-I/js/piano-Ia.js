@@ -1137,12 +1137,9 @@ function renderDungeonLeaderboard(rows) {
         const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
-            const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
             // Ogni pagina parte da una cartella differente rispetto alla root.
-            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
-                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            const path = rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
             const iconPath = escapeDungeonLeaderboardHtml(path);
             const title = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
@@ -1154,7 +1151,7 @@ function renderDungeonLeaderboard(rows) {
         }).join("");
         return `<div class="dungeon-leaderboard-row">
             <div class="dungeon-leaderboard-main">
-                <span class="dungeon-leaderboard-position">#${position}</span>
+                <span class="dungeon-leaderboard-position" style="${position === 1 ? 'color:#f4c44f;-webkit-text-fill-color:#f4c44f' : position === 2 ? 'color:#cbd6e4;-webkit-text-fill-color:#cbd6e4' : position === 3 ? 'color:#d49a68;-webkit-text-fill-color:#d49a68' : ''}">#${position}</span>
                 <span class="dungeon-leaderboard-name" title="${name}">${name}</span>
                 <span class="dungeon-leaderboard-score">${score.toLocaleString("it-IT")}</span>
             </div>
