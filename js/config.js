@@ -21,7 +21,8 @@ console.log(supabaseClient);
     const AREA_LABELS = {
         base: "Base",
         dungeon: "Dungeon",
-        dungeon_Ia: "I - Giungla Bassa"
+        dungeon_Ia: "I - Giungla Bassa",
+        orologio: "Stanza dell’Orologio"
     };
     const players = new Map();
     let channel = null;
@@ -34,6 +35,7 @@ console.log(supabaseClient);
         if (path.includes("/base/services/")) return "../../../";
         if (path.includes("/dungeon/piano-")) return "../../";
         if (path.includes("/base/")) return "../";
+        if (path.includes("/orologio/")) return "../";
         return "";
     }
 
@@ -42,6 +44,7 @@ console.log(supabaseClient);
         if (path.includes("/dungeon/piano-I/")) return "dungeon_Ia";
         if (path.includes("/dungeon/piano-1/")) return "dungeon";
         if (path.includes("/base/")) return "base";
+        if (path.includes("/orologio/")) return "orologio";
         return null;
     }
 
@@ -50,6 +53,7 @@ console.log(supabaseClient);
             value === "locanda" || value === "addestratore" || value === "questgiver") return "base";
         if (value === "dungeon_Ia") return "dungeon_Ia";
         if (value === "dungeon") return "dungeon";
+        if (value === "orologio") return "orologio";
         return null;
     }
 
