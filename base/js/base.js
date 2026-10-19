@@ -4561,6 +4561,13 @@ function moveBasePlayer(dx, dy) {
     }
 
 
+    // Token combat: il PG non può entrarci. Si apre il popup
+    // solo quando tenta di attraversare la relativa casella.
+    if (typeof tryActivateBaseCombatAt === "function" &&
+        tryActivateBaseCombatAt(newX, newY)) {
+        return false;
+    }
+
     // ========================================================
     // CANCELLO A SENSO UNICO X18 Y10 -> X18 Y9
     // ========================================================
@@ -4675,27 +4682,6 @@ function moveBasePlayer(dx, dy) {
     "function"
 ) {
     checkBaseTeleportEvent();
-}
-
-
-
-
-// ========================================================
-// COMBAT DEL LIVELLO BASE
-// ========================================================
-//
-// Dopo ogni movimento controlla se il PG è adiacente a uno
-// dei due combat X8 Y7 / X10 Y7 definiti in eventi_base.js.
-// Il controllo apre il popup singolo oppure la scelta tra i
-// due scontri quando il PG si trova nella zona centrale.
-// ========================================================
-
-
-if (
-    typeof checkNearbyBaseCombatEvents ===
-    "function"
-) {
-    checkNearbyBaseCombatEvents();
 }
 
 

@@ -4946,6 +4946,13 @@ async function performMovement(
 
 
 
+    // Token combat: collisione intenzionale per aprire il popup.
+    // La casella rimane occupata e non viene attraversata.
+    if (typeof tryActivateDungeonCombatAt === "function" &&
+        tryActivateDungeonCombatAt(newX, newY)) {
+        return false;
+    }
+
     // --------------------------------------------------------
     // MURO
     // --------------------------------------------------------
@@ -5021,24 +5028,11 @@ async function performMovement(
     recordCurrentFloorVisit();
 
 
-    let hasNearbyCombatEvent =
-    false;
-
-
-
-
-if (
-    typeof checkNearbyCombatEvents ===
-    "function"
-) {
-
-
-    hasNearbyCombatEvent =
-        checkNearbyCombatEvents() === true;
-
-
-}
-
+    // Solo eventi della casella corrente (scale e comunicazioni).
+    // I combattimenti NON si attivano più avvicinandosi.
+    const hasNearbyCombatEvent = typeof checkNearbyCombatEvents === "function"
+        ? checkNearbyCombatEvents() === true
+        : false;
 
     // --------------------------------------------------------
     // REALTIME SENZA BLOCCARE IL MOVIMENTO

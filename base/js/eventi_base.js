@@ -849,6 +849,21 @@ function renderBaseCombatEvents() {
                 token.dataset.eventId =
                     combatEvent.id;
 
+                token.setAttribute("role", "button");
+                token.tabIndex = 0;
+                token.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    activateBaseCombatToken(combatEvent);
+                });
+                token.addEventListener("keydown", event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        activateBaseCombatToken(combatEvent);
+                    }
+                });
+
 
                 token.title =
                     combatEvent.label;
@@ -1018,8 +1033,8 @@ function positionBaseCombatToken(
         "5";
 
 
-    element.style.pointerEvents =
-        "none";
+    element.style.pointerEvents = "auto";
+    element.style.cursor = "pointer";
 
 }
 
@@ -1143,91 +1158,31 @@ function getNearbyBaseCombatEvents() {
 // ============================================================
 
 function checkNearbyBaseCombatEvents() {
-
-    if (
-        baseCombatPromptOpen
-    ) {
-
-        return true;
-
-    }
-
-
-    const nearbyEvents =
-        getNearbyBaseCombatEvents();
-
-
-    if (
-        nearbyEvents.length === 0
-    ) {
-
-        nearbyBaseCombatKey =
-            null;
-
-        return false;
-
-    }
-
-
-    const detectionKey =
-        nearbyEvents
-            .map(
-                event =>
-                    event.id
-            )
-            .sort()
-            .join("|");
-
-
-    if (
-        nearbyBaseCombatKey ===
-        detectionKey
-    ) {
-
-        return true;
-
-    }
-
-
-    nearbyBaseCombatKey =
-        detectionKey;
-
-
-    // --------------------------------------------------------
-    // UN SOLO COMBAT DISPONIBILE
-    // --------------------------------------------------------
-
-    if (
-        nearbyEvents.length === 1
-    ) {
-
-        openBaseCombatPrompt(
-            nearbyEvents[0]
-        );
-
-        return true;
-
-    }
-
-
-    // --------------------------------------------------------
-    // DUE COMBAT CONTEMPORANEAMENTE ADIACENTI
-    //
-    // Succede nelle caselle:
-    // X9 Y6
-    // X9 Y7
-    // X9 Y8
-    // --------------------------------------------------------
-
-    openBaseCombatChoicePrompt(
-        nearbyEvents
-    );
-
-
-    return true;
-
+    // Non aprire nulla con la sola vicinanza.
+    return false;
 }
 
+function activateBaseCombatToken(combatEvent) {
+    if (!combatEvent || baseCombatPromptOpen ||
+        !isBaseCombatEventAvailable(combatEvent)) return false;
+    if (basePlayerX == null || basePlayerY == null) return false;
+    if (Math.max(Math.abs(basePlayerX - combatEvent.x),
+                 Math.abs(basePlayerY - combatEvent.y)) > 1) {
+        setMessage("Avvicinati al nemico per affrontarlo.");
+        return false;
+    }
+    openBaseCombatPrompt(combatEvent);
+    return true;
+}
+
+function tryActivateBaseCombatAt(x, y) {
+    const combatEvent = BASE_COMBAT_EVENTS.find(event =>
+        Number(event.x) === Number(x) && Number(event.y) === Number(y) &&
+        isBaseCombatEventAvailable(event));
+    if (!combatEvent) return false;
+    activateBaseCombatToken(combatEvent);
+    return true;
+}
 
 // ============================================================
 // POPUP COMBAT SINGOLO

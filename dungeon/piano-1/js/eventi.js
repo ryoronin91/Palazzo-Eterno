@@ -128,12 +128,6 @@ async function refreshRareEventState() {
             closeCombatPrompt();
             nearbyCombatEventId = null;
         }
-        if ((previousRun !== rareEventState.run_id || previousPhase !== rareEventState.phase) &&
-            playerX !== null && playerY !== null && !eventLocked &&
-            typeof checkNearbyCombatEvents === "function") {
-            nearbyCombatEventId = null;
-            checkNearbyCombatEvents();
-        }
         return rareEventState;
     } catch (error) {
         console.warn("Evento Puzzacinta non disponibile:", error);
@@ -1841,78 +1835,31 @@ function getNearbyCombatEvent() {
 // ============================================================
 
 function checkNearbyCombatEvents() {
+    // La vicinanza non avvia mai un combattimento.
+    // Le scale e gli altri eventi sulla casella restano funzionanti.
+    return checkCommunicationEvent() === true;
+}
 
-    // ========================================================
-    // EVENTO COMUNICAZIONE SULLA CASELLA ATTUALE
-    // ========================================================
-
-    if (
-        checkCommunicationEvent() ===
-        true
-    ) {
-
-        return true;
-
-    }
-
-
-    // ========================================================
-    // EVENTO COMBAT NELLE VICINANZE
-    // ========================================================
-
-    const combatEvent =
-        getNearbyCombatEvent();
-
-
-    if (!combatEvent) {
-
-        nearbyCombatEventId =
-            null;
-
+function activateDungeonCombatToken(combatEvent) {
+    if (!combatEvent || combatPromptOpen ||
+        !isDungeonCombatEventAvailable(combatEvent)) return false;
+    if (playerX == null || playerY == null) return false;
+    if (Math.max(Math.abs(playerX - combatEvent.x),
+                 Math.abs(playerY - combatEvent.y)) > 1) {
+        setMessage("Avvicinati al nemico per affrontarlo.");
         return false;
-
     }
-
-
-    // Evita di rilevare continuamente
-    // lo stesso evento mentre il PG resta fermo.
-
-    if (
-        nearbyCombatEventId ===
-        combatEvent.id
-    ) {
-
-        return true;
-
-    }
-
-
-    nearbyCombatEventId =
-        combatEvent.id;
-
-
-    console.log(
-        `Evento combat vicino: ${combatEvent.id}`,
-        combatEvent
-    );
-
-
-    setMessage(
-        combatEvent.type === "pvp"
-            ? "Scorgi l'ingresso dell'Arena PvP."
-            : combatEvent.type === "rare"
-                ? (rareEventState?.phase === "dialogue" ? "Una figura incappucciata ti osserva." : "Berserk ruggisce nelle vicinanze!")
-                : "Percepisci una presenza ostile nelle vicinanze."
-    );
-
-
-    openCombatPrompt(
-        combatEvent
-    );
-
-
+    openCombatPrompt(combatEvent);
     return true;
+}
 
+function tryActivateDungeonCombatAt(x, y) {
+    const combatEvent = DUNGEON_COMBAT_EVENTS.find(event =>
+        Number(event.x) === Number(x) && Number(event.y) === Number(y) &&
+        isDungeonCombatEventAvailable(event));
+    if (!combatEvent) return false;
+    activateDungeonCombatToken(combatEvent);
+    return true;
 }
 
 // ============================================================
@@ -1986,6 +1933,21 @@ function renderCombatEvents() {
 
                 token.dataset.eventId =
                     combatEvent.id;
+
+                token.setAttribute("role", "button");
+                token.tabIndex = 0;
+                token.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    activateDungeonCombatToken(combatEvent);
+                });
+                token.addEventListener("keydown", event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        activateDungeonCombatToken(combatEvent);
+                    }
+                });
 
 
                 token.title =
@@ -2129,6 +2091,9 @@ function positionCombatEventToken(
             cellHeight
         ) * 1.10;
 
+
+    element.style.pointerEvents = "auto";
+    element.style.cursor = "pointer";
 
     element.style.width =
         `${tokenSize}px`;
