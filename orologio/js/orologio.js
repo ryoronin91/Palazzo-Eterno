@@ -8,6 +8,7 @@ const POSITION_KEY='palazzo_eterno_orologio_position';
 let cols=COLS_DEFAULT,rows=ROWS_DEFAULT,view=13;
 let imageWidth=1254,imageHeight=1254,gridX=19,gridY=19,cellWidthPx=43.44,cellHeightPx=43.44;
 let walkable=new Set(), blocked=new Set(),player=null, token=null, pos={x:14,y:26}, bonuses={};
+window.OrologioState={get player(){return player;},get pos(){return {...pos};},get token(){return token;},get grid(){return {gridX,gridY,cellWidthPx,cellHeightPx,imageWidth,imageHeight};},get walkable(){return walkable;},get isWalkable(){return isWalkable;}};
 const $=id=>document.getElementById(id);
 const key=(x,y)=>`${x},${y}`;
 function message(s,error=false){const e=$('dungeon-message');if(e){e.textContent=s;e.classList.toggle('error',error);}}
@@ -65,7 +66,7 @@ function zoom(v){view=Math.max(5,Math.min(Math.max(cols,rows),Math.round(v)));co
  map.style.setProperty('width',`${zoomFactor*100}%`,'important');map.style.setProperty('height',`${zoomFactor*100}%`,'important');
  map.style.setProperty('--orologio-view-cells',String(view));put('base-zoom-reset',`${view} × ${view}`);camera(true);positionToken();}
 function move(dx,dy){const nx=pos.x+dx,ny=pos.y+dy;if(!isWalkable(nx,ny)){message('Passaggio bloccato.');return;}
- pos={x:nx,y:ny};sessionStorage.setItem(POSITION_KEY,JSON.stringify(pos));positionToken();camera();message('Stanza dell’Orologio');}
+ pos={x:nx,y:ny};sessionStorage.setItem(POSITION_KEY,JSON.stringify(pos));positionToken();camera();document.dispatchEvent(new CustomEvent('orologio:move',{detail:{...pos}}));message('Stanza dell’Orologio');}
 function controls(){
  $('base-zoom-out')?.addEventListener('click',()=>zoom(view+(view<20?2:8)));
  $('base-zoom-in')?.addEventListener('click',()=>zoom(view-(view<=20?2:8)));
@@ -76,7 +77,7 @@ function controls(){
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
 async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderToken();controls();zoom(13);
- message('Stanza dell’Orologio caricata. Griglia e mappa centrate; il disco centrale è inaccessibile.');
+ document.dispatchEvent(new Event('orologio:ready'));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 document.addEventListener('DOMContentLoaded',init);
 })();
