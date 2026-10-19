@@ -507,7 +507,7 @@ const CAMERA_TRANSITION_MS = 170;
 
 
 const DUNGEON_CHANNEL_NAME =
-    "palazzo-eterno-dungeon-Ia";
+    "palazzo-eterno-dungeon-1";
 
 
 
@@ -944,7 +944,6 @@ document.addEventListener(
 
 
             await setupRealtimeMultiplayer();
-        window.PalazzoPresence?.render();
             await recoverDungeonTradeState();
 
 
@@ -1138,13 +1137,14 @@ function renderDungeonLeaderboard(rows) {
         const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
+            const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            // Usa l'icona restituita da Supabase (Goblin, Berserk o entrambi).
-            // La pagina parte da una sottocartella rispetto alla root.
-            const path = rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
+            // Ogni pagina parte da una cartella differente rispetto alla root.
+            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
+                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
             const iconPath = escapeDungeonLeaderboardHtml(path);
-            const floorNumber = Number(badge?.floor_number) || 0;
-            const title = escapeDungeonLeaderboardHtml(floorNumber > 0 ? `${badge?.badge_name || badge?.display_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || badge?.display_name || "Boss sconfitto");
+            const title = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
             return `<span class="dungeon-leaderboard-badge-wrap" title="${title}">
                 <img class="dungeon-leaderboard-badge" src="${iconPath}" alt="${badgeName}" loading="lazy"
@@ -6861,7 +6861,303 @@ in_combat:
 // ============================================================
 
 
-function renderDungeonOnlinePlayers() { window.PalazzoPresence?.render(); }
+function renderDungeonOnlinePlayers() {
+
+
+    const container =
+        document.getElementById(
+            "dungeon-online-list"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (
+        !dungeonChannel ||
+        !character
+    ) {
+
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Connessione...
+                </div>
+            `;
+
+
+        return;
+    }
+
+
+    const state =
+        dungeonChannel.presenceState();
+
+
+    const playersById =
+        new Map();
+
+
+    Object.values(state).forEach(
+        presences => {
+
+
+            presences.forEach(
+                presence => {
+
+
+                    if (
+                        !presence ||
+                        !presence.character_id
+                    ) {
+
+
+                        return;
+                    }
+
+
+                    const old =
+                        playersById.get(
+                            presence.character_id
+                        );
+
+
+                    if (
+                        !old ||
+                        String(
+                            presence.online_at ||
+                            ""
+                        ) >=
+                        String(
+                            old.online_at ||
+                            ""
+                        )
+                    ) {
+
+
+                        playersById.set(
+                            presence.character_id,
+                            presence
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+
+    if (
+        character.id &&
+        !playersById.has(
+            character.id
+        )
+    ) {
+
+
+        playersById.set(
+            character.id,
+            getMyPresenceData()
+        );
+    }
+
+
+    const players =
+        Array.from(
+            playersById.values()
+        )
+            .sort(
+                (
+                    a,
+                    b
+                ) => {
+
+
+                    const aIsMe =
+                        a.character_id ===
+                            character.id;
+
+
+                    const bIsMe =
+                        b.character_id ===
+                            character.id;
+
+
+                    if (aIsMe !== bIsMe) {
+
+
+                        return aIsMe
+                            ? -1
+                            : 1;
+                    }
+
+
+                    return String(
+                        a.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            b.name ||
+                            ""
+                        ),
+                        "it"
+                    );
+                }
+            );
+
+
+    if (
+        players.length === 0
+    ) {
+
+
+        container.innerHTML =
+            `
+                <div class="dungeon-online-empty">
+                    Nessun personaggio online.
+                </div>
+            `;
+
+
+        return;
+    }
+
+
+    container.replaceChildren();
+
+
+    players.forEach(
+        player => {
+
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "dungeon-online-row";
+
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+
+            image.className =
+                "dungeon-online-token";
+
+
+            image.src =
+                "../../immagini/token/" +
+                (
+                    player.token ||
+                    "token_1.png"
+                );
+
+
+            image.alt =
+                player.name ||
+                "Personaggio";
+
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+
+            info.className =
+                "dungeon-online-info";
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "dungeon-online-name";
+
+
+            const isMe =
+                player.character_id ===
+                    character.id;
+
+
+            name.textContent =
+                `${
+                    player.name ||
+                    "Avventuriero"
+                }${
+                    isMe
+                        ? " (tu)"
+                        : ""
+                }`;
+
+
+            const status =
+                document.createElement(
+                    "div"
+                );
+
+
+            const inCombat =
+                player.in_combat === true ||
+                !!player.active_combat_id;
+
+
+            status.className =
+                "dungeon-online-status" +
+                (
+                    inCombat
+                        ? " in-combat"
+                        : ""
+                );
+
+
+            status.textContent =
+                inCombat
+                    ? "⚔ In combattimento"
+                    : "Nel dungeon";
+
+
+            const dot =
+                document.createElement(
+                    "span"
+                );
+
+
+            dot.className =
+                "dungeon-online-dot";
+
+
+            info.append(
+                name,
+                status
+            );
+
+
+            row.append(
+                image,
+                info,
+                dot
+            );
+
+
+            container.appendChild(
+                row
+            );
+        }
+    );
+}
+
+
 
 
 // ============================================================
@@ -7781,7 +8077,6 @@ function updateDungeonConsumables() {
 
 
     updateFruitConsumable();
-    updateSpatialCoinAction();
     updateDungeonActionAvailability();
 
 
@@ -15211,134 +15506,4 @@ function piaSpecialStart(){
   if(piaSpecial.lastInside)piaSpecialCampOpen();
   setInterval(()=>{piaSpecialRefreshFruit();piaSpecialCampRefresh()},15000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){piaSpecialRefreshFruit();piaSpecialCampRefresh()}});
-}
-
-const SPATIAL_COIN_BASE_URL = "../../base/base.html";
-
-
-// ============================================================
-// MONETA SPAZIALE - CONSUMABILE COMUNE ALLE TRE MAPPE
-// ============================================================
-let spatialCoinInProgress = false;
-
-function updateSpatialCoinAction() {
-    const manaButton = document.getElementById("dungeon-mana-potion-button");
-    if (!manaButton || !manaButton.parentElement) return;
-
-    let button = document.getElementById("dungeon-spatial-coin-button");
-    if (!button) {
-        button = document.createElement("button");
-        button.type = "button";
-        button.id = "dungeon-spatial-coin-button";
-        button.className = "dungeon-action-card";
-        button.dataset.action = "spatial-coin";
-        button.title = "Consuma una Moneta Spaziale per tornare alla Base";
-        const icon = document.createElement("span");
-        icon.className = "action-card-icon";
-        icon.textContent = "✦";
-        const content = document.createElement("span");
-        content.className = "action-card-content";
-        const name = document.createElement("strong");
-        name.textContent = "MONETA SPAZIALE";
-        const amount = document.createElement("small");
-        amount.id = "dungeon-spatial-coin-count";
-        content.append(name, amount);
-        button.append(icon, content);
-        manaButton.insertAdjacentElement("afterend", button);
-        button.addEventListener("click", useSpatialCoinFromMap);
-    }
-
-    const quantity = (Array.isArray(characterInventory) ? characterInventory : [])
-        .filter(entry => entry?.item?.id === "moneta_spaziale")
-        .reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
-    const count = document.getElementById("dungeon-spatial-coin-count");
-    if (count) count.textContent = `x${quantity}`;
-    button.disabled = spatialCoinInProgress || quantity < 1 || !character ||
-        Boolean(character.active_combat_id) || character.current_location === "combat";
-}
-
-
-// Popup coerente con gli eventi del dungeon: niente finestre native del browser.
-function confirmSpatialCoinTeleport() {
-    return new Promise(resolve => {
-        const overlay = document.createElement("div");
-        overlay.className = "combat-event-overlay spatial-coin-overlay";
-        overlay.setAttribute("role", "presentation");
-
-        const modal = document.createElement("div");
-        modal.className = "combat-event-modal spatial-coin-modal";
-        modal.setAttribute("role", "dialog");
-        modal.setAttribute("aria-modal", "true");
-        modal.setAttribute("aria-labelledby", "spatial-coin-modal-title");
-
-        modal.innerHTML = `
-            <div class="combat-event-icon" aria-hidden="true">✦</div>
-            <h2 id="spatial-coin-modal-title">MONETA SPAZIALE</h2>
-            <p>Vuoi teletrasportarti al Livello Base?</p>
-            <div class="combat-event-warning">
-                Il teletrasporto consuma una Moneta Spaziale.
-            </div>
-            <div class="combat-event-buttons">
-                <button type="button" class="combat-event-button combat-event-cancel" data-spatial-cancel>ANNULLA</button>
-                <button type="button" class="combat-event-button combat-event-confirm" data-spatial-confirm>TELETRASPORTATI</button>
-            </div>
-        `;
-
-        // Stesso linguaggio grafico dei popup dungeon; fallback anche per la Base.
-        overlay.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.78);box-sizing:border-box;";
-        modal.style.cssText = "width:min(460px,100%);max-height:90vh;overflow-y:auto;box-sizing:border-box;padding:28px 24px;text-align:center;background:linear-gradient(160deg,#30271c,#171713);color:#f5e9cf;border:2px solid #9e7d40;border-radius:12px;box-shadow:0 14px 55px rgba(0,0,0,.85);";
-        modal.querySelector(".combat-event-icon").style.cssText = "font-size:42px;color:#d9b66e;margin-bottom:10px;";
-        modal.querySelector("h2").style.cssText = "font-size:23px;letter-spacing:.08em;color:#e6c480;margin:5px 0 14px;";
-        modal.querySelector("p").style.cssText = "font-size:16px;line-height:1.55;margin:0 0 15px;";
-        modal.querySelector(".combat-event-warning").style.cssText = "background:rgba(187,140,57,.12);border:1px solid rgba(218,176,100,.4);border-radius:6px;padding:12px;font-size:14px;line-height:1.5;";
-        const buttons = modal.querySelector(".combat-event-buttons");
-        buttons.style.cssText = "display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:23px;";
-        buttons.querySelectorAll("button").forEach(button => {
-            button.style.cssText = "min-width:140px;padding:11px 15px;border-radius:6px;border:1px solid #977945;font-weight:700;letter-spacing:.04em;cursor:pointer;color:#f9edcf;background:#483a26;";
-        });
-        buttons.querySelector("[data-spatial-confirm]").style.background = "#72582e";
-
-        const previousFocus = document.activeElement;
-        function finish(result) {
-            document.removeEventListener("keydown", onKeyDown, true);
-            overlay.remove();
-            if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
-            resolve(result);
-        }
-        function onKeyDown(event) {
-            if (event.key === "Escape") {
-                event.preventDefault();
-                event.stopPropagation();
-                finish(false);
-            }
-        }
-        buttons.querySelector("[data-spatial-cancel]").addEventListener("click", () => finish(false));
-        buttons.querySelector("[data-spatial-confirm]").addEventListener("click", () => finish(true));
-        overlay.addEventListener("click", event => {
-            if (event.target === overlay) finish(false);
-        });
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        document.addEventListener("keydown", onKeyDown, true);
-        buttons.querySelector("[data-spatial-cancel]").focus();
-    });
-}
-
-async function useSpatialCoinFromMap() {
-    if (spatialCoinInProgress || !character) return;
-    if (!await confirmSpatialCoinTeleport()) return;
-    spatialCoinInProgress = true;
-    updateSpatialCoinAction();
-    try {
-        const { data, error } = await db.rpc("use_spatial_coin");
-        if (error) throw error;
-        if (!data?.ok) throw new Error("Teletrasporto non riuscito.");
-        // Il server ha già consumato la moneta e aggiornato la posizione.
-        window.location.replace(SPATIAL_COIN_BASE_URL);
-    } catch (error) {
-        console.error("Errore utilizzo Moneta Spaziale:", error);
-        window.alert(error?.message || "Impossibile utilizzare la Moneta Spaziale.");
-        spatialCoinInProgress = false;
-        updateSpatialCoinAction();
-    }
 }

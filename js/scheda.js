@@ -646,8 +646,7 @@ function renderSheetLeaderboard(rows) {
             const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
             const rawPath = String(badge?.icon_path || "").trim();
             const iconPath = escapeSheetLeaderboardHtml(goblin ? "immagini/stemmi/boss_goblin.png" : rawPath);
-            const floorNumber = Number(badge?.floor_number) || 0;
-            const title = escapeSheetLeaderboardHtml(floorNumber > 0 ? `${badge?.badge_name || "Boss sconfitto"} · Piano ${floorNumber}` : badge?.badge_name || "Boss sconfitto");
+            const title = escapeSheetLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="sheet-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
             return `<span class="sheet-leaderboard-badge-wrap" title="${title}">
                 <img class="sheet-leaderboard-badge" src="${iconPath}" alt="${badgeName}" loading="lazy"
@@ -793,10 +792,14 @@ function renderSheetHonors(badges) {
         copy.appendChild(name);
 
         const details = [];
+        const floor = Number(badge?.floor_number);
+        if (Number.isFinite(floor) && floor > 0) {
+            details.push(`Piano ${floor}`);
+        }
         if (badge?.defeated_at) {
             const date = new Date(badge.defeated_at);
             if (!Number.isNaN(date.getTime())) {
-                details.push(`Ottenuto il: ${date.toLocaleDateString("it-IT")}`);
+                details.push(date.toLocaleDateString("it-IT"));
             }
         }
         if (details.length) {
