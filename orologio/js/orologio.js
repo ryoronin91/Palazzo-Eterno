@@ -120,10 +120,12 @@ const CLOCK_HAND_CONFIG = {
     x: 14,
     y: 13,
     offsetX: -1.75,
-    offsetY: -4.20,
+    offsetY: -4.25,
     widthCells: 3.60,
     heightCells: 19.80,
     rotationDeg: 0,
+    originX: 50.00,
+    originY: 22.20,
     opacity: 1
 };
 
