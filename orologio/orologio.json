@@ -14,7 +14,7 @@
     "image_width_px": 1254,
     "image_height_px": 1254,
     "cell_width_px": 43.44,
-    "cell_height_px": 44.78
+    "cell_height_px": 43.44
   },
   "notes": [
     "Il movimento usa offset_x_px, offset_y_px e cell_size_px; non suddivide semplicemente l’immagine in celle uniformi partendo da zero.",
@@ -23,7 +23,8 @@
     "Correzione basata sul markup utente del 2026-10-19: croci verdi forzate come percorribili, croci rosse forzate come non percorribili.",
     "Ricalibrato sulla nuova immagine finale della Stanza dell’Orologio (1254×1254), con allineamento separato su asse X e asse Y.",
     "La mappa usa 29×29 celle logiche; larghezza cella ≈ 43.44 px, altezza cella ≈ 44.78 px, offset iniziale ≈ 19 px.",
-    "Le caselle percorribili/non percorribili restano quelle corrette secondo il markup utente con croci verdi e rosse."
+    "Le caselle percorribili/non percorribili restano quelle corrette secondo il markup utente con croci verdi e rosse.",
+    "Taratura finale: celle rese quadrate anche su asse Y per eliminare il drift verticale del token osservato nelle zone basse della mappa."
   ],
   "areas": [
     {
