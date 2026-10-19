@@ -944,7 +944,7 @@ document.addEventListener(
 
 
             await setupRealtimeMultiplayer();
-        setupGlobalOnlinePresence();
+        window.PalazzoPresence?.render();
             await recoverDungeonTradeState();
 
 
@@ -6861,7 +6861,7 @@ in_combat:
 // ============================================================
 
 
-function renderDungeonOnlinePlayers() { renderGlobalOnlinePlayers(); }
+function renderDungeonOnlinePlayers() { window.PalazzoPresence?.render(); }
 
 
 // ============================================================
@@ -15342,124 +15342,3 @@ async function useSpatialCoinFromMap() {
         updateSpatialCoinAction();
     }
 }
-
-
-const GLOBAL_ONLINE_CURRENT_AREA = 'dungeon_Ia';
-const GLOBAL_ONLINE_TOKEN_PREFIX = '../../immagini/token/';
-
-// ============================================================
-// PRESENZA GLOBALE: solo pannello PERSONAGGI ONLINE.
-// Indipendente dai canali locali usati per token, chat e scambi.
-// ============================================================
-const GLOBAL_ONLINE_CHANNEL_NAME = "palazzo-eterno-online-globale-v1";
-let globalOnlineChannel = null;
-
-const ONLINE_AREA_NAMES = {
-    base: "Base",
-    dungeon: "Dungeon",
-    dungeon_Ia: "I - Giungla Bassa"
-};
-
-function renderGlobalOnlinePlayers() {
-    const container = document.getElementById("dungeon-online-list");
-    if (!container) return;
-
-    if (!globalOnlineChannel || !character) {
-        container.replaceChildren();
-        const waiting = document.createElement("div");
-        waiting.className = "dungeon-online-empty";
-        waiting.textContent = "Connessione...";
-        container.appendChild(waiting);
-        return;
-    }
-
-    const byCharacter = new Map();
-    const state = globalOnlineChannel.presenceState();
-    Object.values(state).forEach(presences => {
-        (presences || []).forEach(presence => {
-            if (!presence?.character_id) return;
-            const previous = byCharacter.get(presence.character_id);
-            if (!previous || String(presence.online_at || "") > String(previous.online_at || "")) {
-                byCharacter.set(presence.character_id, presence);
-            }
-        });
-    });
-
-    const players = Array.from(byCharacter.values()).sort((a, b) => {
-        if ((a.character_id === character.id) !== (b.character_id === character.id)) {
-            return a.character_id === character.id ? -1 : 1;
-        }
-        return String(a.name || "").localeCompare(String(b.name || ""), "it");
-    });
-    container.replaceChildren();
-    if (!players.length) {
-        const empty = document.createElement("div");
-        empty.className = "dungeon-online-empty";
-        empty.textContent = "Nessun personaggio online.";
-        container.appendChild(empty);
-        return;
-    }
-
-    players.forEach(player => {
-        const row = document.createElement("div");
-        row.className = "dungeon-online-row";
-        const image = document.createElement("img");
-        image.className = "dungeon-online-token";
-        image.src = GLOBAL_ONLINE_TOKEN_PREFIX + (player.token || "token_1.png");
-        image.alt = player.name || "Personaggio";
-
-        const info = document.createElement("div");
-        info.className = "dungeon-online-info";
-        const name = document.createElement("div");
-        name.className = "dungeon-online-name";
-        name.textContent = (player.name || "Avventuriero") +
-            (player.character_id === character.id ? " (tu)" : "");
-        const area = document.createElement("div");
-        area.className = "dungeon-online-status";
-        area.textContent = ONLINE_AREA_NAMES[player.location] || "Posizione non disponibile";
-
-        const dot = document.createElement("span");
-        dot.className = "dungeon-online-dot";
-        info.append(name, area);
-        row.append(image, info, dot);
-        container.appendChild(row);
-    });
-}
-
-function setupGlobalOnlinePresence() {
-    if (!character || !currentUser || globalOnlineChannel) return;
-    globalOnlineChannel = db.channel(GLOBAL_ONLINE_CHANNEL_NAME, {
-        config: { presence: { key: character.id } }
-    });
-
-    globalOnlineChannel.on("presence", { event: "sync" }, renderGlobalOnlinePlayers);
-    globalOnlineChannel.on("presence", { event: "join" }, renderGlobalOnlinePlayers);
-    globalOnlineChannel.on("presence", { event: "leave" }, renderGlobalOnlinePlayers);
-    globalOnlineChannel.subscribe(async status => {
-        if (status !== "SUBSCRIBED") return;
-        try {
-            await globalOnlineChannel.track({
-                character_id: character.id,
-                user_id: currentUser.id,
-                name: character.nome || "Avventuriero",
-                token: character.token || "token_1.png",
-                location: GLOBAL_ONLINE_CURRENT_AREA,
-                online_at: new Date().toISOString()
-            });
-            renderGlobalOnlinePlayers();
-        } catch (error) {
-            console.warn("Presence globale non disponibile:", error);
-        }
-    });
-    renderGlobalOnlinePlayers();
-}
-
-window.addEventListener("beforeunload", () => {
-    if (!globalOnlineChannel) return;
-    try {
-        globalOnlineChannel.untrack();
-        db.removeChannel(globalOnlineChannel);
-    } catch (error) {
-        console.warn("Chiusura Presence globale:", error);
-    }
-});
