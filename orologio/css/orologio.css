@@ -4827,3 +4827,6 @@ body.base-trade-open {
 .dungeon-map-image { width:100%!important; height:100%!important; object-fit:fill; }
 .dungeon-map .orologio-token { position:absolute; z-index:40; pointer-events:none; }
 .dungeon-map .orologio-token img { width:100%;height:100%;object-fit:contain;display:block; }
+
+/* Il motore JS calibra le dimensioni sulla griglia realmente disegnata. */
+.dungeon-map { aspect-ratio:1/1 !important; }
