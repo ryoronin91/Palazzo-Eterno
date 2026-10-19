@@ -50,6 +50,62 @@ function updateCharacter(){
  const portrait=$('character-token');if(portrait)portrait.src='../immagini/token/'+(player.token||'token_1.png');
  [['forza',f],['resistenza',r],['costituzione',c],['intelligenza',i],['destrezza',d],['fortuna',l],['attack',Math.ceil(f/2)+(bonuses.attack||0)],['defense',Math.ceil(7+r/2)+(bonuses.defense||0)],['movement',Math.ceil(4+d/2)],['critical',(Math.round(l*(50/30)*100)/100).toFixed(2)+'%'],['health',`${player.current_hp??Math.ceil(5*c/2)}/${Math.ceil(5*c/2)}`],['mana',`${player.current_pm??Math.ceil(5*i/2)}/${Math.ceil(5*i/2)}`]].forEach(([id,n])=>put(id+'-display',n));
 }
+// ============================================================
+// STANZA DELL'OROLOGIO — I 12 NUMERI (punti neutri in forma B)
+// Le coordinate sono inclusive: ogni immagine occupa 2 × 2 celle.
+// XII è a nord; I..XI procedono in senso orario.
+// I file PNG vanno collocati in orologio/immagini/.
+// ============================================================
+const CLOCK_NUMERALS = Object.freeze([
+  {number:'XII', index:12, kind:'dies', variant:'B', image:'immagini/DiesB.png', x:13,y:5},
+  {number:'I',   index:1,  kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:17,y:6},
+  {number:'II',  index:2,  kind:'dies', variant:'B', image:'immagini/DiesB.png', x:19,y:9},
+  {number:'III', index:3,  kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:20,y:12},
+  {number:'IV',  index:4,  kind:'dies', variant:'B', image:'immagini/DiesB.png', x:19,y:15},
+  {number:'V',   index:5,  kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:17,y:18},
+  {number:'VI',  index:6,  kind:'dies', variant:'B', image:'immagini/DiesB.png', x:13,y:19},
+  {number:'VII', index:7,  kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:9,y:18},
+  {number:'VIII',index:8,  kind:'dies', variant:'B', image:'immagini/DiesB.png', x:7,y:15},
+  {number:'IX',  index:9,  kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:6,y:12},
+  {number:'X',   index:10, kind:'dies', variant:'B', image:'immagini/DiesB.png', x:7,y:9},
+  {number:'XI',  index:11, kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:9,y:6}
+].map(node => Object.freeze({...node,width:2,height:2,teleportActive:false})));
+
+// Read-only registry for future daily A/B/C rotation and A teleport activation.
+window.OrologioNumeri = CLOCK_NUMERALS;
+
+function renderClockNumerals(){
+  const map=$('dungeon-map');
+  if(!map)return;
+  let layer=$('orologio-numeral-layer');
+  if(!layer){
+    layer=document.createElement('div');layer.id='orologio-numeral-layer';
+    Object.assign(layer.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'12'});
+    map.appendChild(layer);
+  }
+  layer.replaceChildren();
+  for(const node of CLOCK_NUMERALS){
+    const img=document.createElement('img');
+    img.className='orologio-numeral orologio-numeral-'+node.kind;
+    img.dataset.clockNumber=node.number;
+    img.dataset.clockIndex=String(node.index);
+    img.dataset.clockVariant=node.variant;
+    img.src=node.image;
+    img.alt=node.kind.toUpperCase()+' — '+node.number;
+    img.title=node.number;
+    img.draggable=false;
+    Object.assign(img.style,{
+      position:'absolute',
+      left:((gridX+node.x*cellWidthPx)/imageWidth*100)+'%',
+      top:((gridY+node.y*cellHeightPx)/imageHeight*100)+'%',
+      width:(node.width*cellWidthPx/imageWidth*100)+'%',
+      height:(node.height*cellHeightPx/imageHeight*100)+'%',
+      objectFit:'contain',pointerEvents:'none',userSelect:'none'
+    });
+    layer.appendChild(img);
+  }
+}
+
 function renderToken(){const map=$('dungeon-map');if(!map)return;
  token=document.createElement('div');token.className='dungeon-player-token orologio-token';
  const img=document.createElement('img');img.src='../immagini/token/'+(player.token||'token_1.png');img.alt=player.nome||'PG';img.draggable=false;token.appendChild(img);map.appendChild(token);positionToken();}
@@ -89,7 +145,7 @@ function controls(){
  $('dungeon-map')?.addEventListener('click',e=>{const map=$('dungeon-map');const rect=map.getBoundingClientRect();const x=Math.floor((((e.clientX-rect.left)/rect.width)*imageWidth-gridX)/cellWidthPx),y=Math.floor((((e.clientY-rect.top)/rect.height)*imageHeight-gridY)/cellHeightPx);if(Math.abs(x-pos.x)+Math.abs(y-pos.y)===1)move(x-pos.x,y-pos.y);});
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
-async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderToken();controls();zoom(13);queueOrologioPosition();
+async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderClockNumerals();renderToken();controls();zoom(13);queueOrologioPosition();
  initOrologioNotes().catch(e=>console.warn('Note Orologio:',e));initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 // --- OROLOGIO · CHAT, TOP 5 E PRESENCE (fase 2) ---
