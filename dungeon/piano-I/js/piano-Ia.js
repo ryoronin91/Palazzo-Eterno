@@ -1,12 +1,3 @@
-PALAZZO ETERNO — PIANO I-A — MONETA SPAZIALE
-
-Questo file .txt contiene il codice JS da integrare in piano-Ia.js.
-NON è il file piano-Ia.js completo e NON va usato per sostituirlo.
-
-1) All'inizio della funzione esistente updateFruitConsumable(), aggiungi:
-    updateSpatialCoinPia();
-2) Aggiungi il seguente codice alla fine di piano-Ia.js:
-
 // ============================================================
 // PIANO I-A — MONETA SPAZIALE
 // Usa l'RPC atomica che consuma 1 moneta e teletrasporta alla Base.
