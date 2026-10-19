@@ -131,7 +131,7 @@ function renderTop(rows){
  c.replaceChildren();
  if(!rows?.length){c.textContent='Nessun personaggio vivo in classifica.';return;}
  for(const r of rows){
-   const num=Number(r.posizione)||0,score=Number(r.score)||0;
+   const num=Number(r.posizione ?? r.rank ?? 0),score=Number(r.score ?? 0);
    const row=document.createElement('div');row.className='dungeon-leaderboard-row';
    const main=document.createElement('div');main.className='dungeon-leaderboard-main';
    const rank=document.createElement('span');rank.className='dungeon-leaderboard-position';rank.textContent='#'+num;
@@ -156,15 +156,21 @@ async function leaderboard(){try{const [top,profile]=await Promise.all([socialDb
 const peers=new Map(),tokens=new Map();
 function presencePayload(){return {character_id:own().id,user_id:user.id,name:own().nome||'Avventuriero',token:own().token||'token_1.png',x:current().x,y:current().y,location:floorId,online_at:new Date().toISOString()};}
 function coords(e,p){const g=state().grid; e.style.left=((g.gridX+p.x*g.cellWidthPx)/g.imageWidth*100)+'%';e.style.top=((g.gridY+p.y*g.cellHeightPx)/g.imageHeight*100)+'%';e.style.width=(g.cellWidthPx/g.imageWidth*100)+'%';e.style.height=(g.cellHeightPx/g.imageHeight*100)+'%';}
+const CLOCK_LOCATION_LABELS={orologio:'STANZA DELL’OROLOGIO',base:'LIVELLO BASE',dungeon:'PIANO 1',dungeon_Ia:'GIUNGLA BASSA',dungeon_Ib:'PIANO I-B',combat:'COMBATTIMENTO',vendor:'MERCANTE'};
 function renderOnline(){
  const c=$('orologio-online-list');if(!c||!own()||!user)return;
+ const people=[presencePayload(),...peers.values()].filter(p=>p&&p.character_id);
+ const uniq=[...new Map(people.map(p=>[p.character_id,p])).values()];
+ uniq.sort((a,b)=>a.character_id===own().id?-1:b.character_id===own().id?1:String(a.name||'').localeCompare(String(b.name||''),'it'));
  c.replaceChildren();
- for(const p of [presencePayload(),...peers.values()]){
-   const row=document.createElement('div');row.className='dungeon-online-player';
-   const img=document.createElement('img');img.className='orologio-online-avatar';
-   safeTokenImage(img,p.token);img.alt='';img.loading='lazy';
-   const label=document.createElement('span');label.textContent=p.name+(p.character_id===own().id?' (tu)':'');
-   row.append(img,label);c.append(row);
+ for(const p of uniq){
+  const row=document.createElement('div');row.className='dungeon-online-row';
+  const img=document.createElement('img');img.className='dungeon-online-token';safeTokenImage(img,p.token);img.alt='';
+  const info=document.createElement('div');info.className='dungeon-online-info';
+  const name=document.createElement('div');name.className='dungeon-online-name';name.textContent=(p.name||'Avventuriero')+(p.character_id===own().id?' (tu)':'');name.title=name.textContent;
+  const loc=document.createElement('div');loc.className='dungeon-online-status';loc.textContent=CLOCK_LOCATION_LABELS[p.location]||String(p.location||'UBICAZIONE NON DISPONIBILE').toUpperCase();
+  const dot=document.createElement('span');dot.className='orologio-online-dot';dot.title='Presente nella Stanza dell’Orologio';
+  info.append(name,loc);row.append(img,info,dot);c.append(row);
  }
 }
 function syncPeers(){if(!channel)return;const s=channel.presenceState();const next=new Map();for(const vals of Object.values(s)){for(const p of vals||[]){if(p.character_id&&p.character_id!==own().id&&p.location===floorId)next.set(p.character_id,p);}}
@@ -173,11 +179,11 @@ for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createEleme
 async function presence(){channel=socialDb().channel(channelName,{config:{presence:{key:own().id},broadcast:{self:false}}});channel.on('presence',{event:'sync'},syncPeers);
 channel.on('broadcast',{event:'player-move'},({payload:p})=>{if(!p||!peers.has(p.character_id))return;peers.set(p.character_id,p);const t=tokens.get(p.character_id);if(t)coords(t,p);renderOnline();});
 channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'dungeon_chat_messages',filter:'floor_id=eq.'+floorId},({new:r})=>chatRow(r));
-await new Promise((resolve,reject)=>{channel.subscribe(async status=>{if(status==='SUBSCRIBED'){try{await channel.track(presencePayload());resolve();}catch(e){reject(e)}}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')reject(new Error('Presence non disponibile: '+status));});});}
+await new Promise((resolve,reject)=>{channel.subscribe(async status=>{if(status==='SUBSCRIBED'){try{await channel.track(presencePayload());syncPeers();resolve();}catch(e){reject(e)}}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')reject(new Error('Presence non disponibile: '+status));});});}
 async function moved(){if(!channel)return;const p=presencePayload();try{await channel.track(p);await channel.send({type:'broadcast',event:'player-move',payload:p});}catch(e){console.warn('Movimento Presence:',e)}}
 async function initSocial(){if(!socialDb()||!own())return;try{const res=await socialDb().auth.getUser();user=res.data?.user;if(!user)return;
 setupChat();await Promise.allSettled([history(),leaderboard()]);try{await presence();}catch(e){console.warn('Presence:',e);const c=$('orologio-online-list');if(c)c.textContent='Personaggi online temporaneamente non disponibili.';}
-document.addEventListener('orologio:move',moved);window.addEventListener('beforeunload',()=>{if(channel)socialDb().removeChannel(channel)});setInterval(leaderboard,90000);
+document.addEventListener('orologio:move',()=>{renderOnline();void moved();});window.addEventListener('focus',()=>{if(channel){syncPeers();void channel.track(presencePayload());}});window.addEventListener('beforeunload',()=>{if(channel)socialDb().removeChannel(channel)});setInterval(leaderboard,90000);
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
 

@@ -4852,3 +4852,36 @@ body.base-trade-open {
 /* Orologio: bersagli Cura cliccabili durante la selezione */
 .dungeon-map .orologio-other-token { pointer-events:auto; cursor:pointer; }
 .dungeon-map .orologio-token { pointer-events:auto; cursor:pointer; }
+
+/* ============================================================
+   OROLOGIO V11 — PANNELLI SOCIAL: misure e tipografia coerenti
+   con Base. Nessuna modifica a coordinate/mappa/zoom.
+   ============================================================ */
+@media (min-width: 1300px) {
+ .dungeon-layout { grid-template-columns: minmax(510px, 550px) minmax(520px, 720px) minmax(430px, 1fr) !important; max-width: 1850px !important; }
+ .dungeon-layout > .dungeon-chat-column { grid-template-columns: minmax(215px, 1fr) minmax(275px, 1.18fr) !important; gap: 10px !important; }
+}
+.dungeon-layout > .dungeon-chat-column .dungeon-panel-title { font-size: 15px !important; line-height: 1.25; padding: 9px 6px !important; white-space: normal; }
+.dungeon-layout > .dungeon-chat-column .dungeon-social-column { grid-template-rows: minmax(155px, 3fr) minmax(0, 7fr) !important; }
+#orologio-online-list { padding: 5px !important; }
+#orologio-online-list .dungeon-online-row {display:grid!important;grid-template-columns:32px minmax(0,1fr) 9px;align-items:center;gap:8px;min-height:43px;padding:5px 2px;}
+#orologio-online-list .dungeon-online-info {min-width:0;display:flex;flex-direction:column;gap:3px;}
+#orologio-online-list .dungeon-online-token {width:32px!important;height:32px!important;object-fit:contain;border-radius:50%;}
+#orologio-online-list .dungeon-online-name {font-size:12px!important;line-height:1.2;color:#eee0c3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#orologio-online-list .dungeon-online-status {font-size:9px!important;line-height:1.2;color:#c6ad7d;letter-spacing:.02em;white-space:normal;overflow-wrap:anywhere;}
+.orologio-online-dot {height:7px;width:7px;background:#7cbf7e;border-radius:50%;box-shadow:0 0 5px #7cbf7e;}
+#dungeon-leaderboard-list {padding:6px 8px!important;}
+#dungeon-leaderboard-list .dungeon-leaderboard-row {display:block!important;padding:8px 1px!important;min-height:0!important;border-bottom:1px solid rgba(193,159,98,.27);}
+#dungeon-leaderboard-list .dungeon-leaderboard-main {display:grid!important;grid-template-columns:31px minmax(0,1fr) 70px!important;gap:8px;align-items:center;min-width:0;}
+#dungeon-leaderboard-list .dungeon-leaderboard-position {font-size:12px!important;color:#cdb78f;}
+#dungeon-leaderboard-list .dungeon-leaderboard-row:nth-child(1) .dungeon-leaderboard-position {color:#edc558;}
+#dungeon-leaderboard-list .dungeon-leaderboard-row:nth-child(2) .dungeon-leaderboard-position {color:#c1c7ce;}
+#dungeon-leaderboard-list .dungeon-leaderboard-row:nth-child(3) .dungeon-leaderboard-position {color:#ce8b58;}
+#dungeon-leaderboard-list .dungeon-leaderboard-name {font-size:12px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#dungeon-leaderboard-list .dungeon-leaderboard-score {font-size:12px!important;text-align:right;white-space:nowrap;}
+#dungeon-leaderboard-list .dungeon-leaderboard-badges {margin-top:7px;min-height:20px;gap:5px;display:flex;flex-wrap:wrap;}
+#floor-chat-messages .floor-chat-message {font-size:12px;line-height:1.45;white-space:normal;overflow-wrap:anywhere;}
+@media (max-width:1299px) {
+ .dungeon-layout > .dungeon-chat-column {grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;}
+ #dungeon-leaderboard-list .dungeon-leaderboard-main {grid-template-columns:28px minmax(0,1fr) 65px!important;}
+}
