@@ -4848,3 +4848,7 @@ body.base-trade-open {
 #orologio-online-list .dungeon-online-player{display:flex;align-items:center;gap:8px;min-width:0;}
 #orologio-online-list .orologio-online-avatar{width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px;object-fit:contain;border-radius:50%;}
 #orologio-online-list .dungeon-online-player span{min-width:0;overflow-wrap:anywhere;}
+
+/* Orologio: bersagli Cura cliccabili durante la selezione */
+.dungeon-map .orologio-other-token { pointer-events:auto; cursor:pointer; }
+.dungeon-map .orologio-token { pointer-events:auto; cursor:pointer; }

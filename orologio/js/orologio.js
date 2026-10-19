@@ -8,6 +8,7 @@ const POSITION_KEY='palazzo_eterno_orologio_position';
 let cols=COLS_DEFAULT,rows=ROWS_DEFAULT,view=13;
 let imageWidth=1254,imageHeight=1254,gridX=19,gridY=19,cellWidthPx=43.44,cellHeightPx=43.44;
 let walkable=new Set(), blocked=new Set(),player=null, token=null, pos={x:14,y:26}, bonuses={};
+let savePositionPending=false,savePositionBusy=false;
 window.OrologioState={get player(){return player;},get pos(){return {...pos};},get token(){return token;},get grid(){return {gridX,gridY,cellWidthPx,cellHeightPx,imageWidth,imageHeight};},get walkable(){return walkable;},get isWalkable(){return isWalkable;}};
 const $=id=>document.getElementById(id);
 const key=(x,y)=>`${x},${y}`;
@@ -34,7 +35,7 @@ async function loadCharacter(){
  const {data:{user},error:authErr}=await supabaseClient.auth.getUser();if(authErr)throw authErr;
  if(!user){location.href='../login.html';return false;}
  const {data,error}=await supabaseClient.from('characters').select('*').eq('user_id',user.id).maybeSingle();if(error)throw error;
- if(!data){location.href='../personaggio.html';return false;}player=data;return true;
+ if(!data){location.href='../personaggio.html';return false;}player=data;const saved={x:Number(data.orologio_x),y:Number(data.orologio_y)};if(data.orologio_x!=null&&data.orologio_y!=null&&isWalkable(saved.x,saved.y))pos=saved;return true;
 }
 async function loadEquipment(){
  const {data,error}=await supabaseClient.from('character_inventory').select('equipped_slot,item:items(attack_bonus,defense_bonus,forza_bonus,resistenza_bonus,costituzione_bonus,intelligenza_bonus,destrezza_bonus,fortuna_bonus)').eq('character_id',player.id);
@@ -65,8 +66,20 @@ function zoom(v){view=Math.max(5,Math.min(Math.max(cols,rows),Math.round(v)));co
  const zoomFactor=Math.min(imageWidth/(cellWidthPx*view), imageHeight/(cellHeightPx*view));
  map.style.setProperty('width',`${zoomFactor*100}%`,'important');map.style.setProperty('height',`${zoomFactor*100}%`,'important');
  map.style.setProperty('--orologio-view-cells',String(view));put('base-zoom-reset',`${view} × ${view}`);camera(true);positionToken();}
+async function flushOrologioPosition(){
+ if(savePositionBusy||!savePositionPending||!player)return;
+ savePositionBusy=true;
+ try{while(savePositionPending){savePositionPending=false;
+   const snapshot={x:pos.x,y:pos.y};
+   const {error}=await supabaseClient.from('characters').update({orologio_x:snapshot.x,orologio_y:snapshot.y,current_location:'orologio'}).eq('id',player.id);
+   if(error)throw error;
+   player.orologio_x=snapshot.x;player.orologio_y=snapshot.y;
+ }}catch(error){console.error('Persistenza Orologio:',error);message('Errore salvataggio posizione: '+error.message,true);}
+ finally{savePositionBusy=false;}
+}
+function queueOrologioPosition(){savePositionPending=true;void flushOrologioPosition();}
 function move(dx,dy){const nx=pos.x+dx,ny=pos.y+dy;if(!isWalkable(nx,ny)){message('Passaggio bloccato.');return;}
- pos={x:nx,y:ny};sessionStorage.setItem(POSITION_KEY,JSON.stringify(pos));positionToken();camera();document.dispatchEvent(new CustomEvent('orologio:move',{detail:{...pos}}));message('Stanza dell’Orologio');}
+ pos={x:nx,y:ny};sessionStorage.setItem(POSITION_KEY,JSON.stringify(pos));queueOrologioPosition();positionToken();camera();document.dispatchEvent(new CustomEvent('orologio:move',{detail:{...pos}}));message('Stanza dell’Orologio');}
 function controls(){
  $('base-zoom-out')?.addEventListener('click',()=>zoom(view+(view<20?2:8)));
  $('base-zoom-in')?.addEventListener('click',()=>zoom(view-(view<=20?2:8)));
@@ -76,8 +89,8 @@ function controls(){
  $('dungeon-map')?.addEventListener('click',e=>{const map=$('dungeon-map');const rect=map.getBoundingClientRect();const x=Math.floor((((e.clientX-rect.left)/rect.width)*imageWidth-gridX)/cellWidthPx),y=Math.floor((((e.clientY-rect.top)/rect.height)*imageHeight-gridY)/cellHeightPx);if(Math.abs(x-pos.x)+Math.abs(y-pos.y)===1)move(x-pos.x,y-pos.y);});
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
-async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderToken();controls();zoom(13);
- initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
+async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderToken();controls();zoom(13);queueOrologioPosition();
+ initOrologioNotes().catch(e=>console.warn('Note Orologio:',e));initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 // --- OROLOGIO · CHAT, TOP 5 E PRESENCE (fase 2) ---
 const floorId='orologio', channelName='palazzo-eterno-orologio';
@@ -92,7 +105,8 @@ const current=()=>state()?.pos;
 const tokenPath=t=>{
  const raw=String(t??'').trim();
  const name=raw.split(/[\/]/).pop().split('?')[0].split('#')[0];
- const valid=/^token_\d+\.png$/i.test(name)?name:'token_1.png';
+ const numeric=/^\d+$/.test(name)?'token_'+name+'.png':name;
+ const valid=/^token_\d+\.png$/i.test(numeric)?numeric:'token_1.png';
  return new URL('../immagini/token/'+valid,document.baseURI).href;
 };
 function safeTokenImage(img,t){
@@ -155,7 +169,7 @@ function renderOnline(){
 }
 function syncPeers(){if(!channel)return;const s=channel.presenceState();const next=new Map();for(const vals of Object.values(s)){for(const p of vals||[]){if(p.character_id&&p.character_id!==own().id&&p.location===floorId)next.set(p.character_id,p);}}
 peers.clear();for(const [id,p] of next)peers.set(id,p);for(const [id,e] of tokens)if(!next.has(id)){e.remove();tokens.delete(id);}
-for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createElement('div');el.className='orologio-other-token';const img=document.createElement('img');safeTokenImage(img,p.token);const name=document.createElement('span');name.className='other-player-name';name.textContent=p.name;el.append(img,name);$('dungeon-map').append(el);tokens.set(id,el);}coords(el,p);}renderOnline();}
+for(const [id,p] of peers){let el=tokens.get(id);if(!el){el=document.createElement('div');el.className='orologio-other-token';el.dataset.characterId=id;const img=document.createElement('img');safeTokenImage(img,p.token);const name=document.createElement('span');name.className='other-player-name';name.textContent=p.name;el.append(img,name);$('dungeon-map').append(el);tokens.set(id,el);}else if(el.dataset.token!==p.token){safeTokenImage(el.querySelector('img'),p.token);}el.dataset.token=p.token;coords(el,p);}renderOnline();}
 async function presence(){channel=socialDb().channel(channelName,{config:{presence:{key:own().id},broadcast:{self:false}}});channel.on('presence',{event:'sync'},syncPeers);
 channel.on('broadcast',{event:'player-move'},({payload:p})=>{if(!p||!peers.has(p.character_id))return;peers.set(p.character_id,p);const t=tokens.get(p.character_id);if(t)coords(t,p);renderOnline();});
 channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'dungeon_chat_messages',filter:'floor_id=eq.'+floorId},({new:r})=>chatRow(r));
@@ -167,8 +181,8 @@ document.addEventListener('orologio:move',moved);window.addEventListener('before
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
 
-// STANZA OROLOGIO — abilità e consumabili, senza RPC Cura non compatibili.
-let inventoryRows=[],knownAbilities=[],actionsBusy=false;
+// STANZA OROLOGIO — abilità e consumabili; Cura usa RPC contesto orologio.
+let inventoryRows=[],knownAbilities=[],actionsBusy=false,healMode=false;
 const statMax=type=>{
  const attr=type==='hp'?'costituzione':'intelligenza';
  const equipped=Number(bonuses[attr]||0);
@@ -178,8 +192,12 @@ const owned=id=>knownAbilities.some(r=>r.ability_id===id||r.ability?.id===id);
 function itemFor(type){return inventoryRows.find(r=>Number(r.quantity)>0&&r.item&&r.item.id!=='frutto_carnoso'&&(type==='hp'?Number(r.item.heal_pf)>0:Number(r.item.heal_pm)>0));}
 function actionButton(id){return $(id);}
 function actionRefresh(){
- const heal=actionButton('dungeon-heal-button');if(heal){heal.style.display=owned('cura')?'':'none';heal.disabled=true;heal.title='Cura richiede l’adattamento della RPC alle coordinate della Stanza dell’Orologio';
- const small=heal.querySelector('small');const a=knownAbilities.find(r=>r.ability_id==='cura'||r.ability?.id==='cura');if(small)small.textContent=(a?.ability?.pm_cost??2)+' PM · non disponibile';}
+ const heal=actionButton('dungeon-heal-button');if(heal){
+  const cost=Number(knownAbilities.find(r=>r.ability_id==='cura'||r.ability?.id==='cura')?.ability?.pm_cost)||2;
+  heal.style.display=owned('cura')?'':'none';heal.disabled=actionsBusy||!owned('cura')||(Number(own().current_pm??statMax('pm'))<cost);
+  const small=heal.querySelector('small');if(small)small.textContent=cost+' PM';
+  heal.classList.toggle('active',healMode);
+ }
  for(const [type,id,countId] of [['hp','dungeon-health-potion-button','dungeon-health-potion-count'],['pm','dungeon-mana-potion-button','dungeon-mana-potion-count']]){
    const item=itemFor(type);const el=actionButton(id);const count=$(countId);
    if(count)count.textContent='x'+(item?Number(item.quantity):0);
@@ -260,8 +278,36 @@ async function spatialCoin(){
  }catch(e){console.error('Moneta Spaziale Orologio:',e);message(e.message||'Impossibile usare la Moneta Spaziale.',true);actionsBusy=false;await actionData().catch(console.warn);}
 }
 
+async function castOrologioHeal(targetId,targetName){
+ if(actionsBusy||!owned('cura'))return;
+ actionsBusy=true;healMode=false;actionRefresh();
+ try{await flushOrologioPosition();
+  const {data,error}=await socialDb().rpc('use_heal',{p_target_character_id:targetId,p_context:'orologio'});
+  if(error)throw error;
+  if(data?.caster_current_pm!=null)own().current_pm=Number(data.caster_current_pm);
+  if(targetId===own().id&&data?.target_current_hp!=null)own().current_hp=Number(data.target_current_hp);
+  updateCharacter();message(`Cura su ${targetName||'alleato'}: +${data?.healed_amount??0} PF.`);
+ }catch(e){message('Cura: '+e.message,true);}finally{actionsBusy=false;actionRefresh();}
+}
+function setupOrologioHeal(){
+ const button=$('dungeon-heal-button');if(!button)return;
+ button.addEventListener('click',()=>{
+  if(button.disabled)return;healMode=!healMode;actionRefresh();
+  message(healMode?'CURA: clicca su te stesso o su una pedina adiacente.':'Cura annullata.');
+ });
+ $('dungeon-map')?.addEventListener('click',e=>{
+  if(!healMode||actionsBusy)return;
+  const t=e.target.closest('.orologio-other-token,.orologio-token');if(!t)return;
+  e.stopImmediatePropagation();
+  if(t.classList.contains('orologio-token')){void castOrologioHeal(own().id,own().nome);return;}
+  const id=t.dataset.characterId,p=peers.get(id);
+  if(!p)return;
+  if(Math.max(Math.abs(p.x-current().x),Math.abs(p.y-current().y))>1){message('Alleato fuori portata (massimo 1 casella).',true);return;}
+  void castOrologioHeal(id,p.name);
+ },true);
+}
 async function initActions(){
- const heal=$('dungeon-heal-button');if(heal)heal.disabled=true;
+ setupOrologioHeal();
  addExtraButton('dungeon-fruit-button','FRUTTO CARNOSO','✿','x0',eatFruit);
  addExtraButton('dungeon-spatial-coin-button','MONETA SPAZIALE','✦','x0',spatialCoin);
  const mana=$('dungeon-mana-potion-button');
@@ -272,6 +318,16 @@ async function initActions(){
  $('dungeon-health-potion-button')?.addEventListener('click',()=>drink('hp'));
  $('dungeon-mana-potion-button')?.addEventListener('click',()=>drink('pm'));
  await actionData();
+}
+async function initOrologioNotes(){
+ const field=$('character-notes'),btn=$('save-notes-button');if(!field||!btn||!player)return;
+ field.disabled=false;btn.disabled=false;field.placeholder='Note del personaggio';
+ field.value=player.notes||'';
+ btn.addEventListener('click',async()=>{btn.disabled=true;
+  const {error}=await supabaseClient.from('characters').update({notes:field.value}).eq('id',player.id);
+  if(error)message('Note: '+error.message,true);else{player.notes=field.value;message('Note salvate.');}
+  btn.disabled=false;
+ });
 }
 document.addEventListener('DOMContentLoaded',init);
 })();
