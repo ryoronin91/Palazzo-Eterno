@@ -1,7 +1,7 @@
 {
   "id": "palazzo_eterno_stanza_orologio",
   "name": "Palazzo Eterno - Stanza dell’Orologio",
-  "version": 5,
+  "version": 6,
   "image": "immagini/stanza_orologio.png",
   "grid": {
     "columns": 29,
@@ -20,7 +20,8 @@
     "Griglia verificata sull’immagine finale 1254 × 1254: X offset 19 px / passo 43.44 px; Y offset 14.88 px / passo 45.32105 px.",
     "Asse Y calibrato misurando 19 linee orizzontali osservate da y197 a y1012; niente forzatura di celle quadrate.",
     "Mantenuti gli ostacoli annotati dall’utente, incluso il sigillo centrale. Entrata sud mantenuta all’interno della parete finale.",
-    "Coordinate indipendenti dalle posizioni del Livello Base."
+    "Coordinate indipendenti dalle posizioni del Livello Base.",
+    "Correzione manuale collisioni: 12 celle abilitate e 5 disabilitate su indicazione dell’utente; geometria della griglia invariata."
   ],
   "areas": [
     {
@@ -392,10 +393,6 @@
       "y": 9
     },
     {
-      "x": 15,
-      "y": 9
-    },
-    {
       "x": 16,
       "y": 9
     },
@@ -512,6 +509,18 @@
       "y": 11
     },
     {
+      "x": 1,
+      "y": 12
+    },
+    {
+      "x": 2,
+      "y": 12
+    },
+    {
+      "x": 3,
+      "y": 12
+    },
+    {
       "x": 4,
       "y": 12
     },
@@ -557,6 +566,18 @@
     },
     {
       "x": 23,
+      "y": 12
+    },
+    {
+      "x": 24,
+      "y": 12
+    },
+    {
+      "x": 25,
+      "y": 12
+    },
+    {
+      "x": 26,
       "y": 12
     },
     {
@@ -700,6 +721,14 @@
       "y": 15
     },
     {
+      "x": 10,
+      "y": 15
+    },
+    {
+      "x": 17,
+      "y": 15
+    },
+    {
       "x": 18,
       "y": 15
     },
@@ -744,6 +773,14 @@
       "y": 16
     },
     {
+      "x": 11,
+      "y": 16
+    },
+    {
+      "x": 16,
+      "y": 16
+    },
+    {
       "x": 17,
       "y": 16
     },
@@ -800,6 +837,14 @@
       "y": 17
     },
     {
+      "x": 13,
+      "y": 17
+    },
+    {
+      "x": 14,
+      "y": 17
+    },
+    {
       "x": 15,
       "y": 17
     },
@@ -1040,27 +1085,11 @@
       "y": 21
     },
     {
-      "x": 11,
-      "y": 22
-    },
-    {
-      "x": 12,
-      "y": 22
-    },
-    {
       "x": 13,
       "y": 22
     },
     {
       "x": 14,
-      "y": 22
-    },
-    {
-      "x": 15,
-      "y": 22
-    },
-    {
-      "x": 16,
       "y": 22
     },
     {
@@ -1106,6 +1135,10 @@
       "y": 9
     },
     {
+      "x": 15,
+      "y": 9
+    },
+    {
       "x": 11,
       "y": 10
     },
@@ -1162,18 +1195,6 @@
       "y": 11
     },
     {
-      "x": 1,
-      "y": 12
-    },
-    {
-      "x": 2,
-      "y": 12
-    },
-    {
-      "x": 3,
-      "y": 12
-    },
-    {
       "x": 10,
       "y": 12
     },
@@ -1203,18 +1224,6 @@
     },
     {
       "x": 17,
-      "y": 12
-    },
-    {
-      "x": 24,
-      "y": 12
-    },
-    {
-      "x": 25,
-      "y": 12
-    },
-    {
-      "x": 26,
       "y": 12
     },
     {
@@ -1306,10 +1315,6 @@
       "y": 14
     },
     {
-      "x": 10,
-      "y": 15
-    },
-    {
       "x": 11,
       "y": 15
     },
@@ -1334,14 +1339,6 @@
       "y": 15
     },
     {
-      "x": 17,
-      "y": 15
-    },
-    {
-      "x": 11,
-      "y": 16
-    },
-    {
       "x": 12,
       "y": 16
     },
@@ -1358,16 +1355,20 @@
       "y": 16
     },
     {
+      "x": 11,
+      "y": 22
+    },
+    {
+      "x": 12,
+      "y": 22
+    },
+    {
+      "x": 15,
+      "y": 22
+    },
+    {
       "x": 16,
-      "y": 16
-    },
-    {
-      "x": 13,
-      "y": 17
-    },
-    {
-      "x": 14,
-      "y": 17
+      "y": 22
     },
     {
       "x": 12,
