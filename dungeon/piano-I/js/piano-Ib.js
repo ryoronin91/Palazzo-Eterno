@@ -15346,78 +15346,47 @@ function updateSpatialCoinPia() {
 
 
 // ============================================================
-// PIANO IB — ZONA RIPOSO E CUSTODE DELLE UOVA (X9-10, Y15-16)
-// ============================================================
+// PIANO IB — ZONA DEI NIDI E GUARDIANA DELLA COVATA
+// Riposo condiviso sulle quattro caselle: X9-10, Y15-16.
 (function () {
-    const nurseryInside = () => typeof playerX !== 'undefined' && typeof playerY !== 'undefined' && playerX >= 9 && playerX <= 10 && playerY >= 15 && playerY <= 16;
+    const inside = () => typeof playerX !== 'undefined' && typeof playerY !== 'undefined' && playerX >= 9 && playerX <= 10 && playerY >= 15 && playerY <= 16;
     let previousInside = false;
-    let busy = false;
     let dialog = null;
     let lastTick = 0;
+    const serviceUrl = 'services/guardiana/guardiana-Ib.html';
     const client = () => typeof db !== 'undefined' ? db : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
-    const escapeText = str => String(str ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     function closeDialog() { if (dialog) { dialog.remove(); dialog = null; } }
-    async function giveEgg(btn, feedback) {
-        if (busy) return;
-        busy = true; btn.disabled = true;
-        try {
-            const {data, error} = await client().rpc('scagliagrigia_return_egg');
-            if (error) throw error;
-            feedback.textContent = 'L’uovo è al sicuro! La Custode ti ringrazia. Missione completata per questo ciclo.';
-            btn.textContent = 'MISSIONE COMPLETATA';
-            await showStatus(feedback);
-            if (typeof loadCharacterInventory === 'function') await loadCharacterInventory();
-        } catch(e) { feedback.textContent = e.message || 'Impossibile consegnare l’uovo.'; btn.disabled = false; }
-        finally { busy = false; }
-    }
-    async function showStatus(el) {
-        try {
-            const {data,error} = await client().rpc('scagliagrigia_quest_status');
-            if (error) return;
-            if (data?.completed) {
-                const b = dialog?.querySelector('[data-egg-deliver]');
-                if (b) { b.disabled = true; b.textContent = 'MISSIONE COMPLETATA'; }
-            }
-            const counter=dialog?.querySelector('[data-quest-count]');
-            if(counter) counter.textContent = 'Missioni della tribù completate: ' + (Number(data?.total_completed)||0) + ' / 5';
-        } catch (_) {}
-    }
     function openDialog() {
-        if (dialog || !nurseryInside() || (typeof eventLocked !== 'undefined' && eventLocked)) return;
+        if (dialog || !inside() || (typeof eventLocked !== 'undefined' && eventLocked)) return;
         dialog = document.createElement('div');
         dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:grid;place-items:center;padding:16px';
-        dialog.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Custode delle Uova" style="max-width:540px;width:100%;max-height:90vh;overflow:auto;background:#17251c;color:#eee9d5;border:2px solid #81945d;border-radius:12px;padding:25px;box-shadow:0 16px 50px #000a;font-family:Georgia,serif">
-        <h2 style="color:#d5cf96;margin:0 0 12px">CUSTODE DELLE UOVA</h2>
-        <p>Tra i nidi custoditi dalla tribù, la Custode ti osserva con preoccupazione.</p>
-        <p>«Uno dei nostri piccoli non è ancora nato… e il suo uovo è rotolato via, verso la Giungla Alta. Riportamelo integro. La tribù ricorderà questo gesto.»</p>
-        <p style="color:#c6d7aa"><strong>UN UOVO SMARRITO</strong> — Recupera 1 Uovo di lucertoloide e riportalo alla Custode. Una volta per PG a ogni ciclo del Piano I.</p>
-        <p style="color:#c6d7aa">Qui puoi sostare e recuperare <strong>2 PF e 2 PM ogni minuto</strong>, fino al massimo, mentre resti nell'area.</p>
-        <p data-quest-count style="color:#acb99b"></p><p data-egg-feedback role="status"></p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap"><button type="button" data-egg-deliver style="padding:10px 15px;background:#425f3c;color:#fff;border:1px solid #b6c48b;cursor:pointer">CONSEGNA UOVO</button><button type="button" data-egg-close style="padding:10px 15px;background:#293329;color:#fff;border:1px solid #7c8767;cursor:pointer">CHIUDI</button></div>
+        dialog.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Guardiana della Covata" style="max-width:510px;width:100%;background:#17251c;color:#eee9d5;border:2px solid #81945d;border-radius:12px;padding:25px;box-shadow:0 16px 50px #000a;font-family:Georgia,serif">
+            <h2 style="color:#d5cf96;margin:0 0 12px">GUARDIANA DELLA COVATA</h2>
+            <p>Accanto al fuoco, una lucertoloide dalle scaglie azzurre e lilla veglia sui nidi. Ti osserva con sospetto, stringendo un uovo tra gli artigli.</p>
+            <p>Qui puoi riposare recuperando <strong>2 PF e 2 PM al minuto</strong> finché resti nell'area.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap"><button data-enter type="button" style="padding:10px 15px;background:#425f3c;color:#fff;border:1px solid #b6c48b;cursor:pointer">PARLA CON LA GUARDIANA</button><button type="button" data-close style="padding:10px 15px;background:#293329;color:#fff;border:1px solid #7c8767;cursor:pointer">RIPOSA QUI</button></div>
         </section>`;
-        const feedback=dialog.querySelector('[data-egg-feedback]');
-        dialog.querySelector('[data-egg-close]').onclick=closeDialog;
-        dialog.querySelector('[data-egg-deliver]').onclick=e=>giveEgg(e.currentTarget,feedback);
+        dialog.querySelector('[data-enter]').onclick = () => { window.location.href = serviceUrl; };
+        dialog.querySelector('[data-close]').onclick = closeDialog;
         dialog.addEventListener('click',e=>{if(e.target===dialog)closeDialog();});
         document.body.appendChild(dialog);
-        showStatus(feedback);
     }
     function ensureButton() {
         let b=document.getElementById('ib-nursery-button');
         if(!b) {
-            b=document.createElement('button');b.id='ib-nursery-button';b.type='button';b.textContent='🥚 CUSTODE DELLE UOVA';
+            b=document.createElement('button');b.id='ib-nursery-button';b.type='button';b.textContent='🥚 GUARDIANA DELLA COVATA';
             b.style.cssText='position:fixed;bottom:20px;left:20px;z-index:9900;padding:10px 14px;background:#263b2c;color:#efe8c5;border:1px solid #a7b879;border-radius:6px;cursor:pointer';
             b.onclick=openDialog;document.body.appendChild(b);
         }
-        b.hidden=!nurseryInside();
+        b.hidden=!inside();
     }
     async function check() {
         if(typeof character === 'undefined' || !character) return;
-        const inside=nurseryInside();
+        const isInside=inside();
         ensureButton();
-        if(inside && !previousInside) openDialog();
-        if(!inside && dialog) closeDialog();
-        previousInside=inside;
+        if(isInside && !previousInside) openDialog();
+        if(!isInside && dialog) closeDialog();
+        previousInside=isInside;
         const now=Date.now();
         if(now-lastTick<15000)return;
         lastTick=now;
@@ -15425,7 +15394,7 @@ function updateSpatialCoinPia() {
         try {
             const {data,error}=await client().rpc('scagliagrigia_nursery_tick');
             if(error) throw error;
-            if(inside && data?.healing_minutes>0){
+            if(isInside && data?.healing_minutes>0){
                 if(data.current_pf!=null) character.current_hp=Number(data.current_pf);
                 if(data.current_pm!=null) character.current_pm=Number(data.current_pm);
                 if(typeof updateCharacterPanel==='function')updateCharacterPanel();
