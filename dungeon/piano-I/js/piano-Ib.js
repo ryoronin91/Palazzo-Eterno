@@ -4702,6 +4702,26 @@ async function performMovement(dx,dy) {
     const nx=playerX+dx,ny=playerY+dy;
 
 
+    // Uscita verso Ia: dal bordo sud del Villaggio, un passo verso sud.
+    // Il rientro su Ia viene gestito dalla RPC e verificato dal server.
+    if (dy === 1 && playerY === 19 && [17, 18, 19].includes(playerX)) {
+        try {
+            eventLocked = true;
+            movementQueue.length = 0;
+            setMessage('Ritorno alla Giungla Bassa...');
+            const {data,error} = await db.rpc('piano_ib_return_to_ia');
+            if (error) throw error;
+            if (!data?.returned) throw new Error('Rientro su Ia non riuscito');
+            window.location.assign('piano-Ia.html');
+            return true;
+        } catch (error) {
+            console.error('Ritorno Piano Ia:', error);
+            setMessage(error?.message || 'Non riesci a lasciare il villaggio.');
+            return false;
+        } finally {
+            eventLocked = false;
+        }
+    }
     if(nx<0||ny<0||nx>=MAP_COLUMNS||ny>=MAP_ROWS||!canMoveTo(nx,ny)){
         setMessage('Il passaggio e` bloccato.');return false;
     }
