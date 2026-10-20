@@ -1,1 +1,32 @@
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#293b27,#0a110e 72%);color:#dfebd8;font-family:Georgia,serif}.capo-page{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:24px}.capo-panel{max-width:700px;text-align:center;border:1px solid #52744b;border-radius:14px;padding:clamp(24px,5vw,52px);background:linear-gradient(#192b1c,#0d1710);box-shadow:0 12px 60px #0009}.capo-kicker{color:#a9c89e;letter-spacing:.2em;font-size:.75rem}.capo-panel h1{color:#c4e1a9;letter-spacing:.08em}.capo-panel p{line-height:1.7}.capo-status{margin:32px 0;color:#bec9b4;font-style:italic}.capo-exit{display:inline-block;border:1px solid #69935a;border-radius:8px;background:#2c4d2e;color:#fff;text-decoration:none;padding:13px 22px;font:bold .9rem Arial,sans-serif}.capo-exit:hover{background:#3b613a}
+*{box-sizing:border-box}
+html{min-height:100%}
+body{
+  margin:0;min-height:100vh;
+  background:linear-gradient(rgba(5,13,8,.47),rgba(5,13,8,.74)),url('../../../../immagini/bgI.png') center center/cover fixed no-repeat;
+  color:#dfebd8;font-family:Georgia,serif;
+}
+.capo-page{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:clamp(14px,3vw,36px)}
+.capo-panel{
+  width:min(100%,1000px);
+  text-align:center;border:1px solid #52744b;border-radius:14px;
+  padding:clamp(18px,3vw,36px);
+  background:linear-gradient(180deg,rgba(25,43,28,.96),rgba(13,23,16,.97));
+  box-shadow:0 12px 60px #000b;
+}
+.capo-kicker{color:#a9c89e;letter-spacing:.2em;font-size:.75rem}
+.capo-panel h1{color:#c4e1a9;letter-spacing:.08em;margin:.55em 0 .8em}
+.capo-panel p{line-height:1.7}
+.capo-scene{
+  margin:0 auto 22px;
+  width:min(100%,800px);
+  border:1px solid #52744b;border-radius:10px;
+  overflow:hidden;background:#0b110b;box-shadow:0 10px 32px #0009;
+}
+.capo-scene img{display:block;width:100%;height:auto;object-fit:contain}
+.capo-status{margin:22px 0;color:#bec9b4;font-style:italic}
+.capo-exit{
+  display:inline-block;border:1px solid #69935a;border-radius:8px;
+  background:#2c4d2e;color:#fff;text-decoration:none;
+  padding:13px 22px;font:bold .9rem Arial,sans-serif;
+}
+.capo-exit:hover{background:#3b613a}
