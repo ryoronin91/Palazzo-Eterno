@@ -15537,8 +15537,58 @@ function ensureSpatialCoinPiaButton() {
     panel.insertBefore(button, pagination || null);
     button.addEventListener('click', async () => {
         if (spatialCoinPiaBusy || button.disabled || !character || !db) return;
-        if (!window.confirm('Consumare una Moneta Spaziale per tornare al Livello Base?')) return;
+        openSpatialCoinPiaPrompt();
+    });
+    return button;
+}
+// Popup nativo del gioco, coerente con gli eventi del Piano Ia.
+function openSpatialCoinPiaPrompt() {
+    if (spatialCoinPiaBusy || document.getElementById('pia-spatial-coin-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'pia-spatial-coin-overlay';
+    overlay.className = 'combat-event-overlay';
+    overlay.setAttribute('role', 'presentation');
+    overlay.innerHTML = `
+        <section class="combat-event-modal" role="dialog" aria-modal="true"
+                 aria-labelledby="pia-spatial-coin-title" aria-describedby="pia-spatial-coin-description">
+            <div class="combat-event-icon" aria-hidden="true">✦</div>
+            <h2 id="pia-spatial-coin-title">MONETA SPAZIALE</h2>
+            <p id="pia-spatial-coin-description">Vuoi consumare una Moneta Spaziale per tornare al Livello Base?</p>
+            <div class="combat-event-warning">L'oggetto verrà consumato e lascerai il Piano Ia.</div>
+            <p id="pia-spatial-coin-error" role="alert" hidden></p>
+            <div class="combat-event-buttons">
+                <button id="pia-spatial-coin-confirm" class="combat-event-button combat-event-enter" type="button">USA MONETA</button>
+                <button id="pia-spatial-coin-cancel" class="combat-event-button combat-event-cancel" type="button">VAI VIA</button>
+            </div>
+        </section>`;
+    document.body.appendChild(overlay);
+    const confirm = overlay.querySelector('#pia-spatial-coin-confirm');
+    const cancel = overlay.querySelector('#pia-spatial-coin-cancel');
+    const errorLabel = overlay.querySelector('#pia-spatial-coin-error');
+    const previousLocked = eventLocked;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const onKeydown = e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); }
+        else if (['w','a','s','d','W','A','S','D','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+            e.preventDefault(); e.stopImmediatePropagation();
+        }
+    };
+    function close() {
+        if (spatialCoinPiaBusy) return;
+        document.removeEventListener('keydown', onKeydown, true);
+        overlay.remove();
+        eventLocked = previousLocked;
+    }
+    document.addEventListener('keydown', onKeydown, true);
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    confirm.addEventListener('click', async () => {
+        if (spatialCoinPiaBusy) return;
         spatialCoinPiaBusy = true;
+        confirm.disabled = true;
+        cancel.disabled = true;
+        confirm.textContent = 'TELETRASPORTO...';
         updateSpatialCoinPia();
         try {
             const { error } = await db.rpc('use_spatial_coin');
@@ -15546,13 +15596,19 @@ function ensureSpatialCoinPiaButton() {
             window.location.assign('../../base/base.html');
         } catch (error) {
             console.error('Moneta Spaziale Piano I-A:', error);
-            setMessage(error?.message || 'Impossibile utilizzare la Moneta Spaziale.', true);
+            errorLabel.hidden = false;
+            errorLabel.textContent = error?.message || 'Impossibile utilizzare la Moneta Spaziale.';
+            setMessage(errorLabel.textContent, true);
             spatialCoinPiaBusy = false;
+            confirm.disabled = false;
+            cancel.disabled = false;
+            confirm.textContent = 'USA MONETA';
             updateSpatialCoinPia();
         }
     });
-    return button;
+    cancel.focus();
 }
+
 function updateSpatialCoinPia() {
     const button = ensureSpatialCoinPiaButton();
     if (!button) return;
@@ -15563,24 +15619,3 @@ function updateSpatialCoinPia() {
     button.disabled = spatialCoinPiaBusy || !count || !character || !!character.active_combat_id;
 }
 
-
-// ORA I - controlla la scadenza dell'Astro della Forza.
-let astroIInside=false;
-async function checkAstroIStatus(){
- try{
-  const {data,error}=await db.rpc('orologio_astro_status');
-  if(error){console.warn('Controllo Astro I non disponibile',error);return;}
-  astroIInside=!!data?.inside;
-  if(data?.expired){window.location.replace('../../orologio/orologio.html');return;}
-  const b=document.querySelector('.dungeon-exit-button');
-  if(b && astroIInside){b.title="Uscita bloccata: sconfiggi l'Astro, usa una Moneta Spaziale o attendi la chiusura.";b.setAttribute('aria-disabled','true');}
- }catch(e){console.warn('Astro I:',e);}
-}
-document.addEventListener('click',event=>{
- const b=event.target.closest?.('.dungeon-exit-button');
- if(b && astroIInside){event.preventDefault();event.stopImmediatePropagation();setMessage("Non puoi uscire: sconfiggi l'Astro, usa una Moneta Spaziale o attendi la chiusura.");}
-},true);
-document.addEventListener('DOMContentLoaded',()=>{
- void checkAstroIStatus();
- setInterval(()=>{if(!document.hidden)void checkAstroIStatus();},5000);
-});
