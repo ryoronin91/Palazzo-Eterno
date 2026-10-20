@@ -15405,3 +15405,76 @@ function updateSpatialCoinPia() {
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialog)closeDialog();});
     document.addEventListener('DOMContentLoaded',()=>{setInterval(check,1500);});
 })();
+
+
+// ============================================================
+// SCIAMANO SCAGLIAGRIGIA — ingresso X14 Y5
+// ============================================================
+(function () {
+    if (typeof window === 'undefined') return;
+    if (window.__ibShamanPatchApplied) return;
+    window.__ibShamanPatchApplied = true;
+
+    function showIbShamanEntrancePopup() {
+        if (document.getElementById('ib-shaman-entry-overlay')) return;
+        if (typeof eventLocked !== 'undefined') eventLocked = true;
+        if (typeof movementQueue !== 'undefined' && movementQueue?.length !== undefined) movementQueue.length = 0;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'ib-shaman-entry-overlay';
+        overlay.className = 'combat-event-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'combat-event-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'ib-shaman-entry-title');
+
+        modal.innerHTML = `
+            <div class="combat-event-header">
+                <h2 id="ib-shaman-entry-title">CAPANNA DELLO SCIAMANO</h2>
+            </div>
+            <div class="combat-event-body">
+                <p>L'aria si fa pesante di incensi, muffe e resine. Dietro la tenda della capanna si intravedono totem, fumi rituali e gli occhi bianchi dello Sciamano Scagliagrigia.</p>
+                <p>Vuoi entrare nella capanna dello Sciamano?</p>
+            </div>
+            <div class="combat-event-actions">
+                <button type="button" class="combat-event-button combat-event-enter" data-enter>ENTRA</button>
+                <button type="button" class="combat-event-button combat-event-cancel" data-cancel>ANNULLA</button>
+            </div>
+        `;
+
+        function close() {
+            document.removeEventListener('keydown', onKey);
+            overlay.remove();
+            if (typeof eventLocked !== 'undefined') eventLocked = false;
+        }
+        function onKey(event) { if (event.key === 'Escape') close(); }
+        modal.querySelector('[data-enter]').addEventListener('click', () => {
+            window.location.assign('services/sciamano/sciamano-Ib.html');
+        });
+        modal.querySelector('[data-cancel]').addEventListener('click', close);
+        overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+        document.addEventListener('keydown', onKey);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        try { modal.querySelector('[data-enter]').focus(); } catch (_) {}
+    }
+
+    if (typeof performMovement === 'function') {
+        const originalPerformMovement = performMovement;
+        performMovement = async function (dx, dy) {
+            try {
+                if (typeof playerX !== 'undefined' && typeof playerY !== 'undefined') {
+                    const nx = playerX + dx;
+                    const ny = playerY + dy;
+                    if (nx === 14 && ny === 5) {
+                        showIbShamanEntrancePopup();
+                        return false;
+                    }
+                }
+            } catch (_) {}
+            return originalPerformMovement.call(this, dx, dy);
+        };
+    }
+})();
