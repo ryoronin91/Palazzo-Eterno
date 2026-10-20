@@ -157,7 +157,7 @@ function renderClockHand(){
     objectFit:'contain',
     objectPosition:'center top',
     transform:'rotate('+Number(cfg.rotationDeg)+'deg)',
-    transformOrigin:'center center',
+    transformOrigin: `${cfg.originX}% ${cfg.originY}%`,
     opacity:String(cfg.opacity),
     zIndex:'14',
     pointerEvents:'none',
