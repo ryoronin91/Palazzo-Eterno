@@ -1,14 +1,63 @@
 <!DOCTYPE html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Guardiana della Covata — Palazzo Eterno</title>
-<link rel="stylesheet" href="guardiana-Ib.css?v=1">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../../../js/config.js?v=11"></script><script src="guardiana-Ib.js?v=1" defer></script></head>
-<body><main class="scene"><section class="panel"><p class="kicker">VILLAGGIO SCAGLIAGRIGIA · ZONA DEI NIDI</p><h1>GUARDIANA DELLA COVATA</h1>
-<figure><img src="guardiana-Ib.png" alt="Guardiana azzurra e lilla accanto al fuoco, circondata dai nidi" loading="eager"></figure>
-<p class="intro">Accanto al focolare, la Guardiana stringe un uovo tra gli artigli. Il suo sguardo è duro: nessun estraneo si avvicina ai nidi senza il suo consenso.</p>
-<section class="quest" aria-label="Missione della Guardiana"><h2>UN UOVO SMARRITO</h2><p>«Un uovo è rotolato lontano dai nidi, verso la Giungla Alta. Se vuoi dimostrare di rispettare questa covata, riportamelo integro. E non osare tornare con il guscio spezzato.»</p>
-<p class="hint">Recupera un Uovo di lucertoloide nella Giungla Alta (Piano Ic) e consegnalo qui. La sua posizione verrà definita durante la costruzione di Ic.</p>
-<p id="egg-progress" class="progress" role="status" aria-live="polite">Controllo missione...</p><p id="tribe-progress" class="hint"></p><button id="egg-deliver" type="button" disabled>CONSEGNA UOVO</button></section>
-<section class="rest"><h2>IL CALORE DEL FOCOLARE</h2><p>Restando sulle caselle X9–10, Y15–16 del villaggio recuperi <strong>2 PF e 2 PM al minuto</strong>.</p></section>
-<a class="exit" href="../../piano-Ib.html">← TORNA AL VILLAGGIO</a></section></main></body></html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guardiana della Covata — Palazzo Eterno</title>
+  <link rel="stylesheet" href="guardiana-Ib.css?v=2-layout-chat">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../../../js/config.js?v=11"></script>
+  <script src="guardiana-Ib.js?v=2-layout-chat" defer></script>
+</head>
+<body>
+  <main class="scene">
+    <section class="panel">
+      <p class="kicker">VILLAGGIO SCAGLIAGRIGIA · ZONA DEI NIDI</p>
+      <h1>GUARDIANA DELLA COVATA</h1>
+
+      <section class="encounter-grid" aria-label="Incontro con la Guardiana della Covata">
+        <div class="visual-column">
+          <figure class="guardian-figure">
+            <img src="guardiana-Ib.png" alt="Guardiana azzurra e lilla accanto al fuoco, circondata dai nidi" loading="eager">
+
+            <section class="guardian-chat" aria-label="Dialogo con la Guardiana della Covata">
+              <h2>PARLA CON LA GUARDIANA</h2>
+              <div id="guardiana-chat-log" class="guardian-chat-log" role="log" aria-live="polite" aria-relevant="additions">
+                <p class="guardian-chat-msg guardian-chat-npc"><strong>GUARDIANA</strong><span>La lucertoloide ti fissa con occhi duri e protettivi. «Parla in fretta, straniero. La covata viene prima di tutto.»</span></p>
+              </div>
+              <form id="guardiana-chat-form" class="guardian-chat-form" autocomplete="off">
+                <label for="guardiana-chat-input" class="sr-only">Il tuo messaggio</label>
+                <div class="guardian-chat-controls">
+                  <input id="guardiana-chat-input" type="text" maxlength="500" placeholder="Rivolgiti alla Guardiana della Covata..." required>
+                  <button type="submit" id="guardiana-chat-submit">INVIA</button>
+                </div>
+              </form>
+              <p class="guardian-chat-info">Dialogo in preparazione: l'intelligenza artificiale della Guardiana non è ancora attiva.</p>
+            </section>
+          </figure>
+
+          <p class="intro">Accanto al focolare, la Guardiana sorveglia i nidi della tribù. Il suo volto non lascia spazio a dubbi: nessun estraneo si avvicina alle uova senza il suo consenso.</p>
+        </div>
+
+        <aside class="mission-column">
+          <section class="quest" aria-label="Missione della Guardiana">
+            <h2>UN UOVO SMARRITO</h2>
+            <p>«Un uovo è rotolato lontano dai nidi, verso la Giungla Alta. Se vuoi dimostrare di rispettare questa covata, riportamelo integro. E non osare tornare con il guscio spezzato.»</p>
+            <p class="hint">Recupera un <strong>Uovo di lucertoloide</strong> nella Giungla Alta (Piano Ic) e consegnalo qui. La sua posizione verrà definita durante la costruzione di Ic.</p>
+            <p id="egg-progress" class="progress" role="status" aria-live="polite">Controllo missione...</p>
+            <p id="tribe-progress" class="hint"></p>
+            <button id="egg-deliver" type="button" disabled>CONSEGNA UOVO</button>
+          </section>
+
+          <section class="rest">
+            <h2>IL CALORE DEL FOCOLARE</h2>
+            <p>Restando sulle caselle <strong>X9–10, Y15–16</strong> del villaggio recuperi <strong>2 PF e 2 PM al minuto</strong>.</p>
+          </section>
+        </aside>
+      </section>
+
+      <a class="exit" href="../../piano-Ib.html">← TORNA AL VILLAGGIO</a>
+    </section>
+  </main>
+</body>
+</html>
