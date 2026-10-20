@@ -4793,9 +4793,63 @@ function showScintillaStatuePopup() {
     setMessage('Una statua domina il centro del villaggio.');
 }
 
+
+// CAPANNA DELL'ANZIANO: punto di interazione X7 Y4.
+function showIbCapoEntrancePopup() {
+    if (document.getElementById('ib-capo-entry-overlay')) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const overlay = document.createElement('div');
+    overlay.id = 'ib-capo-entry-overlay';
+    overlay.className = 'combat-event-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'ib-capo-entry-title');
+    const title = document.createElement('h2');
+    title.id = 'ib-capo-entry-title';
+    title.textContent = "CAPANNA DELL'ANZIANO";
+    const description = document.createElement('p');
+    description.textContent = 'Dietro una pesante tenda di pelli si intravede l’interno di una grande capanna. Teschi di animali, ossa e trofei di caccia decorano le pareti. Un fuoco centrale illumina un imponente seggio di legno e ossa.';
+    const question = document.createElement('p');
+    question.textContent = 'Vuoi entrare nella capanna?';
+    const actions = document.createElement('div');
+    actions.className = 'combat-event-buttons';
+    const enter = document.createElement('button');
+    enter.type = 'button';
+    enter.className = 'combat-event-button combat-event-enter';
+    enter.textContent = 'ENTRA';
+    enter.addEventListener('click', () => {
+        window.location.assign('services/capo/capo-Ib.html');
+    });
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'combat-event-button combat-event-cancel';
+    cancel.textContent = 'ANNULLA';
+    function close() {
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+        eventLocked = false;
+    }
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    function onKey(event) { if (event.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    actions.append(enter,cancel);
+    modal.append(title,description,question,actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancel.focus();
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    if (nx === 7 && ny === 4) {
+        showIbCapoEntrancePopup();
+        return false;
+    }
 
 
     // Uscita verso Ia: dal bordo sud del Villaggio, un passo verso sud.
