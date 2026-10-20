@@ -2090,3 +2090,10 @@ input {
 .vendor-stock-item {
     min-height: 72px;
 }
+
+/* Economia e donazioni Scagliagrigia */
+.scag-quest{padding:12px 16px;border-top:1px solid var(--gold-dark);background:var(--panel-deep);color:var(--ivory);font-size:12px}
+.scag-quest strong{display:block;color:var(--gold-bright);letter-spacing:.08em;margin-bottom:8px}
+.scag-quest p{line-height:1.35;margin:4px 0 10px}
+.scag-quest small{display:block;margin-top:7px;color:var(--muted)}
+.vendor-stock-name small{color:var(--muted);font-size:11px}

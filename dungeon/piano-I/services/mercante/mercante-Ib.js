@@ -397,6 +397,7 @@ document.addEventListener(
 
             setupVendorAiChat();
             setupVendorExitButton();
+            await setupScagliagrigiaQuest();
 
         } catch (error) {
             console.error(
@@ -2281,4 +2282,116 @@ function renderVendorInventoryError(
             )}
         </div>
     `;
+}
+
+
+// ============================================================
+// ECONOMIA SCAGLIAGRIGIA - SCORTE FINITE / DONAZIONI
+// Queste definizioni sostituiscono le omonime del vendor base.
+// ============================================================
+let scagliagrigiaMerchantGold = 200;
+
+async function loadVendorItems() {
+    const [{data: stock, error: stockErr}, {data: treasury, error: goldErr}] = await Promise.all([
+        db.from('scagliagrigia_merchant_stock').select('item_id,quantity,buy_price,item:items(id,name,description)').order('item_id'),
+        db.from('scagliagrigia_merchant_state').select('gold').eq('id',1).single()
+    ]);
+    if(stockErr) throw stockErr;
+    if(goldErr) throw goldErr;
+    scagliagrigiaMerchantGold=Number(treasury.gold)||0;
+    vendorItems=(stock||[]).map(row=>({...row,item:row.item||{id:row.item_id,name:row.item_id}}));
+}
+
+function renderVendorItems() {
+    const container=document.querySelector('.vendor-stock');
+    if(!container) return;
+    const balance=characterInventory.find(x=>x?.item?.id==='moneta_oro');
+    const playerGold=Number(balance?.quantity)||0;
+    const merchantLine=document.getElementById('scag-treasury');
+    if(merchantLine) merchantLine.textContent=`Cassa: ${scagliagrigiaMerchantGold} oro`;
+    const active=vendorItems.filter(x=>Number(x.quantity)>0);
+    if(!active.length){container.innerHTML='<div class="inventory-empty">Merce esaurita.</div>';return;}
+    const categories=[
+        ['RISORSE', ['frutto_carnoso','coscia_uccello_stigio','foglia_nutriente','funghetto','legname']],
+        ['ARMI E ARMATURE', ['spada_pietra','scudo_tartaruga','lancia_pietra']],
+        ['ACCESSORI',['piuma_allosauro']]
+    ];
+    const groups=[...categories,['MERCE ACQUISTATA DAI VIAGGIATORI',[]]];
+    container.innerHTML=groups.map(([title,ids],idx)=>{
+        const rows=active.filter(row=>idx===3?!categories.some(([,arr])=>arr.includes(row.item_id)):ids.includes(row.item_id));
+        if(!rows.length)return '';
+        return `<div class="vendor-category-divider"><span>${title}</span></div>`+rows.map(row=>{
+            const qty=Number(row.quantity),price=Number(row.buy_price);
+            return `<article class="vendor-stock-item" data-item-id="${escapeVendorHtml(row.item_id)}">
+              <div class="vendor-stock-name" title="${escapeVendorHtml(row.item?.description||'')}">${escapeVendorHtml(row.item?.name||row.item_id)} <small>(${qty} disponibili)</small></div>
+              <div class="vendor-stock-price">${price}</div>
+              <div class="vendor-buy-group">${[1,5,10].map(n=>`<button class="merchant-button vendor-buy-button" type="button" data-buy-item-id="${escapeVendorHtml(row.item_id)}" data-buy-price="${price}" data-buy-quantity="${n}" ${n>qty||price*n>playerGold?'disabled':''}>×${n}</button>`).join('')}</div>
+            </article>`;
+        }).join('');
+    }).join('');
+}
+
+async function buyVendorItem(button) {
+    if(!button||button.disabled)return;
+    const itemId=button.dataset.buyItemId;
+    const quantity=Number(button.dataset.buyQuantity)||1;
+    button.disabled=true;
+    try {
+        const {error}=await db.rpc('scagliagrigia_trade',{p_action:'buy',p_item_id:itemId,p_quantity:quantity});
+        if(error)throw error;
+        await loadVendorCharacterInventory();
+        await loadVendorItems();
+        updateVendorPlayerInventoryHeader();renderVendorCharacterInventory();renderVendorItems();
+        setVendorDialogue(`Acquisto completato: ${quantity} × ${vendorItems.find(x=>x.item_id===itemId)?.item?.name||itemId}.`);
+    }catch(e){setVendorDialogue(e.message||'Acquisto non riuscito.');}finally{if(button.isConnected)button.disabled=false;renderVendorItems();}
+}
+
+async function sellVendorItem(button) {
+    if(!button||button.disabled)return;
+    const row=button.closest('.player-item');
+    const invId=row?.dataset.inventoryId;
+    const itemId=row?.dataset.itemId;
+    const quantity=Number(button.dataset.sellQuantity)||1;
+    if(!invId)return;
+    button.disabled=true;
+    try {
+        const {error}=await db.rpc('scagliagrigia_trade',{p_action:'sell',p_item_id:itemId,p_quantity:quantity,p_inventory_id:invId});
+        if(error)throw error;
+        await loadVendorCharacterInventory();
+        await loadVendorItems();
+        updateVendorPlayerInventoryHeader();renderVendorCharacterInventory();renderVendorItems();
+        setVendorDialogue('Vendita completata. La merce è ora disponibile al banco.');
+    }catch(e){setVendorDialogue(e.message||'Vendita non riuscita.');}finally{if(button.isConnected)button.disabled=false;}
+}
+
+async function setupScagliagrigiaQuest() {
+    const panel=document.querySelector('.vendor-inventory');
+    const heading=panel?.querySelector('.ornate-subheading');
+    if(heading)heading.textContent='Mercanzia degli Scagliagrigia — scorte condivise';
+    const treasury=document.createElement('div');treasury.id='scag-treasury';treasury.className='ornate-subheading';
+    treasury.textContent=`Cassa: ${scagliagrigiaMerchantGold} oro`;
+    panel?.querySelector('.ornate-divider')?.before(treasury);
+    const quest=document.createElement('section');quest.className='scag-quest';
+    quest.innerHTML=`<strong>UN DONO ALLA TRIBÙ</strong><p>Offri gratuitamente alla comunità: 25 Frutti Carnosi, 20 Cosce di Uccello Parassita, 30 Foglie Nutrienti, 40 Funghetti e 25 Legname.</p><button class="merchant-button" id="scag-quest-donate" type="button">CONSEGNA DONAZIONE</button><small id="scag-quest-status"></small>`;
+    panel?.appendChild(quest);
+    const button=quest.querySelector('#scag-quest-donate');
+    const status=quest.querySelector('#scag-quest-status');
+    const refresh=async()=>{
+        const {data,error}=await db.rpc('scagliagrigia_quest_status');
+        if(error){status.textContent=error.message;return;}
+        if(data?.completed){button.disabled=true;status.textContent='Missione completata per questo ciclo.';}
+        else{button.disabled=false;status.textContent='Una consegna per PG in ciascun ciclo del Piano I.';}
+    };
+    button.addEventListener('click',async()=>{
+        button.disabled=true;
+        try {
+            const {error}=await db.rpc('scagliagrigia_donate');
+            if(error)throw error;
+            await loadVendorCharacterInventory();await loadVendorItems();
+            updateVendorPlayerInventoryHeader();renderVendorCharacterInventory();renderVendorItems();
+            setVendorDialogue('La tribù accetta il tuo dono. Tutte le risorse sono ora disponibili al mercato.');
+        }catch(e){setVendorDialogue(e.message||'Donazione non riuscita.');}
+        await refresh();
+    });
+    await refresh();
 }
