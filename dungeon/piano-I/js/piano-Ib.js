@@ -4697,6 +4697,102 @@ async function processMovementQueue() {
 // ============================================================
 
 
+
+// ============================================================
+// PIAZZA CENTRALE — STATUA DI SCINTILLA
+// Popup descrittivo quando si tenta di attraversare la statua.
+// ============================================================
+let scintillaStatuePopupKeyHandler = null;
+
+const SCINTILLA_STATUE_CELLS = new Set([
+    '10,7',
+    '9,8', '10,8', '11,8',
+    '9,9', '10,9', '11,9'
+]);
+
+function isScintillaStatueCell(x, y) {
+    return SCINTILLA_STATUE_CELLS.has(`${x},${y}`);
+}
+
+function closeScintillaStatuePopup() {
+    const overlay = document.getElementById('scintilla-statue-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    if (scintillaStatuePopupKeyHandler) {
+        document.removeEventListener('keydown', scintillaStatuePopupKeyHandler);
+        scintillaStatuePopupKeyHandler = null;
+    }
+    eventLocked = false;
+}
+
+function showScintillaStatuePopup() {
+    if (document.getElementById('scintilla-statue-overlay')) {
+        return;
+    }
+
+    eventLocked = true;
+    movementQueue.length = 0;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'scintilla-statue-overlay';
+    overlay.className = 'combat-event-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'scintilla-statue-title');
+
+    const image = document.createElement('img');
+    image.src = 'immagini/statua-scintilla-popup.png';
+    image.alt = 'Statua di Scintilla';
+    image.style.display = 'block';
+    image.style.width = '100%';
+    image.style.maxWidth = '320px';
+    image.style.margin = '0 auto 16px';
+    image.style.borderRadius = '10px';
+    image.style.border = '1px solid #3a6943';
+    image.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.35)';
+    image.style.objectFit = 'cover';
+
+    const title = document.createElement('h2');
+    title.id = 'scintilla-statue-title';
+    title.textContent = 'STATUA DI SCINTILLA';
+
+    const description = document.createElement('p');
+    description.textContent = 'La statua rappresenta un possente automa dai cui pugni si accendono fiamme.';
+
+    const buttons = document.createElement('div');
+    buttons.className = 'combat-event-buttons';
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'combat-event-button combat-event-cancel';
+    closeButton.textContent = 'CHIUDI';
+    closeButton.addEventListener('click', closeScintillaStatuePopup);
+
+    buttons.appendChild(closeButton);
+    modal.append(image, title, description, buttons);
+    overlay.appendChild(modal);
+
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+            closeScintillaStatuePopup();
+        }
+    });
+
+    scintillaStatuePopupKeyHandler = event => {
+        if (event.key === 'Escape') {
+            closeScintillaStatuePopup();
+        }
+    };
+    document.addEventListener('keydown', scintillaStatuePopupKeyHandler);
+
+    document.body.appendChild(overlay);
+    setMessage('Una statua domina il centro del villaggio.');
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
@@ -4722,8 +4818,17 @@ async function performMovement(dx,dy) {
             eventLocked = false;
         }
     }
-    if(nx<0||ny<0||nx>=MAP_COLUMNS||ny>=MAP_ROWS||!canMoveTo(nx,ny)){
-        setMessage('Il passaggio e` bloccato.');return false;
+    if (nx < 0 || ny < 0 || nx >= MAP_COLUMNS || ny >= MAP_ROWS) {
+        setMessage('Il passaggio e` bloccato.');
+        return false;
+    }
+    if (!canMoveTo(nx, ny)) {
+        if (isScintillaStatueCell(nx, ny)) {
+            showScintillaStatuePopup();
+        } else {
+            setMessage('Il passaggio e` bloccato.');
+        }
+        return false;
     }
     try {
         const {data,error}=await db.rpc('piano_ib_move',{p_x:nx,p_y:ny});
