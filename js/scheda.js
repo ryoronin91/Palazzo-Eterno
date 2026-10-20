@@ -3908,79 +3908,64 @@ function setupEvents() {
 // Le coordinate già salvate non vengono toccate.
 // ============================================================
 
-function enterPalazzoAtLastLocation(
-    event
-) {
+async function enterPalazzoAtLastLocation(event) {
+    if (event) event.preventDefault();
 
-    if (event) {
-
-        event.preventDefault();
-
+    const button = document.getElementById("enter-palazzo-button");
+    if (button?.dataset.loading === "true") return;
+    if (button) {
+        button.dataset.loading = "true";
+        button.setAttribute("aria-disabled", "true");
     }
 
+    try {
+        // Rilettura necessaria: un personaggio può aver cambiato
+        // piano dopo il caricamento della scheda.
+        if (!currentUser?.id) throw new Error("Utente non ancora caricato.");
+        const { data: fresh, error } = await db
+            .from("characters")
+            .select("current_location,active_combat_id")
+            .eq("user_id", currentUser.id)
+            .single();
+        if (error) throw error;
+        if (!fresh) throw new Error("Personaggio non trovato.");
 
-    if (!character) {
+        if (character) {
+            character.current_location = fresh.current_location;
+            character.active_combat_id = fresh.active_combat_id;
+        }
 
-        window.location.href =
-            "dungeon/piano-1/dungeon.html";
+        if (fresh.active_combat_id) {
+            window.location.assign(
+                "combat.html?combat_id=" + encodeURIComponent(fresh.active_combat_id)
+            );
+            return;
+        }
 
-        return;
-
+        const currentLocation = String(fresh.current_location || "").trim().toLowerCase();
+        const destinations = {
+            base: "base/base.html",
+            dungeon: "dungeon/piano-1/dungeon.html",
+            dungeon_ia: "dungeon/piano-I/piano-Ia.html",
+            dungeon_ib: "dungeon/piano-I/piano-Ib.html",
+            orologio: "orologio/orologio.html",
+            vendor: "base/services/vendor/vendor.html"
+        };
+        const destination = destinations[currentLocation];
+        if (!destination) {
+            throw new Error("Posizione del personaggio non riconosciuta: " +
+                (fresh.current_location || "nessuna"));
+        }
+        window.location.assign(destination);
+    } catch (error) {
+        console.error("Errore rientro nel Palazzo:", error);
+        showMessage("Impossibile aprire la posizione attuale: " + (error.message || error));
+    } finally {
+        if (button) {
+            delete button.dataset.loading;
+            button.removeAttribute("aria-disabled");
+        }
     }
-
-
-    if (
-        character.active_combat_id
-    ) {
-
-        window.location.href =
-            `combat.html?combat_id=${encodeURIComponent(
-                character.active_combat_id
-            )}`;
-
-        return;
-
-    }
-
-
-    const location =
-        String(
-            character.current_location ||
-            ""
-        )
-            .trim()
-            .toLowerCase();
-
-
-    if (
-        location ===
-        "vendor"
-    ) {
-
-        window.location.href =
-            "../../../base/services/vendor/vendor.html";
-
-        return;
-
-    }
-
-
-    if (
-        location ===
-        "base"
-    ) {
-
-        window.location.href =
-            "base/base.html";
-
-        return;
-
-    }
-
-
-    window.location.href =
-        "dungeon/piano-1/dungeon.html";
-
 }
 
 
