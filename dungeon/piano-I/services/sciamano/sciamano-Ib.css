@@ -81,3 +81,32 @@ h2{margin:0 0 8px;color:#f0d38c;font-size:22px;line-height:1.15}
   .dialogue-overlay{position:static;left:auto;right:auto;bottom:auto;margin-top:0}
   .chat-form{flex-direction:column}
 }
+
+/* Layout compatto — immagine in evidenza, negozio prima della missione */
+.vendor-page{max-width:1600px;margin:0 auto;grid-template-columns:minmax(0,1fr) minmax(300px,355px);gap:12px;padding:12px}
+.center-panel{min-width:0;padding:6px}
+.right-panel{padding:10px;display:flex;flex-direction:column;gap:10px;align-self:start}
+.vendor-figure img{height:calc(100vh - 38px);min-height:650px;object-fit:contain;background:#160b08}
+.stock-panel,.quest-panel{margin:0;padding:12px;background:rgba(22,10,8,.75)}
+.stock-panel{order:0}.quest-panel{order:1}
+.stock-panel h2,.quest-panel h2{font-size:16px}
+.stock-panel .eyebrow,.quest-panel .eyebrow{font-size:10px;margin-bottom:4px}
+.stock-list{max-height:none;gap:6px;overflow:visible}
+.stock-card{padding:9px}
+.stock-card h3{font-size:14px;margin-bottom:2px}
+.stock-card p{font-size:12px;line-height:1.3;margin-bottom:4px}
+.stock-meta{font-size:11px;gap:6px}
+.stock-card .price-line{margin-top:5px;font-size:12px}
+.stock-card button,#quest-claim{padding:7px 10px;font-size:12px}
+.quest-panel p{font-size:12px;margin-bottom:7px;line-height:1.4}
+.quest-status{gap:5px;margin:8px 0}.quest-row{padding:6px 8px;font-size:12px}
+.quest-feedback{min-height:0}
+.shop-wallet{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:#f1dbac;padding:2px 2px 5px;border-bottom:1px solid rgba(198,152,89,.3)}
+.shop-wallet strong{font-size:16px;color:#ffe09a}
+.score-line{margin:0;font-size:12px}
+.dialogue-overlay{left:12px;right:12px;bottom:12px;padding:10px;background:linear-gradient(180deg,rgba(22,10,7,.25),rgba(22,10,7,.83))}
+.dialogue-name{font-size:12px;margin-bottom:5px}.dialogue-text{font-size:13px;margin-bottom:7px;line-height:1.35}
+.chat-log{max-height:80px;margin-bottom:6px;gap:5px}.chat-bubble{padding:6px 8px}
+.chat-form input{padding:8px;font-size:13px}.chat-form button{padding:8px 12px;font-size:12px}
+@media(max-width:1000px){.vendor-page{grid-template-columns:1fr;max-width:850px}.vendor-figure img{height:auto;min-height:0;max-height:82vh}.right-panel{width:100%}}
+@media(max-width:700px){.vendor-page{padding:6px;gap:8px}.vendor-figure img{max-height:none}.right-panel{padding:8px}.dialogue-overlay{position:static;margin:0}}

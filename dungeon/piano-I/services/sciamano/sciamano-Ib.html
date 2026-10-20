@@ -4,29 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sciamano Scagliagrigia - Palazzo Eterno</title>
-    <link rel="stylesheet" href="sciamano-Ib.css?v=1">
+    <link rel="stylesheet" href="sciamano-Ib.css?v=2-compatto">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../../../js/config.js?v=11"></script>
-    <script src="sciamano-Ib.js?v=1" defer></script>
+    <script src="sciamano-Ib.js?v=2-compatto" defer></script>
 </head>
 <body>
     <main class="vendor-page">
-        <section class="left-panel" aria-label="Inventario personaggio">
-            <div class="panel-head">
-                <div>
-                    <div class="eyebrow">INVENTARIO DEL PERSONAGGIO</div>
-                    <h2 id="player-name">SCAGLIAGRIGIA</h2>
-                </div>
-                <div class="gold-box">
-                    <span>MONETE D'ORO</span>
-                    <strong id="player-gold">0</strong>
-                </div>
-            </div>
-            <div id="player-score" class="score-line">Risonanza: 0 / 400</div>
-            <div id="player-inventory" class="inventory-list">
-                <div class="empty-state">Caricamento inventario...</div>
-            </div>
-        </section>
 
         <section class="center-panel" aria-label="Sciamano Scagliagrigia">
             <button id="exit-button" class="exit-button" type="button">← ESCI</button>
@@ -54,6 +38,16 @@
         </section>
 
         <section class="right-panel" aria-label="Pergamene e missione">
+            <div class="shop-wallet"><span id="player-name">AVVENTURIERO</span><span>🪙 <strong id="player-gold">0</strong></span></div>
+            <p id="player-score" class="score-line">Risonanza: 0 / 400</p>
+            <section class="stock-panel">
+                <div class="eyebrow">VENDOR DI PERGAMENE</div>
+                <h2>PERGAMENE ABILITÀ</h2>
+                <p class="panel-note">Costo di ogni pergamena: <strong>200 oro</strong>. Requisito: <strong>400 risonanza</strong>.</p>
+                <div id="vendor-stock" class="stock-list">
+                    <div class="empty-state">Caricamento pergamene...</div>
+                </div>
+            </section>
             <section class="quest-panel">
                 <div class="eyebrow">MISSIONE DELLA TRIBÙ</div>
                 <h2>LA PROVA DELLE TRE AFFLIZIONI</h2>
@@ -68,14 +62,6 @@
                 <p class="panel-note">La missione conta una sola volta per ciclo del Piano I.</p>
             </section>
 
-            <section class="stock-panel">
-                <div class="eyebrow">VENDOR DI PERGAMENE</div>
-                <h2>PERGAMENE ABILITÀ</h2>
-                <p class="panel-note">Costo di ogni pergamena: <strong>200 oro</strong>. Requisito: <strong>400 risonanza</strong>.</p>
-                <div id="vendor-stock" class="stock-list">
-                    <div class="empty-state">Caricamento pergamene...</div>
-                </div>
-            </section>
         </section>
     </main>
 </body>
