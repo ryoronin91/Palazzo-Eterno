@@ -5,7 +5,7 @@
 // ============================================================
 
 
-console.log("DUNGEON.JS - NUOVA INTERFACCIA CARICATA");
+console.log("PIANO IB V4 - Villaggio Scagliagrigia - ONLINE");
 
 
 
@@ -6703,6 +6703,8 @@ active_combat_id:
 in_combat:
     !!character.active_combat_id,
 
+
+current_location: "dungeon_Ib",
 
 online_at:
             new Date()
