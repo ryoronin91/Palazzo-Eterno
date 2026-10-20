@@ -244,7 +244,7 @@ function setupAstroIPopupStyle(){
  if(document.getElementById('astro-i-popup-css'))return;
  const el=document.createElement('style');el.id='astro-i-popup-css';
  el.textContent=`.astro-i-overlay{position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
- .astro-i-modal{width:min(430px,100%);padding:28px;box-sizing:border-box;border:1px solid #3a6943;border-radius:12px;background:linear-gradient(180deg,#141e16,#0b0f0c);box-shadow:0 20px 60px rgba(0,0,0,.8);color:#d1e4d1;text-align:center}
+ .astro-i-modal{width:min(430px,100%);padding:28px;box-sizing:border-box;border:1px solid #3a6943;border-radius:12px;background:linear-gradient(rgba(9,18,11,.77),rgba(7,14,9,.87)),url("../immagini/bgI.png") center/cover no-repeat;box-shadow:0 20px 60px rgba(0,0,0,.8);color:#d1e4d1;text-align:center}
  .astro-i-kicker{font-size:15px;font-weight:900;letter-spacing:.2em;color:#8ad289;margin-bottom:8px}
  .astro-i-modal h2{margin:0 0 16px;color:#8ad289;letter-spacing:1.5px}
  .astro-i-warning{padding:14px;border:1px solid #325b3a;border-radius:8px;background:rgba(95,26,20,.2);color:#acd0ab;font-size:13px;line-height:1.6}
