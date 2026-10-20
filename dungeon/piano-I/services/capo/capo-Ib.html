@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Capanna dell'Anziano — Palazzo Eterno</title>
-  <link rel="stylesheet" href="capo-Ib.css?v=2-scena">
+  <link rel="stylesheet" href="capo-Ib.css?v=3-chatbox">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../../../js/config.js?v=11"></script>
-  <script src="capo-Ib.js?v=1" defer></script>
+  <script src="capo-Ib.js?v=2-chatbox" defer></script>
 </head>
 <body>
   <main class="capo-page">
@@ -22,7 +22,20 @@
       </figure>
 
       <p>All'interno, un fuoco rituale rischiara trofei di caccia, pelli e antichi simboli della tribù. In fondo alla capanna si trova il seggio dell'Anziano.</p>
-      <p class="capo-status">L'incontro con l'Anziano sarà disponibile prossimamente.</p>
+      <section class="capo-chat" aria-label="Dialogo con l'Anziano">
+        <h2>PARLA CON L'ANZIANO</h2>
+        <div id="capo-chat-log" class="capo-chat-log" role="log" aria-live="polite" aria-relevant="additions">
+          <p class="capo-chat-msg capo-chat-npc"><strong>ANZIANO</strong><span>Il vecchio lucertoloide ti fissa in silenzio, senza nascondere la propria diffidenza.</span></p>
+        </div>
+        <form id="capo-chat-form" class="capo-chat-form" autocomplete="off">
+          <label for="capo-chat-input">Il tuo messaggio</label>
+          <div class="capo-chat-controls">
+            <input id="capo-chat-input" type="text" maxlength="500" placeholder="Rivolgiti all'Anziano..." required>
+            <button type="submit" id="capo-chat-submit">INVIA</button>
+          </div>
+        </form>
+        <p class="capo-chat-info">Dialogo in preparazione: l'intelligenza artificiale dell'Anziano non è ancora attiva.</p>
+      </section>
       <a class="capo-exit" href="../../piano-Ib.html">ESCI DALLA CAPANNA</a>
     </section>
   </main>
