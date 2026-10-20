@@ -1,4 +1,4 @@
-// Palazzo Eterno — Stanza dell'Orologio (prima versione indipendente)
+﻿// Palazzo Eterno — Stanza dell'Orologio (prima versione indipendente)
 // Mappa, movimento/collisioni, camera, personaggio e visualizzazione statistiche.
 // NON scrive base_x/base_y, NON avvia servizi né realtime della Base.
 (() => {
@@ -71,8 +71,10 @@ const CLOCK_NUMERALS = Object.freeze([
   {number:'XI',  index:11, kind:'nox',  variant:'B', image:'immagini/NoxB.png',  x:9,y:6}
 ].map(node => Object.freeze({...node,width:2,height:2,teleportActive:false})));
 
+
 // Read-only registry for future daily A/B/C rotation and A teleport activation.
 window.OrologioNumeri = CLOCK_NUMERALS;
+
 
 function renderClockNumerals(){
   const map=$('dungeon-map');
@@ -106,6 +108,47 @@ function renderClockNumerals(){
   }
 }
 
+
+// Stato globale dei dodici numeri (Supabase): il browser mostra, non decide.
+const CLOCK_ANGLES={XII:0,I:30,II:60,III:90,IV:120,V:150,VI:180,VII:210,VIII:240,IX:270,X:300,XI:330};
+let clockVersion=null,clockDegrees=0,clockBusy=false;
+function displayClockState(s){
+ const selected=Array.isArray(s.selected_numbers)?s.selected_numbers:[];
+ const active=s.active_number||null;
+ for(const node of CLOCK_NUMERALS){
+  const img=document.querySelector('.orologio-numeral[data-clock-number="'+node.number+'"]');
+  if(!img)continue;
+  const variant=active===node.number?'A':selected.includes(node.number)?'C':'B';
+  const src='immagini/'+(node.kind==='nox'?'Nox':'Dies')+variant+'.png';
+  if(img.getAttribute('src')!==src)img.src=src;
+  img.dataset.clockVariant=variant;
+  img.dataset.teleportActive=String(variant==='A');
+ }
+ const v=Number(s.version),target=active?CLOCK_ANGLES[active]:0;
+ const hand=$('orologio-lancetta');
+ if(clockVersion===null){clockDegrees=target;if(hand)hand.style.transition='none';CLOCK_HAND_CONFIG.rotationDeg=target;renderClockHand();}
+ else if(v!==clockVersion){
+  clockDegrees+=(target-((clockDegrees%360)+360)%360+360)%360;
+  CLOCK_HAND_CONFIG.rotationDeg=clockDegrees;
+  if(hand)hand.style.transition='transform 3s ease-in-out';
+  renderClockHand();
+ }
+ clockVersion=v;
+ window.OrologioClockState={cycleNumber:s.cycle_number,activeNumber:active,selectedNumbers:[...selected],nextAdvanceAt:s.next_advance_at,version:v};
+}
+async function refreshOrologioClock(){
+ if(clockBusy)return;clockBusy=true;
+ try{const {data,error}=await supabaseClient.from('orologio_clock_state').select('cycle_number,selected_numbers,active_number,next_advance_at,version').eq('id',1).single();if(error)throw error;displayClockState(data);}
+ catch(error){console.warn('Orologio: stato condiviso non disponibile',error);}
+ finally{clockBusy=false;}
+}
+function startOrologioClock(){
+ void refreshOrologioClock();
+ setInterval(()=>{if(!document.hidden)void refreshOrologioClock();},60000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOrologioClock();});
+}
+
+
 // ============================================================
 // LANCETTA — CONFIGURAZIONE RAPIDA
 // Modifica SOLO questi valori per regolare la posizione, senza
@@ -129,11 +172,13 @@ const CLOCK_HAND_CONFIG = {
     opacity: 1
 };
 
+
 // Utile per piccoli aggiustamenti dalla console, senza modificare il file:
 // OrologioLancetta.offsetX = -0.25; OrologioLancetta.render();
 window.OrologioLancetta = Object.assign(CLOCK_HAND_CONFIG, {
   render: renderClockHand
 });
+
 
 function renderClockHand(){
   const map=$('dungeon-map');
@@ -164,6 +209,7 @@ function renderClockHand(){
     userSelect:'none'
   });
 }
+
 
 function renderToken(){const map=$('dungeon-map');if(!map)return;
  token=document.createElement('div');token.className='dungeon-player-token orologio-token';
@@ -204,7 +250,7 @@ function controls(){
  $('dungeon-map')?.addEventListener('click',e=>{const map=$('dungeon-map');const rect=map.getBoundingClientRect();const x=Math.floor((((e.clientX-rect.left)/rect.width)*imageWidth-gridX)/cellWidthPx),y=Math.floor((((e.clientY-rect.top)/rect.height)*imageHeight-gridY)/cellHeightPx);if(Math.abs(x-pos.x)+Math.abs(y-pos.y)===1)move(x-pos.x,y-pos.y);});
  window.addEventListener('resize',()=>camera(true),{passive:true});
 }
-async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderClockNumerals();renderClockHand();renderToken();controls();zoom(13);queueOrologioPosition();
+async function init(){try{message('Caricamento Stanza dell’Orologio...');await loadMap();if(!await loadCharacter())return;await loadEquipment();updateCharacter();renderClockNumerals();renderClockHand();startOrologioClock();renderToken();controls();zoom(13);queueOrologioPosition();
  initOrologioNotes().catch(e=>console.warn('Note Orologio:',e));initSocial().catch(e=>console.warn('Funzioni sociali Orologio:',e));initActions().catch(e=>console.warn('Azioni Orologio:',e));message('Stanza dell’Orologio caricata. Il disco centrale è inaccessibile.');
  }catch(e){console.error('Orologio:',e);message(e.message||'Errore caricamento',true);}}
 // --- OROLOGIO · CHAT, TOP 5 E PRESENCE (fase 2) ---
@@ -214,6 +260,7 @@ const socialDb=()=>supabaseClient;
 let user=null,channel=null,globalChannel=null,busy=false;
 const seen=new Set();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 
 const own=()=>state()?.player;
 const current=()=>state()?.pos;
@@ -372,6 +419,8 @@ setInterval(leaderboard,90000);
 }catch(e){console.error('Social Orologio:',e);message('Funzioni sociali: '+e.message,true);}}
 
 
+
+
 // STANZA OROLOGIO — abilità e consumabili; Cura usa RPC contesto orologio.
 let inventoryRows=[],knownAbilities=[],actionsBusy=false,healMode=false;
 const statMax=type=>{
@@ -430,6 +479,7 @@ async function castPayday(){
  finally{actionsBusy=false;actionRefresh();}
 }
 
+
 // Consumabili condivisi, mantenendo le RPC server-side di Palazzo Eterno.
 function addExtraButton(id,title,icon,text,onClick){
  let button=$(id);if(button)return button;
@@ -468,6 +518,7 @@ async function spatialCoin(){
  window.location.replace('../base/base.html');
  }catch(e){console.error('Moneta Spaziale Orologio:',e);message(e.message||'Impossibile usare la Moneta Spaziale.',true);actionsBusy=false;await actionData().catch(console.warn);}
 }
+
 
 async function castOrologioHeal(targetId,targetName){
  if(actionsBusy||!owned('cura'))return;
