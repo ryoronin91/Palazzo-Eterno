@@ -4843,11 +4843,56 @@ function showIbCapoEntrancePopup() {
     cancel.focus();
 }
 
+// MERCATO SCAGLIAGRIGIA — ingressi X4 Y9 e X5 Y10.
+function showIbMercanteEntrancePopup() {
+    if (document.getElementById('ib-mercante-entry-overlay')) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const overlay = document.createElement('div');
+    overlay.id = 'ib-mercante-entry-overlay';
+    overlay.className = 'combat-event-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    modal.setAttribute('aria-labelledby','ib-mercante-entry-title');
+    const title = document.createElement('h2');
+    title.id = 'ib-mercante-entry-title';
+    title.textContent = 'MERCATO SCAGLIAGRIGIA';
+    const description = document.createElement('p');
+    description.textContent = 'Banchi di legno, pelli e ossa traboccano di merci, utensili e curiosità. Un mercante lucertoloide sorveglia i suoi averi e ti squadra con diffidenza.';
+    const question = document.createElement('p');
+    question.textContent = 'Vuoi entrare nel mercato?';
+    const actions = document.createElement('div');
+    actions.className = 'combat-event-buttons';
+    const enter = document.createElement('button');
+    enter.type='button'; enter.className='combat-event-button combat-event-enter';
+    enter.textContent='ENTRA';
+    enter.addEventListener('click',()=>window.location.assign('services/mercante/mercante-Ib.html'));
+    const cancel = document.createElement('button');
+    cancel.type='button'; cancel.className='combat-event-button combat-event-cancel';
+    cancel.textContent='ANNULLA';
+    function close(){document.removeEventListener('keydown',onKey);overlay.remove();eventLocked=false;}
+    cancel.addEventListener('click',close);
+    overlay.addEventListener('click',event=>{if(event.target===overlay)close();});
+    function onKey(event){if(event.key==='Escape')close();}
+    document.addEventListener('keydown',onKey);
+    actions.append(enter,cancel);
+    modal.append(title,description,question,actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancel.focus();
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
     if (nx === 7 && ny === 4) {
         showIbCapoEntrancePopup();
+        return false;
+    }
+    if ((nx === 4 && ny === 9) || (nx === 5 && ny === 10)) {
+        showIbMercanteEntrancePopup();
         return false;
     }
 
