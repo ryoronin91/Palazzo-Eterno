@@ -15478,3 +15478,36 @@ function updateSpatialCoinPia() {
         };
     }
 })();
+
+
+// ============================================================
+// PIANO IB — CAMPIONE SCAGLIAGRIGIA, ARENA X14–17 Y9–11
+// ============================================================
+(function(){
+  const oldMovement=performMovement;
+  function showCampioneEntrance(){
+    if(document.getElementById('ib-campione-entry-overlay'))return;
+    eventLocked=true;
+    movementQueue.length=0;
+    const overlay=document.createElement('div');
+    overlay.id='ib-campione-entry-overlay';overlay.className='combat-event-overlay';
+    const modal=document.createElement('div');modal.className='combat-event-modal';
+    modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+    modal.innerHTML=`<h2>ARENA SCAGLIAGRIGIA</h2><p>Il Campione veglia sull'arena. Vuoi entrare e parlare con lui?</p><div class="combat-event-actions"><button type="button" class="combat-event-button combat-event-enter" data-enter>ENTRA</button><button type="button" class="combat-event-button combat-event-cancel" data-cancel>ANNULLA</button></div>`;
+    function close(){document.removeEventListener('keydown',keyHandler);overlay.remove();eventLocked=false;}
+    function keyHandler(e){if(e.key==='Escape')close();}
+    modal.querySelector('[data-enter]').onclick=()=>window.location.assign('services/campione/campione-Ib.html');
+    modal.querySelector('[data-cancel]').onclick=close;
+    overlay.onclick=e=>{if(e.target===overlay)close();};
+    document.addEventListener('keydown',keyHandler);
+    overlay.appendChild(modal);document.body.appendChild(overlay);
+    modal.querySelector('[data-enter]').focus();
+  }
+  performMovement=async function(dx,dy){
+    if(character&&dungeonData&&!eventLocked){
+      const nx=playerX+dx,ny=playerY+dy;
+      if(nx>=14&&nx<=17&&ny>=9&&ny<=11){showCampioneEntrance();return false;}
+    }
+    return oldMovement.call(this,dx,dy);
+  };
+})();
