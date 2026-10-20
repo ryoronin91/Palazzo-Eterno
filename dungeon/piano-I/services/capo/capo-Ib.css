@@ -1,50 +1,27 @@
 *{box-sizing:border-box}
-html{min-height:100%}
-body{
-  margin:0;min-height:100vh;
-  background:linear-gradient(rgba(5,13,8,.47),rgba(5,13,8,.74)),url('../../../../immagini/bgI.png') center center/cover fixed no-repeat;
-  color:#dfebd8;font-family:Georgia,serif;
-}
-.capo-page{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:clamp(14px,3vw,36px)}
-.capo-panel{
-  width:min(100%,1000px);
-  text-align:center;border:1px solid #52744b;border-radius:14px;
-  padding:clamp(18px,3vw,36px);
-  background:linear-gradient(180deg,rgba(25,43,28,.96),rgba(13,23,16,.97));
-  box-shadow:0 12px 60px #000b;
-}
-.capo-kicker{color:#a9c89e;letter-spacing:.2em;font-size:.75rem}
-.capo-panel h1{color:#c4e1a9;letter-spacing:.08em;margin:.55em 0 .8em}
-.capo-panel p{line-height:1.7}
-.capo-scene{
-  margin:0 auto 22px;
-  width:min(100%,800px);
-  border:1px solid #52744b;border-radius:10px;
-  overflow:hidden;background:#0b110b;box-shadow:0 10px 32px #0009;
-}
-.capo-scene img{display:block;width:100%;height:auto;object-fit:contain}
-.capo-status{margin:22px 0;color:#bec9b4;font-style:italic}
-.capo-exit{
-  display:inline-block;border:1px solid #69935a;border-radius:8px;
-  background:#2c4d2e;color:#fff;text-decoration:none;
-  padding:13px 22px;font:bold .9rem Arial,sans-serif;
-}
-.capo-exit:hover{background:#3b613a}
+html{min-height:100%}body{margin:0;min-height:100vh;font-family:Georgia,'Times New Roman',serif;color:#e8ecdc;background:linear-gradient(rgba(5,20,12,.78),rgba(5,19,13,.88)),url('../../../../immagini/bgI.png') center/cover fixed no-repeat}
+.capo-page{min-height:100vh;padding:14px 10px}.capo-shell{max-width:1390px;margin:0 auto;padding:12px 16px 18px;background:linear-gradient(170deg,rgba(19,47,31,.89),rgba(9,29,20,.95));border:1px solid #55734a;box-shadow:0 15px 45px #0009}
+.capo-heading{text-align:center;margin-bottom:12px}.capo-kicker{color:#b4c99e;letter-spacing:.18em;font-size:11px;margin:0 0 4px}.capo-heading h1{color:#e1e5b2;letter-spacing:.1em;font-size:clamp(20px,3vw,32px);margin:0}
+.capo-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,315px);align-items:start;gap:12px}.capo-visual{min-width:0}.capo-scene{position:relative;margin:0;overflow:hidden;background:#0b1b13;border:1px solid #688562;box-shadow:0 8px 30px #0008}.capo-scene img{width:100%;height:calc(100vh - 130px);min-height:580px;display:block;object-fit:contain;background:#0a1c12}.capo-caption{font-size:13px;line-height:1.5;color:#c9d4c4;margin:9px 3px 0}
+.capo-chat{position:absolute;bottom:12px;left:12px;right:12px;padding:11px 12px;background:linear-gradient(180deg,rgba(8,23,15,.36),rgba(8,23,15,.87));border:1px solid rgba(153,182,139,.50);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}.capo-chat h2{font-size:13px;color:#e3e9b4;letter-spacing:.08em;margin:0 0 8px}.capo-chat-log{max-height:102px;overflow:auto;display:flex;flex-direction:column;gap:6px}.capo-chat-msg{margin:0;display:flex;flex-direction:column;gap:3px;padding:7px 9px;max-width:88%;border:1px solid rgba(153,182,139,.24);background:rgba(12,38,24,.58);font-size:12px;line-height:1.4}.capo-chat-msg strong{font-size:10px;color:#e1e5ab;letter-spacing:.08em}.capo-chat-player{align-self:flex-end;background:rgba(44,83,48,.72)}.capo-chat-form{margin-top:8px}.capo-chat-controls{display:flex;gap:8px}.capo-chat-controls input{flex:1;min-width:0;background:rgba(5,20,11,.8);border:1px solid #698265;color:#f1f3e8;font:inherit;font-size:13px;padding:9px 10px}.capo-chat-controls button{background:#355a3c;color:#f6f8ea;border:1px solid #84a075;padding:8px 14px;cursor:pointer;font:inherit;font-size:12px}.capo-chat-info{font-size:11px;line-height:1.3;color:#b9c6b2;margin:8px 0 0}
+.capo-side{display:flex;flex-direction:column;gap:10px}.capo-quest-panel{background:rgba(9,31,19,.79);border:1px solid rgba(119,158,106,.47);padding:15px}.panel-kicker{font-size:10px;color:#b7cda2;letter-spacing:.14em;margin:0 0 5px}.capo-quest-panel h2{font-size:17px;color:#e1e8b5;margin:0 0 10px}.capo-quest-panel p{font-size:12px;line-height:1.5;margin:0 0 11px}.quest-count{display:flex;gap:9px;align-items:center;justify-content:space-between;color:#ccdfbd;font-size:11px;letter-spacing:.06em;margin-top:14px}.quest-count strong{font-size:20px;color:#e9edb0;white-space:nowrap}.quest-progress{height:8px;background:#122a1b;border:1px solid #52764d;margin:8px 0 16px}.quest-progress-fill{height:100%;width:0;background:linear-gradient(90deg,#588b57,#b9d191);transition:width .3s}.quest-milestone{display:flex;flex-direction:column;gap:5px;border:1px solid rgba(119,158,106,.34);background:rgba(255,255,255,.025);padding:10px 11px;margin-bottom:8px}.quest-milestone strong{font-size:11px;color:#d9e7a8;letter-spacing:.07em}.quest-milestone span{font-size:13px}.quest-milestone small{font-size:11px;color:#b6c6aa}.capo-quest-status{color:#dce7c3;margin-top:12px!important}.capo-quest-note{font-size:11px!important;color:#aebfa9;margin-bottom:0!important}.capo-exit{display:block;width:max-content;max-width:100%;margin:15px auto 0;text-decoration:none;color:#eff5df;background:#2d5135;border:1px solid #799b68;padding:10px 16px;font-size:12px}.capo-exit:hover,.capo-chat-controls button:hover{background:#47764d}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:920px){.capo-layout{grid-template-columns:1fr}.capo-scene img{height:auto;min-height:0;max-height:84vh}}
+@media(max-width:640px){.capo-page{padding:6px}.capo-shell{padding:8px}.capo-scene img{max-height:none}.capo-chat{position:static;border-top:1px solid rgba(153,182,139,.5);margin:0}.capo-chat-controls{flex-direction:column}.capo-chat-controls button{min-height:42px}.capo-exit{width:100%;text-align:center}.capo-chat-msg{max-width:100%}}
 
-/* Chatbox dell'Anziano: interfaccia pronta per integrazione IA futura. */
-.capo-chat{margin:24px auto 18px;max-width:800px;text-align:left;border:1px solid #56754c;border-radius:10px;background:rgba(5,15,8,.68);overflow:hidden}
-.capo-chat h2{margin:0;padding:16px 18px;border-bottom:1px solid #435d3d;color:#c5e2ae;font-size:1.1rem;letter-spacing:.09em}
-.capo-chat-log{height:260px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scrollbar-color:#617f53 #132018}
-.capo-chat-msg{display:flex;flex-direction:column;gap:5px;margin:0;padding:11px 14px;line-height:1.55;max-width:88%;overflow-wrap:anywhere;border-radius:10px}
-.capo-chat-msg strong{font-size:.76rem;letter-spacing:.07em;color:#d6ebbc}
-.capo-chat-npc{align-self:flex-start;background:#243a28;border:1px solid #486448}
-.capo-chat-player{align-self:flex-end;background:#294a35;border:1px solid #52795e}
-.capo-chat-form{padding:12px 16px 6px;border-top:1px solid #435d3d}
-.capo-chat-form label{display:block;margin-bottom:8px;font-size:.88rem;color:#c5d5c0}
-.capo-chat-controls{display:flex;gap:9px}
-.capo-chat-controls input{min-width:0;flex:1;padding:13px;border:1px solid #56754c;border-radius:7px;background:#0d1b12;color:#e6f0df;font:inherit}
-.capo-chat-controls input:focus{outline:2px solid #8cb274;outline-offset:1px}
-.capo-chat-controls button{border:1px solid #76a064;border-radius:7px;background:#355d37;color:white;font-weight:700;padding:10px 19px;cursor:pointer}
-.capo-chat-controls button:hover{background:#477947}
-.capo-chat-info{margin:0!important;padding:7px 16px 15px;font-size:.81rem;color:#aabbab;line-height:1.5!important}
-@media(max-width:520px){.capo-chat-controls{flex-direction:column}.capo-chat-controls button{min-height:44px}.capo-chat-log{height:240px}.capo-chat-msg{max-width:96%}}
+/* v5: missione leggendaria e tracker in pannelli leggeri; immagine sempre protagonista */
+.capo-layout{grid-template-columns:minmax(0,1fr) minmax(260px,318px);gap:11px}
+.capo-side{gap:9px}
+.capo-quest-panel{padding:12px 13px;background:rgba(8,29,19,.72)}
+.capo-quest-panel h2{font-size:15px;margin-bottom:7px}
+.capo-quest-panel p{font-size:11.5px;line-height:1.44;margin-bottom:8px}
+.capo-hunt-quote{font-style:italic;color:#e1e5c3}
+.capo-hunt-objective{color:#e6eccf}
+.capo-hunt-objective strong{display:block;color:#bbd2a1;font-size:10px;letter-spacing:.13em;margin-bottom:3px}
+.capo-hunt-detail{color:#bdcbb7}
+.capo-hunt-status{padding:8px 9px;font-size:10px;line-height:1.4;letter-spacing:.07em;color:#e0e8bd;border:1px solid rgba(126,168,118,.36);background:rgba(39,69,43,.35);margin:9px 0}
+.quest-count{margin-top:9px}
+.quest-progress{margin:6px 0 10px}
+.quest-milestone{gap:3px;padding:7px 9px;margin-bottom:6px}
+.capo-scene img{height:calc(100vh - 112px);min-height:610px}
+@media(max-width:920px){.capo-layout{grid-template-columns:1fr}.capo-scene img{height:auto;min-height:0}}

@@ -1,43 +1,65 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capanna dell'Anziano — Palazzo Eterno</title>
-  <link rel="stylesheet" href="capo-Ib.css?v=3-chatbox">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../../../js/config.js?v=11"></script>
-  <script src="capo-Ib.js?v=2-chatbox" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Capanna dell'Anziano — Palazzo Eterno</title>
+<link rel="stylesheet" href="capo-Ib.css?v=5-mietitore">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../../../js/config.js?v=11"></script>
+<script src="capo-Ib.js?v=5-mietitore" defer></script>
 </head>
 <body>
-  <main class="capo-page">
-    <section class="capo-panel">
+<main class="capo-page">
+  <div class="capo-shell">
+    <header class="capo-heading">
       <p class="capo-kicker">VILLAGGIO SCAGLIAGRIGIA</p>
       <h1>CAPANNA DELL'ANZIANO</h1>
-
-      <figure class="capo-scene">
-        <img src="immagini/capo-Ib.png"
-             alt="L'anziano lucertoloide, seduto accanto al fuoco all'interno della capanna"
-             loading="eager">
-      </figure>
-
-      <p>All'interno, un fuoco rituale rischiara trofei di caccia, pelli e antichi simboli della tribù. In fondo alla capanna si trova il seggio dell'Anziano.</p>
-      <section class="capo-chat" aria-label="Dialogo con l'Anziano">
-        <h2>PARLA CON L'ANZIANO</h2>
-        <div id="capo-chat-log" class="capo-chat-log" role="log" aria-live="polite" aria-relevant="additions">
-          <p class="capo-chat-msg capo-chat-npc"><strong>ANZIANO</strong><span>Il vecchio lucertoloide ti fissa in silenzio, senza nascondere la propria diffidenza.</span></p>
-        </div>
-        <form id="capo-chat-form" class="capo-chat-form" autocomplete="off">
-          <label for="capo-chat-input">Il tuo messaggio</label>
-          <div class="capo-chat-controls">
-            <input id="capo-chat-input" type="text" maxlength="500" placeholder="Rivolgiti all'Anziano..." required>
-            <button type="submit" id="capo-chat-submit">INVIA</button>
-          </div>
-        </form>
-        <p class="capo-chat-info">Dialogo in preparazione: l'intelligenza artificiale dell'Anziano non è ancora attiva.</p>
+    </header>
+    <div class="capo-layout">
+      <section class="capo-visual" aria-label="Incontro con l'Anziano">
+        <figure class="capo-scene">
+          <img src="immagini/capo-Ib.png" alt="L'anziano lucertoloide siede accanto al fuoco rituale" loading="eager">
+          <section class="capo-chat" aria-label="Dialogo con l'Anziano">
+            <h2>PARLA CON L'ANZIANO</h2>
+            <div id="capo-chat-log" class="capo-chat-log" role="log" aria-live="polite" aria-relevant="additions">
+              <p class="capo-chat-msg capo-chat-npc"><strong>ANZIANO</strong><span>Il vecchio lucertoloide ti fissa in silenzio. «Perfino i miei cacciatori si nascondono al suo passaggio. Il Mietitore Smeraldo non conosce pietà.»</span></p>
+            </div>
+            <form id="capo-chat-form" class="capo-chat-form" autocomplete="off">
+              <label for="capo-chat-input" class="sr-only">Il tuo messaggio</label>
+              <div class="capo-chat-controls"><input id="capo-chat-input" type="text" maxlength="500" placeholder="Rivolgiti all'Anziano..." required><button type="submit">INVIA</button></div>
+            </form>
+            <p class="capo-chat-info">Il dialogo IA dell'Anziano è ancora in preparazione.</p>
+          </section>
+        </figure>
+        <p class="capo-caption">Un fuoco rituale rischiara pelli, trofei e simboli della tribù. L'Anziano ascolta soltanto chi ha dimostrato rispetto per Scagliagrigia.</p>
       </section>
-      <a class="capo-exit" href="../../piano-Ib.html">ESCI DALLA CAPANNA</a>
-    </section>
-  </main>
+      <aside class="capo-side" aria-label="Missioni dell'Anziano">
+        <section class="capo-quest-panel capo-hunt-panel" aria-label="Missione dell'Anziano">
+          <p class="panel-kicker">MISSIONE DELL’ANZIANO · PIANO I</p>
+          <h2>ABBATTI IL MIETITORE SMERALDO</h2>
+          <p class="capo-hunt-quote">«I miei guerrieri evitano le sue orme. Un enorme Therizinosaurus vaga tra la Giungla Bassa e la Giungla Alta, mietendo chiunque osi sfidarlo. Se vuoi il rispetto della tribù, torna quando il Mietitore Smeraldo sarà caduto.»</p>
+          <p class="capo-hunt-objective"><strong>OBIETTIVO</strong> Partecipa al combattimento vincente contro il Mietitore Smeraldo.</p>
+          <p class="capo-hunt-detail">La vittoria conta per tutti i personaggi presenti nel combattimento vincente. Il Mietitore è <strong>unico per ciclo</strong>: una volta ucciso, non ricompare fino al ciclo successivo del Piano I. Il bottino segue le normali regole di distribuzione.</p>
+          <p class="capo-hunt-detail">Può apparire in <strong>Ia e Ic</strong>. Le modalità dell’incontro verranno definite successivamente.</p>
+          <div class="capo-hunt-status" aria-label="Stato missione">MISSIONE ANNUNCIATA · INCONTRO NON ANCORA ATTIVO</div>
+          <p class="capo-quest-note">Questa missione varrà 1 delle 5 missioni della tribù. Il riconoscimento automatico della vittoria sarà attivato insieme al boss.</p>
+        </section>
+        <section class="capo-quest-panel">
+          <p class="panel-kicker">IL GIUDIZIO DELLA TRIBÙ</p>
+          <h2>DIMOSTRA IL TUO VALORE</h2>
+          <p>Il rispetto di Scagliagrigia si guadagna attraverso le cinque prove della tribù.</p>
+          <div class="quest-count"><span>MISSIONI COMPLETATE</span><strong id="capo-quest-count">— / 5</strong></div>
+          <div class="quest-progress" role="progressbar" aria-label="Missioni Scagliagrigia completate" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="capo-progress"><div class="quest-progress-fill" id="capo-progress-fill"></div></div>
+          <div class="quest-milestone"><strong>2 MISSIONI</strong><span>Lasciapassare Scagliagrigia</span><small id="capo-pass-status">Non ancora disponibile</small></div>
+          <div class="quest-milestone"><strong>5 MISSIONI</strong><span>Ricompensa rara dell'Anziano</span><small id="capo-rare-status">Non ancora disponibile</small></div>
+          <p id="capo-quest-status" class="capo-quest-status" role="status" aria-live="polite">Caricamento progresso...</p>
+          <p class="capo-quest-note">Le ricompense saranno consegnate parlando con l'Anziano quando il relativo sistema sarà attivato.</p>
+        </section>
+      </aside>
+    </div>
+    <a class="capo-exit" href="../../piano-Ib.html">← TORNA AL VILLAGGIO</a>
+  </div>
+</main>
 </body>
 </html>
