@@ -15563,3 +15563,24 @@ function updateSpatialCoinPia() {
     button.disabled = spatialCoinPiaBusy || !count || !character || !!character.active_combat_id;
 }
 
+
+// ORA I - controlla la scadenza dell'Astro della Forza.
+let astroIInside=false;
+async function checkAstroIStatus(){
+ try{
+  const {data,error}=await db.rpc('orologio_astro_status');
+  if(error){console.warn('Controllo Astro I non disponibile',error);return;}
+  astroIInside=!!data?.inside;
+  if(data?.expired){window.location.replace('../../orologio/orologio.html');return;}
+  const b=document.querySelector('.dungeon-exit-button');
+  if(b && astroIInside){b.title="Uscita bloccata: sconfiggi l'Astro, usa una Moneta Spaziale o attendi la chiusura.";b.setAttribute('aria-disabled','true');}
+ }catch(e){console.warn('Astro I:',e);}
+}
+document.addEventListener('click',event=>{
+ const b=event.target.closest?.('.dungeon-exit-button');
+ if(b && astroIInside){event.preventDefault();event.stopImmediatePropagation();setMessage("Non puoi uscire: sconfiggi l'Astro, usa una Moneta Spaziale o attendi la chiusura.");}
+},true);
+document.addEventListener('DOMContentLoaded',()=>{
+ void checkAstroIStatus();
+ setInterval(()=>{if(!document.hidden)void checkAstroIStatus();},5000);
+});

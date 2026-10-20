@@ -1,4 +1,4 @@
-﻿// Palazzo Eterno — Stanza dell'Orologio (prima versione indipendente)
+// Palazzo Eterno — Stanza dell'Orologio (prima versione indipendente)
 // Mappa, movimento/collisioni, camera, personaggio e visualizzazione statistiche.
 // NON scrive base_x/base_y, NON avvia servizi né realtime della Base.
 (() => {
@@ -232,14 +232,62 @@ async function flushOrologioPosition(){
  savePositionBusy=true;
  try{while(savePositionPending){savePositionPending=false;
    const snapshot={x:pos.x,y:pos.y};
-   const {error}=await supabaseClient.from('characters').update({orologio_x:snapshot.x,orologio_y:snapshot.y,current_location:'orologio'}).eq('id',player.id);
+   const {error}=await supabaseClient.from('characters').update({orologio_x:snapshot.x,orologio_y:snapshot.y}).eq('id',player.id);
    if(error)throw error;
    player.orologio_x=snapshot.x;player.orologio_y=snapshot.y;
  }}catch(error){console.error('Persistenza Orologio:',error);message('Errore salvataggio posizione: '+error.message,true);}
  finally{savePositionBusy=false;}
 }
 function queueOrologioPosition(){savePositionPending=true;void flushOrologioPosition();}
-function move(dx,dy){const nx=pos.x+dx,ny=pos.y+dy;if(!isWalkable(nx,ny)){message('Passaggio bloccato.');return;}
+
+function setupAstroIPopupStyle(){
+ if(document.getElementById('astro-i-popup-css'))return;
+ const el=document.createElement('style');el.id='astro-i-popup-css';
+ el.textContent=`.astro-i-overlay{position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+ .astro-i-modal{width:min(430px,100%);padding:28px;box-sizing:border-box;border:1px solid #3a6943;border-radius:12px;background:linear-gradient(180deg,#141e16,#0b0f0c);box-shadow:0 20px 60px rgba(0,0,0,.8);color:#d1e4d1;text-align:center}
+ .astro-i-kicker{font-size:15px;font-weight:900;letter-spacing:.2em;color:#8ad289;margin-bottom:8px}
+ .astro-i-modal h2{margin:0 0 16px;color:#8ad289;letter-spacing:1.5px}
+ .astro-i-warning{padding:14px;border:1px solid #325b3a;border-radius:8px;background:rgba(95,26,20,.2);color:#acd0ab;font-size:13px;line-height:1.6}
+ .astro-i-error{color:#ffb3a2;font-size:13px}
+ .astro-i-buttons{display:grid;gap:10px;margin-top:20px}
+ .astro-i-buttons button{min-height:44px;padding:10px;border-radius:8px;font-weight:800;cursor:pointer;border:1px solid #417d4c;background:linear-gradient(180deg,#2d6337,#1d4023);color:#e1ede1}
+ .astro-i-buttons button[data-cancel]{border-color:#426047;background:linear-gradient(180deg,#1d3121,#142217)}
+ .astro-i-buttons button:disabled{opacity:.5;cursor:wait}`;
+ document.head.appendChild(el);
+}
+
+// ORA I — il server deve verificare la finestra attiva prima di autorizzare l'ingresso.
+const ASTRO_I_CELL={x:17,y:6,width:2,height:2};
+let astroIPromptOpen=false;
+function isAstroICell(x,y){return x>=ASTRO_I_CELL.x && x<ASTRO_I_CELL.x+ASTRO_I_CELL.width && y>=ASTRO_I_CELL.y && y<ASTRO_I_CELL.y+ASTRO_I_CELL.height;}
+function openAstroIPrompt(){
+ setupAstroIPopupStyle();
+ if(astroIPromptOpen||window.OrologioClockState?.activeNumber!=='I')return;
+ astroIPromptOpen=true;
+ let busy=false;
+ const overlay=document.createElement('div');overlay.className='astro-i-overlay';
+ overlay.innerHTML=`<section class="astro-i-modal" role="dialog" aria-modal="true" aria-labelledby="astro-i-title">
+ <div class="astro-i-kicker">ORA I</div><h2 id="astro-i-title">ASTRO DELLA FORZA</h2>
+ <p class="astro-i-warning">Attenzione: una volta dentro si potrà tornare indietro solo sconfiggendo l'Astro, utilizzando una Moneta Spaziale o allo scadere dell'apertura di questa zona.</p>
+ <p class="astro-i-error" role="alert" hidden></p>
+ <div class="astro-i-buttons"><button type="button" data-enter>ENTRA</button><button type="button" data-cancel>VAI VIA</button></div>
+ </section>`;
+ const enter=overlay.querySelector('[data-enter]'),cancel=overlay.querySelector('[data-cancel]'),err=overlay.querySelector('.astro-i-error');
+ const close=()=>{if(busy)return;astroIPromptOpen=false;overlay.remove();};
+ cancel.addEventListener('click',close);
+ enter.addEventListener('click',async()=>{
+  if(busy)return;busy=true;enter.disabled=true;cancel.disabled=true;enter.textContent='ACCESSO...';
+  try{
+   // La RPC esegue selezione casuale e scrittura della posizione in modo atomico.
+   const {data,error}=await supabaseClient.rpc('orologio_enter_astro_forza');
+   if(error)throw error;
+   if(!data?.active)throw Error(data?.message||'Accesso non autorizzato.');
+   window.location.assign('../dungeon/piano-I/piano-Ia.html');
+  }catch(e){err.hidden=false;err.textContent=e?.message||'Ingresso non disponibile.';busy=false;enter.disabled=false;cancel.disabled=false;enter.textContent='ENTRA';}
+ });
+ document.body.appendChild(overlay);
+}
+function move(dx,dy){const nx=pos.x+dx,ny=pos.y+dy;if(isAstroICell(nx,ny)&&window.OrologioClockState?.activeNumber==='I'){openAstroIPrompt();return;}if(!isWalkable(nx,ny)){message('Passaggio bloccato.');return;}
  pos={x:nx,y:ny};sessionStorage.setItem(POSITION_KEY,JSON.stringify(pos));queueOrologioPosition();positionToken();camera();document.dispatchEvent(new CustomEvent('orologio:move',{detail:{...pos}}));message('Stanza dell’Orologio');}
 function controls(){
  $('base-zoom-out')?.addEventListener('click',()=>zoom(view+(view<20?2:8)));
