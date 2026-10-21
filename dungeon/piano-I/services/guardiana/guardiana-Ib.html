@@ -7,19 +7,17 @@
   <link rel="stylesheet" href="guardiana-Ib.css?v=3-focus-image">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../../../js/config.js?v=11"></script>
-  <script src="guardiana-Ib.js?v=3-focus-image" defer></script>
+  <script src="guardiana-Ib.js?v=4-ai" defer></script>
 </head>
 <body>
   <main class="scene">
     <section class="panel">
       <p class="kicker">VILLAGGIO SCAGLIAGRIGIA · ZONA DEI NIDI</p>
       <h1>GUARDIANA DELLA COVATA</h1>
-
       <section class="encounter-grid" aria-label="Incontro con la Guardiana della Covata">
         <div class="visual-column">
           <figure class="guardian-figure">
             <img src="guardiana-Ib.png" alt="Guardiana azzurra e lilla accanto al fuoco, circondata dai nidi" loading="eager">
-
             <section class="guardian-chat" aria-label="Dialogo con la Guardiana della Covata">
               <h2>PARLA CON LA GUARDIANA</h2>
               <div id="guardiana-chat-log" class="guardian-chat-log" role="log" aria-live="polite" aria-relevant="additions">
@@ -32,13 +30,11 @@
                   <button type="submit" id="guardiana-chat-submit">INVIA</button>
                 </div>
               </form>
-              <p class="guardian-chat-info">Dialogo in preparazione: l'intelligenza artificiale della Guardiana non è ancora attiva.</p>
+              <p class="guardian-chat-info">La Guardiana ascolta. Non avvicinarti alle uova.</p>
             </section>
           </figure>
-
           <p class="intro">Accanto al focolare, la Guardiana sorveglia i nidi della tribù. Il suo volto non lascia spazio a dubbi: nessun estraneo si avvicina alle uova senza il suo consenso.</p>
         </div>
-
         <aside class="mission-column">
           <section class="quest" aria-label="Missione della Guardiana">
             <h2>UN UOVO SMARRITO</h2>
@@ -48,14 +44,12 @@
             <p id="tribe-progress" class="hint"></p>
             <button id="egg-deliver" type="button" disabled>CONSEGNA UOVO</button>
           </section>
-
           <section class="rest">
             <h2>IL CALORE DEL FOCOLARE</h2>
             <p>Restando sulle caselle <strong>X9–10, Y15–16</strong> del villaggio recuperi <strong>2 PF e 2 PM al minuto</strong>.</p>
           </section>
         </aside>
       </section>
-
       <a class="exit" href="../../piano-Ib.html">← TORNA AL VILLAGGIO</a>
     </section>
   </main>
