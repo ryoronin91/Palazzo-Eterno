@@ -1,20 +1,26 @@
-
 // ============================================================
 // MUSICA DI SOTTOFONDO
 // ============================================================
 
+
 let pageBackgroundMusic = null;
+
 
 const COMBAT_MUSIC_VOLUME_KEY =
     "palazzo-eterno-combat-volume";
+
 
 let combatMusicVolume =
     loadCombatMusicVolume();
 
 
+
+
 function loadCombatMusicVolume() {
 
+
     try {
+
 
         const saved =
             localStorage.getItem(
@@ -22,14 +28,20 @@ function loadCombatMusicVolume() {
             );
 
 
+
+
         if (
             saved === null ||
             saved === ""
         ) {
 
+
             return 0.35;
 
+
         }
+
+
 
 
         const value =
@@ -38,15 +50,21 @@ function loadCombatMusicVolume() {
             );
 
 
+
+
         if (
             !Number.isFinite(
                 value
             )
         ) {
 
+
             return 0.35;
 
+
         }
+
+
 
 
         return Math.max(
@@ -58,20 +76,29 @@ function loadCombatMusicVolume() {
         );
 
 
+
+
     } catch (error) {
+
 
         return 0.35;
 
+
     }
 
+
 }
+
+
 
 
 function saveCombatMusicVolume(
     value
 ) {
 
+
     try {
+
 
         localStorage.setItem(
             COMBAT_MUSIC_VOLUME_KEY,
@@ -81,48 +108,70 @@ function saveCombatMusicVolume(
         );
 
 
+
+
     } catch (error) {
+
 
         // localStorage potrebbe essere disabilitato.
 
+
     }
 
+
 }
+
+
 
 
 function getCombatVolumeIcon(
     volume
 ) {
 
+
     if (
         volume <= 0
     ) {
 
+
         return "🔇";
 
+
     }
+
+
 
 
     if (
         volume < 0.5
     ) {
 
+
         return "🔉";
+
 
     }
 
 
+
+
     return "🔊";
+
 
 }
 
 
+
+
 function updateCombatVolumeUI() {
+
 
     const button =
         document.getElementById(
             "combat-volume-button"
         );
+
+
 
 
     const slider =
@@ -131,10 +180,14 @@ function updateCombatVolumeUI() {
         );
 
 
+
+
     const value =
         document.getElementById(
             "combat-volume-value"
         );
+
+
 
 
     const percentage =
@@ -144,7 +197,10 @@ function updateCombatVolumeUI() {
         );
 
 
+
+
     if (button) {
+
 
         button.textContent =
             getCombatVolumeIcon(
@@ -152,38 +208,55 @@ function updateCombatVolumeUI() {
             );
 
 
+
+
         button.title =
             `Volume musica: ${percentage}%`;
+
 
     }
 
 
+
+
     if (slider) {
+
 
         slider.value =
             String(
                 percentage
             );
 
+
     }
+
+
 
 
     if (value) {
 
+
         value.textContent =
             `${percentage}%`;
 
+
     }
+
 
 }
 
 
+
+
 function setupCombatVolumeControl() {
+
 
     const control =
         document.querySelector(
             ".combat-volume-control"
         );
+
+
 
 
     const button =
@@ -192,16 +265,22 @@ function setupCombatVolumeControl() {
         );
 
 
+
+
     const popover =
         document.getElementById(
             "combat-volume-popover"
         );
 
 
+
+
     const slider =
         document.getElementById(
             "combat-volume-slider"
         );
+
+
 
 
     if (
@@ -211,28 +290,41 @@ function setupCombatVolumeControl() {
         !slider
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     updateCombatVolumeUI();
+
+
 
 
     button.addEventListener(
         "click",
         event => {
 
+
             event.preventDefault();
             event.stopPropagation();
+
+
 
 
             const willOpen =
                 popover.hidden === true;
 
 
+
+
             popover.hidden =
                 !willOpen;
+
+
 
 
             button.setAttribute(
@@ -242,13 +334,17 @@ function setupCombatVolumeControl() {
                     : "false"
             );
 
+
         }
     );
+
+
 
 
     slider.addEventListener(
         "input",
         async () => {
+
 
             combatMusicVolume =
                 Math.max(
@@ -263,17 +359,24 @@ function setupCombatVolumeControl() {
                 );
 
 
+
+
             if (
                 pageBackgroundMusic
             ) {
 
+
                 pageBackgroundMusic.volume =
                     combatMusicVolume;
+
 
                 pageBackgroundMusic.muted =
                     combatMusicVolume <= 0;
 
+
             }
+
+
 
 
             saveCombatMusicVolume(
@@ -281,7 +384,11 @@ function setupCombatVolumeControl() {
             );
 
 
+
+
             updateCombatVolumeUI();
+
+
 
 
             if (
@@ -290,26 +397,36 @@ function setupCombatVolumeControl() {
                 pageBackgroundMusic.paused
             ) {
 
+
                 try {
+
 
                     await pageBackgroundMusic.play();
 
+
                 } catch (error) {
+
 
                     // Il browser può richiedere un'ulteriore
                     // interazione prima di consentire l'audio.
 
+
                 }
 
+
             }
+
 
         }
     );
 
 
+
+
     document.addEventListener(
         "click",
         event => {
+
 
             if (
                 control.contains(
@@ -317,13 +434,19 @@ function setupCombatVolumeControl() {
                 )
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             popover.hidden =
                 true;
+
+
 
 
             button.setAttribute(
@@ -331,24 +454,31 @@ function setupCombatVolumeControl() {
                 "false"
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // Piano I-A: l'audio va riattivato dopo un gesto valido del browser.
 // Gli eventi restano registrati finche' l'avvio non riesce.
 let combatAudioUnlockCleanup = null;
 
+
 function startBackgroundMusic(source) {
     if (!source) return;
+
 
     if (pageBackgroundMusic) {
         if (pageBackgroundMusic.dataset?.source === source) return;
         pageBackgroundMusic.pause();
         pageBackgroundMusic = null;
     }
+
 
     const audio = new Audio(source);
     audio.loop = true;
@@ -358,9 +488,11 @@ function startBackgroundMusic(source) {
     pageBackgroundMusic = audio;
     updateCombatVolumeUI();
 
+
     const button = document.getElementById('combat-volume-button');
     let playing = false;
     let playPending = false;
+
 
     const tryPlay = async () => {
         if (pageBackgroundMusic !== audio || playing || playPending || combatMusicVolume <= 0) return;
@@ -380,6 +512,7 @@ function startBackgroundMusic(source) {
         }
     };
 
+
     const onGesture = () => { void tryPlay(); };
     const cleanup = () => {
         document.removeEventListener('pointerdown', onGesture, true);
@@ -389,6 +522,7 @@ function startBackgroundMusic(source) {
     };
     if (combatAudioUnlockCleanup) combatAudioUnlockCleanup();
     combatAudioUnlockCleanup = cleanup;
+
 
     // Capture: parte prima dei gestori che possono interrompere propagazione.
     document.addEventListener('pointerdown', onGesture, true);
@@ -403,198 +537,273 @@ function startBackgroundMusic(source) {
     void tryPlay();
 }
 
+
 // ============================================================
 // PALAZZO ETERNO
 // COMBAT.JS
 // COORDINATORE PRINCIPALE DEL COMBATTIMENTO
 // ============================================================
 
+
 console.log(
     "COMBAT.JS MODULARE v56 CARICATO"
 );
+
+
 
 
 const db =
     supabaseClient;
 
 
+
+
 const COMBAT_COLUMNS =
     12;
 
+
 const COMBAT_ROWS =
     12;
+
+
 
 
 // ============================================================
 // STATO GENERALE
 // ============================================================
 
+
 let currentUser =
     null;
+
 
 let currentCharacter =
     null;
 
+
 let currentRole =
     "player";
+
+
 
 
 let masterObserverMode =
     false;
 
 
+
+
 let combatId =
     null;
+
 
 let combatSession =
     null;
 
 
+
+
 let combatTimerInterval =
     null;
+
 
 let combatStateInterval =
     null;
 
 
+
+
 let combatRefreshInProgress =
     false;
 
+
 let combatMoveInProgress =
     false;
+
+
 
 
 let combatMapResizeObserver =
     null;
 
 
+
+
 let lastCombatEntitiesSnapshot =
     "";
 
+
 let lastCombatEffectsSnapshot =
     "";
+
+
 
 
 // ============================================================
 // DATI PERSONAGGIO
 // ============================================================
 
+
 let characterAbilities =
     [];
+
 
 let characterInventory =
     [];
 
+
 let characterEquipment =
     [];
+
 
 let combatEffects =
     [];
 
 
+
+
 let equipmentBonuses = {
+
 
     attack_bonus:
         0,
 
+
     defense_bonus:
         0,
+
 
     forza_bonus:
         0,
 
+
     resistenza_bonus:
         0,
+
 
     costituzione_bonus:
         0,
 
+
     intelligenza_bonus:
         0,
+
 
     destrezza_bonus:
         0,
 
+
     fortuna_bonus:
         0
 
+
 };
+
+
 
 
 let characterPendingEffects =
     [];
 
 
+
+
 // ============================================================
 // DRAWER
 // ============================================================
 
+
 let activeDrawer =
     null;
+
+
 
 
 // ============================================================
 // LOOT
 // ============================================================
 
+
 let victoryLootLoaded =
     false;
+
 
 let victoryLootLoading =
     false;
 
+
 let victoryLootData =
     [];
+
 
 let victoryGoldReceived =
     0;
 
 
+
+
 let victoryLootDraftState =
     null;
+
 
 let victoryLootDraftInterval =
     null;
 
+
 let victoryLootPickInProgress =
     false;
+
+
 
 
 // ============================================================
 // IA NEMICI
 // ============================================================
 
+
 let enemyAITurnKey =
     null;
 
+
 let enemyAIInProgress =
     false;
+
 
 // ============================================================
 // MORTE PERSONAGGIO
 // ============================================================
 
+
 let combatCharacterDeathInProgress =
     false;
+
 
 // ============================================================
 // MODALITÀ BERSAGLIO
 // ============================================================
 
+
 let combatTargetMode =
     null;
+
+
 
 
 // ============================================================
 // ENTITÀ COMBAT
 // ============================================================
 
+
 const combatEntities =
     new Map();
 
 
+
+
 const combatTokens =
     new Map();
+
+
 
 
 // Token grafici dei giocatori, caricati tramite RPC sicura.
@@ -603,99 +812,139 @@ const combatTokens =
 const combatPlayerTokens =
     new Map();
 
+
 let combatPlayerTokenSignature =
     "";
+
+
 
 
 // ============================================================
 // CELLE RANGE
 // ============================================================
 
+
 let combatRangeCells =
     [];
+
+
 
 
 // ============================================================
 // PRESENCE DUNGEON DURANTE IL COMBAT
 // ============================================================
 
+
 const COMBAT_DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
+
+
 
 
 let combatDungeonChannel =
     null;
 
 
+
+
 // ============================================================
 // AVVIO
 // ============================================================
+
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
+
         try {
+
 
             // =================================================
             // UTENTE
             // =================================================
 
+
             await loadCurrentUser();
 
 
+
+
             await loadCurrentRole();
+
+
 
 
             // =================================================
             // MODALITÀ
             // =================================================
 
+
             masterObserverMode =
                 getMasterObserverModeFromUrl();
+
+
 
 
             combatId =
                 getCombatIdFromUrl();
 
 
+
+
             if (
                 !combatId
             ) {
+
 
                 throw new Error(
                     "Nessuna sessione di combattimento specificata."
                 );
 
+
             }
+
+
 
 
             // =================================================
             // PERSONAGGIO
             // =================================================
 
+
             await loadCurrentCharacter();
+
+
 
 
             // =================================================
             // PRESENCE DUNGEON
             // =================================================
 
+
             await setupDungeonPresenceWhileInCombat();
+
+
 
 
             // =================================================
             // SESSIONE
             // =================================================
 
+
             await loadCombatSession();
+
+
 
 
             // =================================================
             // VOLUME / MUSICA COMBAT
             // =================================================
 
+
             setupCombatVolumeControl();
+
+
 
 
             startBackgroundMusic(
@@ -704,7 +953,9 @@ document.addEventListener(
                 combatSession?.encounter_id === "combat_rare_puzzacinta" ||
                 combatSession?.encounter_id === "p1_allosauro_dominante"
 
+
                     ? "music/boss.mp3"
+
 
                     : (String(combatSession?.encounter_id || "").startsWith("p1_")
                         ? "music/jungle-combat.mp3"
@@ -712,28 +963,38 @@ document.addEventListener(
             );
 
 
+
+
             // =================================================
             // ENTRA NEL COMBATTIMENTO
             // =================================================
 
+
             await joinCombatAsPlayer();
+
+
 
 
             // =================================================
             // GENERA NEMICI
             // =================================================
 
+
             await generateCombatEnemies();
+
+
 
 
             // =================================================
             // INIZIALIZZA TURNI
             // =================================================
 
+
             if (
                 combatSession.status ===
                 "waiting"
             ) {
+
 
                 const {
                     error
@@ -742,137 +1003,201 @@ document.addEventListener(
                         "initialize_combat_turns",
                         {
 
+
                             p_combat_id:
                                 combatId
 
+
                         }
                     );
+
+
 
 
                 if (
                     error
                 ) {
 
+
                     throw error;
+
 
                 }
 
 
+
+
                 await loadCombatSession();
 
+
             }
+
+
 
 
             // =================================================
             // CARICA STATO COMBAT
             // =================================================
 
+
             await Promise.all([
+
 
                 loadCombatEntities(),
 
+
                 loadCombatEffects(),
+
 
                 loadCharacterPendingEffects()
 
+
             ]);
+
 
 // ====================================================
 // CONTROLLO MORTE PG ALL'AVVIO
 // ====================================================
 
+
 if (
     await checkMyCombatCharacterDeath()
 ) {
 
+
     return;
 
+
 }
+
 
             // =================================================
             // DATI DEL PG
             // =================================================
+
 
             if (
                 !masterObserverMode &&
                 currentCharacter
             ) {
 
+
                 await Promise.all([
+
 
                     loadCharacterAbilities(),
 
+
                     loadCharacterInventory(),
+
 
                     loadCharacterEquipment()
 
+
                 ]);
+
+
 
 
                 await syncCombatPlayerStats();
 
 
+
+
                 await loadCombatEntities();
 
+
             }
+
+
 
 
             // =================================================
             // SNAPSHOT INIZIALE
             // =================================================
 
+
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
+
+
 
 
             lastCombatEffectsSnapshot =
                 createCombatEffectsSnapshot();
 
 
+
+
             // =================================================
             // INTERFACCIA
             // =================================================
 
+
             setupCombatActions();
+
+
 
 
             setupCombatMobileMovement();
 
 
+
+
             setupVictoryExitButton();
+
+
 
 
             renderCombat();
 
 
+
+
             setupCombatMapResizeObserver();
+
+
 
 
             updateCombatMode();
 
 
+
+
             setupCombatNotes();
+
+
 
 
                 await setupCombatChat();
 
 
+
+
                 await setupCombatLogSync();
 
 
+
+
                 await updateCombatTurnUI();
+
+
 
 
             // =================================================
             // LOOP
             // =================================================
 
+
             startCombatStateLoop();
+
+
 
 
         } catch (
             error
         ) {
+
 
             console.error(
                 "Errore caricamento combat:",
@@ -880,22 +1205,30 @@ if (
             );
 
 
+
+
             setCombatStatus(
                 error.message ||
                 "Errore durante il caricamento del combattimento."
             );
 
+
         }
+
 
     }
 );
+
+
 
 
 // ============================================================
 // UTENTE
 // ============================================================
 
+
 async function loadCurrentUser() {
+
 
     const {
         data: {
@@ -906,39 +1239,56 @@ async function loadCurrentUser() {
         await db.auth.getUser();
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     if (
         !user
     ) {
 
+
         window.location.href =
             "login.html";
 
 
+
+
         return;
 
+
     }
+
+
 
 
     currentUser =
         user;
 
+
 }
+
+
 
 
 // ============================================================
 // RUOLO
 // ============================================================
 
+
 async function loadCurrentRole() {
+
 
     const {
         data,
@@ -958,47 +1308,66 @@ async function loadCurrentRole() {
             .maybeSingle();
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     currentRole =
         data?.role ||
         "player";
 
+
 }
+
+
 
 
 // ============================================================
 // URL
 // ============================================================
 
+
 function getCombatIdFromUrl() {
+
 
     const params =
         new URLSearchParams(
             window.location.search
         );
+
+
 
 
     return params.get(
         "combat_id"
     );
 
+
 }
 
 
+
+
 function getMasterObserverModeFromUrl() {
+
 
     const params =
         new URLSearchParams(
             window.location.search
         );
+
+
 
 
     return (
@@ -1008,22 +1377,31 @@ function getMasterObserverModeFromUrl() {
         "master"
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PERSONAGGIO
 // ============================================================
 
+
 async function loadCurrentCharacter() {
+
 
     if (
         masterObserverMode
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1059,26 +1437,37 @@ async function loadCurrentCharacter() {
             .maybeSingle();
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     currentCharacter =
         data;
 
+
 }
+
+
 
 
 // ============================================================
 // PRESENCE DUNGEON
 // ============================================================
 
+
 async function setupDungeonPresenceWhileInCombat() {
+
 
     if (
         masterObserverMode ||
@@ -1086,9 +1475,13 @@ async function setupDungeonPresenceWhileInCombat() {
         !currentUser
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     combatDungeonChannel =
@@ -1096,19 +1489,27 @@ async function setupDungeonPresenceWhileInCombat() {
             COMBAT_DUNGEON_CHANNEL_NAME,
             {
 
+
                 config: {
 
+
                     presence: {
+
 
                         key:
                             currentCharacter.id
 
+
                     }
+
 
                 }
 
+
             }
         );
+
+
 
 
     await new Promise(
@@ -1117,8 +1518,10 @@ async function setupDungeonPresenceWhileInCombat() {
             reject
         ) => {
 
+
             combatDungeonChannel.subscribe(
                 async status => {
+
 
                     console.log(
                         "Presence dungeon dal combat:",
@@ -1126,70 +1529,94 @@ async function setupDungeonPresenceWhileInCombat() {
                     );
 
 
+
+
                     if (
                         status ===
                         "SUBSCRIBED"
                     ) {
 
+
                         try {
 
+
                             await combatDungeonChannel.track({
+
 
                                 character_id:
                                     currentCharacter.id,
 
+
                                 user_id:
                                     currentUser.id,
+
 
                                 name:
                                     currentCharacter.nome ||
                                     "Avventuriero",
 
+
                                 token:
                                     currentCharacter.token ||
                                     "token_1.png",
+
 
                                 x:
                                     Number(
                                         currentCharacter.dungeon_x
                                     ),
 
+
                                 y:
                                     Number(
                                         currentCharacter.dungeon_y
                                     ),
 
+
                                 current_hp:
                                     currentCharacter.current_hp,
+
 
                                 active_combat_id:
                                     currentCharacter.active_combat_id ||
                                     combatId,
 
+
                                 in_combat:
                                     true,
+
 
                                 online_at:
                                     new Date()
                                         .toISOString()
 
+
                             });
 
 
+
+
                             resolve();
+
+
 
 
                         } catch (
                             error
                         ) {
 
+
                             reject(
                                 error
                             );
 
+
                         }
 
+
                     }
+
+
 
 
                     if (
@@ -1197,28 +1624,37 @@ async function setupDungeonPresenceWhileInCombat() {
                         "CHANNEL_ERROR"
                     ) {
 
+
                         reject(
                             new Error(
                                 "Errore Presence dungeon dal combat."
                             )
                         );
 
+
                     }
+
 
                 }
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SESSIONE COMBAT
 // ============================================================
 
+
 async function loadCombatSession() {
+
 
     const {
         data,
@@ -1244,17 +1680,24 @@ async function loadCombatSession() {
             .single();
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
+
 
     }
 
 
+
+
     combatSession =
         data;
+
 
     // Arena dedicata a Berserk: stesso layout, solo fondale differente.
     const map =
@@ -1263,7 +1706,10 @@ async function loadCombatSession() {
         );
 
 
+
+
     if (map) {
+
 
         map.dataset.gridInsetLeft = "0";
         map.dataset.gridInsetRight = "0";
@@ -1271,13 +1717,17 @@ async function loadCombatSession() {
         map.dataset.gridInsetBottom = "0";
 
 
+
+
         if (
             data?.encounter_id ===
             "combat_rare_puzzacinta"
         ) {
 
+
             map.style.backgroundImage =
                 'url("immagini/combat/combat_rare_1.png")';
+
 
             // La mappa rara ha una cornice decorativa interna:
             // la griglia giocabile parte leggermente più dentro.
@@ -1287,41 +1737,64 @@ async function loadCombatSession() {
             map.dataset.gridInsetTop = "0.033";
             map.dataset.gridInsetBottom = "0.033";
 
+
+        } else if (
+            data?.encounter_id === "scagliagrigia_arena"
+        ) {
+
+            // Arena del Campione: griglia 12x12, fondo dedicato.
+            map.style.backgroundImage =
+                'url("immagini/combat/combat_pvp.png")';
+
         } else if (
             typeof data?.encounter_id === "string" &&
             data.encounter_id.startsWith("p1_")
         ) {
+
 
             // Piano Ia: cambia solo la grafica della mappa.
             // La griglia del combattimento resta invariata.
             map.style.backgroundImage =
                 'url("immagini/combat/combat_map_Ia.png")';
 
+
         } else {
+
 
             map.style.backgroundImage = "";
 
+
         }
+
 
     }
 
+
 }
+
+
 
 
 // ============================================================
 // ENTRA NEL COMBATTIMENTO
 // ============================================================
 
+
 async function joinCombatAsPlayer() {
+
 
     if (
         masterObserverMode ||
         !currentCharacter
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1332,23 +1805,32 @@ async function joinCombatAsPlayer() {
             "join_combat_player",
             {
 
+
                 p_combat_id:
                     combatId,
+
 
                 p_character_id:
                     currentCharacter.id
 
+
             }
         );
+
+
 
 
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     console.log(
@@ -1356,14 +1838,19 @@ async function joinCombatAsPlayer() {
         data
     );
 
+
 }
+
+
 
 
 // ============================================================
 // GENERA NEMICI
 // ============================================================
 
+
 async function generateCombatEnemies() {
+
 
     const {
         data,
@@ -1373,20 +1860,28 @@ async function generateCombatEnemies() {
             "generate_combat_enemies",
             {
 
+
                 p_combat_id:
                     combatId
 
+
             }
         );
+
+
 
 
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     console.log(
@@ -1394,14 +1889,19 @@ async function generateCombatEnemies() {
         data
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CARICA ENTITÀ
 // ============================================================
 
+
 async function loadCombatEntities() {
+
 
     const {
         data,
@@ -1436,16 +1936,24 @@ async function loadCombatEntities() {
             );
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
+
 
     }
 
 
+
+
     combatEntities.clear();
+
+
 
 
     (
@@ -1454,25 +1962,34 @@ async function loadCombatEntities() {
     ).forEach(
         entity => {
 
+
             combatEntities.set(
                 entity.id,
                 entity
             );
 
+
         }
     );
 
 
+
+
     await loadCombatPlayerTokensIfNeeded();
 
+
 }
+
+
 
 
 // ============================================================
 // TOKEN GIOCATORI COMBAT
 // ============================================================
 
+
 async function loadCombatPlayerTokensIfNeeded() {
+
 
     const characterIds =
         Array.from(
@@ -1492,10 +2009,14 @@ async function loadCombatPlayerTokensIfNeeded() {
             .sort();
 
 
+
+
     const signature =
         JSON.stringify(
             characterIds
         );
+
+
 
 
     if (
@@ -1503,9 +2024,13 @@ async function loadCombatPlayerTokensIfNeeded() {
         combatPlayerTokenSignature
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1521,14 +2046,22 @@ async function loadCombatPlayerTokensIfNeeded() {
         );
 
 
+
+
     if (error) {
 
+
         throw error;
+
 
     }
 
 
+
+
     combatPlayerTokens.clear();
+
+
 
 
     (
@@ -1537,9 +2070,11 @@ async function loadCombatPlayerTokensIfNeeded() {
     ).forEach(
         row => {
 
+
             if (
                 row.character_id
             ) {
+
 
                 combatPlayerTokens.set(
                     row.character_id,
@@ -1547,35 +2082,50 @@ async function loadCombatPlayerTokensIfNeeded() {
                         "token_1.png"
                 );
 
+
             }
+
 
         }
     );
 
 
+
+
     combatPlayerTokenSignature =
         signature;
 
+
 }
+
+
 
 
 // ============================================================
 // EFFETTI PERSISTENTI
 // ============================================================
 
+
 async function loadCharacterPendingEffects() {
+
 
     if (
         !currentCharacter
     ) {
 
+
         characterPendingEffects =
             [];
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1586,27 +2136,38 @@ async function loadCharacterPendingEffects() {
         );
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     characterPendingEffects =
         data ||
         [];
 
+
 }
+
+
 
 
 // ============================================================
 // EFFETTI TEMPORANEI COMBAT
 // ============================================================
 
+
 async function loadCombatEffects() {
+
 
     const {
         data,
@@ -1635,50 +2196,68 @@ async function loadCombatEffects() {
             );
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     combatEffects =
         data ||
         [];
 
+
 }
+
+
 
 
 // ============================================================
 // BONUS EFFETTO
 // ============================================================
 
+
 function getCombatEffectBonus(
     entityId,
     effectType
 ) {
 
+
     return combatEffects
+
 
         .filter(
             effect =>
 
+
                 effect.target_entity_id ===
                     entityId
 
+
                 &&
+
 
                 effect.effect_type ===
                     effectType
 
+
                 &&
+
 
                 Number(
                     effect.remaining_rounds
                 ) > 0
         )
+
 
         .reduce(
             (
@@ -1686,7 +2265,9 @@ function getCombatEffectBonus(
                 effect
             ) =>
 
+
                 total +
+
 
                 (
                     Number(
@@ -1694,29 +2275,41 @@ function getCombatEffectBonus(
                     ) || 0
                 ),
 
+
             0
         );
 
+
 }
+
+
 
 
 // ============================================================
 // ABILITÀ PG
 // ============================================================
 
+
 async function loadCharacterAbilities() {
+
 
     if (
         !currentCharacter
     ) {
 
+
         characterAbilities =
             [];
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1731,6 +2324,7 @@ async function loadCharacterAbilities() {
                 id,
                 ability_id,
                 level,
+
 
                 ability:abilities (
                     id,
@@ -1749,46 +2343,65 @@ async function loadCharacterAbilities() {
                 "created_at",
                 {
 
+
                     ascending:
                         true
 
+
                 }
             );
+
+
 
 
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     characterAbilities =
         data ||
         [];
 
+
 }
+
+
 
 
 // ============================================================
 // INVENTARIO
 // ============================================================
 
+
 async function loadCharacterInventory() {
+
 
     if (
         !currentCharacter
     ) {
 
+
         characterInventory =
             [];
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1804,6 +2417,7 @@ async function loadCharacterInventory() {
                 item_id,
                 quantity,
                 equipped_slot,
+
 
                 item:items (
                     id,
@@ -1828,46 +2442,65 @@ async function loadCharacterInventory() {
                 "created_at",
                 {
 
+
                     ascending:
                         true
 
+
                 }
             );
+
+
 
 
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     characterInventory =
         data ||
         [];
 
+
 }
+
+
 
 
 // ============================================================
 // EQUIPAGGIAMENTO
 // ============================================================
 
+
 async function loadCharacterEquipment() {
+
 
     if (
         !currentCharacter
     ) {
 
+
         characterEquipment =
             [];
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1881,6 +2514,7 @@ async function loadCharacterEquipment() {
             .select(`
                 id,
                 equipped_slot,
+
 
                 item:items (
                     id,
@@ -1905,13 +2539,19 @@ async function loadCharacterEquipment() {
             );
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     characterEquipment =
@@ -1919,25 +2559,36 @@ async function loadCharacterEquipment() {
         [];
 
 
+
+
     calculateCombatEquipmentBonuses();
 
+
 }
+
+
 
 
 // ============================================================
 // SINCRONIZZA STATISTICHE PG
 // ============================================================
 
+
 async function syncCombatPlayerStats() {
+
 
     if (
         masterObserverMode ||
         !currentCharacter
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const {
@@ -1948,23 +2599,32 @@ async function syncCombatPlayerStats() {
             "sync_combat_player_stats",
             {
 
+
                 p_combat_id:
                     combatId,
+
 
                 p_character_id:
                     currentCharacter.id
 
+
             }
         );
+
+
 
 
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     console.log(
@@ -1972,58 +2632,81 @@ async function syncCombatPlayerStats() {
         data
     );
 
+
 }
+
+
 
 
 // ============================================================
 // BONUS EQUIPAGGIAMENTO
 // ============================================================
 
+
 function calculateCombatEquipmentBonuses() {
 
+
     equipmentBonuses = {
+
 
         attack_bonus:
             0,
 
+
         defense_bonus:
             0,
+
 
         forza_bonus:
             0,
 
+
         resistenza_bonus:
             0,
+
 
         costituzione_bonus:
             0,
 
+
         intelligenza_bonus:
             0,
+
 
         destrezza_bonus:
             0,
 
+
         fortuna_bonus:
             0
 
+
     };
+
+
 
 
     characterEquipment.forEach(
         entry => {
 
+
             if (
                 !entry.item
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             const item =
                 entry.item;
+
+
 
 
             equipmentBonuses.attack_bonus +=
@@ -2032,10 +2715,14 @@ function calculateCombatEquipmentBonuses() {
                 ) || 0;
 
 
+
+
             equipmentBonuses.defense_bonus +=
                 Number(
                     item.defense_bonus
                 ) || 0;
+
+
 
 
             equipmentBonuses.forza_bonus +=
@@ -2044,10 +2731,14 @@ function calculateCombatEquipmentBonuses() {
                 ) || 0;
 
 
+
+
             equipmentBonuses.resistenza_bonus +=
                 Number(
                     item.resistenza_bonus
                 ) || 0;
+
+
 
 
             equipmentBonuses.costituzione_bonus +=
@@ -2056,10 +2747,14 @@ function calculateCombatEquipmentBonuses() {
                 ) || 0;
 
 
+
+
             equipmentBonuses.intelligenza_bonus +=
                 Number(
                     item.intelligenza_bonus
                 ) || 0;
+
+
 
 
             equipmentBonuses.destrezza_bonus +=
@@ -2068,24 +2763,32 @@ function calculateCombatEquipmentBonuses() {
                 ) || 0;
 
 
+
+
             equipmentBonuses.fortuna_bonus +=
                 Number(
                     item.fortuna_bonus
                 ) || 0;
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // ATTRIBUTO EFFETTIVO
 // ============================================================
 
+
 function getCombatEffectiveAttribute(
     name
 ) {
+
 
     const base =
         Number(
@@ -2095,12 +2798,16 @@ function getCombatEffectiveAttribute(
         ) || 1;
 
 
+
+
     const bonus =
         Number(
             equipmentBonuses[
                 `${name}_bonus`
             ]
         ) || 0;
+
+
 
 
     return Math.max(
@@ -2112,77 +2819,103 @@ function getCombatEffectiveAttribute(
         )
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SNAPSHOT ENTITÀ
 // ============================================================
 
+
 function createCombatSnapshot() {
 
+
     return JSON.stringify(
+
 
         Array.from(
             combatEntities.values()
         )
 
+
             .map(
                 entity => ({
+
 
                     id:
                         entity.id,
 
+
                     entity_type:
                         entity.entity_type,
+
 
                     character_id:
                         entity.character_id,
 
+
                     monster_type:
                         entity.monster_type,
+
 
                     enemy_id:
                         entity.enemy_id,
 
+
                     display_name:
                         entity.display_name,
+
 
                     initiative:
                         entity.initiative,
 
+
                     x:
                         entity.x,
+
 
                     y:
                         entity.y,
 
+
                     current_hp:
                         entity.current_hp,
+
 
                     max_hp:
                         entity.max_hp,
 
+
                     current_pm:
                         entity.current_pm,
+
 
                     max_pm:
                         entity.max_pm,
 
+
                     movement_remaining:
                         entity.movement_remaining,
+
 
                     action_used:
                         entity.action_used,
 
+
                     item_used:
                         entity.item_used,
+
 
                     status:
                         entity.status
 
+
                 })
             )
+
 
             .sort(
                 (
@@ -2198,41 +2931,56 @@ function createCombatSnapshot() {
                     )
             )
 
+
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SNAPSHOT EFFETTI
 // ============================================================
 
+
 function createCombatEffectsSnapshot() {
+
 
     return JSON.stringify(
 
+
         combatEffects
+
 
             .map(
                 effect => ({
 
+
                     id:
                         effect.id,
+
 
                     target_entity_id:
                         effect.target_entity_id,
 
+
                     effect_type:
                         effect.effect_type,
+
 
                     value:
                         effect.value,
 
+
                     remaining_rounds:
                         effect.remaining_rounds
 
+
                 })
             )
+
 
             .sort(
                 (
@@ -2248,9 +2996,12 @@ function createCombatEffectsSnapshot() {
                     )
             )
 
+
     );
 
+
 }
+
 
 // ============================================================
 // MONETA TEMPORALE - SALVATAGGIO DA DANNO LETALE IN COMBAT
@@ -2261,7 +3012,9 @@ function createCombatEffectsSnapshot() {
 // se il PG possiede una Moneta Temporale.
 // ============================================================
 
+
 async function tryConsumeCombatTemporalCoin() {
+
 
     if (
         masterObserverMode ||
@@ -2271,6 +3024,8 @@ async function tryConsumeCombatTemporalCoin() {
     ) {
         return false;
     }
+
+
 
 
     const {
@@ -2283,15 +3038,20 @@ async function tryConsumeCombatTemporalCoin() {
                 p_character_id:
                     currentCharacter.id,
 
+
                 p_combat_id:
                     combatId
             }
         );
 
 
+
+
     if (error) {
         throw error;
     }
+
+
 
 
     if (
@@ -2302,16 +3062,22 @@ async function tryConsumeCombatTemporalCoin() {
     }
 
 
+
+
     currentCharacter.current_hp =
         Number(
             data.current_hp
         ) || 0;
 
 
+
+
     currentCharacter.current_pm =
         Number(
             data.current_pm
         ) || 0;
+
+
 
 
     // Se il colpo letale aveva già portato la sessione in
@@ -2326,35 +3092,50 @@ async function tryConsumeCombatTemporalCoin() {
                 p_combat_id:
                     combatId,
 
+
                 p_character_id:
                     currentCharacter.id
             }
         );
 
 
+
+
     if (
         resumeError
     ) {
 
+
         throw resumeError;
 
+
     }
+
+
 
 
     // Ricarica sessione, entità e inventario dopo il ripristino.
     await Promise.all([
 
+
         loadCombatSession(),
+
 
         loadCombatEntities(),
 
+
         loadCharacterInventory()
+
 
     ]);
 
 
+
+
     lastCombatEntitiesSnapshot =
         createCombatSnapshot();
+
+
 
 
     setCombatStatus(
@@ -2362,21 +3143,31 @@ async function tryConsumeCombatTemporalCoin() {
     );
 
 
+
+
     renderCombat();
+
 
     updateActionButtons();
 
 
+
+
     return true;
 
+
 }
+
+
 
 
 // ============================================================
 // CONTROLLO MORTE DEL MIO PERSONAGGIO
 // ============================================================
 
+
 async function checkMyCombatCharacterDeath() {
+
 
     if (
         combatCharacterDeathInProgress ||
@@ -2385,9 +3176,13 @@ async function checkMyCombatCharacterDeath() {
         !currentCharacter.id
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     const myEntity =
@@ -2403,13 +3198,19 @@ async function checkMyCombatCharacterDeath() {
         );
 
 
+
+
     if (
         !myEntity
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     const isDead =
@@ -2421,57 +3222,81 @@ async function checkMyCombatCharacterDeath() {
         ) <= 0;
 
 
+
+
     if (
         !isDead
     ) {
 
+
         return false;
+
 
     }
 
 
+
+
     try {
+
 
         const temporalCoinActivated =
             await tryConsumeCombatTemporalCoin();
 
 
+
+
         if (temporalCoinActivated) {
+
 
             return false;
 
+
         }
 
+
     } catch (temporalCoinError) {
+
 
         console.error(
             "Errore attivazione Moneta Temporale in combat:",
             temporalCoinError
         );
 
+
         setCombatStatus(
             "Errore durante il controllo della Moneta Temporale."
         );
+
 
         // Non cancelliamo il PG se il controllo salvavita non ha
         // potuto concludersi. Il loop riproverà al refresh seguente.
         return false;
 
+
     }
+
+
 
 
     await handleCombatCharacterDeath();
 
 
+
+
     return true;
 
+
 }
+
 
 // ============================================================
 // RIPARA TURNO COMBAT DOPO MONETA TEMPORALE / DEFEAT
 // ============================================================
 
+
 async function repairCombatTurnIfNeeded() {
+
 
     if (
         masterObserverMode ||
@@ -2483,13 +3308,19 @@ async function repairCombatTurnIfNeeded() {
             "active"
     ) {
 
+
         return false;
+
 
     }
 
 
+
+
     const currentEntity =
         getCurrentTurnEntity();
+
+
 
 
     if (
@@ -2503,9 +3334,13 @@ async function repairCombatTurnIfNeeded() {
         ) > 0
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     const {
@@ -2518,19 +3353,26 @@ async function repairCombatTurnIfNeeded() {
                 p_combat_id:
                     combatId,
 
+
                 p_character_id:
                     currentCharacter.id
             }
         );
 
 
+
+
     if (
         error
     ) {
 
+
         throw error;
 
+
     }
+
+
 
 
     if (
@@ -2538,110 +3380,160 @@ async function repairCombatTurnIfNeeded() {
             true
     ) {
 
+
         return false;
+
 
     }
 
 
+
+
     await Promise.all([
+
 
         loadCombatSession(),
 
+
         loadCombatEntities()
 
+
     ]);
+
+
 
 
     lastCombatEntitiesSnapshot =
         createCombatSnapshot();
 
 
+
+
     renderCombat();
+
+
 
 
     return true;
 
+
 }
+
+
 
 
 // ============================================================
 // ENTITÀ DEL TURNO CORRENTE
 // ============================================================
 
+
 function getCurrentTurnEntity() {
+
 
     if (
         !combatSession ||
         !combatSession.current_turn_entity_id
     ) {
 
+
         return null;
 
+
     }
+
+
 
 
     return combatEntities.get(
         combatSession.current_turn_entity_id
     ) || null;
 
+
 }
+
+
 
 
 // ============================================================
 // È IL MIO TURNO?
 // ============================================================
 
+
 function isMyTurn() {
+
 
     if (
         masterObserverMode ||
         !currentCharacter
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     const currentEntity =
         getCurrentTurnEntity();
 
 
+
+
     return !!(
+
 
         currentEntity
 
+
         &&
+
 
         currentEntity.entity_type ===
             "player"
 
+
         &&
+
 
         currentEntity.character_id ===
             currentCharacter.id
 
+
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PASSA TURNO
 // ============================================================
 
+
 async function passTurn() {
+
 
     if (
         !isMyTurn()
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     cancelCombatTargeting();
+
+
 
 
     const button =
@@ -2650,17 +3542,24 @@ async function passTurn() {
         );
 
 
+
+
     if (
         button
     ) {
 
+
         button.disabled =
             true;
+
 
     }
 
 
+
+
     try {
+
 
         const {
             error
@@ -2669,31 +3568,44 @@ async function passTurn() {
                 "next_combat_turn",
                 {
 
+
                     p_combat_id:
                         combatId
 
+
                 }
             );
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         closeCombatDrawer();
 
 
+
+
         await refreshCombatState();
+
+
 
 
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore salto turno:",
@@ -2701,111 +3613,159 @@ async function passTurn() {
         );
 
 
+
+
         setCombatStatus(
             "Errore durante il cambio turno."
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // UI TURNO
 // ============================================================
 
+
 async function updateCombatTurnUI() {
+
 
     if (
         !combatSession
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // COMBAT NON ATTIVO
     // ========================================================
 
+
     if (
         combatSession.status !==
         "active"
     ) {
+
 
         setCombatStatus(
             `Stato: ${combatSession.status}`
         );
 
 
+
+
         if (
             combatTargetMode
         ) {
 
+
             cancelCombatTargeting();
 
+
         }
+
+
 
 
         updateActionButtons();
 
 
+
+
         refreshCombatTurnOrder();
+
+
 
 
         return;
 
+
     }
+
+
 
 
     const currentEntity =
         getCurrentTurnEntity();
 
 
+
+
     if (
         !currentEntity
     ) {
+
 
         setCombatStatus(
             "Turno non disponibile."
         );
 
 
+
+
         if (
             combatTargetMode
         ) {
 
+
             cancelCombatTargeting();
 
+
         }
+
+
 
 
         updateActionButtons();
 
 
+
+
         refreshCombatTurnOrder();
+
+
 
 
         return;
 
+
     }
+
 
     // ========================================================
 // TURN ORDER VISIVO
 // ========================================================
 
+
 refreshCombatTurnOrder();
+
+
 
 
 // ========================================================
 // ROUND
 // ========================================================
 
+
 const round =
     Number(
         combatSession.round_number
     ) || 1;
+
+
 
 
 // ========================================================
@@ -2815,24 +3775,33 @@ const round =
 // L'IA termina automaticamente il proprio turno.
 // ========================================================
 
+
 if (
     currentEntity.entity_type ===
     "enemy"
 ) {
+
 
     setCombatStatus(
         `Round ${round} · Turno di ${currentEntity.display_name}`
     );
 
 
+
+
     if (
         combatTargetMode
     ) {cancelCombatTargeting();
 
+
     }
 
 
+
+
     updateActionButtons();
+
+
 
 
     await runEnemyAI(
@@ -2840,13 +3809,18 @@ if (
     );
 
 
+
+
     return;
 
+
 }
+
 
 // ========================================================
 // TIMER SOLO PER I GIOCATORI
 // ========================================================
+
 
 const duration =
     Number(
@@ -2854,14 +3828,20 @@ const duration =
     ) || 60;
 
 
+
+
 const startedAt =
     combatSession.turn_started_at
+
 
         ? new Date(
             combatSession.turn_started_at
         ).getTime()
 
+
         : Date.now();
+
+
 
 
 const elapsedSeconds =
@@ -2871,6 +3851,8 @@ const elapsedSeconds =
     )
     /
     1000;
+
+
 
 
 const remaining =
@@ -2883,62 +3865,87 @@ const remaining =
     );
 
 
+
+
  // ========================================================
     // MIO TURNO
     // ========================================================
+
 
     if (
         isMyTurn()
     ) {
 
+
         setCombatStatus(
             `Round ${round} · IL TUO TURNO · ${remaining}s`
         );
 
+
     }
+
+
 
 
     // ========================================================
     // TURNO ALTRO PG
     // ========================================================
 
+
     else {
+
 
         setCombatStatus(
             `Round ${round} · Turno di ${currentEntity.display_name} · ${remaining}s`
         );
 
 
+
+
         if (
             combatTargetMode
         ) {
 
+
             cancelCombatTargeting();
 
+
         }
+
 
     }
 
 
+
+
     updateActionButtons();
 
+
 }
+
+
 
 
 // ============================================================
 // NOTE
 // ============================================================
 
+
 function setupCombatNotes() {
+
 
     if (
         masterObserverMode ||
         !currentCharacter
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const notesElement =
@@ -2947,10 +3954,14 @@ function setupCombatNotes() {
         );
 
 
+
+
     const saveButton =
         document.getElementById(
             "combat-notes-save"
         );
+
+
 
 
     if (
@@ -2958,9 +3969,13 @@ function setupCombatNotes() {
         !saveButton
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     notesElement.value =
@@ -2968,26 +3983,38 @@ function setupCombatNotes() {
         "";
 
 
+
+
     saveButton.disabled =
         false;
+
+
 
 
     saveButton.addEventListener(
         "click",
         async () => {
 
+
             saveButton.disabled =
                 true;
+
+
 
 
             saveButton.textContent =
                 "SALVATAGGIO...";
 
 
+
+
             try {
+
 
                 const newNotes =
                     notesElement.value;
+
+
 
 
                 const {
@@ -2999,8 +4026,10 @@ function setupCombatNotes() {
                         )
                         .update({
 
+
                             notes:
                                 newNotes
+
 
                         })
                         .eq(
@@ -3009,26 +4038,37 @@ function setupCombatNotes() {
                         );
 
 
+
+
                 if (
                     error
                 ) {
 
+
                     throw error;
 
+
                 }
+
+
 
 
                 currentCharacter.notes =
                     newNotes;
 
 
+
+
                 saveButton.textContent =
                     "SALVATO ✓";
+
+
 
 
             } catch (
                 error
             ) {
+
 
                 console.error(
                     "Errore note:",
@@ -3036,39 +4076,55 @@ function setupCombatNotes() {
                 );
 
 
+
+
                 saveButton.textContent =
                     "ERRORE";
 
 
+
+
             } finally {
+
 
                 setTimeout(
                     () => {
+
 
                         saveButton.textContent =
                             "SALVA NOTE";
 
 
+
+
                         saveButton.disabled =
                             false;
+
 
                     },
                     1200
                 );
 
+
             }
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // MODALITÀ MASTER
 // ============================================================
 
+
 function updateCombatMode() {
+
 
     const badge =
         document.getElementById(
@@ -3076,16 +4132,22 @@ function updateCombatMode() {
         );
 
 
+
+
     if (
         badge
     ) {
+
 
         badge.classList.toggle(
             "visible",
             masterObserverMode
         );
 
+
     }
+
+
 
 
     document.body.classList.toggle(
@@ -3093,47 +4155,63 @@ function updateCombatMode() {
         masterObserverMode
     );
 
+
 }
+
+
 
 
 // ============================================================
 // ERRORI
 // ============================================================
 
+
 function cleanCombatError(
     text
 ) {
+
 
     if (
         !text
     ) {
 
+
         return (
             "Si è verificato un errore."
         );
 
+
     }
 
 
+
+
     return text
+
 
         .replace(
             /^.*?: /,
             ""
         )
 
+
         .trim();
 
+
 }
+
+
 
 
 // ============================================================
 // STATO TESTUALE
 // ============================================================
 
+
 function setCombatStatus(
     text
 ) {
+
 
     const element =
         document.getElementById(
@@ -3141,22 +4219,30 @@ function setCombatStatus(
         );
 
 
+
+
     if (
         element
     ) {
 
+
         element.textContent =
             text;
 
+
     }
 
+
 }
+
 
 // ============================================================
 // MORTE PERSONAGGIO IN COMBATTIMENTO
 // ============================================================
 
+
 async function handleCombatCharacterDeath() {
+
 
     if (
         combatCharacterDeathInProgress ||
@@ -3168,41 +4254,57 @@ async function handleCombatCharacterDeath() {
     }
 
 
+
+
     combatCharacterDeathInProgress =
         true;
+
+
 
 
     // ========================================================
     // BLOCCA EVENTUALI TARGETING
     // ========================================================
 
+
     try {
+
 
         if (
             combatTargetMode
         ) {
 
+
             cancelCombatTargeting();
 
+
         }
+
 
     } catch (
         error
     ) {
+
 
         console.warn(
             "Errore annullamento targeting durante la morte:",
             error
         );
 
+
     }
+
+
 
 
     // ========================================================
     // FERMA AGGIORNAMENTI COMBAT
     // ========================================================
 
+
     stopCombatStateLoop();
+
+
 
 
     setCombatStatus(
@@ -3210,68 +4312,92 @@ async function handleCombatCharacterDeath() {
     );
 
 
+
+
     // ========================================================
     // CHIUDE CHAT
     // ========================================================
 
+
     try {
+
 
         if (
             typeof cleanupCombatChat ===
             "function"
         ) {
 
+
             await cleanupCombatChat();
 
+
         }
+
 
     } catch (
         error
     ) {
+
 
         console.warn(
             "Errore chiusura chat durante la morte:",
             error
         );
 
+
     }
+
+
 
 
     // ========================================================
     // RIMUOVE PRESENCE
     // ========================================================
 
+
     if (
         combatDungeonChannel
     ) {
 
+
         try {
 
+
             await combatDungeonChannel.untrack();
+
 
         } catch (
             error
         ) {
+
 
             console.warn(
                 "Errore untrack Presence durante la morte:",
                 error
             );
 
+
         }
 
+
     }
+
+
 
 
     // ========================================================
     // DATI FINALI DEL PERSONAGGIO
     // ========================================================
 
+
     let deadCharacterData =
         null;
 
 
+
+
     try {
+
 
         const {
             data,
@@ -3293,22 +4419,31 @@ async function handleCombatCharacterDeath() {
                 .single();
 
 
+
+
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         deadCharacterData =
             data;
 
 
+
+
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore caricamento dati personaggio morto:",
@@ -3316,8 +4451,12 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         combatCharacterDeathInProgress =
             false;
+
+
 
 
         setCombatStatus(
@@ -3325,9 +4464,14 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
@@ -3340,11 +4484,15 @@ async function handleCombatCharacterDeath() {
     // score delle monete possedute
     // ========================================================
 
+
     let deadFinalScore =
         0;
 
 
+
+
     try {
+
 
         const {
             data,
@@ -3354,20 +4502,28 @@ async function handleCombatCharacterDeath() {
                 "get_character_final_score",
                 {
 
+
                     p_character_id:
                         currentCharacter.id
 
+
                 }
             );
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         deadFinalScore =
@@ -3376,9 +4532,12 @@ async function handleCombatCharacterDeath() {
             ) || 0;
 
 
+
+
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore calcolo score finale:",
@@ -3386,8 +4545,12 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         combatCharacterDeathInProgress =
             false;
+
+
 
 
         setCombatStatus(
@@ -3395,16 +4558,23 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // SALVA STORICO DEL PERSONAGGIO MORTO
     // ========================================================
 
+
     try {
+
 
         const {
             error
@@ -3415,33 +4585,45 @@ async function handleCombatCharacterDeath() {
                 )
                 .insert({
 
+
                     character_id:
                         deadCharacterData.id,
+
 
                     user_id:
                         deadCharacterData.user_id,
 
+
                     character_name:
                         deadCharacterData.nome,
+
 
                     score:
                         deadFinalScore
 
+
                 });
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore salvataggio storico personaggio morto:",
@@ -3449,8 +4631,12 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         combatCharacterDeathInProgress =
             false;
+
+
 
 
         setCombatStatus(
@@ -3458,25 +4644,35 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // PREPARA DATI PER MORTE.HTML
     // ========================================================
 
+
     const deadName =
         deadCharacterData.nome ||
         "Avventuriero";
+
+
 
 
     // ========================================================
     // ELIMINA PERSONAGGIO
     // ========================================================
 
+
     try {
+
 
         const {
             error
@@ -3492,30 +4688,42 @@ async function handleCombatCharacterDeath() {
                 );
 
 
+
+
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         currentCharacter =
             null;
 
 
+
+
         // ====================================================
         // PAGINA MORTE
         // ====================================================
+
 
         window.location.href =
             `morte.html?nome=${encodeURIComponent(deadName)}&score=${encodeURIComponent(deadFinalScore)}`;
 
 
+
+
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore eliminazione personaggio morto:",
@@ -3523,236 +4731,328 @@ async function handleCombatCharacterDeath() {
         );
 
 
+
+
         combatCharacterDeathInProgress =
             false;
+
+
 
 
         setCombatStatus(
             "Errore durante la gestione della morte."
         );
 
+
     }
 
+
 }
+
 
 // ============================================================
 // LOOP COMBAT
 // ============================================================
 
+
 function startCombatStateLoop() {
 
+
     stopCombatStateLoop();
+
+
 
 
     // ========================================================
     // TIMER / TURNO
     // ========================================================
 
+
     combatTimerInterval =
         setInterval(
             () => {
 
+
                 updateCombatTurnUI();
+
 
             },
             250
         );
 
 
+
+
     // ========================================================
     // STATO SERVER
     // ========================================================
+
 
     combatStateInterval =
         setInterval(
             async () => {
 
+
                 await refreshCombatState();
+
 
             },
             1000
         );
 
+
 }
+
+
 
 
 // ============================================================
 // STOP LOOP
 // ============================================================
 
+
 function stopCombatStateLoop() {
+
 
     if (
         combatTimerInterval
     ) {
+
 
         clearInterval(
             combatTimerInterval
         );
 
 
+
+
         combatTimerInterval =
             null;
 
+
     }
+
+
 
 
     if (
         combatStateInterval
     ) {
 
+
         clearInterval(
             combatStateInterval
         );
 
 
+
+
         combatStateInterval =
             null;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // REFRESH STATO COMBAT
 // ============================================================
 
+
 async function refreshCombatState() {
+
 
     if (
         combatRefreshInProgress
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     combatRefreshInProgress =
         true;
 
 
+
+
     try {
+
 
         // ====================================================
         // TIMEOUT TURNO
         // ====================================================
 
+
         await db.rpc(
             "advance_combat_if_timeout",
             {
 
+
                 p_combat_id:
                     combatId
 
+
             }
         );
+
+
 
 
         // ====================================================
         // SESSIONE
         // ====================================================
 
+
         await loadCombatSession();
+
+
 
 
         // ====================================================
         // VITTORIA
         // ====================================================
 
+
         renderCombatVictory();
+
+
 
 
         // ====================================================
         // DATI COMBAT
         // ====================================================
 
+
         await Promise.all([
+
 
             loadCombatEntities(),
 
+
             loadCombatEffects(),
+
 
             loadCharacterPendingEffects()
 
+
         ]);
+
 
 // ====================================================
 // CONTROLLO MORTE PG LOCALE
 // ====================================================
 
+
 if (
     await checkMyCombatCharacterDeath()
 ) {
 
+
     return;
 
+
 }
+
+
 
 
 // ====================================================
 // RIPARA EVENTUALE TURNO PERSO DOPO MONETA TEMPORALE
 // ====================================================
 
+
 if (
     combatSession?.status ===
         "active"
 ) {
 
+
     await repairCombatTurnIfNeeded();
 
+
 }
+
 
         // ====================================================
         // SNAPSHOT
         // ====================================================
 
+
         const snapshot =
             createCombatSnapshot();
+
+
 
 
         const effectsSnapshot =
             createCombatEffectsSnapshot();
 
 
+
+
         // ====================================================
         // RENDER SE CAMBIA LO STATO
         // ====================================================
+
 
         if (
             snapshot !==
                 lastCombatEntitiesSnapshot
 
+
             ||
+
 
             effectsSnapshot !==
                 lastCombatEffectsSnapshot
         ) {
 
+
             lastCombatEntitiesSnapshot =
                 snapshot;
+
+
 
 
             lastCombatEffectsSnapshot =
                 effectsSnapshot;
 
 
+
+
             renderCombat();
 
+
         }
+
+
 
 
         // ====================================================
         // TURNO
         // ====================================================
 
+
         await updateCombatTurnUI();
+
+
 
 
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore aggiornamento stato combat:",
@@ -3760,25 +5060,34 @@ if (
         );
 
 
+
+
     } finally {
+
 
         combatRefreshInProgress =
             false;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // MOVIMENTO PG
 // ============================================================
 
+
 window.moveCombatPlayer =
     async function (
         dx,
         dy
     ) {
+
 
         if (
             combatMoveInProgress ||
@@ -3789,25 +5098,36 @@ window.moveCombatPlayer =
                 "active"
         ) {
 
+
             return;
 
+
         }
+
+
 
 
         if (
             !isMyTurn()
         ) {
 
+
             return;
 
+
         }
+
+
 
 
         combatMoveInProgress =
             true;
 
 
+
+
         try {
+
 
             const {
                 data,
@@ -3817,50 +5137,70 @@ window.moveCombatPlayer =
                     "move_combat_player",
                     {
 
+
                         p_combat_id:
                             combatId,
+
 
                         p_character_id:
                             currentCharacter.id,
 
+
                         p_dx:
                             dx,
+
 
                         p_dy:
                             dy
 
+
                     }
                 );
+
+
 
 
             if (
                 error
             ) {
 
+
                 throw error;
+
 
             }if (
                 !data
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             await loadCombatEntities();
+
+
 
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
 
+
+
             renderCombat();
+
+
 
 
         } catch (
             error
         ) {
+
 
             console.error(
                 "Errore movimento combattimento:",
@@ -3868,14 +5208,21 @@ window.moveCombatPlayer =
             );
 
 
+
+
         } finally {
+
 
             combatMoveInProgress =
                 false;
 
+
         }
 
+
     };
+
+
 
 
 // ============================================================
@@ -3891,7 +5238,9 @@ window.moveCombatPlayer =
 // senza interferenze.
 // ============================================================
 
+
 function setupCombatMobileMovement() {
+
 
     const map =
         document.getElementById(
@@ -3899,16 +5248,23 @@ function setupCombatMobileMovement() {
         );
 
 
+
+
     if (!map) {
+
 
         return;
 
+
     }
+
+
 
 
     map.addEventListener(
         "pointerup",
         async event => {
+
 
             // Mouse desktop: mantiene invariati i controlli esistenti.
             if (
@@ -3916,9 +5272,13 @@ function setupCombatMobileMovement() {
                     "mouse"
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             // Se stiamo scegliendo un bersaglio, il tap appartiene
@@ -3927,9 +5287,13 @@ function setupCombatMobileMovement() {
                 combatTargetMode
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             // Il tap su una pedina viene gestito dal listener del token.
@@ -3939,9 +5303,13 @@ function setupCombatMobileMovement() {
                 )
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             if (
@@ -3954,20 +5322,30 @@ function setupCombatMobileMovement() {
                 !isMyTurn()
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             const player =
                 getMyPlayerEntity();
 
 
+
+
             if (!player) {
+
 
                 return;
 
+
             }
+
+
 
 
             const targetCell =
@@ -3977,19 +5355,29 @@ function setupCombatMobileMovement() {
                 );
 
 
+
+
             if (!targetCell) {
+
 
                 return;
 
+
             }
+
+
 
 
             const targetX =
                 targetCell.x;
 
 
+
+
             const targetY =
                 targetCell.y;
+
+
 
 
             const playerX =
@@ -3998,10 +5386,14 @@ function setupCombatMobileMovement() {
                 );
 
 
+
+
             const playerY =
                 Number(
                     player.y
                 );
+
+
 
 
             const dx =
@@ -4009,9 +5401,13 @@ function setupCombatMobileMovement() {
                 playerX;
 
 
+
+
             const dy =
                 targetY -
                 playerY;
+
+
 
 
             // Solo una delle 8 celle immediatamente adiacenti.
@@ -4024,12 +5420,18 @@ function setupCombatMobileMovement() {
                 )
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             event.preventDefault();
+
+
 
 
             await window.moveCombatPlayer(
@@ -4037,123 +5439,178 @@ function setupCombatMobileMovement() {
                 dy
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // TASTIERA
 // ============================================================
 
+
 document.addEventListener(
     "keydown",
     async event => {
 
+
         const target =
             event.target;
+
+
 
 
         if (
             target instanceof
                 HTMLInputElement
 
+
             ||
+
 
             target instanceof
                 HTMLTextAreaElement
 
+
             ||
+
 
             target instanceof
                 HTMLSelectElement
 
+
             ||
+
 
             target?.isContentEditable
         ) {
 
+
             return;
 
+
         }
+
+
 
 
         if (
             event.repeat
         ) {
 
+
             return;
 
+
         }
+
+
 
 
         let dx =
             0;
 
+
         let dy =
             0;
+
+
 
 
         switch (
             event.key.toLowerCase()
         ) {
 
+
             case "w":
             case "arrowup":
+
 
                 dy =
                     -1;
 
+
                 break;
+
+
 
 
             case "s":
             case "arrowdown":
 
+
                 dy =
                     1;
 
+
                 break;
+
+
 
 
             case "a":
             case "arrowleft":
 
+
                 dx =
                     -1;
 
+
                 break;
+
+
 
 
             case "d":
             case "arrowright":
 
+
                 dx =
                     1;
+
 
                 break;
 
 
+
+
             case "escape":
 
+
                 cancelCombatTargeting();
+
+
 
 
                 closeCombatDrawer();
 
 
+
+
                 return;
+
+
 
 
             default:
 
+
                 return;
+
 
         }
 
 
+
+
         event.preventDefault();
+
+
 
 
         await window.moveCombatPlayer(
@@ -4161,15 +5618,20 @@ document.addEventListener(
             dy
         );
 
+
     }
 );
+
+
 
 
 // ============================================================
 // RESIZE OBSERVER MAPPA
 // ============================================================
 
+
 function setupCombatMapResizeObserver() {
+
 
     const map =
         document.getElementById(
@@ -4177,78 +5639,111 @@ function setupCombatMapResizeObserver() {
         );
 
 
+
+
     if (
         !map
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     if (
         combatMapResizeObserver
     ) {
 
+
         combatMapResizeObserver.disconnect();
 
+
     }
+
+
 
 
     combatMapResizeObserver =
         new ResizeObserver(
             () => {
 
+
                 requestAnimationFrame(
                     () => {
+
 
                         renderCombatTokens();
 
 
+
+
                         updateTargetSelectionVisuals();
+
 
                     }
                 );
 
+
             }
         );
+
+
 
 
     combatMapResizeObserver.observe(
         map
     );
 
+
 }
+
+
 
 
 // ============================================================
 // RESIZE FINESTRA
 // ============================================================
 
+
 window.addEventListener(
     "resize",
     () => {
 
+
         renderCombatTokens();
+
+
 
 
         updateTargetSelectionVisuals();
 
+
     }
 );
+
+
 
 
 // ============================================================
 // USCITA PAGINA
 // ============================================================
 
+
 window.addEventListener(
     "beforeunload",
     () => {
 
+
         stopCombatStateLoop();
 
+
         cleanupCombatChat();
+
+
 
 
         if (
@@ -4256,47 +5751,66 @@ window.addEventListener(
             "function"
         ) {
 
+
             cleanupCombatLogSync();
+
 
         }
 
 
+
+
         clearCombatRangeCells();
+
+
 
 
         if (
             combatMapResizeObserver
         ) {
 
+
             combatMapResizeObserver.disconnect();
+
+
 
 
             combatMapResizeObserver =
                 null;
 
+
         }
+
+
 
 
         if (
             combatDungeonChannel
         ) {
 
+
             try {
 
+
                 combatDungeonChannel.untrack();
+
 
             } catch (
                 error
             ) {
+
 
                 console.warn(
                     "Errore chiusura Presence combat:",
                     error
                 );
 
+
             }
 
+
         }
+
 
     }
 );

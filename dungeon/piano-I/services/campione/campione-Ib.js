@@ -6,6 +6,7 @@
   const history = [];
   let busy = false;
 
+
   function append(kind, label, message) {
     const log = $('campione-chat-log');
     if (!log) return;
@@ -19,6 +20,7 @@
     log.appendChild(p);
     log.scrollTop = log.scrollHeight;
   }
+
 
   function initChat() {
     const form = $('campione-chat-form');
@@ -61,6 +63,7 @@
     });
   }
 
+
   async function loadProgress() {
     const label = $('campione-progress-status');
     try {
@@ -77,11 +80,39 @@
     }
   }
 
+
   function init() {
     initChat();
     loadProgress();
-    $('arena-enter')?.addEventListener('click', () => {
-      $('arena-feedback').textContent = 'L’arena non è ancora disponibile. La sfida delle 10 ondate sarà collegata quando il combattimento sarà pronto.';
+    const status = $('arena-quest-status');
+    if (status) status.textContent = '10 ONDATE · SFIDA INDIVIDUALE';
+    const feedback = $('arena-feedback');
+    if (feedback) feedback.textContent = 'Dieci ondate senza interruzioni. Nessuna fuga. La sconfitta causa la morte del personaggio.';
+    $('arena-enter')?.addEventListener('click', async () => {
+      const button = $('arena-enter');
+      if (button.disabled) return;
+      if (!window.confirm('ARENA SCAGLIAGRIGIA: 10 ondate, nessuna fuga e morte del PG in caso di sconfitta. Vuoi entrare?')) return;
+      button.disabled = true;
+      if (feedback) feedback.textContent = 'Preparazione della sfida...';
+      try {
+        if (typeof supabaseClient === 'undefined') throw new Error('Connessione al Palazzo non disponibile.');
+        const { data: auth, error: authError } = await supabaseClient.auth.getUser();
+        if (authError) throw authError;
+        if (!auth?.user?.id) throw new Error('Devi effettuare l’accesso.');
+        const { data: pg, error: pgError } = await supabaseClient
+          .from('characters').select('id').eq('user_id', auth.user.id).maybeSingle();
+        if (pgError) throw pgError;
+        if (!pg?.id) throw new Error('Nessun personaggio disponibile.');
+        const { data: combatId, error } = await supabaseClient.rpc(
+          'scagliagrigia_arena_enter', { p_character_id: pg.id }
+        );
+        if (error) throw error;
+        if (!combatId) throw new Error('La sessione non è stata creata.');
+        window.location.href = '../../../../combat.html?combat_id=' + encodeURIComponent(combatId);
+      } catch (error) {
+        if (feedback) feedback.textContent = 'Non puoi entrare: ' + (error?.message || String(error));
+        button.disabled = false;
+      }
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
