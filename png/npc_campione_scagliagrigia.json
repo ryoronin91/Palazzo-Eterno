@@ -1,0 +1,11 @@
+{
+  "npc_id": "npc_campione_scagliagrigia",
+  "display_name": "Campione Scagliagrigia",
+  "quest": "Sopravvivi a 10 ondate",
+  "secret_gate": "Vittoria Arena verificata da Supabase nel ciclo corrente",
+  "secret": "Tecniche di combattimento del Mietitore Smeraldo; dettagli tattici ancora da definire",
+  "scar_right_eye": "Mietitore Smeraldo",
+  "scar_chest": "Yeti nato dalla trasformazione di un piccolo gnomo",
+  "knows_mietitore_location": false,
+  "arena_currently_implemented": false
+}
