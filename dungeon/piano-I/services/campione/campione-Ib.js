@@ -97,7 +97,7 @@
       .arena-confirm-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(10, 7, 4, 0.82);
+        background: rgba(4, 17, 11, 0.84);
         backdrop-filter: blur(3px);
         display: flex;
         align-items: center;
@@ -107,31 +107,31 @@
       }
       .arena-confirm-dialog {
         width: min(560px, 100%);
-        border: 2px solid rgba(180, 142, 82, 0.95);
+        border: 2px solid rgba(119, 158, 106, 0.95);
         background:
-          linear-gradient(180deg, rgba(39, 28, 18, 0.98), rgba(20, 14, 9, 0.98));
+          linear-gradient(180deg, rgba(19, 47, 31, 0.98), rgba(9, 29, 20, 0.98));
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.06);
         border-radius: 18px;
         padding: 22px 22px 18px;
-        color: #f3e6c8;
+        color: #e8ecdc;
         font-family: inherit;
       }
       .arena-confirm-kicker {
         margin: 0 0 6px;
         font-size: 0.78rem;
         letter-spacing: 0.18em;
-        color: #d3b074;
+        color: #b4c99e;
         text-transform: uppercase;
       }
       .arena-confirm-title {
         margin: 0 0 12px;
         font-size: 1.45rem;
         line-height: 1.15;
-        color: #fff2d1;
+        color: #e1e5b2;
       }
       .arena-confirm-text {
         margin: 0 0 14px;
-        color: rgba(243, 230, 200, 0.92);
+        color: rgba(232, 236, 220, 0.92);
         line-height: 1.55;
       }
       .arena-confirm-rules {
@@ -139,7 +139,7 @@
         padding: 14px 16px;
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(180, 142, 82, 0.24);
+        border: 1px solid rgba(119, 158, 106, 0.47);
       }
       .arena-confirm-rules ul {
         margin: 0;
@@ -157,7 +157,7 @@
         flex-wrap: wrap;
       }
       .arena-confirm-btn {
-        border: 1px solid rgba(180, 142, 82, 0.7);
+        border: 1px solid rgba(138, 170, 123, 0.85);
         border-radius: 999px;
         padding: 10px 18px;
         font: inherit;
@@ -173,12 +173,12 @@
       }
       .arena-confirm-btn-cancel {
         background: rgba(255,255,255,0.04);
-        color: #f3e6c8;
+        color: #e8ecdc;
       }
       .arena-confirm-btn-confirm {
-        background: linear-gradient(180deg, #d7a856, #9f6d21);
-        color: #1a1208;
-        border-color: rgba(231, 194, 128, 0.95);
+        background: linear-gradient(180deg, #477e50, #356342);
+        color: #f5f8e6;
+        border-color: rgba(138, 170, 123, 0.95);
       }
     `;
     document.head.appendChild(style);
