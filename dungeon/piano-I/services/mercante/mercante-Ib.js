@@ -1,45 +1,57 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // MERCANTE-IB.JS - SCAGLIAGRIGIA
 // Posizione: dungeon/piano-I/services/mercante/mercante-Ib.js
 // ============================================================
 
+
 console.log("MERCANTE-IB.JS CARICATO");
+
 
 // ============================================================
 // MUSICA DI SOTTOFONDO
 // ============================================================
 
+
 let pageBackgroundMusic = null;
+
 
 const PALAZZO_MUSIC_VOLUME_KEY =
     "palazzo-eterno-dungeon-volume";
 
+
 let vendorMusicVolume =
     loadVendorMusicVolume();
+
 
 function startBackgroundMusic(source) {
     if (pageBackgroundMusic || !source) {
         return;
     }
 
+
     pageBackgroundMusic =
         new Audio(source);
+
 
     pageBackgroundMusic.loop =
         true;
 
+
     pageBackgroundMusic.volume =
         vendorMusicVolume;
 
+
     pageBackgroundMusic.preload =
         "auto";
+
 
     const tryPlay =
         async () => {
             if (!pageBackgroundMusic) {
                 return;
             }
+
 
             try {
                 await pageBackgroundMusic.play();
@@ -49,13 +61,16 @@ function startBackgroundMusic(source) {
             }
         };
 
+
     tryPlay();
+
 
     document.addEventListener(
         "pointerdown",
         tryPlay,
         { once: true }
     );
+
 
     document.addEventListener(
         "keydown",
@@ -64,9 +79,11 @@ function startBackgroundMusic(source) {
     );
 }
 
+
 // ============================================================
 // VOLUME MUSICA
 // ============================================================
+
 
 function loadVendorMusicVolume() {
     try {
@@ -75,6 +92,7 @@ function loadVendorMusicVolume() {
                 PALAZZO_MUSIC_VOLUME_KEY
             );
 
+
         if (
             saved === null ||
             saved === ""
@@ -82,22 +100,27 @@ function loadVendorMusicVolume() {
             return 0.35;
         }
 
+
         const value =
             Number(saved);
+
 
         if (!Number.isFinite(value)) {
             return 0.35;
         }
+
 
         return Math.max(
             0,
             Math.min(1, value)
         );
 
+
     } catch (error) {
         return 0.35;
     }
 }
+
 
 function saveVendorMusicVolume(value) {
     try {
@@ -110,17 +133,21 @@ function saveVendorMusicVolume(value) {
     }
 }
 
+
 function getVendorVolumeIcon(volume) {
     if (volume <= 0) {
         return "🔇";
     }
 
+
     if (volume < 0.5) {
         return "🔉";
     }
 
+
     return "🔊";
 }
+
 
 function updateVendorVolumeUI() {
     const button =
@@ -128,20 +155,24 @@ function updateVendorVolumeUI() {
             "vendor-volume-button"
         );
 
+
     const slider =
         document.getElementById(
             "vendor-volume-slider"
         );
+
 
     const value =
         document.getElementById(
             "vendor-volume-value"
         );
 
+
     const percentage =
         Math.round(
             vendorMusicVolume * 100
         );
+
 
     if (button) {
         button.textContent =
@@ -149,14 +180,17 @@ function updateVendorVolumeUI() {
                 vendorMusicVolume
             );
 
+
         button.title =
             `Volume musica: ${percentage}%`;
     }
+
 
     if (slider) {
         slider.value =
             String(percentage);
     }
+
 
     if (value) {
         value.textContent =
@@ -164,26 +198,31 @@ function updateVendorVolumeUI() {
     }
 }
 
+
 function setupVendorVolumeControl() {
     const control =
         document.querySelector(
             ".vendor-volume-control"
         );
 
+
     const button =
         document.getElementById(
             "vendor-volume-button"
         );
+
 
     const popover =
         document.getElementById(
             "vendor-volume-popover"
         );
 
+
     const slider =
         document.getElementById(
             "vendor-volume-slider"
         );
+
 
     if (
         !control ||
@@ -194,7 +233,9 @@ function setupVendorVolumeControl() {
         return;
     }
 
+
     updateVendorVolumeUI();
+
 
     button.addEventListener(
         "click",
@@ -202,11 +243,14 @@ function setupVendorVolumeControl() {
             event.preventDefault();
             event.stopPropagation();
 
+
             const willOpen =
                 popover.hidden === true;
 
+
             popover.hidden =
                 !willOpen;
+
 
             button.setAttribute(
                 "aria-expanded",
@@ -216,6 +260,7 @@ function setupVendorVolumeControl() {
             );
         }
     );
+
 
     slider.addEventListener(
         "input",
@@ -231,18 +276,22 @@ function setupVendorVolumeControl() {
                     )
                 );
 
+
             if (pageBackgroundMusic) {
                 pageBackgroundMusic.volume =
                     vendorMusicVolume;
             }
 
+
             saveVendorMusicVolume(
                 vendorMusicVolume
             );
 
+
             updateVendorVolumeUI();
         }
     );
+
 
     document.addEventListener(
         "click",
@@ -255,8 +304,10 @@ function setupVendorVolumeControl() {
                 return;
             }
 
+
             popover.hidden =
                 true;
+
 
             button.setAttribute(
                 "aria-expanded",
@@ -266,44 +317,57 @@ function setupVendorVolumeControl() {
     );
 }
 
+
 // ============================================================
 // SUPABASE
 // ============================================================
 
+
 const db =
     supabaseClient;
+
 
 // ============================================================
 // STATO
 // ============================================================
 
+
 let currentUser =
     null;
+
 
 let character =
     null;
 
+
 let characterInventory =
     [];
+
 
 let vendorItems =
     [];
 
+
 const VENDOR_ID =
     "vendor_scagliagrigia";
 
+
 const NPC_ID =
-    "npc_scagliagrigia";
+    "npc_mercante_scagliagrigia";
+
 
 let vendorVisitHistory =
     [];
 
+
 let vendorAiBusy =
     false;
+
 
 // ============================================================
 // HEADER INVENTARIO PG
 // ============================================================
+
 
 function updateVendorPlayerInventoryHeader() {
     const title =
@@ -311,10 +375,12 @@ function updateVendorPlayerInventoryHeader() {
             "player-inventory-title"
         );
 
+
     const goldAmount =
         document.getElementById(
             "player-gold-amount"
         );
+
 
     if (title) {
         const characterName =
@@ -325,9 +391,11 @@ function updateVendorPlayerInventoryHeader() {
                 .trim()
                 .toUpperCase();
 
+
         title.textContent =
             `INVENTARIO ${characterName}`;
     }
+
 
     if (goldAmount) {
         const goldEntry =
@@ -336,11 +404,13 @@ function updateVendorPlayerInventoryHeader() {
                     const item =
                         entry?.item || {};
 
+
                     const itemType =
                         String(
                             item.item_type ||
                             ""
                         ).toLowerCase();
+
 
                     const itemName =
                         String(
@@ -349,6 +419,7 @@ function updateVendorPlayerInventoryHeader() {
                         )
                             .trim()
                             .toLowerCase();
+
 
                     return (
                         itemType ===
@@ -366,6 +437,7 @@ function updateVendorPlayerInventoryHeader() {
                 }
             );
 
+
         goldAmount.textContent =
             Number(
                 goldEntry?.quantity
@@ -373,9 +445,11 @@ function updateVendorPlayerInventoryHeader() {
     }
 }
 
+
 // ============================================================
 // AVVIO
 // ============================================================
+
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -384,26 +458,32 @@ document.addEventListener(
             "../../../../music/piano-Ia.mp3"
         );
 
+
         setupVendorVolumeControl();
+
 
         try {
             await loadVendorCharacter();
             await loadVendorCharacterInventory();
             await loadVendorItems();
 
+
             updateVendorPlayerInventoryHeader();
             renderVendorCharacterInventory();
             renderVendorItems();
 
+
             setupVendorAiChat();
             setupVendorExitButton();
             await setupScagliagrigiaQuest();
+
 
         } catch (error) {
             console.error(
                 "Errore avvio vendor:",
                 error
             );
+
 
             renderVendorInventoryError(
                 error.message ||
@@ -413,9 +493,11 @@ document.addEventListener(
     }
 );
 
+
 // ============================================================
 // CARICA PERSONAGGIO
 // ============================================================
+
 
 async function loadVendorCharacter() {
     const {
@@ -426,19 +508,24 @@ async function loadVendorCharacter() {
     } =
         await db.auth.getUser();
 
+
     if (authError) {
         throw authError;
     }
+
 
     if (!user) {
         window.location.href =
             "../../../../login.html";
 
+
         return;
     }
 
+
     currentUser =
         user;
+
 
     const {
         data,
@@ -459,32 +546,40 @@ async function loadVendorCharacter() {
             )
             .maybeSingle();
 
+
     if (error) {
         throw error;
     }
+
 
     if (!data) {
         window.location.href =
             "../../../../personaggio.html";
 
+
         return;
     }
+
 
     character =
         data;
 }
 
+
 // ============================================================
 // CARICA INVENTARIO REALE
 // ============================================================
+
 
 async function loadVendorCharacterInventory() {
     if (!character) {
         characterInventory =
             [];
 
+
         return;
     }
+
 
     const {
         data,
@@ -498,6 +593,7 @@ async function loadVendorCharacterInventory() {
                 id,
                 quantity,
                 equipped_slot,
+
 
                 item:items (
                     id,
@@ -516,25 +612,31 @@ async function loadVendorCharacterInventory() {
                 character.id
             );
 
+
     if (error) {
         throw error;
     }
+
 
     characterInventory =
         data || [];
 }
 
+
 // ============================================================
 // CARICA MERCE VENDOR IN BASE ALLO SCORE
 // ============================================================
+
 
 async function loadVendorItems() {
     if (!character) {
         vendorItems =
             [];
 
+
         return;
     }
+
 
     const characterScore =
         Math.max(
@@ -543,6 +645,7 @@ async function loadVendorItems() {
                 character.score
             ) || 0
         );
+
 
     const {
         data,
@@ -559,6 +662,7 @@ async function loadVendorItems() {
                 buy_price,
                 min_score,
                 unlimited,
+
 
                 item:items (
                     id,
@@ -602,9 +706,11 @@ async function loadVendorItems() {
                 }
             );
 
+
     if (error) {
         throw error;
     }
+
 
     vendorItems =
         (data || [])
@@ -614,9 +720,11 @@ async function loadVendorItems() {
             );
 }
 
+
 // ============================================================
 // RENDER MERCE VENDOR
 // ============================================================
+
 
 function renderVendorItems() {
     const container =
@@ -624,9 +732,11 @@ function renderVendorItems() {
             ".vendor-stock"
         );
 
+
     if (!container) {
         return;
     }
+
 
     if (!vendorItems.length) {
         container.innerHTML = `
@@ -635,8 +745,10 @@ function renderVendorItems() {
             </div>
         `;
 
+
         return;
     }
+
 
     const sortedItems =
         [...vendorItems]
@@ -655,11 +767,13 @@ function renderVendorItems() {
                             ) || 0
                         );
 
+
                     if (
                         scoreDifference !== 0
                     ) {
                         return scoreDifference;
                     }
+
 
                     return String(
                         a.item?.name ||
@@ -673,6 +787,7 @@ function renderVendorItems() {
                     );
                 }
             );
+
 
     const groups = [
         {
@@ -701,8 +816,10 @@ function renderVendorItems() {
         }
     ];
 
+
     let html =
         "";
+
 
     for (
         const group
@@ -716,11 +833,13 @@ function renderVendorItems() {
                             row.min_score
                         ) || 0;
 
+
                     const isAbilityScroll =
                         Boolean(
                             row.item
                                 ?.grants_ability_id
                         );
+
 
                     if (
                         group.abilityScrollOnly
@@ -730,6 +849,7 @@ function renderVendorItems() {
                         return false;
                     }
 
+
                     if (
                         group.excludeAbilityScroll
                         &&
@@ -737,6 +857,7 @@ function renderVendorItems() {
                     ) {
                         return false;
                     }
+
 
                     return (
                         minScore >= group.min
@@ -746,9 +867,11 @@ function renderVendorItems() {
                 }
             );
 
+
         if (!groupItems.length) {
             continue;
         }
+
 
         html += `
             <div class="vendor-category-divider">
@@ -757,6 +880,7 @@ function renderVendorItems() {
                 </span>
             </div>
         `;
+
 
         html +=
             groupItems
@@ -769,6 +893,7 @@ function renderVendorItems() {
                                     row.buy_price
                                 ) || 0
                             );
+
 
                         return `
                             <article
@@ -788,6 +913,7 @@ function renderVendorItems() {
                                 )}"
                             >
 
+
                                 <div class="vendor-stock-name">
                                     ${escapeVendorHtml(
                                         row.item.name ||
@@ -795,11 +921,14 @@ function renderVendorItems() {
                                     )}
                                 </div>
 
+
                                 <div class="vendor-stock-price">
                                     ${price}
                                 </div>
 
+
                                 <div class="vendor-buy-group">
+
 
                                     <button
                                         class="merchant-button vendor-buy-button"
@@ -813,6 +942,7 @@ function renderVendorItems() {
                                         ×1
                                     </button>
 
+
                                     <button
                                         class="merchant-button vendor-buy-button"
                                         type="button"
@@ -824,6 +954,7 @@ function renderVendorItems() {
                                     >
                                         ×5
                                     </button>
+
 
                                     <button
                                         class="merchant-button vendor-buy-button"
@@ -837,7 +968,9 @@ function renderVendorItems() {
                                         ×10
                                     </button>
 
+
                                 </div>
+
 
                             </article>
                         `;
@@ -846,8 +979,10 @@ function renderVendorItems() {
                 .join("");
     }
 
+
     container.innerHTML =
         html;
+
 
     const goldEntry =
         characterInventory.find(
@@ -856,6 +991,7 @@ function renderVendorItems() {
                 "moneta_oro"
         );
 
+
     const gold =
         Math.max(
             0,
@@ -863,6 +999,7 @@ function renderVendorItems() {
                 goldEntry?.quantity
             ) || 0
         );
+
 
     container
         .querySelectorAll(
@@ -878,6 +1015,7 @@ function renderVendorItems() {
                         ) || 0
                     );
 
+
                 const quantity =
                     Math.max(
                         1,
@@ -886,6 +1024,7 @@ function renderVendorItems() {
                         ) || 1
                     );
 
+
                 button.disabled =
                     gold <
                     price * quantity;
@@ -893,17 +1032,20 @@ function renderVendorItems() {
         );
 }
 
+
 function getVendorInventoryItemIcon(
     entry
 ) {
     const item =
         entry?.item || {};
 
+
     const itemType =
         String(
             item.item_type ||
             ""
         ).toLowerCase();
+
 
     if (
         Number(
@@ -913,6 +1055,7 @@ function getVendorInventoryItemIcon(
         return "♥";
     }
 
+
     if (
         Number(
             item.heal_pm
@@ -921,12 +1064,14 @@ function getVendorInventoryItemIcon(
         return "✦";
     }
 
+
     if (
         itemType ===
         "currency"
     ) {
         return "●";
     }
+
 
     if (
         itemType ===
@@ -935,12 +1080,14 @@ function getVendorInventoryItemIcon(
         return "⚔";
     }
 
+
     if (
         itemType ===
         "armor"
     ) {
         return "◆";
     }
+
 
     if (
         itemType ===
@@ -949,13 +1096,16 @@ function getVendorInventoryItemIcon(
         return "◇";
     }
 
+
     return "□";
 }
+
 
 // ============================================================
 // ESCI DAL VENDOR
 // Il Vendor ora appartiene esclusivamente al Livello Base.
 // ============================================================
+
 
 function setupVendorExitButton() {
     const button =
@@ -963,9 +1113,11 @@ function setupVendorExitButton() {
             "vendor-exit-button"
         );
 
+
     if (!button) {
         return;
     }
+
 
     button.addEventListener(
         "click",
@@ -973,12 +1125,15 @@ function setupVendorExitButton() {
             button.disabled =
                 true;
 
+
             try {
                 // Servizio interno a Ib: non cambiare current_location.
                 resetVendorVisitMemory();
 
+
                 window.location.href =
                     "../../piano-Ib.html";
+
 
             } catch (error) {
                 console.error(
@@ -986,9 +1141,11 @@ function setupVendorExitButton() {
                     error
                 );
 
+
                 setVendorDialogue(
                     "Non riesco a lasciarti andare. Riprova."
                 );
+
 
                 button.disabled =
                     false;
@@ -997,9 +1154,11 @@ function setupVendorExitButton() {
     );
 }
 
+
 // ============================================================
 // OFFERTA SEGRETO
 // ============================================================
+
 
 function clearVendorSecretOffer() {
     const container =
@@ -1007,16 +1166,20 @@ function clearVendorSecretOffer() {
             "vendor-secret-offer"
         );
 
+
     if (!container) {
         return;
     }
 
+
     container.innerHTML =
         "";
+
 
     container.hidden =
         true;
 }
+
 
 function renderVendorSecretOffer(
     offer
@@ -1026,9 +1189,11 @@ function renderVendorSecretOffer(
             "vendor-secret-offer"
         );
 
+
     if (!container) {
         return;
     }
+
 
     if (
         !offer
@@ -1039,6 +1204,7 @@ function renderVendorSecretOffer(
         return;
     }
 
+
     const price =
         Math.max(
             0,
@@ -1047,14 +1213,17 @@ function renderVendorSecretOffer(
             ) || 0
         );
 
+
     const acceptsMonkeyHand =
         offer.payment_item_id ===
         "mano_scimmia";
+
 
     container.innerHTML = `
         <div class="vendor-secret-offer-title">
             AFFARE RISERVATO
         </div>
+
 
         <div class="vendor-secret-offer-name">
             ${escapeVendorHtml(
@@ -1063,7 +1232,9 @@ function renderVendorSecretOffer(
             )}
         </div>
 
+
         <div class="vendor-secret-payment-buttons">
+
 
             <button
                 class="vendor-secret-buy-button"
@@ -1075,6 +1246,7 @@ function renderVendorSecretOffer(
             >
                 COMPRA · ${price} ORO
             </button>
+
 
             ${
                 acceptsMonkeyHand
@@ -1093,16 +1265,20 @@ function renderVendorSecretOffer(
                     : ""
             }
 
+
         </div>
     `;
+
 
     container.hidden =
         false;
 }
 
+
 // ============================================================
 // ACQUISTA SEGRETO
 // ============================================================
+
 
 async function buyVendorSecret(
     button
@@ -1115,6 +1291,7 @@ async function buyVendorSecret(
         return;
     }
 
+
     const secretId =
         String(
             button.dataset.secretId ||
@@ -1122,9 +1299,11 @@ async function buyVendorSecret(
         )
             .trim();
 
+
     if (!secretId) {
         return;
     }
+
 
     const paymentMethod =
         String(
@@ -1132,15 +1311,19 @@ async function buyVendorSecret(
             "gold"
         );
 
+
     const originalText =
         button.textContent;
+
 
     try {
         button.disabled =
             true;
 
+
         button.textContent =
             "...";
+
 
         const {
             data,
@@ -1152,21 +1335,27 @@ async function buyVendorSecret(
                     p_npc_id:
                         NPC_ID,
 
+
                     p_secret_id:
                         secretId,
+
 
                     p_payment_method:
                         paymentMethod
                 }
             );
 
+
         if (error) {
             throw error;
         }
 
+
         await refreshVendorInventory();
 
+
         clearVendorSecretOffer();
+
 
         const secretName =
             String(
@@ -1174,18 +1363,22 @@ async function buyVendorSecret(
                 "informazione"
             );
 
+
         const secretValue =
             String(
                 data?.secret_value ||
                 ""
             );
 
+
         const pricePaid =
             Number(
                 data?.price_paid
             ) || 0;
 
+
         let reply;
+
 
         if (
             data?.already_owned
@@ -1197,14 +1390,17 @@ async function buyVendorSecret(
                 `Affare fatto. ${secretName}: ${secretValue}`;
         }
 
+
         setVendorDialogue(
             reply
         );
+
 
         vendorVisitHistory.push(
             {
                 role:
                     "user",
+
 
                 content:
                     data?.payment_method ===
@@ -1216,20 +1412,24 @@ async function buyVendorSecret(
                 role:
                     "assistant",
 
+
                 content:
                     reply
             }
         );
+
 
         vendorVisitHistory =
             vendorVisitHistory.slice(
                 -10
             );
 
+
         console.log(
             "Segreto acquistato:",
             data
         );
+
 
     } catch (error) {
         console.error(
@@ -1237,19 +1437,23 @@ async function buyVendorSecret(
             error
         );
 
+
         setVendorDialogue(
             error?.message ||
             "Non posso concludere questo affare."
         );
 
+
     } finally {
         button.disabled =
             false;
+
 
         button.textContent =
             originalText;
     }
 }
+
 
 document.addEventListener(
     "click",
@@ -1259,6 +1463,7 @@ document.addEventListener(
                 ".vendor-secret-buy-button"
             );
 
+
         if (secretButton) {
             buyVendorSecret(
                 secretButton
@@ -1267,10 +1472,12 @@ document.addEventListener(
     }
 );
 
+
 // ============================================================
 // IA MERCANTE SCAGLIAGRIGIA (da configurare)
 // Memoria valida soltanto durante questa visita/pagina.
 // ============================================================
+
 
 function setupVendorAiChat() {
     const form =
@@ -1278,10 +1485,12 @@ function setupVendorAiChat() {
             "vendor-ai-form"
         );
 
+
     const input =
         document.getElementById(
             "vendor-ai-input"
         );
+
 
     if (
         !form ||
@@ -1290,6 +1499,7 @@ function setupVendorAiChat() {
         return;
     }
 
+
     form.addEventListener(
         "submit",
         async event => {
@@ -1297,6 +1507,7 @@ function setupVendorAiChat() {
             await sendVendorAiMessage();
         }
     );
+
 
     input.addEventListener(
         "keydown",
@@ -1307,15 +1518,19 @@ function setupVendorAiChat() {
                 input.value =
                     "";
 
+
                 input.blur();
             }
         }
     );
 }
 
+
 // ============================================================
 // INVIA MESSAGGIO ALLA EDGE FUNCTION
 // ============================================================
+
+
 
 
 function isPalaceOriginQuestion(message) {
@@ -1326,6 +1541,7 @@ function isPalaceOriginQuestion(message) {
         .replace(/[^a-z0-9\s]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+
 
     const directPhrases = [
         "come sono finito qui",
@@ -1341,29 +1557,36 @@ function isPalaceOriginQuestion(message) {
         "perche mi trovo nel palazzo"
     ];
 
+
     if (directPhrases.some(phrase => normalized.includes(phrase))) return true;
+
 
     const asksHow = normalized.includes("come") || normalized.includes("perche") || normalized.includes("chi");
     const aboutArrival = normalized.includes("finito") || normalized.includes("arrivato") || normalized.includes("portato") || normalized.includes("entrato") || normalized.includes("trovo");
     const aboutPlace = normalized.includes("qui") || normalized.includes("palazzo");
 
+
     return asksHow && aboutArrival && aboutPlace;
 }
+
 
 async function sendVendorAiMessage() {
     if (vendorAiBusy) {
         return;
     }
 
+
     const input =
         document.getElementById(
             "vendor-ai-input"
         );
 
+
     const button =
         document.getElementById(
             "vendor-ai-send"
         );
+
 
     if (
         !input ||
@@ -1371,6 +1594,7 @@ async function sendVendorAiMessage() {
     ) {
         return;
     }
+
 
     const message =
         String(
@@ -1383,9 +1607,11 @@ async function sendVendorAiMessage() {
                 500
             );
 
+
     if (!message) {
         return;
     }
+
 
     if (NPC_ID === "npc_manodiscimmia" && isPalaceOriginQuestion(message)) {
         input.value = "";
@@ -1402,6 +1628,7 @@ async function sendVendorAiMessage() {
         return;
     }
 
+
     const previousReply =
         document.getElementById(
             "vendor-dialogue-text"
@@ -1409,26 +1636,34 @@ async function sendVendorAiMessage() {
         ||
         "";
 
+
     vendorAiBusy =
         true;
+
 
     input.disabled =
         true;
 
+
     button.disabled =
         true;
+
 
     button.textContent =
         "...";
 
+
     input.value =
         "";
 
+
     clearVendorSecretOffer();
+
 
     setVendorDialogue(
         "Il mercante ti squadra per un momento..."
     );
+
 
     try {
         const {
@@ -1442,8 +1677,10 @@ async function sendVendorAiMessage() {
                         npc_id:
                             NPC_ID,
 
+
                         message:
                             message,
+
 
                         history:
                             vendorVisitHistory
@@ -1451,10 +1688,12 @@ async function sendVendorAiMessage() {
                 }
             );
 
+
         if (error) {
             let detail =
                 error.message ||
                 "Errore nella chiamata alla funzione.";
+
 
             if (
                 error.context
@@ -1466,6 +1705,7 @@ async function sendVendorAiMessage() {
                     const body =
                         await error.context.json();
 
+
                     if (
                         body?.error
                     ) {
@@ -1473,15 +1713,18 @@ async function sendVendorAiMessage() {
                             body.error;
                     }
 
+
                 } catch (_) {
                     // Mantiene il messaggio originale.
                 }
             }
 
+
             throw new Error(
                 detail
             );
         }
+
 
         const reply =
             String(
@@ -1490,16 +1733,19 @@ async function sendVendorAiMessage() {
             )
                 .trim();
 
+
         if (!reply) {
             throw new Error(
                 "Il mercante è rimasto insolitamente senza parole."
             );
         }
 
+
         vendorVisitHistory.push(
             {
                 role:
                     "user",
+
 
                 content:
                     message
@@ -1508,10 +1754,12 @@ async function sendVendorAiMessage() {
                 role:
                     "assistant",
 
+
                 content:
                     reply
             }
         );
+
 
         if (
             vendorVisitHistory.length >
@@ -1523,14 +1771,17 @@ async function sendVendorAiMessage() {
                 );
         }
 
+
         setVendorDialogue(
             reply
         );
+
 
         renderVendorSecretOffer(
             data?.offer ||
             null
         );
+
 
     } catch (error) {
         console.error(
@@ -1538,9 +1789,11 @@ async function sendVendorAiMessage() {
             error
         );
 
+
         setVendorDialogue(
             `Ugh... qualcosa nel portale non funziona. (${error.message || "errore sconosciuto"})`
         );
+
 
         if (!previousReply) {
             console.warn(
@@ -1548,35 +1801,44 @@ async function sendVendorAiMessage() {
             );
         }
 
+
     } finally {
         vendorAiBusy =
             false;
 
+
         input.disabled =
             false;
+
 
         button.disabled =
             false;
 
+
         button.textContent =
             "PARLA";
+
 
         input.focus();
     }
 }
 
+
 // ============================================================
 // RESET MEMORIA VISITA
 // ============================================================
+
 
 function resetVendorVisitMemory() {
     vendorVisitHistory =
         [];
 }
 
+
 // ============================================================
 // FEEDBACK DIALOGO VENDOR
 // ============================================================
+
 
 function setVendorDialogue(
     message
@@ -1586,31 +1848,39 @@ function setVendorDialogue(
             "vendor-dialogue-text"
         );
 
+
     if (dialogue) {
         dialogue.textContent =
             message;
     }
 }
 
+
 // ============================================================
 // AGGIORNA INVENTARIO DOPO COMPRA / VENDI
 // ============================================================
 
+
 async function refreshVendorInventory() {
     await loadVendorCharacterInventory();
 
+
     updateVendorPlayerInventoryHeader();
 
+
     renderVendorCharacterInventory();
+
 
     // Ricalcola subito quali acquisti sono disponibili
     // in base al nuovo saldo di monete.
     renderVendorItems();
 }
 
+
 // ============================================================
 // COMPRA
 // ============================================================
+
 
 async function buyVendorItem(
     button
@@ -1623,8 +1893,10 @@ async function buyVendorItem(
         return;
     }
 
+
     const itemId =
         button.dataset.buyItemId;
+
 
     const unitPrice =
         Math.max(
@@ -1633,6 +1905,7 @@ async function buyVendorItem(
                 button.dataset.buyPrice
             ) || 0
         );
+
 
     const buyQuantity =
         Math.max(
@@ -1644,26 +1917,32 @@ async function buyVendorItem(
             )
         );
 
+
     if (!itemId) {
         return;
     }
 
+
     const totalPrice =
         unitPrice *
         buyQuantity;
+
 
     const row =
         button.closest(
             ".vendor-stock-item"
         );
 
+
     const rowButtons =
         row?.querySelectorAll(
             ".vendor-buy-button"
         ) || [];
 
+
     const originalText =
         button.textContent;
+
 
     try {
         rowButtons.forEach(
@@ -1673,8 +1952,10 @@ async function buyVendorItem(
             }
         );
 
+
         button.textContent =
             "...";
+
 
         const {
             data,
@@ -1686,20 +1967,25 @@ async function buyVendorItem(
                     p_vendor_id:
                         VENDOR_ID,
 
+
                     p_item_id:
                         itemId,
+
 
                     p_quantity:
                         buyQuantity
                 }
             );
 
+
         if (error) {
             throw error;
         }
 
+
         await refreshVendorInventory();
         renderVendorItems();
+
 
         const item =
             vendorItems.find(
@@ -1708,23 +1994,28 @@ async function buyVendorItem(
                     itemId
             );
 
+
         const itemName =
             item?.item?.name ||
             itemId;
+
 
         const tradeReply =
             buyQuantity === 1
                 ? `Affare fatto. ${itemName} è tuo per ${totalPrice} monete d'oro.`
                 : `Affare fatto. ${buyQuantity} × ${itemName} sono tuoi per ${totalPrice} monete d'oro.`;
 
+
         setVendorDialogue(
             tradeReply
         );
+
 
         vendorVisitHistory.push(
             {
                 role:
                     "user",
+
 
                 content:
                     `[EVENTO DI GIOCO CONFERMATO] Il PG ha acquistato ${buyQuantity} × ${itemName} per ${totalPrice} monete d'oro.`
@@ -1733,20 +2024,24 @@ async function buyVendorItem(
                 role:
                     "assistant",
 
+
                 content:
                     tradeReply
             }
         );
+
 
         vendorVisitHistory =
             vendorVisitHistory.slice(
                 -10
             );
 
+
         console.log(
             "Acquisto completato:",
             data
         );
+
 
     } catch (error) {
         console.error(
@@ -1754,10 +2049,12 @@ async function buyVendorItem(
             error
         );
 
+
         setVendorDialogue(
             error?.message ||
             "Non posso concludere questo affare."
         );
+
 
     } finally {
         if (button?.isConnected) {
@@ -1767,9 +2064,11 @@ async function buyVendorItem(
     }
 }
 
+
 // ============================================================
 // VENDI
 // ============================================================
+
 
 async function sellVendorItem(
     button
@@ -1782,22 +2081,27 @@ async function sellVendorItem(
         return;
     }
 
+
     const row =
         button.closest(
             ".player-item"
         );
 
+
     const inventoryId =
         row?.dataset
             ?.inventoryId;
+
 
     if (!inventoryId) {
         return;
     }
 
+
     const itemId =
         row?.dataset
             ?.itemId;
+
 
     const sellQuantity =
         Math.max(
@@ -1808,6 +2112,7 @@ async function sellVendorItem(
                 ) || 1
             )
         );
+
 
     const inventoryEntry =
         characterInventory.find(
@@ -1820,6 +2125,7 @@ async function sellVendorItem(
                 )
         );
 
+
     const ownedQuantity =
         Math.max(
             0,
@@ -1827,6 +2133,7 @@ async function sellVendorItem(
                 inventoryEntry?.quantity
             ) || 0
         );
+
 
     if (
         ownedQuantity <
@@ -1836,8 +2143,10 @@ async function sellVendorItem(
             `Non ne hai abbastanza. Ne possiedi ${ownedQuantity}.`
         );
 
+
         return;
     }
+
 
     const itemName =
         inventoryEntry
@@ -1847,6 +2156,7 @@ async function sellVendorItem(
         itemId
         ||
         "Oggetto";
+
 
     const unitSellPrice =
         Math.max(
@@ -1858,17 +2168,21 @@ async function sellVendorItem(
             ) || 0
         );
 
+
     const totalSellPrice =
         unitSellPrice *
         sellQuantity;
 
+
     const originalText =
         button.textContent;
+
 
     const rowButtons =
         row?.querySelectorAll(
             ".player-item-sell-button"
         ) || [];
+
 
     try {
         rowButtons.forEach(
@@ -1878,8 +2192,10 @@ async function sellVendorItem(
             }
         );
 
+
         button.textContent =
             "...";
+
 
         const {
             data,
@@ -1893,30 +2209,37 @@ async function sellVendorItem(
                             inventoryId
                         ),
 
+
                     p_quantity:
                         sellQuantity
                 }
             );
 
+
         if (error) {
             throw error;
         }
 
+
         await refreshVendorInventory();
+
 
         const tradeReply =
             sellQuantity === 1
                 ? `Prendo ${itemName}. Ti darò ${totalSellPrice} monete d'oro.`
                 : `Prendo ${sellQuantity} × ${itemName}. Ti darò ${totalSellPrice} monete d'oro.`;
 
+
         setVendorDialogue(
             tradeReply
         );
+
 
         vendorVisitHistory.push(
             {
                 role:
                     "user",
+
 
                 content:
                     `[EVENTO DI GIOCO CONFERMATO] Il PG ha venduto ${sellQuantity} × ${itemName} per ${totalSellPrice} monete d'oro.`
@@ -1925,20 +2248,24 @@ async function sellVendorItem(
                 role:
                     "assistant",
 
+
                 content:
                     tradeReply
             }
         );
+
 
         vendorVisitHistory =
             vendorVisitHistory.slice(
                 -10
             );
 
+
         console.log(
             "Vendita completata:",
             data
         );
+
 
     } catch (error) {
         console.error(
@@ -1946,10 +2273,12 @@ async function sellVendorItem(
             error
         );
 
+
         setVendorDialogue(
             error?.message ||
             "Non posso acquistare questo oggetto."
         );
+
 
         rowButtons.forEach(
             currentButton => {
@@ -1961,11 +2290,13 @@ async function sellVendorItem(
                         ) || 1
                     );
 
+
                 currentButton.disabled =
                     ownedQuantity <
                     quantity;
             }
         );
+
 
     } finally {
         if (button?.isConnected) {
@@ -1975,9 +2306,11 @@ async function sellVendorItem(
     }
 }
 
+
 // ============================================================
 // CLICK PULSANTI DINAMICI
 // ============================================================
+
 
 document.addEventListener(
     "click",
@@ -1987,18 +2320,22 @@ document.addEventListener(
                 ".vendor-buy-button"
             );
 
+
         if (buyButton) {
             buyVendorItem(
                 buyButton
             );
 
+
             return;
         }
+
 
         const sellButton =
             event.target.closest(
                 ".player-item-sell-button"
             );
+
 
         if (sellButton) {
             sellVendorItem(
@@ -2008,9 +2345,11 @@ document.addEventListener(
     }
 );
 
+
 // ============================================================
 // ESCAPE HTML
 // ============================================================
+
 
 function escapeVendorHtml(
     value
@@ -2040,9 +2379,11 @@ function escapeVendorHtml(
         );
 }
 
+
 // ============================================================
 // RENDER INVENTARIO PG
 // ============================================================
+
 
 function renderVendorCharacterInventory() {
     const container =
@@ -2050,9 +2391,11 @@ function renderVendorCharacterInventory() {
             "player-inventory-list"
         );
 
+
     if (!container) {
         return;
     }
+
 
     const entries =
         characterInventory
@@ -2068,14 +2411,17 @@ function renderVendorCharacterInventory() {
                         return false;
                     }
 
+
                     const item =
                         entry.item;
+
 
                     const itemType =
                         String(
                             item.item_type ||
                             ""
                         ).toLowerCase();
+
 
                     const itemName =
                         String(
@@ -2084,6 +2430,7 @@ function renderVendorCharacterInventory() {
                         )
                             .trim()
                             .toLowerCase();
+
 
                     return !(
                         itemType ===
@@ -2114,6 +2461,7 @@ function renderVendorCharacterInventory() {
                     )
             );
 
+
     if (!entries.length) {
         container.innerHTML = `
             <div class="inventory-empty">
@@ -2121,8 +2469,10 @@ function renderVendorCharacterInventory() {
             </div>
         `;
 
+
         return;
     }
+
 
     container.innerHTML =
         entries
@@ -2137,6 +2487,7 @@ function renderVendorCharacterInventory() {
                             `
                             : "";
 
+
                     const value =
                         Math.max(
                             0,
@@ -2144,6 +2495,7 @@ function renderVendorCharacterInventory() {
                                 entry.item.gold_value
                             ) || 0
                         );
+
 
                     const quantity =
                         Math.max(
@@ -2153,10 +2505,12 @@ function renderVendorCharacterInventory() {
                             ) || 0
                         );
 
+
                     const sellDisabled =
                         entry.equipped_slot
                             ? "disabled"
                             : "";
+
 
                     const sell5Disabled =
                         (
@@ -2167,6 +2521,7 @@ function renderVendorCharacterInventory() {
                             ? "disabled"
                             : "";
 
+
                     const sell10Disabled =
                         (
                             entry.equipped_slot
@@ -2175,6 +2530,7 @@ function renderVendorCharacterInventory() {
                         )
                             ? "disabled"
                             : "";
+
 
                     return `
                         <article
@@ -2187,11 +2543,14 @@ function renderVendorCharacterInventory() {
                             )}"
                         >
 
+
                             <div class="player-item-quantity">
                                 ×${quantity}
                             </div>
 
+
                             <div class="player-item-center">
+
 
                                 <div class="player-item-name">
                                     ${escapeVendorHtml(
@@ -2200,17 +2559,23 @@ function renderVendorCharacterInventory() {
                                     )}
                                 </div>
 
+
                                 ${equipped}
+
 
                             </div>
 
+
                             <div class="player-item-actions">
+
 
                                 <div class="player-item-value">
                                     ${value}
                                 </div>
 
+
                                 <div class="player-item-sell-group">
+
 
                                     <button
                                         class="player-item-sell-button"
@@ -2224,6 +2589,7 @@ function renderVendorCharacterInventory() {
                                         ×1
                                     </button>
 
+
                                     <button
                                         class="player-item-sell-button"
                                         type="button"
@@ -2235,6 +2601,7 @@ function renderVendorCharacterInventory() {
                                     >
                                         ×5
                                     </button>
+
 
                                     <button
                                         class="player-item-sell-button"
@@ -2248,9 +2615,12 @@ function renderVendorCharacterInventory() {
                                         ×10
                                     </button>
 
+
                                 </div>
 
+
                             </div>
+
 
                         </article>
                     `;
@@ -2259,9 +2629,11 @@ function renderVendorCharacterInventory() {
             .join("");
 }
 
+
 // ============================================================
 // ERRORE INVENTARIO
 // ============================================================
+
 
 function renderVendorInventoryError(
     message
@@ -2271,9 +2643,11 @@ function renderVendorInventoryError(
             "player-inventory-list"
         );
 
+
     if (!container) {
         return;
     }
+
 
     container.innerHTML = `
         <div class="player-inventory-status">
@@ -2285,11 +2659,14 @@ function renderVendorInventoryError(
 }
 
 
+
+
 // ============================================================
 // ECONOMIA SCAGLIAGRIGIA - SCORTE FINITE / DONAZIONI
 // Queste definizioni sostituiscono le omonime del vendor base.
 // ============================================================
 let scagliagrigiaMerchantGold = 200;
+
 
 async function loadVendorItems() {
     const [{data: stock, error: stockErr}, {data: treasury, error: goldErr}] = await Promise.all([
@@ -2301,6 +2678,7 @@ async function loadVendorItems() {
     scagliagrigiaMerchantGold=Number(treasury.gold)||0;
     vendorItems=(stock||[]).map(row=>({...row,item:row.item||{id:row.item_id,name:row.item_id}}));
 }
+
 
 function renderVendorItems() {
     const container=document.querySelector('.vendor-stock');
@@ -2331,6 +2709,7 @@ function renderVendorItems() {
     }).join('');
 }
 
+
 async function buyVendorItem(button) {
     if(!button||button.disabled)return;
     const itemId=button.dataset.buyItemId;
@@ -2345,6 +2724,7 @@ async function buyVendorItem(button) {
         setVendorDialogue(`Acquisto completato: ${quantity} × ${vendorItems.find(x=>x.item_id===itemId)?.item?.name||itemId}.`);
     }catch(e){setVendorDialogue(e.message||'Acquisto non riuscito.');}finally{if(button.isConnected)button.disabled=false;renderVendorItems();}
 }
+
 
 async function sellVendorItem(button) {
     if(!button||button.disabled)return;
@@ -2363,6 +2743,7 @@ async function sellVendorItem(button) {
         setVendorDialogue('Vendita completata. La merce è ora disponibile al banco.');
     }catch(e){setVendorDialogue(e.message||'Vendita non riuscita.');}finally{if(button.isConnected)button.disabled=false;}
 }
+
 
 async function setupScagliagrigiaQuest() {
     const panel=document.querySelector('.vendor-inventory');
