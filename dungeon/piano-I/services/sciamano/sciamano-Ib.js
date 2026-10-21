@@ -1,12 +1,15 @@
 console.log("SCIAMANO-IB.JS CARICATO");
 
+
 let pageBackgroundMusic = null;
 const PALAZZO_MUSIC_VOLUME_KEY = "palazzo-eterno-dungeon-volume";
 let vendorMusicVolume = loadVendorMusicVolume();
 
+
 const VENDOR_ID = 'vendor_sciamano_scagliagrigia';
 const REQUIRED_SCORE = 400;
 const QUEST_TARGET = 24;
+
 
 let currentUser = null;
 let character = null;
@@ -14,9 +17,11 @@ let characterInventory = [];
 let vendorItems = [];
 let shamanTrialStatus = null;
 
+
 function client() {
     return typeof db !== 'undefined' ? db : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
+
 
 function loadVendorMusicVolume() {
     try {
@@ -29,15 +34,18 @@ function loadVendorMusicVolume() {
     }
 }
 
+
 function saveVendorMusicVolume(value) {
     try { localStorage.setItem(PALAZZO_MUSIC_VOLUME_KEY, String(value)); } catch (_) {}
 }
+
 
 function getVendorVolumeIcon(volume) {
     if (volume <= 0) return '🔇';
     if (volume < 0.5) return '🔉';
     return '🔊';
 }
+
 
 function updateVendorVolumeUI() {
     const button = document.getElementById('vendor-volume-button');
@@ -51,6 +59,7 @@ function updateVendorVolumeUI() {
     if (slider) slider.value = String(percentage);
     if (value) value.textContent = `${percentage}%`;
 }
+
 
 function setupVendorVolumeControl() {
     const button = document.getElementById('vendor-volume-button');
@@ -79,6 +88,7 @@ function setupVendorVolumeControl() {
     });
 }
 
+
 function startBackgroundMusic(source) {
     if (pageBackgroundMusic || !source) return;
     pageBackgroundMusic = new Audio(source);
@@ -94,14 +104,17 @@ function startBackgroundMusic(source) {
     document.addEventListener('keydown', tryPlay, { once: true });
 }
 
+
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
+
 
 function setDialogue(text) {
     const node = document.getElementById('dialogue-text');
     if (node) node.textContent = text;
 }
+
 
 function appendChat(author, text, player = false) {
     const log = document.getElementById('chat-log');
@@ -112,6 +125,7 @@ function appendChat(author, text, player = false) {
     log.appendChild(bubble);
     log.scrollTop = log.scrollHeight;
 }
+
 
 async function loadVendorCharacter() {
     const dbClient = client();
@@ -136,6 +150,7 @@ async function loadVendorCharacter() {
     character = data;
 }
 
+
 async function loadVendorCharacterInventory() {
     if (!character) {
         characterInventory = [];
@@ -151,10 +166,12 @@ async function loadVendorCharacterInventory() {
     characterInventory = Array.isArray(data) ? data : [];
 }
 
+
 function getPlayerGold() {
     const goldEntry = characterInventory.find(entry => entry?.item?.id === 'moneta_oro');
     return Math.max(0, Number(goldEntry?.quantity) || 0);
 }
+
 
 async function loadVendorItems() {
     const dbClient = client();
@@ -168,6 +185,7 @@ async function loadVendorItems() {
     vendorItems = Array.isArray(data) ? data : [];
 }
 
+
 function updateCharacterHeader() {
     const name = document.getElementById('player-name');
     const gold = document.getElementById('player-gold');
@@ -179,6 +197,7 @@ function updateCharacterHeader() {
         score.textContent = `Risonanza: ${currentScore} / ${REQUIRED_SCORE}` + (currentScore >= REQUIRED_SCORE ? ' ✓' : ' ✗');
     }
 }
+
 
 function renderVendorCharacterInventory() {
     const container = document.getElementById('player-inventory');
@@ -204,6 +223,7 @@ function renderVendorCharacterInventory() {
             </article>`;
     }).join('');
 }
+
 
 function renderVendorItems() {
     const container = document.getElementById('vendor-stock');
@@ -242,6 +262,7 @@ function renderVendorItems() {
     });
 }
 
+
 function normalizeTrialStatus(data) {
     const usesObj = data?.uses && typeof data.uses === 'object' ? data.uses : {};
     return {
@@ -256,6 +277,7 @@ function normalizeTrialStatus(data) {
         error: ''
     };
 }
+
 
 async function loadShamanTrialStatus() {
     const feedback = document.getElementById('quest-feedback');
@@ -274,6 +296,7 @@ async function loadShamanTrialStatus() {
     }
     renderShamanTrialStatus();
 }
+
 
 function renderShamanTrialStatus() {
     const status = shamanTrialStatus || { counts: { sanguinamento: 0, succhiasangue: 0, veleno: 0 }, completed: false, totalCompleted: 0, available: false, error: '' };
@@ -299,6 +322,7 @@ function renderShamanTrialStatus() {
         button.disabled = !(status.available && !status.completed && allDone);
     }
 }
+
 
 async function buyVendorItem(button) {
     if (!button || button.disabled) return;
@@ -331,6 +355,7 @@ async function buyVendorItem(button) {
     }
 }
 
+
 async function claimQuest() {
     const button = document.getElementById('quest-claim');
     if (!button || button.disabled) return;
@@ -351,25 +376,51 @@ async function claimQuest() {
     }
 }
 
+
+const SHAMAN_NPC_ID = 'npc_sciamano_scagliagrigia';
+let shamanHistory = [];
+let shamanBusy = false;
+
+
 function setupChat() {
     const form = document.getElementById('chat-form');
     const input = document.getElementById('chat-input');
+    const send = form?.querySelector('button[type="submit"]');
     if (!form || !input) return;
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', async event => {
         event.preventDefault();
-        const message = input.value.trim();
+        if (shamanBusy) return;
+        const message = String(input.value || '').trim().slice(0, 400);
         if (!message) return;
         appendChat(character?.nome || 'TU', message, true);
         input.value = '';
-        const normalized = message.toLowerCase();
-        let reply = '«Le spore ascoltano. Io pure. Ma le vere risposte stanno nell’uso, non nelle parole.»';
-        if (normalized.includes('missione') || normalized.includes('prova')) reply = '«Usa 24 volte Sanguinamento, 24 volte Succhiasangue e 24 volte Veleno. Solo allora saprò che non sprechi il mio sapere.»';
-        else if (normalized.includes('pergam') || normalized.includes('abil')) reply = '«Tre pergamene. Tre dolori. Duecento monete d’oro l’una, ma non le darò a un debole sotto i 400 di risonanza.»';
-        else if (normalized.includes('scintilla')) reply = '«Scintilla arde in tutte le cose: nelle febbri, nei veleni, nel sangue che si ribella alla carne.»';
-        else if (normalized.includes('ciao') || normalized.includes('salve')) reply = '«Saluti sprecati. Se vuoi il mio sapere, dimostra di poterlo reggere.»';
-        window.setTimeout(() => appendChat('SCIAMANO', reply, false), 180);
+        shamanBusy = true;
+        input.disabled = true;
+        if (send) { send.disabled = true; send.textContent = '...'; }
+        try {
+            const dbClient = client();
+            if (!dbClient) throw new Error('Supabase non disponibile');
+            const { data, error } = await dbClient.functions.invoke('vendor-ai', {
+                body: { npc_id: SHAMAN_NPC_ID, message, history: shamanHistory }
+            });
+            if (error) throw error;
+            const reply = String(data?.reply || '').trim();
+            if (!reply) throw new Error('Nessuna risposta dello Sciamano');
+            appendChat('SCIAMANO', reply);
+            shamanHistory.push({ role: 'user', content: message }, { role: 'assistant', content: reply });
+            shamanHistory = shamanHistory.slice(-10);
+        } catch (error) {
+            console.error('Errore IA Sciamano:', error);
+            appendChat('SISTEMA', 'Lo Sciamano tace. Il rituale di comunicazione non riesce. Riprova.');
+        } finally {
+            shamanBusy = false;
+            input.disabled = false;
+            if (send) { send.disabled = false; send.textContent = 'PARLA'; }
+            input.focus();
+        }
     });
 }
+
 
 function setupExit() {
     const button = document.getElementById('exit-button');
@@ -378,6 +429,7 @@ function setupExit() {
         window.location.href = '../../piano-Ib.html';
     });
 }
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     startBackgroundMusic('../../../../music/piano-Ia.mp3');
