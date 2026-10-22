@@ -908,6 +908,7 @@ document.addEventListener(
 
 
             setupMovement();
+            icFruitStart();
 
 
 
@@ -4855,6 +4856,82 @@ function showIcReturnToIbPopup() {
     cancel.focus();
 }
 
+// PIANO I-C — 10 FRUTTI CARNOSI CONDIVISI NEI VICOLI CIECHI.
+const icFruitState = {fruits: [], tokens: new Map(), busy: false, initialized: false};
+function icFruitNearby(x, y) {return Math.abs(playerX-x)+Math.abs(playerY-y)<=1;}
+function icFruitDialog() {
+    return new Promise(resolve => {
+        const overlay=document.createElement('div');overlay.className='combat-event-overlay';
+        const modal=document.createElement('div');modal.className='combat-event-modal';
+        modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+        const title=document.createElement('h2');title.textContent='FRUTTO CARNOSO';
+        const message=document.createElement('p');message.textContent='Hai trovato un frutto particolarmente carnoso. Vuoi raccoglierlo?';
+        const actions=document.createElement('div');actions.className='combat-event-buttons';
+        const yes=document.createElement('button');yes.type='button';yes.className='combat-event-button combat-event-enter';yes.textContent='RACCOGLI';
+        const no=document.createElement('button');no.type='button';no.className='combat-event-button combat-event-cancel';no.textContent='ANNULLA';
+        function done(ok){document.removeEventListener('keydown',onKey,true);overlay.remove();resolve(ok);}
+        const onKey=e=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();done(false);}else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}};
+        yes.addEventListener('click',()=>done(true));no.addEventListener('click',()=>done(false));
+        overlay.addEventListener('click',e=>{if(e.target===overlay)done(false)});
+        actions.append(yes,no);modal.append(title,message,actions);overlay.append(modal);document.body.append(overlay);
+        document.addEventListener('keydown',onKey,true);no.focus();
+    });
+}
+function icFruitRender() {
+    const map=document.getElementById('dungeon-map');if(!map)return;
+    const seen=new Set();
+    for(const fruit of icFruitState.fruits) {
+        if(!fruit.available)continue;
+        const id=String(fruit.id),x=Number(fruit.x),y=Number(fruit.y);
+        if(!Number.isInteger(x)||!Number.isInteger(y))continue;
+        seen.add(id);
+        let el=icFruitState.tokens.get(id);
+        if(!el){
+            el=document.createElement('button');el.type='button';el.className='pia-fruit-token';
+            el.title='Frutto Carnoso';el.setAttribute('aria-label','Raccogli Frutto Carnoso');
+            const icon=document.createElement('img');icon.src='immagini/frutto.png';icon.alt='';icon.draggable=false;
+            icon.style.cssText='display:block;width:100%;height:100%;object-fit:contain;pointer-events:none';
+            el.append(icon);el.addEventListener('click',()=>icFruitCollect(id));map.append(el);icFruitState.tokens.set(id,el);
+        }
+        el.style.left=(100*x/MAP_COLUMNS)+'%';el.style.top=(100*y/MAP_ROWS)+'%';
+        el.style.width=(100/MAP_COLUMNS)+'%';el.style.height=(100/MAP_ROWS)+'%';
+    }
+    for(const [id,el] of icFruitState.tokens)if(!seen.has(id)){el.remove();icFruitState.tokens.delete(id);}
+}
+async function icFruitRefresh() {
+    if(!icFruitState.initialized||document.hidden)return;
+    try {
+        const {data,error}=await db.rpc('piano_ic_fruits_refresh');if(error)throw error;
+        icFruitState.fruits=Array.isArray(data)?data:[];icFruitRender();
+    }catch(error){console.warn('[Piano Ic] Aggiornamento frutti:',error);}
+}
+async function icFruitCollect(id) {
+    const fruit=icFruitState.fruits.find(f=>String(f.id)===String(id)&&f.available);
+    if(!fruit||icFruitState.busy)return;
+    if(!icFruitNearby(Number(fruit.x),Number(fruit.y))){setMessage('Avvicinati al Frutto Carnoso.');return;}
+    if(!await icFruitDialog())return;
+    icFruitState.busy=true;
+    try{
+        const {data,error}=await db.rpc('piano_ic_fruit_collect',{p_id:Number(id),p_x:Number(fruit.x),p_y:Number(fruit.y)});
+        if(error)throw error;
+        setMessage(data?.message||data?.reason||'Raccolta completata.');
+        if(data?.ok){await loadCharacterEquipment();updateDungeonConsumables();}
+        await icFruitRefresh();
+    }catch(error){console.error('[Piano Ic] Raccolta frutto:',error);setMessage(error?.message||'Impossibile raccogliere il frutto.');}
+    finally{icFruitState.busy=false;}
+}
+function icFruitTryStep(x,y) {
+    const fruit=icFruitState.fruits.find(f=>f.available&&Number(f.x)===x&&Number(f.y)===y);
+    if(!fruit)return false;
+    void icFruitCollect(String(fruit.id));return true;
+}
+function icFruitStart() {
+    if(icFruitState.initialized)return;
+    icFruitState.initialized=true;void icFruitRefresh();
+    window.setInterval(icFruitRefresh,5000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icFruitRefresh();});
+}
+
 // Piano I-C: solo movimento e servizi infrastrutturali. Gli eventi verranno aggiunti con la mappa definitiva.
 async function performMovement(dx,dy) {
     if (!character || !dungeonData || eventLocked) return false;
@@ -4863,6 +4940,7 @@ async function performMovement(dx,dy) {
         showIcReturnToIbPopup();
         return false;
     }
+    if(icFruitTryStep(nx,ny))return false;
     if(nx<0 || ny<0 || nx>=MAP_COLUMNS || ny>=MAP_ROWS || !canMoveTo(nx,ny)) {
         setMessage('Il passaggio è bloccato.'); return false;
     }
