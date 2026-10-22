@@ -35,7 +35,8 @@ const COMBAT_STATUS_VISUALS = Object.freeze({
     attack_bonus: { name: 'Arma Potenziata', symbol: '⚔', tone: 'weapon' },
     defense_bonus: { name: 'Armatura Potenziata', symbol: '🛡', tone: 'armor' },
     critical_bonus: { name: 'Affilatura', symbol: '🗡', tone: 'sharp' },
-    movement_bonus: { name: 'Rapidità', symbol: '👢', tone: 'speed' }
+    movement_bonus: { name: 'Rapidità', symbol: '👢', tone: 'speed' },
+    tiki_rebirth: { name: 'Rinascita', symbol: '♻', tone: 'armor' }
 });
 
 function renderCombatTokenStatusIcons(token, entityId) {
@@ -53,10 +54,10 @@ function renderCombatTokenStatusIcons(token, entityId) {
         if (!visual || effect.target_entity_id !== entityId || Number(effect.remaining_rounds) <= 0) continue;
         const badge = document.createElement('span');
         badge.className = `combat-token-status combat-token-status--${visual.tone}`;
-        badge.textContent = visual.symbol;
+        badge.textContent = effect.effect_type==='tiki_rebirth' ? String(effect.remaining_rounds) : visual.symbol;
         const amount = Math.abs(Number(effect.value) || 0);
         const magnitude = visual.damage ? `${amount} danni` : `+${amount}`;
-        badge.title = `${visual.name} (${magnitude}) · ${Number(effect.remaining_rounds)} round`;
+        badge.title = effect.effect_type==='tiki_rebirth' ? `Rinascita: ${Number(effect.remaining_rounds)} turni rimanenti` : `${visual.name} (${magnitude}) · ${Number(effect.remaining_rounds)} round`;
         badge.setAttribute('aria-label', badge.title);
         holder.appendChild(badge);
     }
@@ -115,13 +116,12 @@ function renderCombatTokens() {
             // ENTITÀ MORTA
             // =================================================
 
+            const tikiRebirth = entity.enemy_id === 'tiki_legno' || entity.enemy_id === 'tiki_pietra';
+            const isRebirthing = tikiRebirth && Number(entity.current_hp) <= 0 &&
+                Array.isArray(combatEffects) && combatEffects.some(f =>
+                    f.target_entity_id === entity.id && f.effect_type === 'tiki_rebirth' && Number(f.remaining_rounds) > 0);
             if (
-                entity.status !==
-                    "alive"
-                ||
-                Number(
-                    entity.current_hp
-                ) <= 0
+                !isRebirthing && (entity.status !== "alive" || Number(entity.current_hp) <= 0)
             ) {
 
                 const oldToken =
@@ -234,16 +234,24 @@ function renderCombatTokens() {
 
             // Icone temporanee su qualsiasi token, nemico o giocatore.
             renderCombatTokenStatusIcons(token, entity.id);
+            token.style.filter = isRebirthing ? 'grayscale(1)' : '';
+            token.style.opacity = isRebirthing ? '0.75' : '';
+            token.style.pointerEvents = isRebirthing ? 'none' : '';
 
             // =================================================
             // DIMENSIONE
             // =================================================
 
-            const footprint = getCombatFootprint(entity);
-            const size = Math.min(cellWidth, cellHeight) * footprint * 0.92;
-            token.classList.toggle('combat-token-large', footprint === 2);
-            token.style.width = `${size}px`;
-            token.style.height = `${size}px`;
+            const size = Math.min(cellWidth,cellHeight) *
+                (entity.enemy_id==='tiki_pietra' ? 1.82 : 0.82);
+
+
+            token.style.width =
+                `${size}px`;
+
+
+            token.style.height =
+                `${size}px`;
 
 
             // =================================================
@@ -252,8 +260,8 @@ function renderCombatTokens() {
 
             const pixelPosition =
                 getCombatGridPixelPosition(
-                    Number(entity.x) + (footprint - 1) / 2,
-                    Number(entity.y) + (footprint - 1) / 2,
+                    entity.x,
+                    entity.y,
                     size,
                     size
                 );
@@ -404,6 +412,15 @@ function renderEnemyTokenContent(
         entity.display_name ||
         "Nemico";
 
+
+    if (entity.enemy_id === 'allosauro_dominante') {
+        // Placeholder senza dipendere da un PNG ancora da realizzare.
+        image.remove();
+        token.textContent = '🦖';
+        token.style.fontSize = '26px';
+        token.style.textAlign = 'center';
+        return;
+    }
 
     image.src =
         entity.enemy_id === "goblin_berserk"

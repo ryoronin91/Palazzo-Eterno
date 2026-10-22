@@ -13,7 +13,7 @@
 // ============================================================
 
 // Ingombro nemici grandi: preserva le collisioni del branch main.
-const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande']);
+const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande','tiki_pietra']);
 function getCombatFootprint(entity) {
     const large = entity?.entity_type === 'enemy' && COMBAT_LARGE_ENEMY_IDS.has(entity.enemy_id);
     return large ? 2 : 1;
@@ -769,7 +769,8 @@ const PE_NEW_AI_TYPES = new Set([
     'compsognato','dilofosauro','anchilosauro','uccello_stigio',
     'miconide_grande','miconide_medio','miconide_piccolo',
     'lucertoloide_guerriero_1','lucertoloide_guerriero_2',
-    'lucertoloide_sciamano','velociraptor','trex'
+    'lucertoloide_sciamano','velociraptor','trex',
+    'tiki_legno','tiki_pietra'
 ]);
 
 async function peAIRpc(name, args = {}) {
@@ -990,8 +991,31 @@ async function peAIDinosaurTurn(enemy) {
     await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
 }
 
+// IA Tiki: potenziamento una sola volta finche' e' attivo, poi assalto al PG piu' vicino.
+async function peAITikiTurn(enemy) {
+    const players=getAliveCombatPlayers();
+    if(!players.length || Number(enemy.current_hp)<=0 || enemy.status!=='alive') return;
+    const power=enemy.monster_type==='tiki_legno'?'attack_bonus':'defense_bonus';
+    const cost=2;
+    if(!enemy.action_used && Number(enemy.current_pm)>=cost && !hasAICombatEffect(enemy.id,power)) {
+        const buff=await peAIRpc('cast_tiki_buff');
+        if(buff?.executed) {
+            addCombatLog(`${enemy.display_name} usa ${buff.ability}.`);
+            return;
+        }
+    }
+    const target=players.slice().sort((a,b)=>getCombatRectDistance(enemy,a)-getCombatRectDistance(enemy,b))[0];
+    if(!target) return;
+    const selected=await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:target.id});
+    const chosen=selected?.target_id ? combatEntities.get(selected.target_id)||target : target;
+    enemy=await peAIMove(enemy,peAIPath(enemy,chosen,1,Math.max(0,Number(enemy.movement_remaining)||0)));
+    if(getCombatRectDistance(enemy,chosen)<=1 && !enemy.action_used)
+        await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
+}
+
 async function peAINewEnemyTurn(enemy) {
     const type=String(enemy.monster_type||'').toLowerCase();
+    if(type==='tiki_legno'||type==='tiki_pietra') { await peAITikiTurn(enemy); return; }
     if(type==='velociraptor' || type==='trex') {
         await peAIDinosaurTurn(enemy);
         return;
