@@ -15,6 +15,7 @@ console.log(supabaseClient);
         dungeon: "Dungeon",
         dungeon_Ia: "I - Giungla Bassa",
         dungeon_Ib: "I - Villaggio Scagliagrigia",
+        dungeon_Ic: "I - Giungla Alta",
         orologio: "Stanza dell’Orologio"
     };
     const players = new Map();
@@ -33,6 +34,7 @@ console.log(supabaseClient);
     function getPageArea() {
         const path = window.location.pathname;
         if (/\/dungeon\/piano-I\/piano-Ib\.html$/i.test(path)) return "dungeon_Ib";
+        if (/\/dungeon\/piano-I\/piano-Ic\.html$/i.test(path)) return "dungeon_Ic";
         if (/\/dungeon\/piano-I\/piano-Ia\.html$/i.test(path)) return "dungeon_Ia";
         if (path.includes("/dungeon/piano-I/")) return null;
         if (path.includes("/dungeon/piano-1/")) return "dungeon";
@@ -43,6 +45,7 @@ console.log(supabaseClient);
     function normalizeArea(value) {
         if (["base", "vendor", "runografo", "locanda", "addestratore", "questgiver"].includes(value)) return "base";
         if (value === "dungeon_Ib") return "dungeon_Ib";
+        if (value === "dungeon_Ic") return "dungeon_Ic";
         if (value === "dungeon_Ia") return "dungeon_Ia";
         if (value === "dungeon") return "dungeon";
         if (value === "orologio") return "orologio";
@@ -61,6 +64,7 @@ console.log(supabaseClient);
                 if (!error && data?.encounter_id) {
                     const encounter = String(data.encounter_id).toLowerCase();
                     if (encounter.startsWith("pib_") || encounter.startsWith("p1b_") || encounter.startsWith("ib_")) return "dungeon_Ib";
+                    if (encounter.startsWith("pic_") || encounter.startsWith("p1c_") || encounter.startsWith("ic_")) return "dungeon_Ic";
                     if (encounter.startsWith("p1_")) return "dungeon_Ia";
                     if (encounter.startsWith("base_")) return "base";
                     return location || "dungeon";
