@@ -462,16 +462,16 @@ const db = supabaseClient;
 // ============================================================
 
 
-const MAP_COLUMNS = 30;
-const MAP_ROWS = 30;
+const MAP_COLUMNS = 63;
+const MAP_ROWS = 81;
 
 
 const GRID_OFFSET_X = 0;
 const GRID_OFFSET_Y = 0;
 
 
-const INITIAL_PLAYER_X = 15;
-const INITIAL_PLAYER_Y = 15;
+const INITIAL_PLAYER_X = 31;
+const INITIAL_PLAYER_Y = 78;
 
 
 
@@ -14995,11 +14995,11 @@ window.addEventListener(
 
 
 // 
-// Zoom provvisorio I-C: dimensioni 30x30, pannello Master invariato.
+// Zoom I-C: mappa 63x81; le celle della camera restano quadrate.
 let icVisibleCells=13;
 function icSetZoom(v){
  const map=document.getElementById('dungeon-map');if(!map)return;
- icVisibleCells=Math.max(5,Math.min(MAP_COLUMNS,Number(v)||13));
+ icVisibleCells=Math.max(5,Math.min(Math.max(MAP_COLUMNS, MAP_ROWS),Number(v)||13));
  map.style.setProperty('width',`${MAP_COLUMNS*100/icVisibleCells}%`,'important');
  map.style.setProperty('height',`${MAP_ROWS*100/icVisibleCells}%`,'important');
  const b=document.getElementById('pia-zoom-reset');if(b)b.textContent=`${icVisibleCells} × ${icVisibleCells}`;
@@ -15034,7 +15034,7 @@ async function setupPiaZoomAndExploration(){
  document.getElementById('pia-zoom-out')?.addEventListener('click',()=>icSetZoom(icVisibleCells+2));
  document.getElementById('pia-zoom-in')?.addEventListener('click',()=>icSetZoom(icVisibleCells-2));
  document.getElementById('pia-zoom-reset')?.addEventListener('click',()=>icSetZoom(13));
- document.getElementById('pia-zoom-full')?.addEventListener('click',()=>icSetZoom(MAP_COLUMNS));
+ document.getElementById('pia-zoom-full')?.addEventListener('click',()=>icSetZoom(Math.max(MAP_COLUMNS,MAP_ROWS)));
  icSetZoom(13);
  const map = document.getElementById('dungeon-map');
  if (map) {

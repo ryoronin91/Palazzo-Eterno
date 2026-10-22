@@ -3929,3 +3929,7 @@ body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
 
 /* Giungla Alta: mappa provvisoria. La grafica è identica al Piano I-A. */
 .dungeon-map-image { image-rendering:auto; }
+
+/* I-C: singola immagine esattamente 63x81 celle, senza mosaico */
+#dungeon-map-image {display:block !important;z-index:1;object-fit:fill}
+.dungeon-map {aspect-ratio:auto !important;}
