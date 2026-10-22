@@ -4805,7 +4805,7 @@ async function performMovement(dx,dy) {
         const {data,error}=await db.rpc('piano_ic_move',{p_x:nx,p_y:ny});
         if(error) throw error;
         playerX=Number(data.x); playerY=Number(data.y);
-        showToken(playerX,playerY); updateDungeonCamera();
+        showToken(playerX,playerY); updateDungeonCamera(); icRenderFog();
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         setMessage(`Giungla Alta - X ${playerX} Y ${playerY}`);
         return true;
@@ -15005,12 +15005,63 @@ function icSetZoom(v){
  const b=document.getElementById('pia-zoom-reset');if(b)b.textContent=`${icVisibleCells} × ${icVisibleCells}`;
  requestAnimationFrame(()=>{repositionAllTokens();updateDungeonCamera(true);});
 }
+// Nebbia provvisoria I-C: rivela le celle attorno al personaggio.
+// Il Master puo` disabilitarla senza cambiare le coordinate di gioco.
+let icFogOverlay = null;
+let icMasterExploration = false;
+let icFogVisited = new Set();
+function icRenderFog() {
+    if (!icFogOverlay) return;
+    const context = icFogOverlay.getContext('2d');
+    if (!context) return;
+    context.clearRect(0, 0, MAP_COLUMNS, MAP_ROWS);
+    if (icMasterExploration) return;
+    if (Number.isInteger(playerX) && Number.isInteger(playerY)) {
+        for (let y = Math.max(0, playerY - CAMERA_RADIUS); y <= Math.min(MAP_ROWS - 1, playerY + CAMERA_RADIUS); y++) {
+            for (let x = Math.max(0, playerX - CAMERA_RADIUS); x <= Math.min(MAP_COLUMNS - 1, playerX + CAMERA_RADIUS); x++) {
+                if (Math.max(Math.abs(x-playerX), Math.abs(y-playerY)) <= CAMERA_RADIUS) icFogVisited.add(x+','+y);
+            }
+        }
+    }
+    for (let y=0; y<MAP_ROWS; y++) for (let x=0; x<MAP_COLUMNS; x++) {
+        context.fillStyle = icFogVisited.has(x+','+y) ? 'rgba(3,13,6,0.54)' : 'rgba(2,9,4,0.96)';
+        if (Number.isInteger(playerX) && Number.isInteger(playerY) &&
+            Math.max(Math.abs(x-playerX), Math.abs(y-playerY)) <= CAMERA_RADIUS) continue;
+        context.fillRect(x,y,1,1);
+    }
+}
 async function setupPiaZoomAndExploration(){
  document.getElementById('pia-zoom-out')?.addEventListener('click',()=>icSetZoom(icVisibleCells+2));
  document.getElementById('pia-zoom-in')?.addEventListener('click',()=>icSetZoom(icVisibleCells-2));
  document.getElementById('pia-zoom-reset')?.addEventListener('click',()=>icSetZoom(13));
  document.getElementById('pia-zoom-full')?.addEventListener('click',()=>icSetZoom(MAP_COLUMNS));
  icSetZoom(13);
+ const map = document.getElementById('dungeon-map');
+ if (map) {
+   icFogOverlay = document.createElement('canvas');
+   icFogOverlay.id = 'pia-fog-overlay';
+   icFogOverlay.width = MAP_COLUMNS;
+   icFogOverlay.height = MAP_ROWS;
+   icFogOverlay.setAttribute('aria-hidden', 'true');
+   map.appendChild(icFogOverlay);
+ }
+ const label = document.getElementById('pia-master-exploration');
+ const checkbox = document.getElementById('pia-master-no-fog');
+ try {
+   if (currentUser?.id && label && checkbox) {
+     const {data,error} = await db.from('user_roles').select('role').eq('user_id',currentUser.id).maybeSingle();
+     if (error) throw error;
+     if (data?.role === 'master') {
+       label.hidden = false;
+       checkbox.checked = false;
+       checkbox.addEventListener('change', () => {
+         icMasterExploration = checkbox.checked;
+         icRenderFog();
+       });
+     }
+   }
+ } catch(error) { console.warn('Verifica ruolo Master I-C non riuscita:',error); }
+ icRenderFog();
 }
 
 
