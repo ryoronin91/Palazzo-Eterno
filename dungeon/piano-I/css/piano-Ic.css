@@ -3933,3 +3933,9 @@ body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
 /* I-C: singola immagine esattamente 63x81 celle, senza mosaico */
 #dungeon-map-image {display:block !important;z-index:1;object-fit:fill}
 .dungeon-map {aspect-ratio:auto !important;}
+
+/* Piano I-C: mosaico di 9 PNG; ogni tassello occupa 21x27 celle sulla griglia 63x81. */
+#dungeon-map-image { display:none !important; }
+.dungeon-map .pic-map-mosaic { position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;z-index:0;pointer-events:none;overflow:hidden; }
+.dungeon-map .pic-map-mosaic img {width:100%;height:100%;object-fit:fill;display:block;min-width:0;min-height:0;max-width:none;max-height:none;padding:0;border:0;margin:0;}
+.dungeon-map > :not(.pic-map-mosaic):not(#dungeon-map-image) {z-index:1;}
