@@ -4946,32 +4946,62 @@ function icCombatNotice(message) {
     if(typeof setMessage==='function')setMessage(message);
 }
 function icCombatDialog(slot){
+    // Stesso componente grafico utilizzato dagli incontri del Piano I-A.
     return new Promise(resolve=>{
-        const overlay=document.createElement('div');overlay.className='combat-event-overlay';
-        const modal=document.createElement('div');modal.className='combat-event-modal';
-        modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
-        const h=document.createElement('h2');h.textContent='INCONTRO NELLA GIUNGLA ALTA';
-        const p=document.createElement('p');
-        const family=IC_COMBAT_FAMILY[slot.family]?.title||'Creature ostili';
-        p.textContent=`${family} · ${slot.difficulty} · Stanza ${slot.room_number}. Vuoi affrontarli?`;
-        const actions=document.createElement('div');actions.className='combat-event-buttons';
-        const yes=document.createElement('button');yes.type='button';
-        yes.className='combat-event-button combat-event-enter';yes.textContent='COMBATTI';
-        const no=document.createElement('button');no.type='button';
-        no.className='combat-event-button combat-event-cancel';no.textContent='ANNULLA';
-        const key=e=>{
-            if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();done(false);}
-            else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-                e.preventDefault();e.stopImmediatePropagation();
+        const overlay=document.createElement('div');
+        overlay.className='pia-encounter-overlay';
+        overlay.setAttribute('role','dialog');
+        overlay.setAttribute('aria-modal','true');
+        overlay.setAttribute('aria-label','INCONTRO NELLA GIUNGLA');
+        const card=document.createElement('section');card.className='pia-encounter-card';
+        const title=document.createElement('h2');title.textContent='INCONTRO NELLA GIUNGLA';
+        const description=document.createElement('p');
+        // Stesso tono narrativo dei popup di I-A, con testo dedicato a ciascuna famiglia.
+        const stories={
+            dinosauri: {
+                facile: 'Un fragore di passi scuote il terreno: due Anchilosauri si agitano fra gli alberi, sbarrandoti il sentiero. Vuoi affrontarli?',
+                medio: 'Dalle felci emergono agili Velociraptor. Si muovono in branco e ti hanno già circondato. Vuoi affrontarli?',
+                difficile: 'Un ruggito assordante squarcia la giungla. Davanti a te si ergono giganteschi T-Rex, pronti a divorare chiunque osi avvicinarsi. Vuoi affrontarli?'
+            },
+            lucertoloidi: 'Tra le fronde intravedi una pattuglia di cacciatori lucertoloidi. Guerrieri armati e uno sciamano ti osservano minacciosi: hanno deciso che sei la loro preda. Vuoi affrontarli?',
+            tiki: {
+                facile: 'Dalla vegetazione emergono piccoli idoli di legno animati. Le loro maschere ardono di una luce inquietante e avanzano verso di te. Vuoi affrontarli?',
+                medio: 'La terra trema sotto i passi di antichi Tiki di Pietra. Il fuoco risplende nelle loro crepe mentre ti bloccano il cammino. Vuoi affrontarli?',
+                difficile: 'Un coro di crepitii si leva dalla radura. Tiki di Legno e di Pietra prendono vita insieme, avvolti dalle braci di un antico rituale. Vuoi affrontarli?'
             }
         };
-        function done(value){document.removeEventListener('keydown',key,true);overlay.remove();resolve(value);}
-        yes.addEventListener('click',()=>done(true));no.addEventListener('click',()=>done(false));
-        overlay.addEventListener('click',e=>{if(e.target===overlay)done(false)});
-        actions.append(yes,no);modal.append(h,p,actions);overlay.append(modal);
-        document.body.append(overlay);document.addEventListener('keydown',key,true);no.focus();
+        const familyStory=stories[slot.family];
+        description.textContent=(typeof familyStory==='string' ? familyStory : familyStory?.[slot.difficulty])
+            || 'Qualcosa si muove nell’ombra della Giungla Alta. Creature ostili ti sbarrano la strada. Vuoi combattere?';
+        const controls=document.createElement('div');controls.className='pia-encounter-actions';
+        const cancel=document.createElement('button');cancel.type='button';cancel.textContent='VAI VIA';
+        const accept=document.createElement('button');accept.type='button';accept.textContent='COMBATTI';
+        controls.append(cancel,accept);card.append(title,description,controls);overlay.append(card);
+        document.body.append(overlay);
+        const oldFocus=document.activeElement;
+        const done=result=>{
+            overlay.removeEventListener('click',backdrop);
+            document.removeEventListener('keydown',key,true);
+            overlay.remove();
+            if(oldFocus?.isConnected)oldFocus.focus({preventScroll:true});
+            resolve(result);
+        };
+        const backdrop=e=>{if(e.target===overlay)done(false)};
+        const key=e=>{
+            if(e.key==='Escape'){e.preventDefault();e.stopPropagation();done(false)}
+            else if(e.key==='Tab'){e.preventDefault();(document.activeElement===cancel?accept:cancel).focus()}
+            else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+                e.preventDefault();e.stopPropagation();
+            }
+        };
+        cancel.addEventListener('click',()=>done(false));
+        accept.addEventListener('click',()=>done(true));
+        overlay.addEventListener('click',backdrop);
+        document.addEventListener('keydown',key,true);
+        cancel.focus({preventScroll:true});
     });
 }
+
 function icCombatRender(){
     const map=document.getElementById('dungeon-map');if(!map)return;
     const ids=new Set();
@@ -4989,7 +5019,12 @@ function icCombatRender(){
             map.append(el);icCombat.tokens.set(id,el);
         }
         const family=IC_COMBAT_FAMILY[slot.family]||{icon:'⚔️',title:'Incontro'};
-        el.textContent=family.icon;el.title=`${family.title} · ${slot.difficulty} · stanza ${slot.room_number}`;
+        el.textContent='';
+        el.style.backgroundImage="url('immagini/combat-Ia.png')";
+        el.style.backgroundPosition='center';
+        el.style.backgroundRepeat='no-repeat';
+        el.style.backgroundSize='contain';
+        el.title=`${family.title} · ${slot.difficulty} · stanza ${slot.room_number}`;
         el.setAttribute('aria-label',el.title);
         el.style.left=((x+.5)/MAP_COLUMNS*100)+'%';
         el.style.top=((y+.5)/MAP_ROWS*100)+'%';
