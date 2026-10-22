@@ -909,6 +909,7 @@ document.addEventListener(
 
             setupMovement();
             icFruitStart();
+            icCombatStart();
 
 
 
@@ -4932,7 +4933,118 @@ function icFruitStart() {
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icFruitRefresh();});
 }
 
-// Piano I-C: solo movimento e servizi infrastrutturali. Gli eventi verranno aggiunti con la mappa definitiva.
+
+// PIANO I-C — 18 INCONTRI ROTANTI IN 45 STANZE.
+// Dati, stanze e sessioni sono verificati lato Supabase.
+const icCombat = {slots:new Map(),tokens:new Map(),ready:false,busy:false,refreshing:false,timer:null};
+const IC_COMBAT_FAMILY = {
+    dinosauri: {icon:'🦖',title:'Dinosauri'},
+    lucertoloidi: {icon:'🦎',title:'Cacciatori Lucertoloidi'},
+    tiki: {icon:'🔥',title:'Tiki del Fuoco'}
+};
+function icCombatNotice(message) {
+    if(typeof setMessage==='function')setMessage(message);
+}
+function icCombatDialog(slot){
+    return new Promise(resolve=>{
+        const overlay=document.createElement('div');overlay.className='combat-event-overlay';
+        const modal=document.createElement('div');modal.className='combat-event-modal';
+        modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+        const h=document.createElement('h2');h.textContent='INCONTRO NELLA GIUNGLA ALTA';
+        const p=document.createElement('p');
+        const family=IC_COMBAT_FAMILY[slot.family]?.title||'Creature ostili';
+        p.textContent=`${family} · ${slot.difficulty} · Stanza ${slot.room_number}. Vuoi affrontarli?`;
+        const actions=document.createElement('div');actions.className='combat-event-buttons';
+        const yes=document.createElement('button');yes.type='button';
+        yes.className='combat-event-button combat-event-enter';yes.textContent='COMBATTI';
+        const no=document.createElement('button');no.type='button';
+        no.className='combat-event-button combat-event-cancel';no.textContent='ANNULLA';
+        const key=e=>{
+            if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();done(false);}
+            else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+                e.preventDefault();e.stopImmediatePropagation();
+            }
+        };
+        function done(value){document.removeEventListener('keydown',key,true);overlay.remove();resolve(value);}
+        yes.addEventListener('click',()=>done(true));no.addEventListener('click',()=>done(false));
+        overlay.addEventListener('click',e=>{if(e.target===overlay)done(false)});
+        actions.append(yes,no);modal.append(h,p,actions);overlay.append(modal);
+        document.body.append(overlay);document.addEventListener('keydown',key,true);no.focus();
+    });
+}
+function icCombatRender(){
+    const map=document.getElementById('dungeon-map');if(!map)return;
+    const ids=new Set();
+    for(const [id,slot] of icCombat.slots){
+        if(!['active','engaged'].includes(slot.status))continue;
+        const x=Number(slot.x),y=Number(slot.y);
+        if(!Number.isInteger(x)||!Number.isInteger(y))continue;
+        ids.add(id);
+        let el=icCombat.tokens.get(id);
+        if(!el){
+            el=document.createElement('button');el.type='button';
+            el.className='pia-encounter-token ic-encounter-token';
+            el.style.cssText='position:absolute;z-index:8;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+            el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();void icCombatEnter(id)});
+            map.append(el);icCombat.tokens.set(id,el);
+        }
+        const family=IC_COMBAT_FAMILY[slot.family]||{icon:'⚔️',title:'Incontro'};
+        el.textContent=family.icon;el.title=`${family.title} · ${slot.difficulty} · stanza ${slot.room_number}`;
+        el.setAttribute('aria-label',el.title);
+        el.style.left=((x+.5)/MAP_COLUMNS*100)+'%';
+        el.style.top=((y+.5)/MAP_ROWS*100)+'%';
+        el.style.width=(100/MAP_COLUMNS*1.3)+'%';
+        el.style.height=(100/MAP_ROWS*1.3)+'%';
+        el.style.fontSize='clamp(13px,1.3vw,25px)';
+        el.style.opacity=slot.status==='engaged'?'0.65':'1';
+    }
+    for(const [id,el] of icCombat.tokens)if(!ids.has(id)){el.remove();icCombat.tokens.delete(id);}
+    const count=document.getElementById('ic-encounter-count');
+    if(count)count.textContent=`Incontri: ${ids.size}/18`;
+}
+async function icCombatRefresh(){
+    if(!icCombat.ready||icCombat.refreshing||document.hidden||!db||!character)return;
+    icCombat.refreshing=true;
+    try{
+        const {data,error}=await db.rpc('piano_ic_get_combats');
+        if(error)throw error;
+        if(Array.isArray(data))icCombat.slots=new Map(data.map(s=>[String(s.encounter_id),s]));
+        icCombatRender();
+    }catch(e){console.warn('[Piano Ic] Incontri:',e);}
+    finally{icCombat.refreshing=false;}
+}
+async function icCombatEnter(id){
+    const slot=icCombat.slots.get(String(id));
+    if(!slot||icCombat.busy)return;
+    if(Math.abs(playerX-Number(slot.x))+Math.abs(playerY-Number(slot.y))>1){
+        icCombatNotice('Avvicinati al combattimento.');return;
+    }
+    if(!await icCombatDialog(slot))return;
+    icCombat.busy=true;
+    try{
+        const {data,error}=await db.rpc('piano_ic_enter_room_combat',{p_encounter_id:id});
+        if(error)throw error;
+        const combatId=typeof data==='string'?data:data?.combat_id;
+        if(!combatId)throw new Error('Sessione combattimento non disponibile');
+        window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(combatId)}`);
+    }catch(e){console.error('[Piano Ic] Entrata:',e);icCombatNotice(e.message||'Impossibile entrare.');await icCombatRefresh();}
+    finally{icCombat.busy=false;}
+}
+function icCombatTryStep(x,y){
+    for(const [id,slot] of icCombat.slots)
+        if(['active','engaged'].includes(slot.status)&&Number(slot.x)===x&&Number(slot.y)===y){
+            void icCombatEnter(id);return true;
+        }
+    return false;
+}
+function icCombatStart(){
+    if(icCombat.ready)return;
+    icCombat.ready=true;void icCombatRefresh();
+    icCombat.timer=window.setInterval(icCombatRefresh,15000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icCombatRefresh();});
+}
+
+// Piano I-C: movimento ed eventi sincronizzati.
 async function performMovement(dx,dy) {
     if (!character || !dungeonData || eventLocked) return false;
     const nx=playerX+dx, ny=playerY+dy;
@@ -4940,6 +5052,7 @@ async function performMovement(dx,dy) {
         showIcReturnToIbPopup();
         return false;
     }
+    if(icCombatTryStep(nx,ny))return false;
     if(icFruitTryStep(nx,ny))return false;
     if(nx<0 || ny<0 || nx>=MAP_COLUMNS || ny>=MAP_ROWS || !canMoveTo(nx,ny)) {
         setMessage('Il passaggio è bloccato.'); return false;
