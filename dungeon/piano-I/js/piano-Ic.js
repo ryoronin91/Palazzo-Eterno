@@ -4794,10 +4794,75 @@ function showScintillaStatuePopup() {
 }
 
 
+// Confine meridionale I-C: ingresso di ritorno al Villaggio Scagliagrigia.
+function showIcReturnToIbPopup() {
+    if (document.getElementById('ic-ib-return-overlay')) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const overlay = document.createElement('div');
+    overlay.id = 'ic-ib-return-overlay';
+    overlay.className = 'combat-event-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    modal.setAttribute('aria-labelledby','ic-ib-return-title');
+    const title = document.createElement('h2');
+    title.id = 'ic-ib-return-title';
+    title.textContent = 'RITORNO A SCAGLIAGRIGIA';
+    const description = document.createElement('p');
+    description.textContent = 'Il sentiero si allontana dalla Giungla Alta e riconduce al Villaggio Scagliagrigia.';
+    const question = document.createElement('p');
+    question.textContent = 'Vuoi tornare al Piano I-B?';
+    const actions = document.createElement('div');
+    actions.className = 'combat-event-buttons';
+    const enter = document.createElement('button');
+    enter.type = 'button';
+    enter.className = 'combat-event-button combat-event-enter';
+    enter.textContent = 'TORNA AL VILLAGGIO';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'combat-event-button combat-event-cancel';
+    cancel.textContent = 'ANNULLA';
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+        eventLocked = false;
+    };
+    const onKey = event => { if (event.key === 'Escape' && !enter.disabled) close(); };
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay && !enter.disabled) close(); });
+    enter.addEventListener('click', async () => {
+        enter.disabled = true;
+        cancel.disabled = true;
+        try {
+            const { data, error } = await db.rpc('piano_ic_return_to_ib');
+            if (error) throw error;
+            if (!data?.returned) throw new Error('Ritorno a Scagliagrigia non riuscito.');
+            window.location.assign('piano-Ib.html');
+        } catch (error) {
+            console.error('Ritorno Piano Ib:', error);
+            setMessage(error?.message || 'Il passaggio non è disponibile.');
+            enter.disabled = false;
+            cancel.disabled = false;
+        }
+    });
+    document.addEventListener('keydown', onKey);
+    actions.append(enter,cancel);
+    modal.append(title,description,question,actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancel.focus();
+}
+
 // Piano I-C: solo movimento e servizi infrastrutturali. Gli eventi verranno aggiunti con la mappa definitiva.
 async function performMovement(dx,dy) {
     if (!character || !dungeonData || eventLocked) return false;
     const nx=playerX+dx, ny=playerY+dy;
+    if (nx === 25 && ny === 80) {
+        showIcReturnToIbPopup();
+        return false;
+    }
     if(nx<0 || ny<0 || nx>=MAP_COLUMNS || ny>=MAP_ROWS || !canMoveTo(nx,ny)) {
         setMessage('Il passaggio è bloccato.'); return false;
     }
