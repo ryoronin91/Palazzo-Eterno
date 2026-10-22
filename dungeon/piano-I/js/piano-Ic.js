@@ -8175,7 +8175,7 @@ function updateDungeonConsumables() {
 
 
 
-    // Il frutto carnoso è un evento esclusivo del Piano I-A.
+    updateFruitConsumable();
     updateSpatialCoinPia();
     updateDungeonActionAvailability();
 
@@ -15171,3 +15171,77 @@ function updateSpatialCoinPia() {
     button.style.display = count ? '' : 'none';
     button.disabled = spatialCoinPiaBusy || !count || !character || !!character.active_combat_id;
 }
+
+
+/* FRUTTO CARNOSO — CONSUMABILE DINAMICO IN DUNGEON */
+let fruitConsumableBusy = false;
+function fruitInventoryRows() {
+    return (Array.isArray(characterInventory) ? characterInventory : [])
+        .filter(row => row?.item?.id === 'frutto_carnoso'
+            && !row.equipped_slot && Number(row.quantity) > 0);
+}
+function ensureFruitConsumableButton() {
+    let button = document.getElementById('dungeon-fruit-button');
+    if (button) return button;
+    const panel = document.querySelector('.dungeon-actions-panel');
+    if (!panel) return null;
+    button = document.createElement('button');
+    button.id = 'dungeon-fruit-button';
+    button.type = 'button';
+    button.className = 'dungeon-action-card';
+    button.hidden = true;
+    button.style.display = 'none';
+    button.title = 'Recupera fino a 10 PF e 10 PM';
+    button.innerHTML =
+        '<span class="action-card-icon">✿</span>' +
+        '<span class="action-card-content"><strong>FRUTTO CARNOSO</strong>' +
+        '<small id="dungeon-fruit-count">x0</small></span>';
+    const pagination = panel.querySelector('.dungeon-action-pagination');
+    panel.insertBefore(button, pagination || null);
+    button.addEventListener('click', useFruitConsumable);
+    return button;
+}
+function updateFruitConsumable() {
+    const button = ensureFruitConsumableButton();
+    if (!button) return;
+    const rows = fruitInventoryRows();
+    const count = rows.reduce((n, row) => n + Number(row.quantity || 0), 0);
+    button.hidden = count === 0;
+    button.style.display = count ? '' : 'none';
+    const countElement = document.getElementById('dungeon-fruit-count');
+    if (countElement) countElement.textContent = 'x' + count;
+    if (!count || fruitConsumableBusy || !character) {
+        button.disabled = true;
+        return;
+    }
+    const stats = getDungeonCalculatedStats();
+    const pf = character.current_hp == null ? stats.maxHealth : Number(character.current_hp);
+    const pm = character.current_pm == null ? stats.maxMana : Number(character.current_pm);
+    button.disabled = pf >= stats.maxHealth && pm >= stats.maxMana;
+}
+async function useFruitConsumable() {
+    const button = ensureFruitConsumableButton();
+    if (fruitConsumableBusy || !button || button.disabled || !character || !db) return;
+    const row = fruitInventoryRows()[0];
+    if (!row) { updateFruitConsumable(); return; }
+    fruitConsumableBusy = true;
+    button.disabled = true;
+    try {
+        const { data, error } = await db.rpc('use_piano_ia_fruit', { p_inventory_id: row.id });
+        if (error) throw error;
+        character.current_hp = Number(data.current_pf);
+        character.current_pm = Number(data.current_pm);
+        await loadCharacterEquipment();
+        updateCharacterPanel();
+        updateMyPresence();
+        setMessage('Mangi un Frutto Carnoso. PF ' + data.current_pf + '/' +
+            data.max_pf + ', PM ' + data.current_pm + '/' + data.max_pm + '.');
+    } catch (error) {
+        console.error('Errore utilizzo Frutto Carnoso:', error);
+        setMessage(error?.message || 'Impossibile utilizzare il Frutto Carnoso.', true);
+    } finally {
+        fruitConsumableBusy = false;
+        updateFruitConsumable();
+    }
+}
+
