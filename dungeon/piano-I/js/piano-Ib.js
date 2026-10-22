@@ -4884,9 +4884,91 @@ function showIbMercanteEntrancePopup() {
     cancel.focus();
 }
 
+// PASSAGGIO VERSO PIANO I-C — GIUNGLA ALTA (X10 Y0)
+// Stessa grafica dei popup dell'Anziano e del Mercante.
+function showIbGiunglaAltaEntrancePopup() {
+    if (document.getElementById('ib-ic-entry-overlay')) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ib-ic-entry-overlay';
+    overlay.className = 'combat-event-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'ib-ic-entry-title');
+
+    const title = document.createElement('h2');
+    title.id = 'ib-ic-entry-title';
+    title.textContent = 'SENTIERO DELLA GIUNGLA ALTA';
+    const description = document.createElement('p');
+    description.textContent = 'Oltre Scagliagrigia, la vegetazione si infittisce. Tra alberi giganteschi e liane si apre un sentiero verso la Giungla Alta.';
+    const question = document.createElement('p');
+    question.textContent = 'Vuoi entrare nel Piano I-C?';
+
+    const actions = document.createElement('div');
+    actions.className = 'combat-event-buttons';
+    const enter = document.createElement('button');
+    enter.type = 'button';
+    enter.className = 'combat-event-button combat-event-enter';
+    enter.textContent = 'ENTRA';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'combat-event-button combat-event-cancel';
+    cancel.textContent = 'ANNULLA';
+    let transferring = false;
+
+    function close() {
+        if (transferring) return;
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+        eventLocked = false;
+    }
+    function onKey(event) {
+        if (event.key === 'Escape') close();
+    }
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay) close();
+    });
+    enter.addEventListener('click', async () => {
+        if (transferring) return;
+        transferring = true;
+        enter.disabled = true;
+        cancel.disabled = true;
+        try {
+            // Il server deve trasferire il personaggio prima di aprire la nuova pagina.
+            const { data, error } = await db.rpc('piano_ib_enter_ic');
+            if (error) throw error;
+            if (!data?.entered) throw new Error('Il passaggio alla Giungla Alta non è ancora disponibile.');
+            window.location.assign('piano-Ic.html');
+        } catch (error) {
+            console.error('Ingresso Piano Ic:', error);
+            setMessage(error?.message || 'Impossibile raggiungere la Giungla Alta.');
+            transferring = false;
+            enter.disabled = false;
+            cancel.disabled = false;
+        }
+    });
+
+    document.addEventListener('keydown', onKey);
+    actions.append(enter, cancel);
+    modal.append(title, description, question, actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancel.focus();
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    if (nx === 10 && ny === 0) {
+        showIbGiunglaAltaEntrancePopup();
+        return false;
+    }
     if (nx === 7 && ny === 4) {
         showIbCapoEntrancePopup();
         return false;

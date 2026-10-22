@@ -1,0 +1,3943 @@
+/* ============================================================
+   PALAZZO ETERNO
+   DUNGEON.CSS
+   ============================================================ */
+
+
+/* ============================================================
+   PAGINA
+   ============================================================ */
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    min-height: 100%;
+
+    background: #e6f1e6;
+}
+
+
+body {
+    min-height: 100vh;
+
+    overflow-x: auto;
+}
+
+
+.dungeon-page {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 14px 18px 18px;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.dungeon-header {
+    display: grid;
+
+    grid-template-columns: 140px auto 1fr;
+
+    align-items: center;
+
+    gap: 14px;
+
+    width: 100%;
+
+    max-width: 1500px;
+
+    margin: 0 auto 10px;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   ESCI
+   ============================================================ */
+
+.dungeon-exit-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 34px;
+
+    padding: 4px 16px;
+
+    box-sizing: border-box;
+
+    border: 3px solid #101611;
+
+    background: #d3e5d3;
+
+    color: #101611;
+
+    font-weight: 800;
+    font-size: 14px;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+
+.dungeon-exit-button:hover {
+    background: #b5d9b4;
+
+    transform: translateY(-1px);
+}
+
+
+/* ============================================================
+   TITOLO
+   ============================================================ */
+
+.dungeon-title-block {
+    display: flex;
+
+    align-items: baseline;
+
+    gap: 9px;
+
+    white-space: nowrap;
+}
+
+
+.dungeon-title-block h1 {
+    margin: 0;
+
+    font-size: 23px;
+    line-height: 1;
+
+    color: #101611;
+}
+
+
+.dungeon-floor-title {
+    font-size: 18px;
+    font-weight: 800;
+
+    color: #101611;
+}
+
+
+/* ============================================================
+   MESSAGGIO DUNGEON
+   ============================================================ */
+
+.dungeon-message {
+    min-width: 0;
+
+    padding-left: 12px;
+
+    overflow: hidden;
+
+    color: #4a6950;
+
+    font-size: 13px;
+    font-style: italic;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.dungeon-message.error {
+    color: #8e2424;
+
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   LAYOUT PRINCIPALE
+
+   CHAT | MAPPA | PERSONAGGIO/AZIONI
+   ============================================================ */
+
+.dungeon-layout {
+    display: grid;
+
+    grid-template-columns:
+        350px
+        minmax(500px, 720px)
+        minmax(430px, 1fr);
+
+    align-items: stretch;
+
+    gap: 12px;
+
+    width: 100%;
+
+    max-width: 1500px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   PANNELLI BASE
+   ============================================================ */
+
+.dungeon-panel {
+    box-sizing: border-box;
+
+    border: 3px solid #101611;
+
+    background: #eaf3ea;
+}
+
+
+.dungeon-panel-title {
+    padding: 9px 8px;
+
+    border-bottom: 2px solid #101611;
+
+    text-align: center;
+
+    font-size: 18px;
+    font-weight: 900;
+
+    color: #101611;
+}
+
+
+/* ============================================================
+   CHAT
+   ============================================================ */
+
+.dungeon-chat-column {
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(165px, 1fr)
+        minmax(165px, 1fr);
+
+    gap: 10px;
+
+    align-items: stretch;
+}
+
+
+/* ============================================================
+   CADUTI DEL PALAZZO
+   ============================================================ */
+
+.dungeon-leaderboard-panel {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+}
+
+
+.dungeon-leaderboard-list {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding: 6px;
+
+    box-sizing: border-box;
+}
+
+
+.dungeon-leaderboard-row {
+    display: grid;
+
+    grid-template-columns:
+        28px
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 5px;
+
+    min-height: 27px;
+
+    padding: 4px 5px;
+
+    border-bottom: 1px solid #bfd1bf;
+
+    color: #d0e4cf;
+}
+
+
+.dungeon-leaderboard-row:last-child {
+    border-bottom: 0;
+}
+
+
+.dungeon-leaderboard-position {
+    font-size: 10px;
+    font-weight: 900;
+
+    color: #96c195;
+
+    text-align: center;
+}
+
+
+.dungeon-leaderboard-name {
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    color: #d9e9d9;
+
+    text-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.85);
+}
+
+
+.dungeon-leaderboard-score {
+    font-size: 10px;
+    font-weight: 900;
+
+    color: #73ce71;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+.dungeon-leaderboard-row:nth-child(1)
+.dungeon-leaderboard-position {
+    color: #2a7b39;
+}
+
+
+.dungeon-leaderboard-row:nth-child(2)
+.dungeon-leaderboard-position {
+    color: #647a69;
+}
+
+
+.dungeon-leaderboard-row:nth-child(3)
+.dungeon-leaderboard-position {
+    color: #368a46;
+}
+
+
+.dungeon-leaderboard-empty {
+    padding: 16px 8px;
+
+    color: #6a9673;
+
+    text-align: center;
+
+    font-size: 11px;
+    font-style: italic;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar-thumb {
+    background: #709978;
+}
+
+
+.dungeon-leaderboard-list::-webkit-scrollbar-track {
+    background: #cfe3cf;
+}
+
+
+.dungeon-chat-panel {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    min-height: 420px;
+}
+
+
+.floor-chat-messages {
+    flex: 1;
+
+    min-height: 0;
+
+    padding: 10px;
+
+    box-sizing: border-box;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+.chat-placeholder {
+    padding-top: 10px;
+
+    color: #6a9673;
+
+    text-align: center;
+
+    font-size: 12px;
+    font-style: italic;
+}
+
+
+/* ============================================================
+   MESSAGGI CHAT
+   ============================================================ */
+
+.floor-chat-message {
+    margin-bottom: 8px;
+
+    padding: 6px 7px;
+
+    border-bottom: 1px solid #b0ccaf;
+
+    color: #172019;
+
+    font-size: 12px;
+
+    line-height: 1.35;
+
+    overflow-wrap: anywhere;
+}
+
+
+.floor-chat-message.mine {
+    background: rgba(75, 144, 88, 0.10);
+}
+
+
+.floor-chat-name {
+    color: #295431;
+
+    font-weight: 900;
+}
+
+
+.floor-chat-text {
+    color: #172019;
+}
+
+
+/* ============================================================
+   CONTROLLI CHAT
+   ============================================================ */
+
+.floor-chat-controls {
+    display: grid;
+
+    grid-template-columns: 1fr 36px;
+
+    gap: 5px;
+
+    padding: 7px;
+
+    border-top: 2px solid #101611;
+
+    box-sizing: border-box;
+}
+
+
+.floor-chat-input {
+    width: 100%;
+    min-width: 0;
+
+    height: 34px;
+
+    padding: 5px 7px;
+
+    box-sizing: border-box;
+
+    border: 2px solid #101611;
+
+    background: #fafcfa;
+
+    color: #101611;
+
+    outline: none;
+}
+
+
+.floor-chat-input:focus {
+    background: #ffffff;
+}
+
+
+.floor-chat-send {
+    width: 36px;
+    height: 34px;
+
+    padding: 0;
+
+    border: 2px solid #101611;
+
+    background: #9bcd9a;
+
+    color: #101611;
+
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.floor-chat-send:hover {
+    background: #7cbb7b;
+}
+
+
+/* ============================================================
+   COLONNA MAPPA
+   ============================================================ */
+
+.dungeon-map-column {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+/* ============================================================
+   CORNICE MAPPA
+   ============================================================ */
+
+.dungeon-map-frame {
+    width: 100%;
+
+    border: 3px solid #101611;
+
+    background: #101611;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   MAPPA
+
+   IMPORTANTE:
+   position: relative serve perché i token assoluti
+   siano posizionati rispetto ALLA MAPPA e non alla pagina.
+   ============================================================ */
+
+.dungeon-map {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+
+    overflow: hidden;
+
+    background: #101611;
+
+    user-select: none;
+
+    touch-action: manipulation;
+}
+
+
+/* ============================================================
+   IMMAGINE MAPPA
+   ============================================================ */
+
+.dungeon-map-image {
+    position: absolute;
+
+    inset: 0;
+
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    max-width: none;
+    max-height: none;
+
+    object-fit: fill;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+
+    z-index: 1;
+}
+
+
+/* ============================================================
+   TOKEN SULLA MAPPA
+
+   ATTENZIONE:
+   queste regole riguardano SOLO i token mobili sulla mappa.
+   Non riguardano il ritratto nella scheda laterale.
+   ============================================================ */
+
+.dungeon-player-token {
+    position: absolute;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 0;
+
+    box-sizing: border-box;
+
+    pointer-events: none;
+
+    transform: translateZ(0);
+
+    z-index: 30;
+}
+
+
+.dungeon-player-token img {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    min-width: 0 !important;
+    min-height: 0 !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    object-fit: contain;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+}
+
+
+/* ============================================================
+   TOKEN PERSONALE
+   ============================================================ */
+
+.dungeon-player-token:not(.other-player-token) {
+    z-index: 40;
+}
+
+
+/* ============================================================
+   ALTRI GIOCATORI
+   ============================================================ */
+
+.other-player-token {
+    z-index: 35;
+}
+
+
+.other-player-name {
+    position: absolute;
+
+    left: 50%;
+    bottom: 100%;
+
+    transform: translateX(-50%);
+
+    max-width: 110px;
+
+    margin-bottom: 2px;
+
+    padding: 2px 4px;
+
+    background: rgba(12, 19, 13, 0.82);
+
+    color: #fff;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    line-height: 1;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   AREA SELEZIONABILE PER CURA
+
+   Verrà utilizzata dal nuovo dungeon.js.
+   ============================================================ */
+
+.dungeon-heal-range-cell {
+    position: absolute;
+
+    box-sizing: border-box;
+
+    border: 2px solid rgba(121, 206, 119, 0.9);
+
+    background: rgba(121, 206, 119, 0.22);
+
+    pointer-events: none;
+
+    z-index: 15;
+}
+
+
+/* ============================================================
+   BERSAGLIO CURA
+   ============================================================ */
+
+.dungeon-player-token.heal-target {
+    pointer-events: auto;
+
+    cursor: pointer;
+
+    filter:
+        drop-shadow(0 0 4px #fff)
+        drop-shadow(0 0 7px #62c560);
+
+    z-index: 50;
+}
+
+
+.dungeon-player-token.heal-target img {
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   MAPPA - FOOTER
+   ============================================================ */
+
+.dungeon-map-footer {
+    min-height: 34px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding-top: 7px;
+
+    box-sizing: border-box;
+}
+
+
+.movement-help {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 4px;
+}
+
+
+.movement-key {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 23px;
+    height: 23px;
+
+    border: 2px solid #101611;
+
+    background: #d3e5d3;
+
+    color: #101611;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    box-sizing: border-box;
+}
+
+
+.movement-description {
+    margin-left: 5px;
+
+    color: #4a6950;
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   COLONNA DESTRA COMPLETA
+   ============================================================ */
+
+.dungeon-character-column {
+    display: grid;
+
+    grid-template-columns:
+        minmax(190px, 0.95fr)
+        2px
+        minmax(210px, 1.05fr);
+
+    gap: 12px;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   RIASSUNTO PERSONAGGIO
+   ============================================================ */
+
+.dungeon-character-summary {
+    min-width: 0;
+
+    padding: 2px 0;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   NOME PERSONAGGIO
+   ============================================================ */
+
+.dungeon-character-name {
+    min-height: 28px;
+
+    margin-bottom: 7px;
+
+    overflow: hidden;
+
+    color: #101611;
+
+    font-size: 16px;
+    font-weight: 900;
+
+    text-align: center;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* ============================================================
+   RITRATTO + APRI SCHEDA
+   ============================================================ */
+
+.character-summary-top {
+    display: grid;
+
+    grid-template-columns: 90px 1fr;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+
+/* ============================================================
+   RITRATTO
+
+   TOTALMENTE SEPARATO DAL TOKEN DELLA MAPPA.
+   ============================================================ */
+
+.character-portrait-wrapper {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 90px;
+    height: 90px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    border: 4px solid #101611;
+
+    border-radius: 50%;
+
+    background: #cae0ca;
+}
+
+
+.character-portrait {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    object-fit: contain;
+
+    border: 0 !important;
+}
+
+
+/* ============================================================
+   APRI SCHEDA
+   ============================================================ */
+
+.open-sheet-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+
+    padding: 6px 8px;
+
+    border: 3px solid #101611;
+
+    background: #d3e5d3;
+
+    box-sizing: border-box;
+
+    color: #101611;
+
+    font-size: 12px;
+    font-weight: 900;
+
+    text-align: center;
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+
+.open-sheet-button:hover {
+    background: #acd7ab;
+}
+
+
+/* ============================================================
+   SEZIONI RAPIDE
+   ============================================================ */
+
+.quick-section {
+    margin-bottom: 17px;
+}
+
+
+.quick-section-title {
+    margin-bottom: 6px;
+
+    color: #101611;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   GRIGLIA STATISTICHE / ATTRIBUTI
+   ============================================================ */
+
+.quick-stat-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 5px;
+}
+
+
+/* ============================================================
+   SINGOLO RIQUADRO
+   ============================================================ */
+
+.quick-stat {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    min-height: 52px;
+
+    padding: 4px 2px;
+
+    box-sizing: border-box;
+
+    border: 3px solid #101611;
+
+    background: #eaf3ea;
+}
+
+
+.quick-stat-label {
+    margin-bottom: 2px;
+
+    color: #4b6a51;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    line-height: 1;
+}
+
+
+.quick-stat-value {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    color: #101611;
+
+    font-size: 14px;
+    font-weight: 900;
+
+    line-height: 1.1;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* PF e PM possono contenere 28/33 ecc. */
+
+#health-display,
+#mana-display {
+    font-size: 12px;
+}
+
+
+/* Critico può contenere 10.00% */
+
+#critical-display {
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   SEPARATORE VERTICALE
+   ============================================================ */
+
+.dungeon-side-divider {
+    width: 2px;
+    height: 100%;
+
+    min-height: 420px;
+
+    background: #101611;
+
+    border-radius: 2px;
+}
+
+
+/* ============================================================
+   COLONNA AZIONI
+   ============================================================ */
+
+.dungeon-action-column {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    gap: 20px;
+}
+
+
+/* ============================================================
+   AZIONI
+   ============================================================ */
+
+.dungeon-actions-panel {
+    min-width: 0;
+}
+
+
+.dungeon-actions-title {
+    margin-bottom: 7px;
+
+    color: #101611;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   CARD AZIONE
+   ============================================================ */
+
+.dungeon-action-card {
+    display: grid;
+
+    grid-template-columns: 34px 1fr;
+
+    align-items: center;
+
+    gap: 7px;
+
+    width: 100%;
+    min-height: 54px;
+
+    margin: 0 0 7px;
+
+    padding: 5px 8px;
+
+    box-sizing: border-box;
+
+    border: 3px solid #101611;
+
+    background: #eaf3ea;
+
+    color: #101611;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+
+.dungeon-action-card:hover:not(:disabled) {
+    background: #d3e5d3;
+
+    transform: translateY(-1px);
+}
+
+
+.dungeon-action-card:disabled {
+    opacity: 0.45;
+
+    cursor: not-allowed;
+}
+
+
+/* ============================================================
+   AZIONE SELEZIONATA
+   ============================================================ */
+
+.dungeon-action-card.active {
+    background: #9bd29a;
+
+    box-shadow:
+        inset 0 0 0 2px #438f51;
+}
+
+
+/* ============================================================
+   ICONA AZIONE
+   ============================================================ */
+
+.action-card-icon {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    font-size: 20px;
+
+    line-height: 1;
+}
+
+
+/* ============================================================
+   TESTO AZIONE
+   ============================================================ */
+
+.action-card-content {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+.action-card-content strong {
+    overflow: hidden;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.action-card-content small {
+    margin-top: 2px;
+
+    color: #55775b;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   PAGINAZIONE AZIONI
+   ============================================================ */
+
+.dungeon-action-pagination {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    min-height: 25px;
+
+    margin-top: 2px;
+}
+
+
+.action-page-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 25px;
+    height: 25px;
+
+    padding: 0;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #101611;
+
+    font-size: 22px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.action-page-button:disabled {
+    opacity: 0.25;
+
+    cursor: default;
+}
+
+
+.action-page-number {
+    min-width: 20px;
+
+    color: #101611;
+
+    font-size: 12px;
+    font-weight: 900;
+
+    text-align: center;
+}
+
+
+/* ============================================================
+   NOTE
+   ============================================================ */
+
+.dungeon-notes-panel {
+    margin-top: auto;
+}
+
+
+.dungeon-notes {
+    display: block;
+
+    width: 100%;
+    height: 125px;
+
+    min-height: 90px;
+    max-height: 220px;
+
+    padding: 8px;
+
+    box-sizing: border-box;
+
+    resize: vertical;
+
+    border: 3px solid #101611;
+
+    background: #fafcfa;
+
+    color: #101611;
+
+    font-family: inherit;
+    font-size: 12px;
+
+    line-height: 1.35;
+
+    outline: none;
+}
+
+
+.dungeon-notes:focus {
+    background: #ffffff;
+}
+
+
+/* ============================================================
+   SALVA NOTE
+   ============================================================ */
+
+.save-notes-button {
+    width: 100%;
+
+    min-height: 32px;
+
+    margin-top: 5px;
+
+    padding: 5px 8px;
+
+    border: 2px solid #101611;
+
+    background: #d3e5d3;
+
+    color: #101611;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.save-notes-button:hover:not(:disabled) {
+    background: #acd7ab;
+}
+
+
+.save-notes-button:disabled {
+    opacity: 0.55;
+
+    cursor: default;
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+.floor-chat-messages::-webkit-scrollbar,
+.dungeon-notes::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-thumb,
+.dungeon-notes::-webkit-scrollbar-thumb {
+    background: #709978;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-track,
+.dungeon-notes::-webkit-scrollbar-track {
+    background: #cfe3cf;
+}
+
+
+/* ============================================================
+   SCHERMI MEDI
+   ============================================================ */
+
+@media (max-width: 1250px) {
+
+    .dungeon-layout {
+        grid-template-columns:
+            300px
+            minmax(460px, 620px)
+            minmax(390px, 1fr);
+
+        gap: 9px;
+    }
+
+
+    .dungeon-chat-column {
+        grid-template-columns:
+            minmax(140px, 1fr)
+            minmax(140px, 1fr);
+
+        gap: 8px;
+    }
+
+
+    .dungeon-character-column {
+        grid-template-columns:
+            minmax(175px, 0.95fr)
+            2px
+            minmax(190px, 1.05fr);
+
+        gap: 8px;
+    }
+
+
+    .character-summary-top {
+        grid-template-columns: 78px 1fr;
+    }
+
+
+    .character-portrait-wrapper {
+        width: 78px;
+        height: 78px;
+    }
+
+
+    .quick-stat {
+        min-height: 47px;
+    }
+
+}
+
+
+/* ============================================================
+   TABLET / FINESTRE PIÙ STRETTE
+
+   La chat passa sotto.
+   La mappa resta prioritaria.
+   ============================================================ */
+
+@media (max-width: 1050px) {
+
+    .dungeon-header {
+        grid-template-columns: 110px 1fr;
+
+        gap: 8px;
+    }
+
+
+    .dungeon-message {
+        grid-column: 1 / -1;
+
+        padding: 0;
+
+        min-height: 18px;
+    }
+
+
+    .dungeon-layout {
+        grid-template-columns:
+            minmax(460px, 1fr)
+            minmax(360px, 0.75fr);
+
+        grid-template-areas:
+            "map character"
+            "chat character";
+    }
+
+
+    .dungeon-map-column {
+        grid-area: map;
+    }
+
+
+    .dungeon-chat-column {
+        grid-area: chat;
+    }
+
+
+    .dungeon-character-column {
+        grid-area: character;
+    }
+
+
+    .dungeon-chat-column {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: 10px;
+    }
+
+
+    .dungeon-leaderboard-panel,
+    .dungeon-chat-panel {
+        height: 280px;
+        min-height: 280px;
+    }
+
+}
+
+
+/* ============================================================
+   TELEFONO
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+    body {
+        overflow-x: hidden;
+    }
+
+
+    .dungeon-page {
+        padding: 8px;
+    }
+
+
+    /* --------------------------------------------------------
+       HEADER
+       -------------------------------------------------------- */
+
+    .dungeon-header {
+        display: grid;
+
+        grid-template-columns: 78px 1fr;
+
+        margin-bottom: 8px;
+    }
+
+
+    .dungeon-exit-button {
+        min-height: 31px;
+
+        padding: 3px 7px;
+
+        font-size: 11px;
+    }
+
+
+    .dungeon-title-block {
+        display: block;
+
+        text-align: center;
+
+        white-space: normal;
+    }
+
+
+    .dungeon-title-block h1 {
+        font-size: 17px;
+    }
+
+
+    .dungeon-floor-title {
+        margin-top: 2px;
+
+        font-size: 11px;
+    }
+
+
+    .dungeon-message {
+        grid-column: 1 / -1;
+
+        padding: 2px 0;
+
+        text-align: center;
+
+        font-size: 10px;
+
+        white-space: normal;
+    }
+
+
+    /* --------------------------------------------------------
+       LAYOUT
+       -------------------------------------------------------- */
+
+    .dungeon-layout {
+        display: flex;
+
+        flex-direction: column;
+
+        width: 100%;
+    }
+
+
+    /* Mappa prima di tutto */
+
+    .dungeon-map-column {
+        order: 1;
+    }
+
+
+    .dungeon-character-column {
+        order: 2;
+    }
+
+
+    .dungeon-chat-column {
+        order: 3;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: 7px;
+    }
+
+
+    .dungeon-leaderboard-panel,
+    .dungeon-chat-panel {
+        height: 300px;
+        min-height: 300px;
+    }
+
+
+    .dungeon-panel-title {
+        font-size: 13px;
+        padding: 7px 4px;
+    }
+
+
+    .dungeon-leaderboard-row {
+        grid-template-columns:
+            24px
+            minmax(0, 1fr);
+
+        gap: 3px;
+
+        padding: 4px 3px;
+    }
+
+
+    .dungeon-leaderboard-score {
+        grid-column: 2;
+
+        font-size: 9px;
+    }
+
+
+    .dungeon-leaderboard-name,
+    .dungeon-leaderboard-position {
+        font-size: 9px;
+    }
+
+
+    /* --------------------------------------------------------
+       MAPPA
+       -------------------------------------------------------- */
+
+    .dungeon-map-frame {
+        width: 100%;
+    }
+
+
+    .dungeon-map-footer {
+        padding: 5px 0 2px;
+    }
+
+
+    .movement-key {
+        width: 20px;
+        height: 20px;
+
+        font-size: 8px;
+    }
+
+
+    .movement-description {
+        flex-basis: 100%;
+
+        margin: 3px 0 0;
+
+        font-size: 9px;
+    }
+
+
+    /* --------------------------------------------------------
+       PERSONAGGIO + AZIONI
+       -------------------------------------------------------- */
+
+    .dungeon-character-column {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+
+        margin-top: 7px;
+    }
+
+
+    .dungeon-side-divider {
+        display: none;
+    }
+
+
+    .dungeon-character-summary {
+        padding-right: 0;
+    }
+
+
+    .character-summary-top {
+        grid-template-columns: 64px 1fr;
+
+        gap: 6px;
+
+        margin-bottom: 10px;
+    }
+
+
+    .character-portrait-wrapper {
+        width: 64px;
+        height: 64px;
+
+        border-width: 3px;
+    }
+
+
+    .open-sheet-button {
+        min-height: 35px;
+
+        border-width: 2px;
+
+        font-size: 9px;
+    }
+
+
+    .dungeon-character-name {
+        min-height: 22px;
+
+        margin-bottom: 4px;
+
+        font-size: 12px;
+    }
+
+
+    .quick-section {
+        margin-bottom: 10px;
+    }
+
+
+    .quick-section-title,
+    .dungeon-actions-title {
+        margin-bottom: 4px;
+
+        font-size: 10px;
+    }
+
+
+    .quick-stat-grid {
+        gap: 3px;
+    }
+
+
+    .quick-stat {
+        min-height: 42px;
+
+        border-width: 2px;
+    }
+
+
+    .quick-stat-label {
+        font-size: 7px;
+    }
+
+
+    .quick-stat-value {
+        font-size: 11px;
+    }
+
+
+    #health-display,
+    #mana-display {
+        font-size: 9px;
+    }
+
+
+    #critical-display {
+        font-size: 8px;
+    }
+
+
+    /* --------------------------------------------------------
+       AZIONI
+       -------------------------------------------------------- */
+
+    .dungeon-action-column {
+        gap: 10px;
+    }
+
+
+    .dungeon-action-card {
+        grid-template-columns: 25px 1fr;
+
+        min-height: 43px;
+
+        margin-bottom: 4px;
+
+        padding: 3px 5px;
+
+        border-width: 2px;
+    }
+
+
+    .action-card-icon {
+        width: 23px;
+        height: 23px;
+
+        font-size: 15px;
+    }
+
+
+    .action-card-content strong {
+        font-size: 8px;
+    }
+
+
+    .action-card-content small {
+        font-size: 8px;
+    }
+
+
+    .dungeon-action-pagination {
+        min-height: 18px;
+    }
+
+
+    .action-page-button {
+        width: 20px;
+        height: 20px;
+
+        font-size: 17px;
+    }
+
+
+    .action-page-number {
+        font-size: 9px;
+    }
+
+
+    /* --------------------------------------------------------
+       NOTE
+       -------------------------------------------------------- */
+
+    .dungeon-notes {
+        height: 85px;
+
+        min-height: 70px;
+
+        border-width: 2px;
+
+        font-size: 10px;
+    }
+
+
+    .save-notes-button {
+        min-height: 27px;
+
+        font-size: 8px;
+    }
+
+
+    /* --------------------------------------------------------
+       CHAT
+       -------------------------------------------------------- */
+
+    .dungeon-chat-panel {
+        height: 230px;
+        min-height: 230px;
+
+        margin-top: 3px;
+
+        border-width: 2px;
+    }
+
+
+    .dungeon-panel-title {
+        padding: 5px;
+
+        font-size: 13px;
+    }
+
+
+    .floor-chat-message {
+        font-size: 10px;
+    }
+
+}
+
+
+/* ============================================================
+   TELEFONI MOLTO PICCOLI
+   ============================================================ */
+
+@media (max-width: 480px) {
+
+    .dungeon-character-column {
+        grid-template-columns: 1fr;
+    }
+
+
+    .dungeon-character-summary {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        column-gap: 10px;
+    }
+
+
+    .dungeon-character-name,
+    .character-summary-top {
+        grid-column: 1 / -1;
+    }
+
+
+    .quick-section {
+        margin-bottom: 5px;
+    }
+
+
+    .dungeon-action-column {
+        margin-top: 4px;
+    }
+
+}
+/* ============================================================
+   PALAZZO ETERNO
+   PALETTE UFFICIALE DUNGEON
+   ============================================================ */
+
+
+/* ============================================================
+   SFONDO GENERALE
+   ============================================================ */
+
+html,
+body {
+    background:
+        radial-gradient(
+            circle at center,
+            #1d291f 0%,
+            #0c100d 70%
+        );
+
+    color: #ecf0ed;
+}
+
+
+/* ============================================================
+   TITOLI
+   ============================================================ */
+
+.dungeon-title-block h1,
+.dungeon-floor-title,
+.dungeon-character-name,
+.quick-section-title,
+.dungeon-actions-title {
+    color: #ecf0ed;
+}
+
+
+.dungeon-message {
+    color: #a6c0a5;
+}
+
+
+.dungeon-message.error {
+    color: #d98272;
+}
+
+
+/* ============================================================
+   PANNELLI
+   ============================================================ */
+
+.dungeon-panel,
+.quick-stat,
+.dungeon-action-card {
+    background:
+        linear-gradient(
+            180deg,
+            #101711 0%,
+            #0c120d 100%
+        );
+
+    border-color: #426047;
+
+    color: #ecf0ed;
+}
+
+
+.dungeon-panel-title {
+    color: #b6d1b5;
+
+    border-color: #426047;
+
+    background: #111712;
+}
+
+
+/* ============================================================
+   CHAT
+   ============================================================ */
+
+.floor-chat-messages {
+    background: #0d120e;
+}
+
+
+.chat-placeholder {
+    color: #5c8163;
+}
+
+
+.floor-chat-message {
+    color: #ecf0ed;
+
+    border-color: rgba(91, 163, 104, 0.18);
+}
+
+
+.floor-chat-message.mine {
+    background: rgba(91, 163, 104, 0.10);
+}
+
+
+.floor-chat-name {
+    color: #77c576;
+}
+
+
+.floor-chat-text {
+    color: #d9e6d8;
+}
+
+
+.floor-chat-controls {
+    border-color: #426047;
+
+    background: #111712;
+}
+
+
+.floor-chat-input {
+    border-color: #426047;
+
+    background: #0b0f0c;
+
+    color: #ecf0ed;
+}
+
+
+.floor-chat-input::placeholder {
+    color: #5c8163;
+}
+
+
+.floor-chat-input:focus {
+    border-color: #5ba368;
+
+    background: #111712;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(91, 163, 104, 0.15);
+}
+
+
+.floor-chat-send {
+    border-color: #386a42;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1d3121,
+            #142217
+        );
+
+    color: #c8dfc7;
+}
+
+
+.floor-chat-send:hover {
+    border-color: #559d63;
+
+    background:
+        linear-gradient(
+            180deg,
+            #244029,
+            #182a1c
+        );
+}
+
+
+/* ============================================================
+   MAPPA
+   ============================================================ */
+
+.dungeon-map-frame {
+    border-color: #426047;
+
+    background: #090d0a;
+
+    box-shadow:
+        0 8px 24px
+        rgba(0, 0, 0, 0.45);
+}
+
+
+.dungeon-map {
+    background: #090d0a;
+}
+
+
+/* ============================================================
+   TASTI MOVIMENTO
+   ============================================================ */
+
+.movement-key {
+    border-color: #426047;
+
+    background: #111712;
+
+    color: #77c576;
+}
+
+
+.movement-description {
+    color: #90b08f;
+}
+
+
+/* ============================================================
+   PULSANTE ESCI
+   ============================================================ */
+
+.dungeon-exit-button {
+    border-color: #386a42;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1d3121,
+            #142217
+        );
+
+    color: #c8dfc7;
+}
+
+
+.dungeon-exit-button:hover {
+    border-color: #559d63;
+
+    background:
+        linear-gradient(
+            180deg,
+            #244029,
+            #182a1c
+        );
+}
+
+
+/* ============================================================
+   RITRATTO
+   ============================================================ */
+
+.character-portrait-wrapper {
+    border-color: #5ba368;
+
+    background: #111712;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(0, 0, 0, 0.7),
+        0 4px 15px
+        rgba(0, 0, 0, 0.5);
+}
+
+
+/* ============================================================
+   APRI SCHEDA
+   ============================================================ */
+
+.open-sheet-button {
+    border-color: #386a42;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1d3121,
+            #142217
+        );
+
+    color: #c8dfc7;
+}
+
+
+.open-sheet-button:hover {
+    border-color: #559d63;
+
+    background:
+        linear-gradient(
+            180deg,
+            #244029,
+            #182a1c
+        );
+}
+
+
+/* ============================================================
+   STATISTICHE / ATTRIBUTI
+   ============================================================ */
+
+.quick-stat {
+    border-color: #426047;
+
+    background: #111712;
+}
+
+
+.quick-stat-label {
+    color: #90b08f;
+}
+
+
+.quick-stat-value {
+    color: #ecf0ed;
+}
+
+
+/* ============================================================
+   SEPARATORE
+   ============================================================ */
+
+.dungeon-side-divider {
+    background: #426047;
+}
+
+
+/* ============================================================
+   AZIONI
+   ============================================================ */
+
+.dungeon-action-card {
+    border-color: #305537;
+
+    background:
+        linear-gradient(
+            180deg,
+            #101711,
+            #0c120d
+        );
+
+    color: #ecf0ed;
+}
+
+
+.dungeon-action-card:hover:not(:disabled) {
+    border-color: #559d63;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1a281c,
+            #121a13
+        );
+}
+
+
+.dungeon-action-card.active {
+    border-color: #5ba368;
+
+    background:
+        rgba(91, 163, 104, 0.18);
+
+    box-shadow:
+        0 0 0 2px
+        rgba(91, 163, 104, 0.15);
+}
+
+
+.action-card-icon {
+    color: #77c576;
+}
+
+
+.action-card-content strong {
+    color: #ecf0ed;
+}
+
+
+.action-card-content small {
+    color: #90b08f;
+}
+
+
+/* ============================================================
+   PAGINAZIONE
+   ============================================================ */
+
+.action-page-button {
+    color: #77c576;
+}
+
+
+.action-page-number {
+    color: #ecf0ed;
+}
+
+
+/* ============================================================
+   NOTE
+   ============================================================ */
+
+.dungeon-notes {
+    border-color: #426047;
+
+    background: #0b0f0c;
+
+    color: #ecf0ed;
+}
+
+
+.dungeon-notes::placeholder {
+    color: #5c8163;
+}
+
+
+.dungeon-notes:focus {
+    border-color: #5ba368;
+
+    background: #111712;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(91, 163, 104, 0.15);
+}
+
+
+.save-notes-button {
+    border-color: #386a42;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1d3121,
+            #142217
+        );
+
+    color: #c8dfc7;
+}
+
+
+.save-notes-button:hover:not(:disabled) {
+    border-color: #559d63;
+
+    background:
+        linear-gradient(
+            180deg,
+            #244029,
+            #182a1c
+        );
+}
+
+
+/* ============================================================
+   CURA
+   ============================================================ */
+
+.dungeon-heal-range-cell {
+    border-color:
+        rgba(119, 197, 118, 0.9);
+
+    background:
+        rgba(119, 197, 118, 0.18);
+}
+
+
+.dungeon-player-token.heal-target {
+    filter:
+        drop-shadow(
+            0 0 4px
+            #dae9da
+        )
+        drop-shadow(
+            0 0 8px
+            #77c576
+        );
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+.floor-chat-messages::-webkit-scrollbar-thumb,
+.dungeon-notes::-webkit-scrollbar-thumb {
+    background: #426047;
+}
+
+
+.floor-chat-messages::-webkit-scrollbar-track,
+.dungeon-notes::-webkit-scrollbar-track {
+    background: #0d120e;
+}
+
+/* ============================================================
+   NEBBIA DI GUERRA
+   ============================================================ */
+
+.dungeon-fog-canvas {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    margin: 0;
+    padding: 0;
+}
+/* ============================================================
+   PERSONAGGIO IN COMBATTIMENTO
+   ============================================================ */
+
+.dungeon-player-token.is-in-combat {
+    filter:
+        grayscale(1)
+        brightness(0.65);
+
+    opacity: 0.72;
+}
+
+
+.dungeon-player-token.is-in-combat::after {
+    content: "⚔";
+
+    position: absolute;
+
+    right: -3px;
+    bottom: -3px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 14px;
+    height: 14px;
+
+    border:
+        1px solid #598661;
+
+    border-radius: 50%;
+
+    background:
+        #0f1610;
+
+    color:
+        #81c67f;
+
+    font-size: 8px;
+
+    line-height: 1;
+
+    box-shadow:
+        0 1px 4px
+        rgba(0, 0, 0, 0.75);
+}
+/* ============================================================
+   EVENTI COMBAT
+   ============================================================ */
+
+.dungeon-combat-event {
+    position: absolute;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 0;
+
+    box-sizing: border-box;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    transform: translateZ(0);
+
+    /*
+       Mappa = 1
+       Evento = 5
+       Nebbia = 10
+       Pedine = 30+
+
+       Quindi gli eventi non scoperti vengono nascosti
+       correttamente dalla nebbia.
+    */
+    z-index: 5;
+}
+
+
+.dungeon-combat-event img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    object-fit: contain;
+
+    border: 0;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-drag: none;
+
+    filter:
+        drop-shadow(
+            0 2px 3px
+            rgba(0, 0, 0, 0.85)
+        );
+}
+/* ============================================================
+   POPUP EVENTO COMBAT
+   ============================================================ */
+
+.combat-event-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0, 0, 0, 0.78);
+}
+
+
+.combat-event-modal {
+    width:
+        min(
+            430px,
+            100%
+        );
+
+    padding:
+        28px;
+
+    box-sizing:
+        border-box;
+
+    border:
+        1px solid
+        #3a6943;
+
+    border-radius:
+        12px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #141e16,
+            #0b0f0c
+        );
+
+    box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.8);
+
+    color:
+        #d1e4d1;
+
+    text-align:
+        center;
+}
+
+
+.combat-event-icon {
+    margin-bottom:
+        10px;
+
+    color:
+        #60b771;
+
+    font-size:
+        42px;
+}
+
+
+.combat-event-modal h2 {
+    margin:
+        0 0 14px;
+
+    color:
+        #8ad289;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.combat-event-modal p {
+    margin:
+        0 0 18px;
+
+    color:
+        #b5cdb5;
+
+    line-height:
+        1.5;
+}
+
+
+.combat-event-warning {
+    margin-bottom:
+        22px;
+
+    padding:
+        14px;
+
+    border:
+        1px solid
+        #325b3a;
+
+    border-radius:
+        8px;
+
+    background:
+        rgba(
+            95,
+            26,
+            20,
+            0.2
+        );
+
+    color:
+        #acd0ab;
+
+    font-size:
+        13px;
+
+    line-height:
+        1.5;
+}
+
+
+.combat-event-buttons {
+    display:
+        grid;
+
+    gap:
+        10px;
+}
+
+
+.combat-event-button {
+    min-height:
+        44px;
+
+    padding:
+        10px 14px;
+
+    border-radius:
+        8px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+}
+
+
+.combat-event-enter {
+    border:
+        1px solid
+        #417d4c;
+
+    background:
+        linear-gradient(
+            180deg,
+            #2d6337,
+            #1d4023
+        );
+
+    color:
+        #e1ede1;
+}
+
+
+.combat-event-enter:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #387744,
+            #214d29
+        );
+}
+
+
+.combat-event-cancel {
+    border:
+        1px solid
+        #426047;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1d3121,
+            #142217
+        );
+
+    color:
+        #c8dfc7;
+}
+
+
+.combat-event-cancel:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #244029,
+            #182a1c
+        );
+}
+/* ============================================================
+   GIOCATORE IMPEGNATO IN COMBATTIMENTO
+============================================================ */
+
+.other-player-token.is-in-combat {
+    filter:
+        grayscale(1)
+        brightness(0.55);
+
+    opacity:
+        0.75;
+}
+
+
+.other-player-token.is-in-combat::after {
+    content:
+        "⚔";
+
+    position:
+        absolute;
+
+    right:
+        -5px;
+
+    top:
+        -7px;
+
+    width:
+        20px;
+
+    height:
+        20px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        50%;
+
+    background:
+        #111712;
+
+    border:
+        1px solid #5ba368;
+
+    color:
+        #77c576;
+
+    font-size:
+        12px;
+
+    line-height:
+        1;
+
+    pointer-events:
+        none;
+}
+/* ============================================================
+   CHAT - ALTEZZA FISSA + SCROLL
+============================================================ */
+
+.dungeon-chat-panel {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.floor-chat-messages {
+    height: 320px;
+    max-height: 320px;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+
+    box-sizing: border-box;
+}
+
+.floor-chat-message {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+/* ============================================================
+   PALAZZO ETERNO - CHAT DUNGEON
+   Riempie tutto il pannello e usa scrollbar interna.
+============================================================ */
+
+.dungeon-chat-panel {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+.floor-chat-messages {
+    flex: 1 1 auto;
+
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.floor-chat-controls {
+    flex: 0 0 auto;
+}
+
+.floor-chat-message {
+    flex: 0 0 auto;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+
+/* ============================================================
+   PALAZZO ETERNO - REVISIONE DESKTOP / ONLINE / VOLUME / SFONDO
+   ============================================================ */
+
+html,
+body {
+    background-color: #0c100d;
+    background-image:
+        linear-gradient(rgba(6, 8, 6, 0.58), rgba(6, 8, 6, 0.72)),
+        url("../../../immagini/bgI.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.dungeon-volume-control {
+    position: relative;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dungeon-volume-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 34px;
+    padding: 0;
+    border: 3px solid #386a42;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #1d3121, #142217);
+    color: #c8dfc7;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dungeon-volume-button:hover {
+    border-color: #559d63;
+    background: linear-gradient(180deg, #244029, #182a1c);
+}
+
+.dungeon-volume-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 180px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 2px solid #426047;
+    border-radius: 6px;
+    background: #111712;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .55);
+}
+
+.dungeon-volume-popover[hidden] {
+    display: none;
+}
+
+.dungeon-volume-slider {
+    width: 100%;
+    accent-color: #5ba368;
+    cursor: pointer;
+}
+
+.dungeon-volume-value {
+    display: block;
+    margin-top: 4px;
+    color: #b6d1b5;
+    font-size: 10px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.dungeon-social-column {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dungeon-online-panel {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-height: 185px;
+    overflow: hidden;
+}
+
+.dungeon-online-list {
+    max-height: 132px;
+    padding: 6px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.dungeon-online-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 4px 3px;
+    border-bottom: 1px solid rgba(91, 163, 104, 0.18);
+}
+
+.dungeon-online-row:last-child {
+    border-bottom: 0;
+}
+
+.dungeon-online-token {
+    display: block;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #0b0f0c;
+    box-shadow: 0 0 0 1px #426047;
+}
+
+.dungeon-online-info {
+    min-width: 0;
+}
+
+.dungeon-online-name {
+    overflow: hidden;
+    color: #d7e8d6;
+    font-size: 10px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dungeon-online-status {
+    margin-top: 2px;
+    color: #719b79;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.dungeon-online-status.in-combat {
+    color: #81c67f;
+}
+
+.dungeon-online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #69a66f;
+    box-shadow: 0 0 5px rgba(105, 166, 111, 0.65);
+}
+
+.dungeon-online-empty {
+    padding: 12px 6px;
+    color: #5c8163;
+    font-size: 10px;
+    font-style: italic;
+    text-align: center;
+}
+
+.dungeon-online-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+.dungeon-online-list::-webkit-scrollbar-thumb {
+    background: #426047;
+}
+
+.dungeon-online-list::-webkit-scrollbar-track {
+    background: #0d120e;
+}
+
+@media (min-width: 1251px) {
+    .dungeon-page {
+        padding: 16px 20px 20px;
+    }
+
+    .dungeon-header,
+    .dungeon-layout {
+        max-width: 1720px;
+    }
+
+    .dungeon-header {
+        grid-template-columns: 140px 44px auto 1fr;
+        gap: 12px;
+    }
+
+    .dungeon-layout {
+        grid-template-columns:
+            380px
+            minmax(575px, 805px)
+            minmax(485px, 1fr);
+        gap: 14px;
+    }
+
+    .dungeon-panel-title {
+        font-size: 19px;
+    }
+
+    .dungeon-title-block h1 {
+        font-size: 25px;
+    }
+
+    .dungeon-floor-title {
+        font-size: 19px;
+    }
+
+    .dungeon-message {
+        font-size: 14px;
+    }
+
+    .dungeon-character-name {
+        font-size: 18px;
+    }
+
+    .quick-section-title,
+    .dungeon-actions-title {
+        font-size: 14px;
+    }
+
+    .quick-stat {
+        min-height: 57px;
+    }
+
+    .quick-stat-value {
+        font-size: 15px;
+    }
+
+    .dungeon-action-card {
+        min-height: 58px;
+    }
+
+    .action-card-content strong {
+        font-size: 12px;
+    }
+
+    .action-card-content small {
+        font-size: 11px;
+    }
+
+    .floor-chat-message {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 1250px) {
+    .dungeon-header {
+        grid-template-columns: 110px 42px auto 1fr;
+    }
+
+    .dungeon-social-column {
+        gap: 8px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 150px;
+    }
+
+    .dungeon-online-list {
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 1050px) {
+    .dungeon-header {
+        grid-template-columns: 110px 42px 1fr;
+    }
+
+    .dungeon-message {
+        grid-column: 1 / -1;
+    }
+
+    .dungeon-social-column {
+        height: 280px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 105px;
+    }
+
+    .dungeon-online-list {
+        max-height: 60px;
+    }
+
+    .dungeon-chat-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+    }
+}
+
+@media (max-width: 760px) {
+    html,
+    body {
+        background-attachment: scroll;
+    }
+
+    .dungeon-header {
+        grid-template-columns: 68px 38px 1fr;
+    }
+
+    .dungeon-volume-button {
+        width: 36px;
+        height: 31px;
+        border-width: 2px;
+        font-size: 14px;
+    }
+
+    .dungeon-volume-popover {
+        width: 150px;
+    }
+
+    .dungeon-social-column {
+        height: 300px;
+    }
+
+    .dungeon-online-panel {
+        max-height: 108px;
+    }
+
+    .dungeon-online-list {
+        max-height: 66px;
+        padding: 4px;
+    }
+
+    .dungeon-online-row {
+        grid-template-columns: 23px minmax(0, 1fr);
+        min-height: 28px;
+        gap: 4px;
+    }
+
+    .dungeon-online-token {
+        width: 23px;
+        height: 23px;
+    }
+
+    .dungeon-online-dot {
+        display: none;
+    }
+
+    .dungeon-online-name {
+        font-size: 9px;
+    }
+
+    .dungeon-online-status {
+        font-size: 7px;
+    }
+
+    .dungeon-chat-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        margin-top: 0;
+    }
+}
+
+
+
+/* ============================================================
+   CADUTI DEL PALAZZO - STEMMI BOSS
+   ============================================================ */
+
+.dungeon-leaderboard-identity {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
+}
+
+.dungeon-leaderboard-identity .dungeon-leaderboard-name {
+    min-width: 0;
+
+    flex: 0 1 auto;
+}
+
+.dungeon-leaderboard-badges {
+    flex: 0 0 auto;
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.dungeon-leaderboard-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 18px;
+    height: 18px;
+
+    flex: 0 0 18px;
+}
+
+.dungeon-leaderboard-badge {
+    width: 18px;
+    height: 18px;
+
+    object-fit: contain;
+
+    vertical-align: middle;
+
+    filter:
+        drop-shadow(
+            0 1px 2px
+            rgba(0, 0, 0, 0.75)
+        );
+}
+
+.dungeon-leaderboard-badge-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 13px;
+    line-height: 1;
+
+    color: #6bc569;
+}
+
+@media (max-width: 560px) {
+
+    .dungeon-leaderboard-identity {
+        gap: 3px;
+    }
+
+    .dungeon-leaderboard-badges {
+        gap: 2px;
+    }
+
+    .dungeon-leaderboard-badge-wrap,
+    .dungeon-leaderboard-badge {
+        width: 15px;
+        height: 15px;
+
+        flex-basis: 15px;
+    }
+
+    .dungeon-leaderboard-badge-fallback {
+        font-size: 11px;
+    }
+}
+
+
+/* ============================================================
+   SCAMBIO TRA GIOCATORI - DUNGEON
+   ============================================================ */
+.dungeon-trade-confirm-state {
+    margin: 6px 0 12px;
+    color: #689370;
+    font-size: 9px;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: .08em;
+}
+
+.dungeon-trade-confirm-state.confirmed {
+    color: #7eb37c;
+}
+
+.dungeon-trade-offer-list {
+    min-height: 190px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 6px;
+    box-sizing: border-box;
+    border: 1px solid rgba(69, 131, 81, .32);
+    border-radius: 6px;
+    background: #090d0a;
+}
+
+.dungeon-trade-empty {
+    padding: 28px 8px;
+    color: #5c8163;
+    font-size: 11px;
+    font-style: italic;
+    text-align: center;
+}
+
+.dungeon-trade-offer-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(91, 163, 104, .18);
+    color: #d9e6d8;
+    font-size: 11px;
+}
+
+.dungeon-trade-offer-row:last-child {
+    border-bottom: 0;
+}
+
+.dungeon-trade-remove {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #3e6a46;
+    border-radius: 5px;
+    background: #152719;
+    color: #9bd799;
+    font-size: 17px;
+    cursor: pointer;
+}
+
+.dungeon-trade-add-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 74px auto;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.dungeon-trade-select,
+.dungeon-trade-quantity {
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+    border: 1px solid #426047;
+    border-radius: 5px;
+    background: #0b0f0c;
+    color: #d1e4d1;
+    padding: 0 8px;
+}
+
+.dungeon-trade-quantity {
+    text-align: center;
+}
+
+.dungeon-trade-actions,
+.dungeon-trade-footer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.dungeon-trade-footer {
+    margin-top: 16px;
+}
+
+.dungeon-trade-button {
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.dungeon-trade-button.primary {
+    border: 1px solid #488e55;
+    background: linear-gradient(180deg, #2d5334, #192f1d);
+    color: #c6dec5;
+}
+
+.dungeon-trade-button.secondary {
+    border: 1px solid #426047;
+    background: linear-gradient(180deg, #212e23, #141b15);
+    color: #afc6ae;
+}
+
+.dungeon-trade-button.compact {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #386a42;
+    background: #1a281c;
+    color: #c8dfc7;
+}
+
+.dungeon-trade-button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+
+.dungeon-trade-inline-section {
+    margin-top: 16px;
+}
+
+.dungeon-trade-nearby-list {
+    display: grid;
+    gap: 6px;
+}
+
+.dungeon-trade-inline-empty {
+    padding: 9px 10px;
+    border: 1px dashed #3b5740;
+    background: rgba(11, 15, 12, 0.62);
+    color: #719b79;
+    font-size: 10px;
+    text-align: center;
+}
+
+.dungeon-trade-nearby-player {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 5px 7px;
+    border: 2px solid #305537;
+    background: linear-gradient(180deg, #101711, #0c120d);
+    color: #d1e4d1;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dungeon-trade-nearby-player:hover,
+.dungeon-trade-nearby-player.selected {
+    border-color: #5ba368;
+    background: rgba(91, 163, 104, 0.15);
+}
+
+.dungeon-trade-nearby-player img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #0b0f0c;
+}
+
+.dungeon-trade-nearby-player span {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.dungeon-trade-nearby-player strong {
+    overflow: hidden;
+    color: #d7e8d6;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dungeon-trade-nearby-player small {
+    margin-top: 2px;
+    color: #83a782;
+    font-size: 8px;
+}
+
+.dungeon-trade-inline-panel {
+    padding: 9px;
+    border: 2px solid #426047;
+    background: linear-gradient(180deg, #101711, #0b0f0c);
+}
+
+.dungeon-trade-inline-panel.disabled {
+    opacity: .68;
+}
+
+.dungeon-trade-inline-status {
+    min-height: 28px;
+    margin-bottom: 8px;
+    padding: 6px 7px;
+    border: 1px solid rgba(91, 163, 104, .25);
+    background: #0b0f0c;
+    color: #adc4ad;
+    font-size: 9px;
+    line-height: 1.35;
+}
+
+.dungeon-trade-inline-status.error {
+    border-color: #3c6844;
+    color: #d98272;
+}
+
+.dungeon-trade-inline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+.dungeon-trade-inline-side {
+    min-width: 0;
+    padding: 7px;
+    border: 1px solid #334b38;
+    background: rgba(7, 9, 7, .7);
+}
+
+.dungeon-trade-inline-side-title {
+    margin-bottom: 4px;
+    overflow: hidden;
+    color: #7fca7d;
+    font-size: 9px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-confirm-state {
+    margin-bottom: 5px;
+    font-size: 8px;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-offer-list {
+    min-height: 62px;
+    max-height: 110px;
+    overflow-y: auto;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-offer-row {
+    min-height: 27px;
+    padding: 4px 5px;
+    font-size: 9px;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-empty {
+    padding: 8px 3px;
+    font-size: 8px;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-add-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54px;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-add-box .dungeon-trade-button {
+    grid-column: 1 / -1;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-select,
+.dungeon-trade-inline-panel .dungeon-trade-quantity {
+    min-width: 0;
+    height: 31px;
+    border: 1px solid #426047;
+    background: #0b0f0c;
+    color: #d1e4d1;
+    font-size: 9px;
+}
+
+.dungeon-trade-inline-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin-top: 7px;
+}
+
+.dungeon-trade-inline-panel .dungeon-trade-button {
+    min-height: 31px;
+    padding: 5px 7px;
+    font-size: 9px;
+}
+
+@media (max-width: 760px) {
+    .dungeon-trade-inline-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dungeon-trade-inline-panel .dungeon-trade-offer-list {
+        max-height: 90px;
+    }
+}
+
+/* ============================================================
+   RISONANZA V2 | Scambio Chat / Top 5 e schede con stemmi sotto
+   ============================================================ */
+/* Invertiamo i due pannelli in desktop e mobile senza spostare
+   i loro ID o i listener JS collegati a chat e realtime. */
+.dungeon-chat-column > .dungeon-social-column { order: 1; }
+.dungeon-chat-column > .dungeon-leaderboard-panel { order: 2; }
+
+.dungeon-leaderboard-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    padding: 11px 7px 12px;
+    min-height: 0;
+    border-bottom: 1px solid rgba(91, 163, 104, 0.30);
+}
+.dungeon-leaderboard-main {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    align-items: baseline;
+    gap: 6px;
+}
+.dungeon-leaderboard-position { font-size: 12px; text-align: left; }
+.dungeon-leaderboard-name { font-size: 12px; min-width: 0; }
+.dungeon-leaderboard-score { font-size: 12px; text-align: right; white-space: nowrap; }
+.dungeon-leaderboard-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 22px;
+    padding-left: 2px;
+    gap: 5px;
+}
+.dungeon-leaderboard-no-badges { color: #628b6a; font-size: 9px; font-style: italic; }
+.dungeon-leaderboard-badge-wrap,
+.dungeon-leaderboard-badge { width: 22px; height: 22px; }
+.dungeon-leaderboard-badge-wrap { flex: 0 0 22px; }
+.dungeon-leaderboard-badge-fallback { font-size: 17px; }
+
+.dungeon-character-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 9px;
+    row-gap: 3px;
+    margin-bottom: 8px;
+}
+.dungeon-character-heading .dungeon-character-name { margin-bottom: 0; min-height: 0; }
+.dungeon-character-resonance {
+    color: #77c576;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+@media (max-width: 760px) {
+    .dungeon-leaderboard-row { grid-template-columns: none; gap: 5px; padding: 8px 4px; }
+    .dungeon-leaderboard-main { grid-template-columns: auto minmax(0,1fr) auto; }
+    .dungeon-leaderboard-name, .dungeon-leaderboard-position,
+    .dungeon-leaderboard-score { font-size: 10px; grid-column: auto; }
+    .dungeon-character-resonance { font-size: 10px; }
+}
+
+/* ============================================================
+   PALAZZO ETERNO - LAYOUT PANNELLI V4
+
+   CHAT (altezza intera)  |  PERSONAGGI ONLINE
+                        |  TOP 5 RISONANZA
+
+   Entrambe le colonne hanno l'altezza della cornice mappa.
+   I contenuti lunghi scorrono dentro i pannelli, senza
+   modificare l'altezza della pagina o rimpicciolire la mappa.
+   ============================================================ */
+.dungeon-layout > .dungeon-chat-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 8px;
+    align-self: start;
+    height: var(--palazzo-map-panel-height, 550px);
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+}
+
+.dungeon-chat-column > .dungeon-chat-panel {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0;
+    overflow: hidden;
+}
+
+.dungeon-chat-column > .dungeon-social-column {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 0.30fr) minmax(0, 0.70fr);
+    gap: 8px;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.dungeon-chat-column .dungeon-social-column > .dungeon-online-panel,
+.dungeon-chat-column .dungeon-social-column > .dungeon-leaderboard-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0;
+    overflow: hidden;
+}
+
+.dungeon-chat-column .dungeon-social-column > .dungeon-online-panel {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.dungeon-chat-column .dungeon-social-column > .dungeon-leaderboard-panel {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.dungeon-chat-column .dungeon-chat-panel .floor-chat-messages,
+.dungeon-chat-column .dungeon-online-panel .dungeon-online-list,
+.dungeon-chat-column .dungeon-leaderboard-panel .dungeon-leaderboard-list {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.dungeon-chat-column .dungeon-chat-panel .floor-chat-messages {
+    scrollbar-gutter: stable;
+}
+
+.dungeon-chat-column .dungeon-chat-panel .floor-chat-controls,
+.dungeon-chat-column .dungeon-panel-title {
+    flex: 0 0 auto;
+}
+
+/* Su mobile la mappa mantiene la priorità di visualizzazione.
+   I tre pannelli restano affiancati/impilati come sopra. */
+@media (max-width: 760px) {
+    .dungeon-layout > .dungeon-chat-column {
+        gap: 6px;
+    }
+    .dungeon-chat-column > .dungeon-social-column {
+        gap: 6px;
+    }
+    .dungeon-chat-column .dungeon-social-column > .dungeon-online-panel,
+    .dungeon-chat-column .dungeon-social-column > .dungeon-leaderboard-panel {
+        max-height: none !important;
+    }
+}
+
+/* Piano Ia: mosaico 63x81, con vista di 13x13 celle logiche.
+   La proporzione 63:81 e' necessaria per evitare celle distorte. */
+.dungeon-map-frame {position:relative;overflow:hidden;aspect-ratio:1/1;}
+.dungeon-map {width:484.6153846154% !important;height:623.0769230769% !important;aspect-ratio:auto !important;position:absolute !important;top:0 !important;left:0 !important;overflow:visible;}
+#dungeon-map-image {display:none !important;}
+.pia-map-mosaic {position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));pointer-events:none;z-index:0;}
+.pia-map-mosaic img {display:block;width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;object-fit:fill;}
+.dungeon-map > :not(.pia-map-mosaic):not(#dungeon-map-image) {z-index:1;}
+
+/* Piano Ia: zoom variabile senza alterare il layout del dungeon. */
+.dungeon-map {width:calc(100% * 63 / var(--pia-view-cells,13)) !important;height:calc(100% * 81 / var(--pia-view-cells,13)) !important;}
+.pia-map-toolbar {display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:7px;}
+.pia-map-toolbar button,.pia-map-toolbar label {font:700 11px/1.3 Arial,sans-serif;color:#d8ead7;background:#173822;border:1px solid #56855d;padding:6px 9px;border-radius:3px;white-space:nowrap;}
+.pia-map-toolbar button:hover {background:#275637;}
+.pia-map-toolbar label {margin-left:auto;display:flex;align-items:center;gap:5px;cursor:pointer;}
+.pia-map-toolbar label[hidden] {display:none !important;}
+.pia-map-toolbar input {accent-color:#77b877;}
+#pia-fog-overlay {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:8 !important;image-rendering:pixelated;}
+
+/* Piano Ia — token eventi e combattimenti. Non cambia layout. */
+.pia-encounter-count {font-size:11px;font-weight:700;color:#cae9ca;margin-right:5px;}
+.pia-encounter-token {position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;min-width:15px;min-height:15px;aspect-ratio:1;z-index:7;border:1px solid #a7d49a;border-radius:50%;background:#122819;color:#fff;cursor:pointer;padding:0;text-shadow:0 1px 3px #000;box-shadow:0 1px 5px #0008;}
+.pia-encounter-token:hover {filter:brightness(1.25);z-index:9}
+.pia-encounter-boss {background:#562820;border:2px solid #de9a70;z-index:7}
+.pia-encounter-guard {background:#283c5a;border:2px solid #c3cedf;z-index:7}
+.pia-encounter-overlay {position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.77);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.pia-encounter-card {border:3px solid #89ad80;background:#12251a;color:#e8f3df;padding:24px;box-sizing:border-box;width:min(440px,100%);box-shadow:0 12px 60px #000a;text-align:center}
+.pia-encounter-card h2 {font-size:20px;margin:0 0 14px;color:#b8deb0}
+.pia-encounter-card p {font-size:14px;line-height:1.5;margin:0 0 22px}
+.pia-encounter-actions {display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.pia-encounter-actions button {cursor:pointer;padding:10px 18px;border:2px solid #9ec393;background:#264a32;color:#ecf7e5;font-weight:800}
+.pia-encounter-actions button:hover {background:#3d6748}
+
+/* Accampamento del Piano Ia — stile originale */
+/* ACCAMPAMENTO IA: asset 3x3 e pannello coerente con gli eventi del Dungeon */
+.p1-camp-image{position:absolute;z-index:0;pointer-events:none;object-fit:fill;max-width:none;user-select:none;}
+#p1-camp-overlay[hidden],#p1-camp-overlay [hidden]{display:none!important}
+.p1-camp-modal{max-height:90vh;overflow-y:auto;}
+.p1-camp-row{display:grid;grid-template-columns:1fr auto;align-items:center;text-align:left;gap:8px;margin-bottom:9px;color:#e5d9b5;font-size:14px}
+.p1-camp-row .combat-event-button{padding:5px 12px;min-height:35px}
+#p1-camp-quantity-panel{display:grid;gap:10px;margin:12px 0 18px;color:#e5d9b5}
+#p1-camp-quantity{width:100%;padding:10px;background:#0b190f;color:#e8ddb8;border:1px solid #71895b;border-radius:5px}
+#p1-camp-recipe,#p1-camp-refuel{margin:16px 0}
+#p1-camp-recipe button,#p1-camp-refuel button{width:100%}
+
+#p1-camp-open[hidden]{display:none!important}
+#p1-camp-open{position:fixed;bottom:22px;right:22px;z-index:8000;padding:12px 18px;background:linear-gradient(#35583b,#173021);border:1px solid #b09a61;border-radius:8px;color:#f0dfb0;box-shadow:0 5px 20px #000a;font-weight:700}
+
+/* ACCAMPAMENTO · layout dei vendor della Base, palette Piano I-A */
+body:has(#p1-camp-overlay:not([hidden])){overflow:hidden}
+#p1-camp-overlay[hidden],#p1-camp-overlay [hidden]{display:none!important}
+#p1-camp-overlay.base-service-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box;background:rgba(0,12,5,.76);backdrop-filter:blur(3px)}
+#p1-camp-overlay .base-service-modal{position:relative;width:min(500px,calc(100vw - 40px));max-height:calc(100vh - 60px);overflow-x:hidden;overflow-y:auto;padding:20px;box-sizing:border-box;border:1px solid rgba(131,170,112,.65);border-radius:10px;background:linear-gradient(180deg,rgba(27,48,34,.98),rgba(10,22,14,.99));box-shadow:0 24px 70px rgba(0,0,0,.7),inset 0 0 35px rgba(116,170,118,.06);color:#eee9d7;text-align:left}
+#p1-camp-overlay .base-service-content{overflow:visible}
+#p1-camp-overlay .base-service-close{position:absolute;top:10px;right:12px;width:36px;height:36px;border:0;background:transparent;color:#d8bc78;font-size:28px;line-height:1;cursor:pointer;z-index:2}
+#p1-camp-overlay .base-service-header{padding:0 28px;margin-bottom:12px;text-align:center}
+#p1-camp-overlay .base-service-eyebrow{display:block;margin-bottom:5px;color:#98ad96;font-size:11px;font-weight:700;letter-spacing:.15em;text-align:center}
+#p1-camp-overlay .base-service-header h2{margin:0;color:#e2c98c;font-size:clamp(24px,4vw,32px);text-align:center}
+#p1-camp-overlay .base-service-description{margin:12px 0 14px;color:#eee9d7;font-size:14px;line-height:1.5;text-align:center}
+#p1-camp-overlay .base-service-content h3{margin:12px 0 10px;color:#d8bc78;font-size:16px;text-align:center}
+#p1-camp-overlay .base-service-note{margin:10px 0 0;color:#b5c9af;font-size:12px;line-height:1.45;text-align:center}
+#p1-camp-overlay .base-service-status{display:table;min-height:28px;margin:0 auto 12px;padding:5px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;text-align:center}
+#p1-camp-overlay .base-service-status-unbuilt{background:rgba(74,106,67,.32)}
+#p1-camp-overlay .base-service-status-active{background:rgba(79,132,80,.28)}
+#p1-camp-overlay .base-service-reserve{margin:0 0 14px;color:#bed0ad;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-requirements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#p1-camp-overlay .base-service-requirement{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid rgba(143,183,126,.28);border-radius:8px;background:rgba(255,255,255,.025)}
+#p1-camp-overlay .base-service-requirement.is-complete{opacity:.75}
+#p1-camp-overlay .base-service-requirement-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin-bottom:2px}
+#p1-camp-overlay .base-service-requirement-head strong{min-width:0;color:#eee9d7;font-size:13px;line-height:1.2}
+#p1-camp-overlay .base-service-requirement-head span{flex-shrink:0;color:#d8bc78;font-size:12px;font-variant-numeric:tabular-nums}
+#p1-camp-overlay .base-service-progress{height:7px;overflow:hidden;margin-bottom:3px;border-radius:999px;background:rgba(255,255,255,.08)}
+#p1-camp-overlay .base-service-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#416d43,#88b986);transition:width .18s ease}
+#p1-camp-overlay .base-service-quantity{width:100%;min-width:0;padding:9px 10px;border:1px solid rgba(131,170,112,.4);border-radius:6px;outline:none;background:rgba(0,0,0,.32);color:#eee9d7;font:inherit;font-size:13px;text-align:center}
+#p1-camp-overlay .base-service-quantity:focus{border-color:#88b986}
+#p1-camp-overlay .base-service-contribute{width:100%;min-width:0;padding:9px 8px;border:1px solid rgba(131,170,112,.58);border-radius:6px;background:rgba(48,96,56,.46);color:#f0e8ce;font:inherit;font-size:13px;font-weight:800;letter-spacing:.03em;white-space:normal;text-align:center;cursor:pointer}
+#p1-camp-overlay .base-service-contribute:hover{background:rgba(65,121,69,.62)}
+#p1-camp-overlay .base-service-contribute:disabled{opacity:.5;cursor:not-allowed}
+#p1-camp-overlay .base-service-maintenance-box{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:12px;border:1px solid rgba(131,170,112,.25);border-radius:8px}
+#p1-camp-overlay .base-service-maintenance-box label{color:#b5c9af;font-size:12px;text-align:center}
+@media(max-width:440px){#p1-camp-overlay .base-service-requirements{grid-template-columns:1fr}}
+
+
+.pia-fruit-token{position:absolute;z-index:55;transform:none;border:1px solid #b8e49f;border-radius:50%;padding:0;background:#244a2a;color:#e7ffd7;cursor:pointer;pointer-events:auto;box-shadow:0 0 7px #000d;display:flex;align-items:center;justify-content:center;line-height:1}
+.pia-fruit-token:hover{filter:brightness(1.4)}
+.pia-camp-image{position:absolute;z-index:4;pointer-events:none;object-fit:fill;max-width:none}
+.pia-special-dialog[hidden]{display:none!important}.pia-special-dialog{position:fixed;inset:0;z-index:10040;background:#001009bd;display:flex;align-items:center;justify-content:center;padding:20px}.pia-special-box{width:min(420px,95vw);padding:24px;border:2px solid #75ad70;border-radius:9px;background:#142c1b;color:#e9ffe6;box-shadow:0 15px 80px #000c;text-align:center}.pia-special-box h2{margin:0 0 14px}.pia-special-box p{line-height:1.5}.pia-special-actions{display:flex;justify-content:center;gap:12px;margin-top:18px}.pia-special-actions button{padding:10px 16px;background:#376a3e;border:1px solid #a0d093;border-radius:5px;color:#fff;cursor:pointer}
+#p1-camp-feedback{padding:9px;color:#ddf3d7}#p1-camp-feedback.is-error{color:#ffc7bf}
+
+/* Piano I-C — palette Giungla Alta / anteprima */
+html,body{background:#d9e9df}
+.dungeon-page{background:linear-gradient(145deg,#dcece0,#c9dfd3)}
+.dungeon-panel{background:#e3f0e6}
+.dungeon-panel-title{background:#c6dfcc;color:#153c29}
+.dungeon-floor-title{color:#145638}
+.pic-preview-hint{font:700 11px/1.35 Arial,sans-serif;color:#f0ecd0;background:#254934;border:1px solid #658f69;padding:7px 10px;margin-bottom:7px;letter-spacing:.025em}
+.dungeon-map-frame{aspect-ratio:1/1}
+.dungeon-map{width:calc(100% * 30 / var(--pic-visible,13)) !important;height:calc(100% * 30 / var(--pic-visible,13)) !important;aspect-ratio:1/1}
+.dungeon-map-image{object-fit:fill}
+.pic-grid{position:absolute;inset:0;pointer-events:none;z-index:4;background-image:linear-gradient(to right,rgba(246,255,227,.17) 1px,transparent 1px),linear-gradient(to bottom,rgba(246,255,227,.17) 1px,transparent 1px);background-size:calc(100% / 30) calc(100% / 30)}
+.pic-fog{position:absolute;inset:0;pointer-events:none;z-index:50;width:100%;height:100%}
+.pic-player{position:absolute;display:grid;place-items:center;background:#e8db98;border:2px solid #142c20;border-radius:50%;color:#173924;font-size:clamp(9px,1vw,16px);font-weight:900;box-shadow:0 0 0 2px #eee8b777,0 2px 9px #0009;z-index:45;pointer-events:none;box-sizing:border-box}
+.pia-map-toolbar button:disabled,.dungeon-action-card:disabled{opacity:.55;cursor:not-allowed}

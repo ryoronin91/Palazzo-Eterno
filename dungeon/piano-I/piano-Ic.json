@@ -1,0 +1,14 @@
+{
+  "name": "Piano I-C — Giungla Alta (provvisorio)",
+  "version": 1,
+  "columns": 30,
+  "rows": 30,
+  "spawn": {
+    "x": 15,
+    "y": 15
+  },
+  "walkable": "all",
+  "blocked": [],
+  "events": [],
+  "notes": "Anteprima isolata. Sostituire dimensioni, muri, spawn ed eventi quando arriva la mappa definitiva."
+}
