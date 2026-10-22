@@ -12,7 +12,7 @@
 // diagonali comprese.
 // ============================================================
 
-// Ingombro logico: la coordinata (x,y) e' l'angolo in alto a sinistra.
+// Ingombro nemici grandi: preserva le collisioni del branch main.
 const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande']);
 function getCombatFootprint(entity) {
     const large = entity?.entity_type === 'enemy' && COMBAT_LARGE_ENEMY_IDS.has(entity.enemy_id);
@@ -643,7 +643,7 @@ function chooseGoblinMovementPath(
 
 // Distanza in caselle, diagonali comprese.
 function getAIEnemyDistance(a, b) {
-    return getCombatRectDistance(a, b);
+    return getCombatRectDistance(a,b);
 }
 
 function getAliveAlliedEnemies(enemy = null) {
@@ -725,7 +725,7 @@ function findAIGridPath(enemy, isGoal, maximumSteps = Infinity) {
 function findAIPathToRange(enemy, target, range, availableMovement) {
     const steps = Math.max(0, Number(availableMovement) || 0);
     return findAIGridPath(enemy, (x, y) =>
-        getCombatRectDistance({...enemy, x, y}, target) <= range, steps);
+        getCombatRectDistance({...enemy,x,y}, target) <= range, steps);
 }
 
 // Per il mordi e fuggi: scelta di una casella raggiungibile
@@ -768,7 +768,8 @@ const PE_NEW_AI_TYPES = new Set([
     'pianta_rossa','pianta_verde','pianta_nera',
     'compsognato','dilofosauro','anchilosauro','uccello_stigio',
     'miconide_grande','miconide_medio','miconide_piccolo',
-    'lucertoloide_guerriero_1','lucertoloide_guerriero_2'
+    'lucertoloide_guerriero_1','lucertoloide_guerriero_2',
+    'lucertoloide_sciamano','velociraptor','trex'
 ]);
 
 async function peAIRpc(name, args = {}) {
@@ -870,8 +871,135 @@ async function peAIMoveAnimated(enemy, path) {
     return after;
 }
 
+// ============================================================
+// SCIAMANO LUCERTOLOIDE — VELENO, SUCCHIASANGUE E RITIRATA
+// La RPC verifica costi, portata, bersaglio, effetti e azioni.
+// ============================================================
+async function peAIShamanTurn(enemy) {
+    const players = getAliveCombatPlayers();
+    if (!players.length) return;
+
+    const distance = (a,b) => getCombatRectDistance(a,b);
+    const nearest = list => list.slice().sort((a,b) =>
+        distance(enemy,a)-distance(enemy,b))[0] || null;
+    const pm = Math.max(0,Number(enemy.current_pm) || 0);
+    const missingHp = Number(enemy.current_hp) < Number(enemy.max_hp);
+    const budget = Math.max(0,Number(enemy.movement_remaining) || 0);
+    const adjacent = players.filter(p => distance(enemy,p) === 1);
+    const poisoned = p => hasAICombatEffect(p.id,'dot_veleno');
+
+    // Nessun PM per alcuna magia: si comporta come un combattente aggressivo.
+    if (pm < 2) {
+        const target = nearest(players);
+        if (!target) return;
+        await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:target.id});
+        enemy = await peAIMove(enemy,peAIPath(enemy,target,1,budget));
+        if(distance(enemy,target)===1 && !enemy.action_used) {
+            await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
+        }
+        return;
+    }
+
+    // Prima si difende da un giocatore in corpo a corpo.
+    const drainTarget = missingHp && pm >= 2
+        ? nearest(adjacent.filter(poisoned)) : null;
+    if(drainTarget && !enemy.action_used) {
+        await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:drainTarget.id});
+        const result=await peAIRpc('cast_enemy_special_ability',{
+            p_target_entity_id:drainTarget.id,p_ability_id:'succhiasangue'
+        });
+        if(result?.executed) {
+            addCombatLog(`${enemy.display_name} usa Succhiasangue su ${drainTarget.display_name}: ${result.damage||0} danni e ${result.healed||0} PF recuperati.`);
+        }
+    } else if(adjacent.length && !enemy.action_used) {
+        const target=nearest(adjacent);
+        await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:target.id});
+        await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
+    } else if(pm >= 3 && !enemy.action_used) {
+        const candidates=players.filter(p=>!poisoned(p));
+        const target=nearest(candidates);
+        if(target) {
+            await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:target.id});
+            // Intelligenza 2 = portata di Veleno: 2 caselle.
+            enemy=await peAIMove(enemy,peAIPath(enemy,target,2,budget));
+            if(distance(enemy,target)>=1 && distance(enemy,target)<=2) {
+                const result=await peAIRpc('cast_enemy_special_ability',{
+                    p_target_entity_id:target.id,p_ability_id:'veleno'
+                });
+                if(result?.executed)
+                    addCombatLog(`${enemy.display_name} avvelena ${target.display_name}.`);
+            }
+        }
+    }
+
+    // Consumiamo soltanto i punti movimento rimasti sulla scheda server.
+    // Scegliamo una casella che aumenti la distanza dal giocatore più vicino.
+    const retreat=findAIRetreatPath(enemy,getAliveCombatPlayers(),
+        Math.max(0,Number(enemy.movement_remaining)||0));
+    await peAIMove(enemy,retreat);
+}
+
+// DINOSAURI PIANO I-C — gruppo Velociraptor e T-Rex.
+async function peAIDinosaurTurn(enemy) {
+    const type=String(enemy.enemy_id||enemy.monster_type||'').toLowerCase();
+    const players=getAliveCombatPlayers();
+    if (!players.length) return;
+    const distance=(a,b)=>getCombatRectDistance(a,b);
+    let target;
+    if(type==='velociraptor') {
+        // Tutti i membri del branco danno la priorità al PG con meno PF correnti.
+        target=players.slice().sort((a,b)=>Number(a.current_hp)-Number(b.current_hp)
+            || distance(enemy,a)-distance(enemy,b))[0];
+    } else {
+        // Il T-Rex attacca chi ha più PF massimi, non più PF correnti.
+        target=players.slice().sort((a,b)=>Number(b.max_hp)-Number(a.max_hp)
+            || distance(enemy,a)-distance(enemy,b))[0];
+    }
+    if(!target)return;
+    const locked=await peAIRpc('set_new_enemy_ai_target',{p_target_entity_id:target.id});
+    if(locked?.target_id && locked.target_id!==target.id)
+        target=combatEntities.get(locked.target_id)||target; // Aggro prevale.
+    if(type==='trex' && Number(enemy.current_hp)*4 < Number(enemy.max_hp)*3
+        && Number(enemy.current_pm)>=2 && !hasAICombatEffect(enemy.id,'attack_bonus')
+        && !enemy.action_used) {
+        const buff=await peAIRpc('cast_trex_buff');
+        if(buff?.executed){
+            addCombatLog(`${enemy.display_name} usa Arma Potenziata! (+1 Attacco)`);
+            return;
+        }
+    }
+    // Sono entrambi attaccanti corpo a corpo: nessuna azione o movimento gratuito.
+    enemy=await peAIMove(enemy,peAIPath(enemy,target,1,
+        Math.max(0,Number(enemy.movement_remaining)||0)));
+    if(distance(enemy,target)!==1 || enemy.action_used)return;
+    if(type==='velociraptor') {
+        const bleeding=hasAICombatEffect(target.id,'dot_sanguinamento');
+        const ability=bleeding?'succhiasangue':'sanguinamento';
+        const cost=2;
+        if(Number(enemy.current_pm)>=cost) {
+            const result=await peAIRpc('cast_enemy_special_ability',{
+                p_target_entity_id:target.id,p_ability_id:ability
+            });
+            if(result?.executed) {
+                addCombatLog(`${enemy.display_name} usa ${ability} su ${target.display_name}`+
+                    (ability==='succhiasangue'?`: ${result.damage||0} danni e ${result.healed||0} PF recuperati.`:'.'));
+                return;
+            }
+        }
+    }
+    await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
+}
+
 async function peAINewEnemyTurn(enemy) {
     const type=String(enemy.monster_type||'').toLowerCase();
+    if(type==='velociraptor' || type==='trex') {
+        await peAIDinosaurTurn(enemy);
+        return;
+    }
+    if(type==='lucertoloide_sciamano') {
+        await peAIShamanTurn(enemy);
+        return;
+    }
     // Le piante riusano RPC dedicate, preservando integralmente i Goblin.
     if(type==='pianta_verde' || type==='pianta_nera') {
         const result=await peAIRpc(type==='pianta_verde'?'run_pianta_verde_turn':'run_pianta_nera_turn');
