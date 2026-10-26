@@ -15663,6 +15663,16 @@ async function useFruitConsumable() {
 // Lo stato è condiviso e persistente su Supabase, con scadenza di tre ore.
 const icBrazierState={ready:false,busy:false,tokens:new Map(),gems:[],portal:null,status:[]};
 const icBrazierCoords=[{id:1,x:4,y:34},{id:2,x:31,y:39},{id:3,x:59,y:35}];
+const icBrazierVisuals={
+ inactive:{x:0,y:-19,scale:2.5},
+ active:{x:2,y:-19,scale:2.5}
+};
+const icBrazierGemVisuals=[
+ {x:-16,y:26,scale:0.3},
+ {x:9,y:26,scale:0.3},
+ {x:153,y:-32,scale:0.3}
+];
+const icBrazierPortalVisual={x:-3,y:-11,scale:0.5};
 function icBrazierModal(title,body,confirmLabel){
  return new Promise(resolve=>{
   const overlay=document.createElement('div');overlay.className='combat-event-overlay';
@@ -15691,14 +15701,19 @@ function icBrazierRender(){
    button.addEventListener('click',()=>void icBrazierInteract(c.id));map.append(button);icBrazierState.tokens.set(c.id,button)}
   icBrazierTile(button,c.x,c.y);
   const active=!!icBrazierState.status.find(v=>v.id===c.id)?.active;
+  const visual=active?icBrazierVisuals.active:icBrazierVisuals.inactive;
   button.querySelector('img').src='immagini/totem_'+(active?'1':'0')+'.png';
   button.title=active?'Braciere acceso':'Braciere spento';
+  button.style.transform=`translate(${visual.x}px, ${visual.y}px) scale(${visual.scale})`;
+  button.style.transformOrigin='center center';
  }
- // Coordinate provvisorie: i pixel precisi saranno regolati successivamente.
  const locations=[{x:30,y:3},{x:32,y:3},{x:30,y:4}];
  for(let i=0;i<3;i++){
   let img=icBrazierState.gems[i];if(!img){img=document.createElement('img');img.src='immagini/g1.png';img.alt='Gemma del braciere';img.draggable=false;map.append(img);icBrazierState.gems[i]=img;}
   icBrazierTile(img,locations[i].x,locations[i].y);
+  const visual=icBrazierGemVisuals[i]||{x:0,y:0,scale:1};
+  img.style.transform=`translate(${visual.x}px, ${visual.y}px) scale(${visual.scale})`;
+  img.style.transformOrigin='center center';
   img.style.pointerEvents='none';img.style.display=icBrazierState.status.find(v=>v.id===i+1)?.active?'block':'none';
  }
  if(!icBrazierState.portal){
@@ -15708,6 +15723,8 @@ function icBrazierRender(){
   map.append(portal);icBrazierState.portal=portal;
  }
  icBrazierTile(icBrazierState.portal,31,3);
+ icBrazierState.portal.style.transform=`translate(${icBrazierPortalVisual.x}px, ${icBrazierPortalVisual.y}px) scale(${icBrazierPortalVisual.scale})`;
+ icBrazierState.portal.style.transformOrigin='center center';
  icBrazierState.portal.style.display=icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)?'block':'none';
 }
 async function icBrazierRefresh(){
