@@ -912,6 +912,7 @@ document.addEventListener(
             icEggStart();
             icBrazierStart();
             icCombatStart();
+            icTikiBossPreviewRender();
 
 
 
@@ -5150,11 +5151,52 @@ function icCombatTryStep(x,y){
         }
     return false;
 }
+// Token fisso del futuro Boss Tiki: incontro provvisorio con Tiki di Legno.
+const icTikiBossPreview={x:31,y:40,token:null,busy:false,visible:true,respawnAt:null,refreshTimer:null};
+function icTikiBossPreviewRender(){
+ const map=document.getElementById('dungeon-map');if(!map)return;
+ let token=icTikiBossPreview.token;
+ if(!token){
+  token=document.createElement('button');token.type='button';token.className='pia-encounter-token ic-tiki-boss-token';
+  token.title='Boss Tiki (incontro provvisorio)';token.setAttribute('aria-label',token.title);
+  token.style.cssText='position:absolute;z-index:9;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;cursor:pointer;background-image:url("immagini/nemici/boss_tiki.png");background-position:center;background-repeat:no-repeat;background-size:contain';
+  token.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();void icTikiBossPreviewEnter()});
+  map.append(token);icTikiBossPreview.token=token;
+ }
+ token.style.display=icTikiBossPreview.visible?'block':'none';
+ token.style.left=((31.5)/MAP_COLUMNS*100)+'%';token.style.top=((40.5)/MAP_ROWS*100)+'%';
+ token.style.width=(100/MAP_COLUMNS*1.6)+'%';token.style.height=(100/MAP_ROWS*1.6)+'%';
+}
+async function icTikiBossPreviewEnter(){
+ if(icTikiBossPreview.busy||!icTikiBossPreview.visible)return;
+ if(Math.abs(playerX-31)+Math.abs(playerY-40)>1){icCombatNotice('Avvicinati al Boss Tiki.');return;}
+ if(!await icCombatDialog({family:'tiki',difficulty:'facile'}))return;
+ icTikiBossPreview.busy=true;
+ try{
+  const {data,error}=await db.rpc('piano_ic_enter_tiki_boss_preview');if(error)throw error;
+  const combatId=typeof data==='string'?data:data?.combat_id;
+  if(!combatId)throw new Error('Combattimento non disponibile');
+  window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(combatId)}`);
+ }catch(e){console.error('Boss Tiki provvisorio:',e);icCombatNotice(e.message||'Impossibile avviare il combattimento');}
+ finally{icTikiBossPreview.busy=false;}
+}
+function icTikiBossPreviewTryStep(x,y){if(x!==31||y!==40||!icTikiBossPreview.visible)return false;void icTikiBossPreviewEnter();return true;}
+async function icTikiBossPreviewRefresh(){
+ try{
+  const {data,error}=await db.rpc('piano_ic_tiki_boss_status');if(error)throw error;
+  icTikiBossPreview.visible=data?.visible!==false;
+  icTikiBossPreview.respawnAt=data?.respawn_at||null;
+  icTikiBossPreviewRender();
+ }catch(e){console.warn('Stato Boss Tiki non disponibile:',e);}
+}
+
+
 function icCombatStart(){
     if(icCombat.ready)return;
-    icCombat.ready=true;void icCombatRefresh();
+    icCombat.ready=true;void icCombatRefresh();void icTikiBossPreviewRefresh();
+    icTikiBossPreview.refreshTimer=window.setInterval(icTikiBossPreviewRefresh,5000);
     icCombat.timer=window.setInterval(icCombatRefresh,15000);
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icCombatRefresh();});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){void icCombatRefresh();void icTikiBossPreviewRefresh();}});
 }
 
 // Piano I-C: movimento ed eventi sincronizzati.
@@ -5166,6 +5208,7 @@ async function performMovement(dx,dy) {
         return false;
     }
     if(icBrazierTryStep(nx,ny))return false;
+    if(icTikiBossPreviewTryStep(nx,ny))return false;
     if(icCombatTryStep(nx,ny))return false;
     if(icEggTryStep(nx,ny))return false;
     if(icFruitTryStep(nx,ny))return false;
@@ -15744,7 +15787,7 @@ let icBrazierOfferOpen=false;
 async function icBrazierInteract(id){
  const c=icBrazierCoords.find(v=>v.id===id);if(!c||icBrazierState.busy||icBrazierOfferOpen)return;
  if(Math.abs(playerX-c.x)+Math.abs(playerY-c.y)>1){setMessage('Avvicinati al braciere per interagire.');return;}
- if(icBrazierState.status.find(v=>v.id===id)?.active){await icBrazierModal('BRACIERE ACCESO','Le fiamme magiche continueranno a bruciare fino allo scadere delle tre ore.');return;}
+ if(icBrazierState.status.find(v=>v.id===id)?.active){await icBrazierModal('BRACIERE ACCESO',id===2?'Il braciere resterà acceso finché il Boss Tiki non ricomparirà, un’ora dopo la sua sconfitta.':'Le fiamme magiche continueranno a bruciare fino allo scadere delle tre ore.');return;}
  if(id===2){await icBrazierModal('IL BRACIERE DEL GUARDIANO','Il braciere si accenderà soltanto dopo la sconfitta del boss di zona.');return;}
  icBrazierOfferOpen=true;
  const overlay=document.createElement('div');overlay.className='combat-event-overlay';
