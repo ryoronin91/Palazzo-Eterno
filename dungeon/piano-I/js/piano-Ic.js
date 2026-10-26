@@ -5157,9 +5157,13 @@ function icTikiBossPreviewRender(){
  const map=document.getElementById('dungeon-map');if(!map)return;
  let token=icTikiBossPreview.token;
  if(!token){
-  token=document.createElement('button');token.type='button';token.className='pia-encounter-token ic-tiki-boss-token';
+  token=document.createElement('button');token.type='button';token.className='ic-tiki-boss-token';
   token.title='Boss Tiki (incontro provvisorio)';token.setAttribute('aria-label',token.title);
-  token.style.cssText='position:absolute;z-index:9;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;cursor:pointer;background-image:url("immagini/nemici/boss_tiki.png");background-position:center;background-repeat:no-repeat;background-size:contain';
+  token.style.cssText='position:absolute;z-index:40;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;box-shadow:none;cursor:pointer;overflow:visible;min-width:0;min-height:0;display:block;';
+  const art=document.createElement('img');art.src='immagini/nemici/boss_tiki.png';art.alt='Boss Tiki';art.draggable=false;
+  art.style.cssText='display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;pointer-events:none;';
+  art.onerror=()=>{console.error('Immagine Boss Tiki assente:',art.src);art.style.display='none';token.textContent='TIKI';token.style.background='#5d2a17';token.style.border='2px solid #f0a632';token.style.color='#fff';token.style.fontWeight='bold';};
+  token.appendChild(art);
   token.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();void icTikiBossPreviewEnter()});
   map.append(token);icTikiBossPreview.token=token;
  }
