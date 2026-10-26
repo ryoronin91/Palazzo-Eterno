@@ -15374,7 +15374,7 @@ function icSetZoom(v){
  map.style.setProperty('width',`${MAP_COLUMNS*100/icVisibleCells}%`,'important');
  map.style.setProperty('height',`${MAP_ROWS*100/icVisibleCells}%`,'important');
  const b=document.getElementById('pia-zoom-reset');if(b)b.textContent=`${icVisibleCells} × ${icVisibleCells}`;
- requestAnimationFrame(()=>{repositionAllTokens();updateDungeonCamera(true);});
+ requestAnimationFrame(()=>{repositionAllTokens();updateDungeonCamera(true);if(typeof icBrazierRender==='function')icBrazierRender();});
 }
 // Nebbia provvisoria I-C: rivela le celle attorno al personaggio.
 // Il Master puo` disabilitarla senza cambiare le coordinate di gioco.
@@ -15673,6 +15673,12 @@ const icBrazierGemVisuals=[
  {x:153,y:-32,scale:0.3}
 ];
 const icBrazierPortalVisual={x:-3,y:-11,scale:0.5};
+// Gli offset delle gemme sono stati tarati con zoom 5x5.
+// Convertiti in unita' proporzionali alla dimensione delle celle, non pixel fissi.
+function icBrazierGemTransform(visual){
+ const zoomRatio=5/icVisibleCells;
+ return `translate(${visual.x*zoomRatio}px, ${visual.y*zoomRatio}px) scale(${visual.scale})`;
+}
 function icBrazierModal(title,body,confirmLabel){
  return new Promise(resolve=>{
   const overlay=document.createElement('div');overlay.className='combat-event-overlay';
@@ -15712,7 +15718,7 @@ function icBrazierRender(){
   let img=icBrazierState.gems[i];if(!img){img=document.createElement('img');img.src='immagini/g1.png';img.alt='Gemma del braciere';img.draggable=false;map.append(img);icBrazierState.gems[i]=img;}
   icBrazierTile(img,locations[i].x,locations[i].y);
   const visual=icBrazierGemVisuals[i]||{x:0,y:0,scale:1};
-  img.style.transform=`translate(${visual.x}px, ${visual.y}px) scale(${visual.scale})`;
+  img.style.transform=icBrazierGemTransform(visual);
   img.style.transformOrigin='center center';
   img.style.pointerEvents='none';img.style.display=icBrazierState.status.find(v=>v.id===i+1)?.active?'block':'none';
  }
@@ -15723,7 +15729,7 @@ function icBrazierRender(){
   map.append(portal);icBrazierState.portal=portal;
  }
  icBrazierTile(icBrazierState.portal,31,3);
- icBrazierState.portal.style.transform=`translate(${icBrazierPortalVisual.x}px, ${icBrazierPortalVisual.y}px) scale(${icBrazierPortalVisual.scale})`;
+ icBrazierState.portal.style.transform=icBrazierGemTransform(icBrazierPortalVisual);
  icBrazierState.portal.style.transformOrigin='center center';
  icBrazierState.portal.style.display=icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)?'block':'none';
 }
