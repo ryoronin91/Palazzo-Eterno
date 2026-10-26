@@ -8,7 +8,7 @@ let vendorMusicVolume = loadVendorMusicVolume();
 
 const VENDOR_ID = 'vendor_sciamano_scagliagrigia';
 const REQUIRED_SCORE = 400;
-const QUEST_TARGET = 24;
+const QUEST_TARGET = 12;
 
 
 let currentUser = null;
