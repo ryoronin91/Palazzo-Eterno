@@ -910,6 +910,7 @@ document.addEventListener(
             setupMovement();
             icFruitStart();
             icEggStart();
+            icBrazierStart();
             icCombatStart();
 
 
@@ -5164,6 +5165,7 @@ async function performMovement(dx,dy) {
         showIcReturnToIbPopup();
         return false;
     }
+    if(icBrazierTryStep(nx,ny))return false;
     if(icCombatTryStep(nx,ny))return false;
     if(icEggTryStep(nx,ny))return false;
     if(icFruitTryStep(nx,ny))return false;
@@ -15655,3 +15657,91 @@ async function useFruitConsumable() {
     }
 }
 
+
+
+// PIANO I-C: tre bracieri di accesso al Tempio di Scintilla.
+// Lo stato è condiviso e persistente su Supabase, con scadenza di tre ore.
+const icBrazierState={ready:false,busy:false,tokens:new Map(),gems:[],portal:null,status:[]};
+const icBrazierCoords=[{id:1,x:4,y:34},{id:2,x:31,y:39},{id:3,x:59,y:35}];
+function icBrazierModal(title,body,confirmLabel){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');overlay.className='combat-event-overlay';
+  const modal=document.createElement('div');modal.className='combat-event-modal';
+  const h=document.createElement('h2');h.textContent=title;
+  const p=document.createElement('p');p.textContent=body;
+  const buttons=document.createElement('div');buttons.className='combat-event-buttons';
+  const cancel=document.createElement('button');cancel.className='combat-event-button combat-event-cancel';cancel.textContent='CHIUDI';
+  const yes=document.createElement('button');yes.className='combat-event-button combat-event-enter';yes.textContent=confirmLabel||'CONFERMA';
+  function done(v){overlay.remove();resolve(v)}
+  cancel.onclick=()=>done(false);yes.onclick=()=>done(true);overlay.onclick=e=>{if(e.target===overlay)done(false)};
+  buttons.append(cancel);if(confirmLabel)buttons.append(yes);modal.append(h,p,buttons);overlay.append(modal);document.body.append(overlay);
+ });
+}
+function icBrazierTile(el,x,y,w=1,h=1){
+ el.style.position='absolute';el.style.left=(x*100/MAP_COLUMNS)+'%';el.style.top=(y*100/MAP_ROWS)+'%';
+ el.style.width=(w*100/MAP_COLUMNS)+'%';el.style.height=(h*100/MAP_ROWS)+'%';
+ el.style.zIndex='7';el.style.padding='0';el.style.border='0';el.style.background='transparent';el.style.cursor='pointer';
+}
+function icBrazierRender(){
+ const map=document.getElementById('dungeon-map');if(!map)return;
+ for(const c of icBrazierCoords){
+  let button=icBrazierState.tokens.get(c.id);
+  if(!button){button=document.createElement('button');button.type='button';button.title='Braciere antico';
+   const img=document.createElement('img');img.alt='';img.draggable=false;img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none';button.append(img);
+   button.addEventListener('click',()=>void icBrazierInteract(c.id));map.append(button);icBrazierState.tokens.set(c.id,button)}
+  icBrazierTile(button,c.x,c.y);
+  const active=!!icBrazierState.status.find(v=>v.id===c.id)?.active;
+  button.querySelector('img').src='immagini/totem_'+(active?'1':'0')+'.png';
+  button.title=active?'Braciere acceso':'Braciere spento';
+ }
+ // Coordinate provvisorie: i pixel precisi saranno regolati successivamente.
+ const locations=[{x:30,y:3},{x:32,y:3},{x:30,y:4}];
+ for(let i=0;i<3;i++){
+  let img=icBrazierState.gems[i];if(!img){img=document.createElement('img');img.src='immagini/g1.png';img.alt='Gemma del braciere';img.draggable=false;map.append(img);icBrazierState.gems[i]=img;}
+  icBrazierTile(img,locations[i].x,locations[i].y);
+  img.style.pointerEvents='none';img.style.display=icBrazierState.status.find(v=>v.id===i+1)?.active?'block':'none';
+ }
+ if(!icBrazierState.portal){
+  const portal=document.createElement('button');portal.type='button';portal.title='Varco verso il Piano I-D';
+  const img=document.createElement('img');img.src='immagini/gtot.png';img.alt='Varco del Tempio';img.draggable=false;img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none';portal.append(img);
+  portal.onclick=()=>void icBrazierModal('IL VARCO DI SCINTILLA','Le tre gemme hanno risvegliato il varco verso il Piano I-D. Il collegamento al Tempio di Scintilla sarà disponibile quando verrà implementato il Piano I-D.');
+  map.append(portal);icBrazierState.portal=portal;
+ }
+ icBrazierTile(icBrazierState.portal,31,3);
+ icBrazierState.portal.style.display=icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)?'block':'none';
+}
+async function icBrazierRefresh(){
+ if(!icBrazierState.ready||!db)return;
+ try{const {data,error}=await db.rpc('piano_ic_braziers_status');if(error)throw error;
+  icBrazierState.status=Array.isArray(data?.braziers)?data.braziers:[];icBrazierRender();
+ }catch(e){console.warn('Bracieri I-C:',e)}
+}
+async function icBrazierInteract(id){
+ const c=icBrazierCoords.find(v=>v.id===id);if(!c||icBrazierState.busy)return;
+ if(Math.abs(playerX-c.x)+Math.abs(playerY-c.y)>1){setMessage('Avvicinati al braciere per interagire.');return;}
+ if(icBrazierState.status.find(v=>v.id===id)?.active){await icBrazierModal('BRACIERE ACCESO','Le fiamme magiche continueranno a bruciare fino allo scadere delle tre ore.');return;}
+ const descriptions={
+  1:['IL PREZZO DEL FUOCO','Vuoi sacrificare 12 PF per accendere questo braciere per tre ore?','OFFRI 12 PF'],
+  2:['IL BRACIERE DEL GUARDIANO','Questo braciere si accenderà soltanto alla sconfitta del boss di zona. Il boss non è ancora disponibile.',null],
+  3:['IL BRACIERE VUOTO','Per accendere questo braciere per tre ore, vuoi offrire 3 Denti di Rex, 10 Piume di Raptor, 10 Scaglie resistenti e 20 Pelli di dinosauro?','FAI OFFERTA']
+ };
+ const [title,body,button]=descriptions[id];
+ if(!await icBrazierModal(title,body,button)||id===2)return;
+ icBrazierState.busy=true;
+ try{const {data,error}=await db.rpc('piano_ic_brazier_activate',{p_id:id});if(error)throw error;
+  setMessage(data?.message||'Operazione non riuscita.');
+  if(data?.ok&&id===1&&character){character.current_hp=Math.max(0,Number(character.current_hp||0)-12);if(typeof updateCharacterStats==='function')updateCharacterStats();}
+  if(data?.ok&&id===3&&typeof loadCharacterEquipment==='function')await loadCharacterEquipment();
+  await icBrazierRefresh();
+ }catch(e){setMessage(e.message||'Impossibile accendere il braciere.');console.error('Braciere I-C:',e)}
+ finally{icBrazierState.busy=false;}
+}
+function icBrazierTryStep(x,y){
+ const hit=icBrazierCoords.find(c=>c.x===x&&c.y===y);
+ if(hit){void icBrazierInteract(hit.id);return true;}
+ if(x===31&&y===3&&icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)){
+  void icBrazierModal('IL VARCO DI SCINTILLA','Il portale è attivo, ma la destinazione I-D non è ancora implementata.');return true;
+ }
+ return false;
+}
+function icBrazierStart(){if(icBrazierState.ready)return;icBrazierState.ready=true;void icBrazierRefresh();setInterval(icBrazierRefresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icBrazierRefresh()});}
