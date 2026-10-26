@@ -1204,6 +1204,45 @@ async function runEnemyAI(
 
     try {
 
+        // Boss Tiki: due azioni server-side, potenziamenti, evocazioni e attacchi.
+        if (monsterType === 'boss_tiki') {
+            const { data, error } = await db.rpc('run_boss_tiki_turn', { p_combat_id: combatId });
+            if (error) throw error;
+            if (data?.executed) {
+                for (const action of data.actions || []) {
+                    if (action.type === 'armatura_potenziata') {
+                        addCombatLog('Boss Tiki lancia Armatura Potenziata!');
+                    } else if (action.type === 'arma_potenziata') {
+                        addCombatLog('Boss Tiki lancia Arma Potenziata!');
+                    } else if (action.type === 'summon') {
+                        addCombatLog('Boss Tiki evoca ' + (action.enemy_id === 'tiki_pietra' ? 'un Tiki di Pietra!' : 'un Tiki di Legno!'));
+                    } else if (action.type === 'melee' && action.result?.executed) {
+                        const hit = action.result;
+                        addCombatLog('Boss Tiki attacca ' + hit.target_name + ': ' + (hit.hit ? hit.damage + ' danni' : 'MANCATO') + '.');
+                    } else if (action.type === 'approach') {
+                        addCombatLog('Boss Tiki si avvicina al personaggio più vicino.');
+                    }
+                }
+            }
+            await loadCombatSession();
+            await Promise.all([loadCombatEntities(), loadCombatEffects()]);
+            lastCombatEntitiesSnapshot = createCombatSnapshot();
+            renderCombat();
+            if (combatSession?.status === 'active') {
+                const {error: finishError} = await db.rpc('finish_enemy_turn', {
+                    p_combat_id: combatId,
+                    p_enemy_entity_id: currentEntity.id,
+                    p_round_number: Number(combatSession.round_number)
+                });
+                if (finishError) throw finishError;
+                await loadCombatSession();
+                await loadCombatEntities();
+                lastCombatEntitiesSnapshot = createCombatSnapshot();
+                renderCombat();
+            }
+            return;
+        }
+
         // Allosauro Dominante: l'intero turno è atomico lato database.
         if (monsterType === 'allosauro_dominante') {
             const { data, error } = await db.rpc('p1_run_allosauro_turn', {

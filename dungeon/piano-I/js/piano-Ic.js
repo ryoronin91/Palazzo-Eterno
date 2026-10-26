@@ -5043,6 +5043,7 @@ function icCombatDialog(slot){
                 difficile: 'Un ruggito assordante squarcia la giungla. Davanti a te si ergono giganteschi T-Rex, pronti a divorare chiunque osi avvicinarsi. Vuoi affrontarli?'
             },
             lucertoloidi: 'Tra le fronde intravedi una pattuglia di cacciatori lucertoloidi. Guerrieri armati e uno sciamano ti osservano minacciosi: hanno deciso che sei la loro preda. Vuoi affrontarli?',
+            boss_tiki: 'Tra le rovine si erge il Guardiano del Fuoco Antico. Un gigantesco Tiki di pietra e lava solleva la sua arma, mentre gli spiriti degli idoli tremano nell’aria. Affronterai il Boss Tiki?',
             tiki: {
                 facile: 'Dalla vegetazione emergono piccoli idoli di legno animati. Le loro maschere ardono di una luce inquietante e avanzano verso di te. Vuoi affrontarli?',
                 medio: 'La terra trema sotto i passi di antichi Tiki di Pietra. Il fuoco risplende nelle loro crepe mentre ti bloccano il cammino. Vuoi affrontarli?',
@@ -5151,16 +5152,16 @@ function icCombatTryStep(x,y){
         }
     return false;
 }
-// Token fisso del futuro Boss Tiki: incontro provvisorio con Tiki di Legno.
+// Token fisso del Boss Tiki: combattimento completo e respawn condiviso.
 const icTikiBossPreview={x:31,y:40,token:null,busy:false,visible:true,respawnAt:null,refreshTimer:null};
 function icTikiBossPreviewRender(){
  const map=document.getElementById('dungeon-map');if(!map)return;
  let token=icTikiBossPreview.token;
  if(!token){
   token=document.createElement('button');token.type='button';token.className='ic-tiki-boss-token';
-  token.title='Boss Tiki (incontro provvisorio)';token.setAttribute('aria-label',token.title);
+  token.title='Boss Tiki — Guardiano del Fuoco Antico';token.setAttribute('aria-label',token.title);
   token.style.cssText='position:absolute;z-index:40;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;box-shadow:none;cursor:pointer;overflow:visible;min-width:0;min-height:0;display:block;';
-  const art=document.createElement('img');art.src='immagini/nemici/boss_tiki.png';art.alt='Boss Tiki';art.draggable=false;
+  const art=document.createElement('img');art.src='../../immagini/nemici/boss_tiki.png';art.alt='Boss Tiki';art.draggable=false;
   art.style.cssText='display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;pointer-events:none;';
   art.onerror=()=>{console.error('Immagine Boss Tiki assente:',art.src);art.style.display='none';token.textContent='TIKI';token.style.background='#5d2a17';token.style.border='2px solid #f0a632';token.style.color='#fff';token.style.fontWeight='bold';};
   token.appendChild(art);
@@ -5174,14 +5175,14 @@ function icTikiBossPreviewRender(){
 async function icTikiBossPreviewEnter(){
  if(icTikiBossPreview.busy||!icTikiBossPreview.visible)return;
  if(Math.abs(playerX-31)+Math.abs(playerY-40)>1){icCombatNotice('Avvicinati al Boss Tiki.');return;}
- if(!await icCombatDialog({family:'tiki',difficulty:'facile'}))return;
+ if(!await icCombatDialog({family:'boss_tiki'}))return;
  icTikiBossPreview.busy=true;
  try{
   const {data,error}=await db.rpc('piano_ic_enter_tiki_boss_preview');if(error)throw error;
   const combatId=typeof data==='string'?data:data?.combat_id;
   if(!combatId)throw new Error('Combattimento non disponibile');
   window.location.assign(`../../combat.html?combat_id=${encodeURIComponent(combatId)}`);
- }catch(e){console.error('Boss Tiki provvisorio:',e);icCombatNotice(e.message||'Impossibile avviare il combattimento');}
+ }catch(e){console.error('Boss Tiki:',e);icCombatNotice(e.message||'Impossibile avviare il combattimento');}
  finally{icTikiBossPreview.busy=false;}
 }
 function icTikiBossPreviewTryStep(x,y){if(x!==31||y!==40||!icTikiBossPreview.visible)return false;void icTikiBossPreviewEnter();return true;}
