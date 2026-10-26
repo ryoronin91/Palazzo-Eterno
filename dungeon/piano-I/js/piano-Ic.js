@@ -15739,25 +15739,67 @@ async function icBrazierRefresh(){
   icBrazierState.status=Array.isArray(data?.braziers)?data.braziers:[];icBrazierRender();
  }catch(e){console.warn('Bracieri I-C:',e)}
 }
+const icBrazierResourceNames={pf:'Punti ferita',dente_rex:'Dente di Rex',piuma_raptor:'Piuma di Raptor',scaglie_resistenti:'Scaglie resistenti',pelle_dinosauro:'Pelle di dinosauro'};
+let icBrazierOfferOpen=false;
 async function icBrazierInteract(id){
- const c=icBrazierCoords.find(v=>v.id===id);if(!c||icBrazierState.busy)return;
+ const c=icBrazierCoords.find(v=>v.id===id);if(!c||icBrazierState.busy||icBrazierOfferOpen)return;
  if(Math.abs(playerX-c.x)+Math.abs(playerY-c.y)>1){setMessage('Avvicinati al braciere per interagire.');return;}
  if(icBrazierState.status.find(v=>v.id===id)?.active){await icBrazierModal('BRACIERE ACCESO','Le fiamme magiche continueranno a bruciare fino allo scadere delle tre ore.');return;}
- const descriptions={
-  1:['IL PREZZO DEL FUOCO','Vuoi sacrificare 12 PF per accendere questo braciere per tre ore?','OFFRI 12 PF'],
-  2:['IL BRACIERE DEL GUARDIANO','Questo braciere si accenderà soltanto alla sconfitta del boss di zona. Il boss non è ancora disponibile.',null],
-  3:['IL BRACIERE VUOTO','Per accendere questo braciere per tre ore, vuoi offrire 3 Denti di Rex, 10 Piume di Raptor, 10 Scaglie resistenti e 20 Pelli di dinosauro?','FAI OFFERTA']
- };
- const [title,body,button]=descriptions[id];
- if(!await icBrazierModal(title,body,button)||id===2)return;
- icBrazierState.busy=true;
- try{const {data,error}=await db.rpc('piano_ic_brazier_activate',{p_id:id});if(error)throw error;
-  setMessage(data?.message||'Operazione non riuscita.');
-  if(data?.ok&&id===1&&character){character.current_hp=Math.max(0,Number(character.current_hp||0)-12);if(typeof updateCharacterStats==='function')updateCharacterStats();}
-  if(data?.ok&&id===3&&typeof loadCharacterEquipment==='function')await loadCharacterEquipment();
-  await icBrazierRefresh();
- }catch(e){setMessage(e.message||'Impossibile accendere il braciere.');console.error('Braciere I-C:',e)}
- finally{icBrazierState.busy=false;}
+ if(id===2){await icBrazierModal('IL BRACIERE DEL GUARDIANO','Il braciere si accenderà soltanto dopo la sconfitta del boss di zona.');return;}
+ icBrazierOfferOpen=true;
+ const overlay=document.createElement('div');overlay.className='combat-event-overlay';
+ const modal=document.createElement('div');modal.className='combat-event-modal';
+ modal.style.cssText+=';max-width:560px;width:min(94vw,560px);max-height:88vh;overflow-y:auto;text-align:left';
+ const heading=document.createElement('h2');heading.textContent=id===1?'IL BRACIERE DEL SACRIFICIO':'IL BRACIERE DELLE OFFERTE';
+ const desc=document.createElement('p');desc.textContent=id===1?'Ogni avventuriero può offrire parte dei propri PF. Raggiunti 12 PF totali, la fiamma arderà per tre ore.':'Deposita i materiali che possiedi: tutti gli avventurieri contribuiscono alla stessa offerta. Quando tutte le risorse saranno complete, la fiamma arderà per tre ore.';
+ const rows=document.createElement('div');rows.style.cssText='display:grid;gap:12px;margin:15px 0';
+ const error=document.createElement('p');error.style.cssText='color:#f3c486;font-size:13px;min-height:18px';
+ const close=document.createElement('button');close.type='button';close.className='combat-event-button combat-event-cancel';close.textContent='CHIUDI';
+ const footer=document.createElement('div');footer.className='combat-event-buttons';footer.append(close);
+ modal.append(heading,desc,rows,error,footer);overlay.append(modal);document.body.append(overlay);
+ let closed=false,busy=false;let timer;
+ function cleanup(){if(closed)return;closed=true;clearInterval(timer);overlay.remove();icBrazierOfferOpen=false;}
+ close.onclick=cleanup;overlay.addEventListener('click',e=>{if(e.target===overlay)cleanup()});
+ async function refresh(){
+  if(closed||busy)return;
+  try{
+   const [{data,error:err},{data:state,error:stateError}]=await Promise.all([db.rpc('piano_ic_brazier_progress'),db.rpc('piano_ic_braziers_status')]);
+   if(err||stateError)throw err||stateError;
+   const on=state?.braziers?.find(v=>v.id===id)?.active;
+   if(on){cleanup();await icBrazierRefresh();setMessage('Il braciere è acceso!');return;}
+   rows.replaceChildren();
+   (data?.resources||[]).filter(r=>r.brazier_id===id).forEach(r=>{
+    const remaining=Math.max(0,Number(r.required)-Number(r.contributed));
+    const wrapper=document.createElement('div');wrapper.style.cssText='padding:10px;border:1px solid rgba(211,176,101,.45);border-radius:8px';
+    const line=document.createElement('div');line.style.cssText='display:flex;justify-content:space-between;gap:8px;margin-bottom:7px';
+    const label=document.createElement('strong');label.textContent=icBrazierResourceNames[r.resource_id]||r.resource_id;
+    const progress=document.createElement('span');progress.textContent=`${r.contributed} / ${r.required}`;
+    line.append(label,progress);
+    const bar=document.createElement('div');bar.style.cssText='background:#292b24;height:7px;border-radius:8px;overflow:hidden;margin-bottom:8px';
+    const fill=document.createElement('div');fill.style.cssText=`background:#e1b55d;width:${Math.min(100,Number(r.contributed)/Number(r.required)*100)}%;height:100%`;bar.append(fill);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;align-items:center;gap:10px';
+    const qty=document.createElement('input');qty.type='number';qty.min='1';qty.max=String(remaining);qty.step='1';qty.value=String(Math.min(remaining,id===1?3:1));qty.style.cssText='width:75px;padding:7px;color:#211b13;background:#fff9e5;border-radius:5px';
+    const add=document.createElement('button');add.type='button';add.className='combat-event-button combat-event-enter';add.textContent='AGGIUNGI';add.disabled=!remaining;
+    add.onclick=async()=>{
+     const amount=Number(qty.value);
+     if(!Number.isInteger(amount)||amount<1||amount>remaining){error.textContent='Inserisci una quantità valida.';return;}
+     busy=true;add.disabled=true;error.textContent='';
+     try{
+      const {data:result,error:e}=await db.rpc('piano_ic_brazier_contribute',{p_id:id,p_resource:r.resource_id,p_amount:amount});if(e)throw e;
+      error.textContent=result?.message||'';
+      if(result?.ok&&id===1&&character){character.current_hp=Math.max(0,Number(character.current_hp||0)-Number(result.accepted||0));if(typeof updateCharacterStats==='function')updateCharacterStats();}
+      if(result?.ok&&id===3&&typeof loadCharacterEquipment==='function')await loadCharacterEquipment();
+      await icBrazierRefresh();
+      if(result?.activated){cleanup();setMessage('Il braciere si è acceso per tre ore!');return;}
+     }catch(e){error.textContent=e.message||'Impossibile registrare il contributo.';}
+     finally{busy=false;if(!closed)await refresh();}
+    };
+    if(!remaining){const complete=document.createElement('span');complete.textContent='COMPLETATO';actions.append(complete)}else actions.append(qty,add);
+    wrapper.append(line,bar,actions);rows.append(wrapper);
+   });
+  }catch(e){error.textContent=e.message||'Impossibile leggere le offerte.';}
+ }
+ await refresh();timer=setInterval(refresh,5000);
 }
 function icBrazierTryStep(x,y){
  const hit=icBrazierCoords.find(c=>c.x===x&&c.y===y);
