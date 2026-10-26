@@ -909,6 +909,7 @@ document.addEventListener(
 
             setupMovement();
             icFruitStart();
+            icEggStart();
             icCombatStart();
 
 
@@ -4926,6 +4927,83 @@ function icFruitTryStep(x,y) {
     if(!fruit)return false;
     void icFruitCollect(String(fruit.id));return true;
 }
+
+// Uovo smarrito della Guardiana della Covata (Piano I-B).
+const icEggState={egg:null,token:null,busy:false,initialized:false};
+function icEggRender(){
+    const map=document.getElementById('dungeon-map');if(!map)return;
+    const egg=icEggState.egg;
+    if(!egg||!egg.available){
+        if(icEggState.token){icEggState.token.remove();icEggState.token=null;}
+        return;
+    }
+    if(!icEggState.token){
+        const el=document.createElement('button');el.type='button';el.className='pia-fruit-token';
+        el.title='Uovo smarrito';el.setAttribute('aria-label','Raccogli uovo smarrito');
+        const img=document.createElement('img');img.src='immagini/uovo.png';img.alt='';img.draggable=false;
+        img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;pointer-events:none';
+        el.append(img);el.addEventListener('click',()=>void icEggCollect());map.append(el);
+        icEggState.token=el;
+    }
+    const el=icEggState.token;
+    el.style.left=(100*Number(egg.x)/MAP_COLUMNS)+'%';
+    el.style.top=(100*Number(egg.y)/MAP_ROWS)+'%';
+    el.style.width=(100/MAP_COLUMNS)+'%';
+    el.style.height=(100/MAP_ROWS)+'%';
+}
+async function icEggRefresh(){
+    if(!icEggState.initialized||document.hidden||!db)return;
+    try{
+        const {data,error}=await db.rpc('piano_ic_egg_refresh');
+        if(error)throw error;
+        icEggState.egg=data;icEggRender();
+    }catch(e){console.warn('[Piano Ic] Uovo smarrito:',e);}
+}
+async function icEggCollect(){
+    const egg=icEggState.egg;
+    if(!egg||icEggState.busy)return;
+    if(Math.abs(playerX-Number(egg.x))+Math.abs(playerY-Number(egg.y))>1){
+        setMessage('Avvicinati all’uovo smarrito.');return;
+    }
+    if(!await icEggDialog())return;
+    icEggState.busy=true;
+    try{
+        const {data,error}=await db.rpc('piano_ic_egg_collect',{p_x:Number(egg.x),p_y:Number(egg.y)});
+        if(error)throw error;
+        setMessage(data?.message||data?.reason||'Raccolta terminata.');
+        if(data?.ok){await loadCharacterEquipment();updateDungeonConsumables();}
+        await icEggRefresh();
+    }catch(e){console.error('[Piano Ic] Uovo:',e);setMessage(e?.message||'Impossibile recuperare l’uovo.');}
+    finally{icEggState.busy=false;}
+}
+function icEggDialog(){
+    return new Promise(resolve=>{
+        const overlay=document.createElement('div');overlay.className='combat-event-overlay';
+        const modal=document.createElement('div');modal.className='combat-event-modal';
+        const title=document.createElement('h2');title.textContent='L’UOVO SMARRITO';
+        const p=document.createElement('p');
+        p.textContent='Fra le radici e le foglie riconosci un uovo abbandonato. Potrebbe essere quello cercato dalla Guardiana della Covata di Scagliagrigia. Vuoi raccoglierlo?';
+        const actions=document.createElement('div');actions.className='combat-event-buttons';
+        const yes=document.createElement('button');yes.className='combat-event-button combat-event-enter';yes.textContent='RACCOGLI';
+        const no=document.createElement('button');no.className='combat-event-button combat-event-cancel';no.textContent='VAI VIA';
+        function done(v){overlay.remove();resolve(v);}
+        yes.onclick=()=>done(true);no.onclick=()=>done(false);
+        overlay.onclick=e=>{if(e.target===overlay)done(false)};
+        actions.append(no,yes);modal.append(title,p,actions);overlay.append(modal);document.body.append(overlay);
+    });
+}
+function icEggTryStep(x,y){
+    const egg=icEggState.egg;
+    if(!egg||!egg.available||Number(egg.x)!==x||Number(egg.y)!==y)return false;
+    void icEggCollect();return true;
+}
+function icEggStart(){
+    if(icEggState.initialized)return;
+    icEggState.initialized=true;void icEggRefresh();
+    window.setInterval(icEggRefresh,5000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icEggRefresh();});
+}
+
 function icFruitStart() {
     if(icFruitState.initialized)return;
     icFruitState.initialized=true;void icFruitRefresh();
@@ -5088,6 +5166,7 @@ async function performMovement(dx,dy) {
         return false;
     }
     if(icCombatTryStep(nx,ny))return false;
+    if(icEggTryStep(nx,ny))return false;
     if(icFruitTryStep(nx,ny))return false;
     if(nx<0 || ny<0 || nx>=MAP_COLUMNS || ny>=MAP_ROWS || !canMoveTo(nx,ny)) {
         setMessage('Il passaggio è bloccato.'); return false;
