@@ -1113,6 +1113,8 @@ function setupVictoryExitButton() {
                     "base_combat_right"
                 ]);
 
+            const isPianoICCombat =
+                String(combatSession?.encounter_id || "").startsWith("ic_");
             const isPianoIACombat =
                 String(combatSession?.encounter_id || "").startsWith("p1_");
 
@@ -1126,6 +1128,8 @@ function setupVictoryExitButton() {
                         : "dungeon/piano-I/piano-Ia.html")
                     : baseCombatEncounterIds.has(combatSession?.encounter_id)
                         ? "base/base.html"
+                        : isPianoICCombat
+                            ? "dungeon/piano-I/piano-Ic.html"
                         : isPianoIACombat
                             ? "dungeon/piano-I/piano-Ia.html"
                             : "dungeon/piano-1/dungeon.html";
