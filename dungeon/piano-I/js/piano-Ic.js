@@ -1140,10 +1140,9 @@ function renderDungeonLeaderboard(rows) {
             const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
-            // Ogni pagina parte da una cartella differente rispetto alla root.
-            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
-                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            // Usa lo stemma determinato da Supabase, senza forzare quello Goblin semplice.
+            // Il percorso e' relativo alla root del sito (da dungeon/piano-I/).
+            const path = rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
             const iconPath = escapeDungeonLeaderboardHtml(path);
             const title = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
