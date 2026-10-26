@@ -1132,15 +1132,24 @@ function renderDungeonLeaderboard(rows) {
         const position = Number(row.posizione) || 0;
         const score = Number(row.score) || 0;
         const name = escapeDungeonLeaderboardHtml(row.character_name || "Avventuriero");
-        const badges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
+        const originalBadges = Array.isArray(row.boss_badges) ? row.boss_badges : [];
+        const badgeIds = new Set(originalBadges.map(b => String(b?.boss_id || '')));
+        const hasGoblinBoss = badgeIds.has('floor_1_goblin_boss');
+        const hasGoblinRare = badgeIds.has('rare_berserk');
+        // L'onorificenza combinata sostituisce i due stemmi separati.
+        const badges = originalBadges.filter(b => String(b?.boss_id || '') !== 'rare_berserk' || !hasGoblinBoss);
         const badgesHtml = badges.map(badge => {
             const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
-            // Ogni pagina parte da una cartella differente rispetto alla root.
-            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
-                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            // Onorificenze Goblin: normale, raro, o combinata.
+            const badgePath = bossId === 'floor_1_goblin_boss'
+                ? (hasGoblinRare ? 'immagini/stemmi/boss_goblin_raro.png' : 'immagini/stemmi/boss_goblin.png')
+                : bossId === 'rare_berserk'
+                    ? 'immagini/stemmi/boss_raro.png'
+                    : rawPath;
+            // La pagina del Villaggio è in dungeon/piano-I/.
+            const path = badgePath.startsWith('immagini/') ? '../../' + badgePath : badgePath;
             const iconPath = escapeDungeonLeaderboardHtml(path);
             const title = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
@@ -4962,9 +4971,81 @@ function showIbGiunglaAltaEntrancePopup() {
     cancel.focus();
 }
 
+// USCITA VERSO LA GIUNGLA BASSA — popup speculare all'ingresso per I-C.
+function showIbGiunglaBassaExitPopup() {
+    if (document.getElementById('ib-ia-exit-overlay')) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ib-ia-exit-overlay';
+    overlay.className = 'combat-event-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'combat-event-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'ib-ia-exit-title');
+    const title = document.createElement('h2');
+    title.id = 'ib-ia-exit-title';
+    title.textContent = 'SENTIERO DELLA GIUNGLA BASSA';
+    const description = document.createElement('p');
+    description.textContent = 'Il sentiero scende dal Villaggio degli Scagliagrigia verso la Giungla Bassa.';
+    const question = document.createElement('p');
+    question.textContent = 'Vuoi tornare nella Giungla Bassa?';
+    const actions = document.createElement('div');
+    actions.className = 'combat-event-buttons';
+    const enter = document.createElement('button');
+    enter.type = 'button';
+    enter.className = 'combat-event-button combat-event-enter';
+    enter.textContent = 'TORNA';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'combat-event-button combat-event-cancel';
+    cancel.textContent = 'ANNULLA';
+    let transferring = false;
+    function close() {
+        if (transferring) return;
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+        eventLocked = false;
+    }
+    function onKey(event) { if (event.key === 'Escape') close(); }
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    enter.addEventListener('click', async () => {
+        if (transferring) return;
+        transferring = true;
+        enter.disabled = true;
+        cancel.disabled = true;
+        try {
+            const {data, error} = await db.rpc('piano_ib_return_to_ia');
+            if (error) throw error;
+            if (!data?.returned) throw new Error('Rientro nella Giungla Bassa non riuscito.');
+            window.location.assign('piano-Ia.html');
+        } catch (error) {
+            console.error('Ritorno Piano Ia:', error);
+            setMessage(error?.message || 'Non riesci a lasciare il villaggio.');
+            transferring = false;
+            enter.disabled = false;
+            cancel.disabled = false;
+        }
+    });
+    document.addEventListener('keydown', onKey);
+    actions.append(enter, cancel);
+    modal.append(title, description, question, actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancel.focus();
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    // La statua deve intercettare anche le caselle segnate percorribili nella mappa.
+    if (isScintillaStatueCell(nx, ny)) {
+        showScintillaStatuePopup();
+        return false;
+    }
     if (nx === 10 && ny === 0) {
         showIbGiunglaAltaEntrancePopup();
         return false;
@@ -4979,25 +5060,10 @@ async function performMovement(dx,dy) {
     }
 
 
-    // Uscita verso Ia: dal bordo sud del Villaggio, un passo verso sud.
-    // Il rientro su Ia viene gestito dalla RPC e verificato dal server.
+    // Uscita verso I-A: domanda conferma prima di trasferire il personaggio.
     if (dy === 1 && playerY === 19 && [17, 18, 19].includes(playerX)) {
-        try {
-            eventLocked = true;
-            movementQueue.length = 0;
-            setMessage('Ritorno alla Giungla Bassa...');
-            const {data,error} = await db.rpc('piano_ib_return_to_ia');
-            if (error) throw error;
-            if (!data?.returned) throw new Error('Rientro su Ia non riuscito');
-            window.location.assign('piano-Ia.html');
-            return true;
-        } catch (error) {
-            console.error('Ritorno Piano Ia:', error);
-            setMessage(error?.message || 'Non riesci a lasciare il villaggio.');
-            return false;
-        } finally {
-            eventLocked = false;
-        }
+        showIbGiunglaBassaExitPopup();
+        return false;
     }
     if (nx < 0 || ny < 0 || nx >= MAP_COLUMNS || ny >= MAP_ROWS) {
         setMessage('Il passaggio e` bloccato.');
