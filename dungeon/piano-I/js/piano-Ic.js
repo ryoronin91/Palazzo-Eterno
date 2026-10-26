@@ -15773,7 +15773,7 @@ function icBrazierRender(){
  if(!icBrazierState.portal){
   const portal=document.createElement('button');portal.type='button';portal.title='Varco verso il Piano I-D';
   const img=document.createElement('img');img.src='immagini/gtot.png';img.alt='Varco del Tempio';img.draggable=false;img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none';portal.append(img);
-  portal.onclick=()=>void icBrazierModal('IL VARCO DI SCINTILLA','Le tre gemme hanno risvegliato il varco verso il Piano I-D. Il collegamento al Tempio di Scintilla sarà disponibile quando verrà implementato il Piano I-D.');
+  portal.onclick=()=>void icBrazierModal('IL VARCO DI SCINTILLA','Le tre gemme hanno risvegliato il varco verso il Piano I-D. ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo. Il collegamento al Tempio sarà disponibile quando verrà implementato il Piano I-D.');
   map.append(portal);icBrazierState.portal=portal;
  }
  icBrazierTile(icBrazierState.portal,31,3);
@@ -15853,7 +15853,7 @@ function icBrazierTryStep(x,y){
  const hit=icBrazierCoords.find(c=>c.x===x&&c.y===y);
  if(hit){void icBrazierInteract(hit.id);return true;}
  if(x===31&&y===3&&icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)){
-  void icBrazierModal('IL VARCO DI SCINTILLA','Il portale è attivo, ma la destinazione I-D non è ancora implementata.');return true;
+  void icBrazierModal('IL VARCO DI SCINTILLA','ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo. Il passaggio non è ancora disponibile: il Piano I-D è in preparazione.');return true;
  }
  return false;
 }
