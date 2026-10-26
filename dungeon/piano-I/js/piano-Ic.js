@@ -15380,24 +15380,43 @@ function icSetZoom(v){
 let icFogOverlay = null;
 let icMasterExploration = false;
 let icFogVisited = new Set();
+// Queste celle sono percorribili, ma la loro vegetazione interrompe la visuale.
+const IC_SIGHT_ONLY_BLOCKERS = new Set(['8,35', '5,38', '1,30']);
+function icHasClearSight(targetX, targetY) {
+    if (!Number.isInteger(playerX) || !Number.isInteger(playerY)) return false;
+    // Ray cast da centro a centro, includendo i blocchi incontrati prima del bersaglio.
+    // La casella che contiene l'ostacolo resta visibile; quelle dietro no.
+    let x = playerX, y = playerY;
+    const dx = Math.abs(targetX - x), dy = Math.abs(targetY - y);
+    const sx = x < targetX ? 1 : -1;
+    const sy = y < targetY ? 1 : -1;
+    let err = dx - dy;
+    while (x !== targetX || y !== targetY) {
+        if (IC_SIGHT_ONLY_BLOCKERS.has(x + ',' + y)) return false;
+        const e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx)  { err += dx; y += sy; }
+    }
+    return true;
+}
 function icRenderFog() {
     if (!icFogOverlay) return;
     const context = icFogOverlay.getContext('2d');
     if (!context) return;
     context.clearRect(0, 0, MAP_COLUMNS, MAP_ROWS);
     if (icMasterExploration) return;
-    if (Number.isInteger(playerX) && Number.isInteger(playerY)) {
-        for (let y = Math.max(0, playerY - CAMERA_RADIUS); y <= Math.min(MAP_ROWS - 1, playerY + CAMERA_RADIUS); y++) {
-            for (let x = Math.max(0, playerX - CAMERA_RADIUS); x <= Math.min(MAP_COLUMNS - 1, playerX + CAMERA_RADIUS); x++) {
-                if (Math.max(Math.abs(x-playerX), Math.abs(y-playerY)) <= CAMERA_RADIUS) icFogVisited.add(x+','+y);
+    const hasPlayer = Number.isInteger(playerX) && Number.isInteger(playerY);
+    for (let y = 0; y < MAP_ROWS; y++) {
+        for (let x = 0; x < MAP_COLUMNS; x++) {
+            const inRange = hasPlayer && Math.max(Math.abs(x-playerX),Math.abs(y-playerY)) <= CAMERA_RADIUS;
+            const visible = inRange && icHasClearSight(x, y);
+            if (visible) {
+                icFogVisited.add(x + ',' + y);
+                continue;
             }
+            context.fillStyle = icFogVisited.has(x+','+y) ? 'rgba(3,13,6,0.54)' : 'rgba(2,9,4,0.96)';
+            context.fillRect(x,y,1,1);
         }
-    }
-    for (let y=0; y<MAP_ROWS; y++) for (let x=0; x<MAP_COLUMNS; x++) {
-        context.fillStyle = icFogVisited.has(x+','+y) ? 'rgba(3,13,6,0.54)' : 'rgba(2,9,4,0.96)';
-        if (Number.isInteger(playerX) && Number.isInteger(playerY) &&
-            Math.max(Math.abs(x-playerX), Math.abs(y-playerY)) <= CAMERA_RADIUS) continue;
-        context.fillRect(x,y,1,1);
     }
 }
 async function setupPiaZoomAndExploration(){
