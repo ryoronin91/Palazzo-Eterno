@@ -15382,20 +15382,42 @@ let icMasterExploration = false;
 let icFogVisited = new Set();
 // Queste celle sono percorribili, ma la loro vegetazione interrompe la visuale.
 const IC_SIGHT_ONLY_BLOCKERS = new Set(['8,35', '5,38', '1,30']);
+// Movimento e linea di visuale sono regole separate: un muro non e` attraversabile,
+// le tre caselle speciali invece sono attraversabili ma opache.
+function icBlocksVision(x, y) {
+    if (x < 0 || y < 0 || x >= MAP_COLUMNS || y >= MAP_ROWS) return true;
+    if (IC_SIGHT_ONLY_BLOCKERS.has(x + ',' + y)) return true;
+    const c = Number(dungeonData?.cells?.[y]?.[x] ?? 0);
+    if (!Number.isFinite(c) || c === 0) return true;
+    const bits = dungeonData?.cell_bit || {};
+    // Un muro/perimetro e` opaco salvo sia esplicitamente aperto (porta, arco ecc.).
+    const opening = (bits.door ?? 131072) | (bits.arch ?? 65536) |
+        (bits.aperture ?? 32) | (bits.portcullis ?? 2097152);
+    if (c & opening) return false;
+    if (c & ((bits.block ?? 1) | (bits.perimeter ?? 16))) return true;
+    return !((c & (bits.room ?? 2)) || (c & (bits.corridor ?? 4)) ||
+        (c & (bits.stair_down ?? 4194304)) || (c & (bits.stair_up ?? 8388608)));
+}
 function icHasClearSight(targetX, targetY) {
     if (!Number.isInteger(playerX) || !Number.isInteger(playerY)) return false;
-    // Ray cast da centro a centro, includendo i blocchi incontrati prima del bersaglio.
-    // La casella che contiene l'ostacolo resta visibile; quelle dietro no.
+    if (targetX === playerX && targetY === playerY) return true;
+    // Supercover raycast: attraversa tutte le caselle toccate dal segmento.
+    // Non controllare il bersaglio: la parete resta visibile, non cio` che si trova dietro.
     let x = playerX, y = playerY;
-    const dx = Math.abs(targetX - x), dy = Math.abs(targetY - y);
-    const sx = x < targetX ? 1 : -1;
-    const sy = y < targetY ? 1 : -1;
-    let err = dx - dy;
-    while (x !== targetX || y !== targetY) {
-        if (IC_SIGHT_ONLY_BLOCKERS.has(x + ',' + y)) return false;
-        const e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x += sx; }
-        if (e2 < dx)  { err += dx; y += sy; }
+    const dx = targetX - x, dy = targetY - y;
+    const nx = Math.abs(dx), ny = Math.abs(dy);
+    const sx = Math.sign(dx), sy = Math.sign(dy);
+    let ix = 0, iy = 0;
+    while (ix < nx || iy < ny) {
+        if (icBlocksVision(x,y) && !(x === playerX && y === playerY)) return false;
+        const test = (1 + 2*ix)*ny - (1 + 2*iy)*nx;
+        if (test === 0) {
+            // Diagonale che passa esattamente fra due caselle: non vedere attraverso
+            // l'angolo chiuso di due muri adiacenti.
+            if (icBlocksVision(x+sx,y) && icBlocksVision(x,y+sy)) return false;
+            x += sx; y += sy; ix++; iy++;
+        } else if (test < 0) { x += sx; ix++; }
+        else { y += sy; iy++; }
     }
     return true;
 }
