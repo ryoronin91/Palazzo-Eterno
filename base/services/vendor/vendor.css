@@ -2090,3 +2090,8 @@ input {
 .vendor-stock-item {
     min-height: 72px;
 }
+
+/* Descrizione merce sempre visibile, anche su touchscreen */
+.vendor-stock-name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; padding: 7px 0; }
+.vendor-item-description { display: block; margin-top: 5px; font-size: 12px; line-height: 1.4; font-weight: normal; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
+.vendor-stock-item { min-height: 86px; align-items: center; }

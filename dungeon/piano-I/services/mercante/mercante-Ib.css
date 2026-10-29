@@ -2097,3 +2097,8 @@ input {
 .scag-quest p{line-height:1.35;margin:4px 0 10px}
 .scag-quest small{display:block;margin-top:7px;color:var(--muted)}
 .vendor-stock-name small{color:var(--muted);font-size:11px}
+
+/* Descrizione merce sempre visibile, anche su touchscreen */
+.vendor-stock-name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; padding: 7px 0; }
+.vendor-item-description { display: block; margin-top: 5px; font-size: 12px; line-height: 1.4; font-weight: normal; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
+.vendor-stock-item { min-height: 86px; align-items: center; }

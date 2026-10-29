@@ -18,6 +18,7 @@ let pageBackgroundMusic = null;
 let leavingPage = false;
 let pendingQuestKey = null;
 let questClaimBusy = false;
+let dailyQuestState = null;
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -33,11 +34,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         await refreshServiceState(true);
         await Promise.all([
             refreshQuestState(),
+            refreshDailyQuestState(),
             refreshUpgradeState(),
             loadCharacterInventory()
         ]);
 
         renderQuests();
+        renderDailyQuests();
         renderServiceState();
         renderUpgradeState();
         updateGoldHeader();
@@ -170,9 +173,10 @@ async function addMaintenanceGold() {
         if (error) throw error;
 
         servicePayload = data || servicePayload;
-        await Promise.all([loadCharacterInventory(), refreshQuestState()]);
+        await Promise.all([loadCharacterInventory(), refreshQuestState(), refreshDailyQuestState()]);
         updateGoldHeader();
         renderQuests();
+        renderDailyQuests();
         renderServiceState();
         setMaintenanceFeedback(`${quantity} monete aggiunte alla riserva.`);
         if (input) input.value = "1";
@@ -359,7 +363,7 @@ async function contributeUpgrade(form) {
 
         if (error) throw error;
 
-        await Promise.all([loadCharacterInventory(), refreshUpgradeState(), refreshQuestState()]);
+        await Promise.all([loadCharacterInventory(), refreshUpgradeState(), refreshQuestState(), refreshDailyQuestState()]);
         updateGoldHeader();
         renderUpgradeState();
         renderQuests();
@@ -388,6 +392,67 @@ function setUpgradeFeedback(message, isError = false) {
     el.classList.toggle("is-error", Boolean(isError));
 }
 
+
+
+// Missioni giornaliere: tutte le verifiche e i premi sono server-side.
+async function refreshDailyQuestState() {
+    const { data, error } = await db.rpc("get_daily_quest_state");
+    if (error) {
+        console.warn("Missioni giornaliere non ancora installate:", error);
+        dailyQuestState = { quests: [], unavailable: true };
+        return dailyQuestState;
+    }
+    dailyQuestState = data || { quests: [] };
+    return dailyQuestState;
+}
+
+function renderDailyQuests() {
+    const container = document.getElementById("daily-quest-list");
+    if (!container) return;
+    if (dailyQuestState?.unavailable) {
+        container.innerHTML = '<div class="inventory-empty">Missioni giornaliere non ancora attivate sul server.</div>';
+        return;
+    }
+    const quests = dailyQuestState?.quests || [];
+    container.innerHTML = "";
+    for (const quest of quests) {
+        const card = document.createElement("article");
+        const ready = quest.can_complete === true;
+        card.className = `quest-card${ready ? " is-completable" : ""}${quest.claimed ? " is-claimed" : ""}${quest.locked ? " is-locked" : ""}`;
+        const title = document.createElement("div");
+        title.className = "quest-title";
+        title.textContent = quest.title;
+        card.appendChild(title);
+        const description = document.createElement("p");
+        description.className = "quest-description";
+        description.textContent = quest.description || "";
+        card.appendChild(description);
+        const progress = document.createElement("div");
+        progress.className = "quest-progress";
+        const label = document.createElement("span");
+        label.textContent = "Obiettivo";
+        const value = document.createElement("strong");
+        value.textContent = quest.progress_text || "--";
+        progress.append(label, value);
+        card.appendChild(progress);
+        const reward = document.createElement("div");
+        reward.className = "quest-reward";
+        const rewardLabel = document.createElement("span");
+        rewardLabel.textContent = "Premio";
+        const rewardValue = document.createElement("strong");
+        rewardValue.textContent = `${quest.reward_gold} monete + ${quest.reward_score} risonanza`;
+        reward.append(rewardLabel, rewardValue);
+        card.appendChild(reward);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "merchant-button";
+        button.disabled = !ready || questClaimBusy || !!pendingQuestKey;
+        button.textContent = quest.locked ? "BOSS NON COMPLETATO" : quest.claimed ? "GIÀ RISCOSSA OGGI" : ready ? "COMPLETA" : "IN CORSO";
+        button.addEventListener("click", () => requestQuestCompletion(quest.quest_key));
+        card.appendChild(button);
+        container.appendChild(card);
+    }
+}
 
 // ============================================================
 // MISSIONI
@@ -476,7 +541,7 @@ function setupQuestDialogueActions() {
 function requestQuestCompletion(questKey) {
     if (!questKey || questClaimBusy) return;
 
-    const quest = (state?.quests || []).find(row => row.quest_key === questKey);
+    const quest = [...(state?.quests || []), ...(dailyQuestState?.quests || [])].find(row => row.quest_key === questKey);
     if (!quest || quest.can_complete !== true) return;
 
     pendingQuestKey = questKey;
@@ -557,11 +622,12 @@ function closeQuestDialogueActions() {
 async function claimQuest(questKey) {
     if (!questKey || questClaimBusy) return;
 
-    const quest = (state?.quests || []).find(row => row.quest_key === questKey);
+    const quest = [...(state?.quests || []), ...(dailyQuestState?.quests || [])].find(row => row.quest_key === questKey);
     if (!quest || quest.can_complete !== true) {
         pendingQuestKey = null;
         closeQuestDialogueActions();
         renderQuests();
+        renderDailyQuests();
         return;
     }
 
@@ -583,20 +649,23 @@ async function claimQuest(questKey) {
     try {
         await ensureServiceActive();
 
+        const isDaily = questKey.startsWith("daily_");
         const { data, error } = await db.rpc(
-            "claim_quest_reward",
+            isDaily ? "claim_daily_quest_reward" : "claim_quest_reward",
             { p_quest_key: questKey }
         );
 
         if (error) throw error;
 
-        state = data || state;
-        await loadCharacterInventory();
+        if (isDaily) dailyQuestState = data || dailyQuestState;
+        else state = data || state;
+        await Promise.all([loadCharacterInventory(), refreshDailyQuestState()]);
         updateGoldHeader();
 
         pendingQuestKey = null;
         closeQuestDialogueActions();
         renderQuests();
+        renderDailyQuests();
         setQuestFeedback("Missione completata. Premio consegnato.");
         showDialogue(getQuestSuccessLine(questKey));
 
@@ -625,6 +694,7 @@ function disableQuestButtons(disabled) {
 
     if (!disabled) {
         renderQuests();
+        renderDailyQuests();
     }
 }
 

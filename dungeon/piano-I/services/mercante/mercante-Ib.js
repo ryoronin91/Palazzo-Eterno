@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // MERCANTE-IB.JS - SCAGLIAGRIGIA
 // Posizione: dungeon/piano-I/services/mercante/mercante-Ib.js
@@ -919,6 +919,7 @@ function renderVendorItems() {
                                         row.item.name ||
                                         row.item.id
                                     )}
+                                    <div class="vendor-item-description">${escapeVendorHtml(row.item.description || "Descrizione non disponibile.")}</div>
                                 </div>
 
 
@@ -2701,7 +2702,7 @@ function renderVendorItems() {
         return `<div class="vendor-category-divider"><span>${title}</span></div>`+rows.map(row=>{
             const qty=Number(row.quantity),price=Number(row.buy_price);
             return `<article class="vendor-stock-item" data-item-id="${escapeVendorHtml(row.item_id)}">
-              <div class="vendor-stock-name" title="${escapeVendorHtml(row.item?.description||'')}">${escapeVendorHtml(row.item?.name||row.item_id)} <small>(${qty} disponibili)</small></div>
+              <div class="vendor-stock-name">${escapeVendorHtml(row.item?.name||row.item_id)} <small>(${qty} disponibili)</small><div class="vendor-item-description">${escapeVendorHtml(row.item?.description||'Descrizione non disponibile.')}</div></div>
               <div class="vendor-stock-price">${price}</div>
               <div class="vendor-buy-group">${[1,5,10].map(n=>`<button class="merchant-button vendor-buy-button" type="button" data-buy-item-id="${escapeVendorHtml(row.item_id)}" data-buy-price="${price}" data-buy-quantity="${n}" ${n>qty||price*n>playerGold?'disabled':''}>×${n}</button>`).join('')}</div>
             </article>`;

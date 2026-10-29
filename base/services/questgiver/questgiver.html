@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palazzo Eterno - Dente di Castoro</title>
-    <link rel="stylesheet" href="questgiver.css?v=2">
+    <link rel="stylesheet" href="questgiver.css?v=daily20261029">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../../js/config.js?v=11"></script>
 </head>
@@ -110,16 +110,20 @@
                 <strong id="quest-score">0</strong>
             </section>
 
+            <div class="quest-section-label">MISSIONI UNICHE</div>
             <div id="quest-list" class="quest-list">
                 <div class="inventory-empty">Caricamento missioni...</div>
             </div>
 
+            <div class="quest-section-label">MISSIONI GIORNALIERE</div>
+            <div class="ornate-subheading">Si sbloccano consegnando per la prima volta la Testa del Boss Goblin. Si azzerano ogni giorno a mezzanotte (ora italiana).</div>
+            <div id="daily-quest-list" class="quest-list"><div class="inventory-empty">Caricamento missioni giornaliere...</div></div>
             <div id="quest-feedback" class="questgiver-maintenance-feedback quest-feedback" aria-live="polite"></div>
         </div>
     </section>
 
 </main>
 
-<script src="questgiver.js?v=3"></script>
+<script src="questgiver.js?v=daily20261029"></script>
 </body>
 </html>

@@ -792,6 +792,7 @@ function renderVendorItems() {
                                         row.item.name ||
                                         row.item.id
                                     )}
+                                    <div class="vendor-item-description">${escapeVendorHtml(row.item.description || "Descrizione non disponibile.")}</div>
                                 </div>
 
                                 <div class="vendor-stock-price">
