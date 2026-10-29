@@ -2095,3 +2095,20 @@ input {
 .vendor-stock-name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; padding: 7px 0; }
 .vendor-item-description { display: block; margin-top: 5px; font-size: 12px; line-height: 1.4; font-weight: normal; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
 .vendor-stock-item { min-height: 86px; align-items: center; }
+
+/* Oggetti Quest: stato bloccato esplicito al posto dei pulsanti di acquisto. */
+.vendor-quest-locked {
+    display: block;
+    max-width: 170px;
+    padding: 7px 8px;
+    border: 1px solid var(--gold-dark);
+    border-radius: 4px;
+    color: var(--gold-bright);
+    background: rgba(0, 0, 0, 0.35);
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1.35;
+    letter-spacing: .025em;
+    text-align: center;
+    white-space: normal;
+}

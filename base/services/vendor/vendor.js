@@ -289,6 +289,9 @@ let characterInventory =
 let vendorItems =
     [];
 
+// Lo sblocco è verificato sul server, non sul browser.
+let berserkQuestUnlocked = false;
+
 const VENDOR_ID =
     "vendor_manodiscimmia";
 
@@ -390,6 +393,7 @@ document.addEventListener(
             await loadVendorCharacter();
             await loadVendorCharacterInventory();
             await loadVendorItems();
+            await loadBerserkQuestUnlock();
 
             updateVendorPlayerInventoryHeader();
             renderVendorCharacterInventory();
@@ -613,6 +617,19 @@ async function loadVendorItems() {
             );
 }
 
+// Verifica sicura della missione una tantum; se la RPC non è disponibile,
+// l'oggetto resta visibile ma non acquistabile.
+async function loadBerserkQuestUnlock() {
+    berserkQuestUnlocked = false;
+    if (!character?.id) return;
+    const { data, error } = await db.rpc("is_berserk_axe_unlocked");
+    if (error) {
+        console.warn("Impossibile verificare lo sblocco Ascia del Berserk:", error);
+        return;
+    }
+    berserkQuestUnlocked = data === true;
+}
+
 // ============================================================
 // RENDER MERCE VENDOR
 // ============================================================
@@ -675,6 +692,10 @@ function renderVendorItems() {
 
     const groups = [
         {
+            label: "OGGETTI QUEST",
+            questOnly: true
+        },
+        {
             label: "OGGETTI BASE",
             min: 0,
             max: 99,
@@ -710,6 +731,10 @@ function renderVendorItems() {
         const groupItems =
             sortedItems.filter(
                 row => {
+                    const isQuestItem = row.item?.id === "ascia_berserk";
+                    if (group.questOnly) return isQuestItem;
+                    if (isQuestItem) return false;
+
                     const minScore =
                         Number(
                             row.min_score
@@ -769,6 +794,8 @@ function renderVendorItems() {
                                 ) || 0
                             );
 
+                        const questLocked = row.item?.id === "ascia_berserk" && !berserkQuestUnlocked;
+
                         return `
                             <article
                                 class="vendor-stock-item"
@@ -800,7 +827,7 @@ function renderVendorItems() {
                                 </div>
 
                                 <div class="vendor-buy-group">
-
+                                    ${questLocked ? `<span class="vendor-quest-locked" role="status" title="Completa la missione della Figura Misteriosa da Dente di Castoro">COMPLETA PRIMA LA QUEST</span>` : `
                                     <button
                                         class="merchant-button vendor-buy-button"
                                         type="button"
@@ -836,6 +863,7 @@ function renderVendorItems() {
                                     >
                                         ×10
                                     </button>
+                                    `}
 
                                 </div>
 
