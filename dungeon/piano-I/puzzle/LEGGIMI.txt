@@ -1,0 +1,13 @@
+Pagina del puzzle di Scintilla, versione essenziale.
+Percorso: dungeon/piano-I/puzzle/puzzle.html
+File: puzzle.html, puzzle.css, puzzle.js
+
+Mettere nella cartella dungeon/piano-I/puzzle/immagini/:
+- bgI.png (sfondo della pagina)
+- baseI.png (base del puzzle)
+- 1I.png ... 11I.png (undici pannelli)
+
+Pulsanti: ESCI, RIMESCOLA, VERIFICA SIGILLO.
+RIMESCOLA produce sempre un tabellone risolvibile.
+Il completamento viene notificato solo nella pagina; non salva nel database.
+Il link ESCI punta per ora a ../piano-Id.html: adattarlo al percorso effettivo del Tempio se diverso.
