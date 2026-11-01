@@ -1449,6 +1449,10 @@ async function enforceDungeonPageState(
         window.location.replace(character.current_location === 'dungeon_Ia' ? 'piano-Ia.html' : 'piano-Ib.html');
         return true;
     }
+    if (character.current_location === 'dungeon_Id') {
+        window.location.replace('piano-Id.html');
+        return true;
+    }
     if (character.current_location === 'dungeon_Ic') {
         // Il personaggio è già nel Villaggio.
     }
@@ -15870,7 +15874,12 @@ async function icBrazierEnterPortal(){
   const confirmed=await icBrazierModal('IL VARCO DI SCINTILLA',
    'ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo.',
    'ENTRA NEL TEMPIO');
-  if(confirmed)window.location.assign('piano-Id.html');
+  if(confirmed){
+    const {data:transfer,error:transferError}=await db.rpc('piano_ic_enter_id');
+    if(transferError)throw transferError;
+    if(!transfer?.entered)throw new Error('Il trasferimento al Tempio non è stato confermato.');
+    window.location.assign('piano-Id.html');
+  }
  }catch(e){
   console.error('Teletrasporto Ic -> Id:',e);
   setMessage('Impossibile verificare il teletrasporto. Riprova.',true);

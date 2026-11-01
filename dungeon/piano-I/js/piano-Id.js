@@ -12,14 +12,34 @@
     return (cell & (b.room|b.corridor|b.aperture|b.arch|b.door|b.stair_up|b.stair_down))!==0;
   }
   function token(){const el=$('id-token');el.style.left=`${(x+.5)*100/COLS}%`;el.style.top=`${(y+.5)*100/ROWS}%`; $('id-coords').textContent=`X${x} · Y${y}`;}
-  function move(dx,dy){if(!grid)return;const nx=x+dx,ny=y+dy;if(!canWalk(nx,ny)){status('Qui il passaggio è bloccato.');return;}x=nx;y=ny;token();status('Esplora il Tempio di Scintilla.');save();}
-  function storageKey(){return 'palazzo:Id:position:'+(character?.id||'preview');}
-  function save(){try{localStorage.setItem(storageKey(),JSON.stringify({x,y}));}catch{}}
-  function loadPosition(){try{const p=JSON.parse(localStorage.getItem(storageKey())||'null');if(p&&canWalk(p.x,p.y)){x=p.x;y=p.y;return;}}catch{}if(!canWalk(x,y)){const sx=x,sy=y;for(let r=0;r<Math.max(COLS,ROWS);r++){for(let cy=0;cy<ROWS;cy++)for(let cx=0;cx<COLS;cx++)if(Math.abs(cx-sx)+Math.abs(cy-sy)===r&&canWalk(cx,cy)){x=cx;y=cy;return;}}}}
+  let movementBusy=false;
+  async function move(dx,dy){
+    if(!grid || movementBusy)return;
+    const nx=x+dx,ny=y+dy;
+    if(!canWalk(nx,ny)){status('Qui il passaggio è bloccato.');return;}
+    if(!character){status('Devi accedere con un personaggio per muoverti.',true);return;}
+    movementBusy=true;
+    try{
+      const {data,error}=await supabaseClient.rpc('piano_id_move',{p_x:nx,p_y:ny});
+      if(error)throw error;
+      if(!data?.moved)throw new Error('Movimento non confermato.');
+      x=nx;y=ny;token();status('Esplora il Tempio di Scintilla.');
+    }catch(e){console.error('[Id] Movimento:',e);status('Impossibile salvare lo spostamento: '+e.message,true);}
+    finally{movementBusy=false;}
+  }
   function mapClick(event){const rect=$('id-map').getBoundingClientRect();const cx=Math.floor((event.clientX-rect.left)/rect.width*COLS),cy=Math.floor((event.clientY-rect.top)/rect.height*ROWS);if(Math.abs(cx-x)+Math.abs(cy-y)===1)move(cx-x,cy-y);else status('Seleziona una casella adiacente al personaggio.');}
   function applyZoom(){ $('id-map').style.transform=`scale(${zoom})`; }
   function controls(){document.addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||''))return;const m={w:[0,-1],ArrowUp:[0,-1],s:[0,1],ArrowDown:[0,1],a:[-1,0],ArrowLeft:[-1,0],d:[1,0],ArrowRight:[1,0]};const delta=m[e.key];if(delta){e.preventDefault();move(...delta);}});$('id-map-viewport').addEventListener('click',mapClick);$('id-zoom-in').onclick=()=>{zoom=Math.min(2.5,+(zoom+.2).toFixed(2));applyZoom();};$('id-zoom-out').onclick=()=>{zoom=Math.max(1,+(zoom-.2).toFixed(2));applyZoom();};$('id-zoom-reset').onclick=()=>{zoom=1;applyZoom();};}
-  async function loadCharacter(){if(typeof supabaseClient==='undefined')return;try{const {data:{user},error}=await supabaseClient.auth.getUser();if(error||!user)return;const r=await supabaseClient.from('characters').select('*').eq('user_id',user.id).maybeSingle();if(r.error)throw r.error;character=r.data;if(!character)return;$('id-name').textContent=character.name||character.character_name||'AVVENTURIERO';$('id-hp').textContent=character.current_hp??character.hp??'—';$('id-mp').textContent=character.current_mp??character.mp??'—';$('id-score').textContent=character.score??'—';}catch(e){console.warn('[ID] Personaggio non disponibile:',e);}}
-  async function boot(){controls();try{const response=await fetch('piano-Id.json',{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}: piano-Id.json`);grid=await response.json();if(!Array.isArray(grid.cells)||grid.cells.length!==ROWS||grid.cells.some(row=>!Array.isArray(row)||row.length!==COLS))throw new Error('Il JSON deve contenere 45 righe da 67 celle.');for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<COLS;xx++)if(canWalk(xx,yy))walkableCount++;$('id-walkable').textContent=walkableCount;await loadCharacter();loadPosition();token();status('Tempio caricato. Nessun nemico o evento ancora configurato.');}catch(e){console.error('[ID]',e);status('Errore mappa: '+e.message,true);}}
+  async function loadCharacter(){if(typeof supabaseClient==='undefined')return;try{const {data:{user},error}=await supabaseClient.auth.getUser();if(error||!user)return;const r=await supabaseClient.from('characters').select('*').eq('user_id',user.id).maybeSingle();if(r.error)throw r.error;character=r.data;if(!character)return;$('id-name').textContent=character.nome||character.name||'AVVENTURIERO';$('id-hp').textContent=character.current_hp??character.hp??'—';$('id-mp').textContent=character.current_pm??character.current_mp??'—';$('id-score').textContent=character.score??'—';}catch(e){console.warn('[ID] Personaggio non disponibile:',e);}}
+  async function boot(){controls();try{const response=await fetch('piano-Id.json',{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}: piano-Id.json`);grid=await response.json();if(!Array.isArray(grid.cells)||grid.cells.length!==ROWS||grid.cells.some(row=>!Array.isArray(row)||row.length!==COLS))throw new Error('Il JSON deve contenere 45 righe da 67 celle.');for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<COLS;xx++)if(canWalk(xx,yy))walkableCount++;$('id-walkable').textContent=walkableCount;await loadCharacter();
+    if(!character){status('Effettua l’accesso per entrare nel Tempio.',true);return;}
+    if(character.current_location!=='dungeon_Id'){
+      status('Il personaggio non si trova nel Tempio: entra dal teletrasporto di Ic.',true);
+      return;
+    }
+    const {data:position,error:positionError}=await supabaseClient.rpc('piano_id_get_position');
+    if(positionError)throw positionError;
+    if(!canWalk(position.x,position.y))throw new Error('Posizione di ingresso fuori dalla mappa percorribile.');
+    x=position.x;y=position.y;token();status('Benvenuto nel Tempio di Scintilla.');}catch(e){console.error('[ID]',e);status('Errore mappa: '+e.message,true);}}
   document.addEventListener('DOMContentLoaded',boot);
 })();
