@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#d3e5d3">
+  <title>Palazzo Eterno — Il Sigillo delle Undici Memorie</title>
+  <link rel="stylesheet" href="../../../css/style.css">
+  <link rel="stylesheet" href="puzzle.css">
+  <script defer src="puzzle.js"></script>
+</head>
+<body>
+  <main class="puzzle-page">
+    <header class="puzzle-header">
+      <a class="puzzle-button puzzle-exit" href="../piano-Id.html" id="puzzle-back">ESCI</a>
+      <div><div class="puzzle-eyebrow">PALAZZO ETERNO · PIANO I · TEMPIO DI SCINTILLA</div><h1>IL SIGILLO DELLE UNDICI MEMORIE</h1></div>
+      <span class="puzzle-status" id="pieces-counter" aria-live="polite">Frammenti 6 / 11</span>
+    </header>
+    <section class="puzzle-layout">
+      <article class="puzzle-panel">
+        <h2>Il murale infranto</h2>
+        <p class="puzzle-help">Sposta le tessere adiacenti alla casella vuota per ricomporre la storia. I frammenti perduti sono riconoscibili dal sigillo.</p>
+        <div class="puzzle-board-frame" id="board-frame">
+          <div class="puzzle-grid" id="puzzle-grid" role="group" aria-label="Puzzle scorrevole di 11 tessere su una griglia di 4 colonne e 3 righe"></div>
+        </div>
+        <div class="puzzle-action-row">
+          <button class="puzzle-button puzzle-primary" type="button" id="verify-button">VERIFICA SIGILLO</button>
+          <button class="puzzle-button" type="button" id="reset-button">RIMESCOLA</button>
+        </div>
+        <div class="puzzle-message" id="puzzle-message" role="status" aria-live="polite">Il sigillo attende che le memorie tornino al loro posto.</div>
+        <div class="puzzle-counts"><span id="moves-count">Mosse: 0</span><span>Muovi con clic, tocco o frecce sulla tastiera</span></div>
+      </article>
+      <aside class="puzzle-sidebar">
+        <section class="puzzle-panel"><h2>Le memorie perdute</h2>
+          <p>Il murale custodisce undici scene, ma non tutti i frammenti sono ancora stati ritrovati.</p>
+          <div id="fragment-list" class="fragment-list" aria-label="Stato degli undici frammenti"></div>
+          <p class="puzzle-note">I frammenti mancanti restano sul tabellone come pietre sigillate, ma si possono comunque spostare. Il sigillo si aprirà solo dopo il recupero di tutti i frammenti e il corretto ordinamento delle scene.</p>
+        </section>
+        <section class="puzzle-panel"><h2>La leggenda</h2>
+          <p class="puzzle-verse">«Il fuoco incontrò la luce, e due anime tanto diverse divennero un solo destino.»</p>
+          <p class="puzzle-note">Gli undici versi della leggenda saranno disseminati nel Tempio. Questa pagina include per ora un solo verso d'atmosfera.</p>
+        </section>
+        <section class="puzzle-panel puzzle-dev" id="dev-panel" hidden><h2>PROVA LOCALE</h2><p>Questi comandi appaiono solo con <code>?test=1</code>; non conferiscono ricompense o progressi nel database.</p><button type="button" class="puzzle-button" id="test-unlock">MOSTRA TUTTI I FRAMMENTI</button><button type="button" class="puzzle-button" id="test-lock">RIPRISTINA 5 MANCANTI</button></section>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
