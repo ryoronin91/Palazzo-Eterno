@@ -1,13 +1,15 @@
-:root{--pale:#e6f1e6;--panel:#d3e5d3;--dark:#101611;--green:#b5d9b4}
+/* Palazzo Eterno — Sigillo delle Undici Memorie. Palette Piano I */
+:root{--dark:#0b0f0c;--forest:#142217;--forest2:#1d3121;--border:#386a42;--light:#c8dfc7;--hover:#275637;}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;}
-body{font-family:Arial,Helvetica,sans-serif;color:var(--dark);background:var(--pale) url('immagini/bgI.png') center center/cover fixed no-repeat;}
-.puzzle-button{appearance:none;background:var(--panel);border:3px solid var(--dark);color:var(--dark);font:900 15px Arial,Helvetica,sans-serif;padding:10px 20px;min-height:44px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;transition:background .12s ease,transform .12s ease;}
-.puzzle-button:hover{background:var(--green);transform:translateY(-1px)}
-.puzzle-button:focus-visible,.puzzle-tile:focus-visible{outline:3px solid #ffce5a;outline-offset:3px}
+html,body{background-color:#0c100d;background-image:linear-gradient(rgba(6,8,6,.58),rgba(6,8,6,.72)),url("../../../immagini/bgI.png");background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;}
+body{font-family:Arial,Helvetica,sans-serif;color:var(--light);}
+.puzzle-button{appearance:none;background:linear-gradient(180deg,var(--forest2),var(--forest));border:3px solid var(--border);border-radius:4px;color:var(--light);font:900 15px Arial,Helvetica,sans-serif;padding:10px 20px;min-height:44px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;transition:background .12s ease,transform .12s ease;box-shadow:0 4px 14px #0006;}
+.puzzle-button:hover{background:var(--hover);transform:translateY(-1px)}
+.puzzle-button:focus-visible,.puzzle-tile:focus-visible{outline:3px solid #c8dfc7;outline-offset:3px}
 .exit{position:fixed;top:16px;left:18px;z-index:10;min-width:110px;}
-.puzzle-stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:86px 20px 36px;}
-.puzzle-board{position:relative;width:min(960px,94vw,calc((100dvh - 195px)*4/3));aspect-ratio:4/3;background:#ad875e url('immagini/baseI.png') center/100% 100% no-repeat;box-shadow:0 16px 40px rgba(8,18,9,.44);overflow:hidden;}
+.puzzle-stage{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:86px 20px 36px;}
+.puzzle-board{position:relative;width:min(960px,94vw,calc((100dvh - 195px)*4/3));aspect-ratio:4/3;background:#ad875e url('immagini/baseI.png') center/100% 100% no-repeat;box-shadow:0 16px 40px rgba(0,0,0,.65);overflow:hidden;}
 .puzzle-grid{position:absolute;inset:5.5% 2.4%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:0;}
 .puzzle-tile{appearance:none;display:block;min-width:0;min-height:0;margin:0;padding:0;border:1px solid rgba(55,34,12,.38);border-radius:0;background:transparent;overflow:hidden;cursor:default;}
 .puzzle-tile img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none;-webkit-user-drag:none;}
@@ -15,8 +17,8 @@ body{font-family:Arial,Helvetica,sans-serif;color:var(--dark);background:var(--p
 .puzzle-tile.can-move:hover{filter:brightness(1.12);}
 .puzzle-tile.empty{border:0;background:transparent;pointer-events:none;}
 .puzzle-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;}
-.puzzle-message{max-width:min(650px,94vw);padding:11px 20px;background:#eaf3ea;border:3px solid var(--dark);font-weight:800;text-align:center;}
+.puzzle-message{max-width:min(650px,94vw);padding:11px 20px;background:linear-gradient(180deg,#1d3121,#142217);border:2px solid #56855d;color:#e8f3df;font-weight:800;text-align:center;box-shadow:0 8px 24px #0008;}
 .puzzle-message[hidden]{display:none}
-.puzzle-message.success{background:#c5e5c1}.puzzle-message.error{background:#f5ded8}
-@media(max-width:600px){.exit{top:10px;left:10px;min-width:75px;padding:7px 11px;font-size:13px;}.puzzle-stage{padding:76px 9px 30px;gap:13px;}.puzzle-board{width:min(96vw,calc((100dvh - 210px)*4/3));}.puzzle-button{font-size:13px;padding:9px 12px;}}
+.puzzle-message.success{border-color:#89ad80}.puzzle-message.error{border-color:#b76c62;color:#ffe7df}
+@media(max-width:600px){.exit{top:10px;left:10px;min-width:75px;padding:7px 11px;font-size:13px}.puzzle-stage{padding:76px 9px 30px;gap:13px}.puzzle-board{width:min(96vw,calc((100dvh - 210px)*4/3))}.puzzle-button{font-size:13px;padding:9px 12px}}
 @media(prefers-reduced-motion:reduce){.puzzle-button{transition:none}}
