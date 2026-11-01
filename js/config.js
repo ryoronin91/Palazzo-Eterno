@@ -16,6 +16,7 @@ console.log(supabaseClient);
         dungeon_Ia: "I - Giungla Bassa",
         dungeon_Ib: "I - Villaggio Scagliagrigia",
         dungeon_Ic: "I - Giungla Alta",
+        dungeon_Id: "I - Tempio di Scintilla",
         orologio: "Stanza dell’Orologio"
     };
     const players = new Map();
@@ -35,6 +36,7 @@ console.log(supabaseClient);
         const path = window.location.pathname;
         if (/\/dungeon\/piano-I\/piano-Ib\.html$/i.test(path)) return "dungeon_Ib";
         if (/\/dungeon\/piano-I\/piano-Ic\.html$/i.test(path)) return "dungeon_Ic";
+        if (/\/dungeon\/piano-I\/piano-Id\.html$/i.test(path)) return "dungeon_Id";
         if (/\/dungeon\/piano-I\/piano-Ia\.html$/i.test(path)) return "dungeon_Ia";
         if (path.includes("/dungeon/piano-I/")) return null;
         if (path.includes("/dungeon/piano-1/")) return "dungeon";
@@ -46,6 +48,7 @@ console.log(supabaseClient);
         if (["base", "vendor", "runografo", "locanda", "addestratore", "questgiver"].includes(value)) return "base";
         if (value === "dungeon_Ib") return "dungeon_Ib";
         if (value === "dungeon_Ic") return "dungeon_Ic";
+        if (value === "dungeon_Id") return "dungeon_Id";
         if (value === "dungeon_Ia") return "dungeon_Ia";
         if (value === "dungeon") return "dungeon";
         if (value === "orologio") return "orologio";

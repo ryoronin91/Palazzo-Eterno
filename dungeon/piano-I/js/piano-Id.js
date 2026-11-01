@@ -1139,10 +1139,8 @@ function renderDungeonLeaderboard(rows) {
             const badgeName = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             const bossId = String(badge?.boss_id || "");
             const rawPath = String(badge?.icon_path || "").trim();
-            const goblin = /goblin/i.test(bossId + " " + (badge?.badge_name || "") + " " + (badge?.display_name || ""));
-            // Ogni pagina parte da una cartella differente rispetto alla root.
-            const path = goblin ? "../../immagini/stemmi/boss_goblin.png"
-                : rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
+            // Usa lo stemma restituito dal database, inclusa la versione rara.
+            const path = rawPath.startsWith("immagini/") ? "../../" + rawPath : rawPath;
             const iconPath = escapeDungeonLeaderboardHtml(path);
             const title = escapeDungeonLeaderboardHtml(badge?.badge_name || badge?.display_name || "Boss sconfitto");
             if (!iconPath) return `<span class="dungeon-leaderboard-badge-fallback" title="${title}" aria-label="${title}">🛡</span>`;
@@ -6688,6 +6686,8 @@ function getMyPresenceData() {
         y:
             playerY,
 
+        current_location:
+            character.current_location || "dungeon_Id",
 
         current_hp:
     character.current_hp,
@@ -7125,10 +7125,21 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
-            status.textContent =
-                inCombat
-                    ? "⚔ In combattimento"
-                    : "Nel dungeon";
+            const locationLabels = {
+                dungeon_Id: "Tempio di Scintilla",
+                dungeon_Ic: "Giungla Alta",
+                dungeon_Ib: "Villaggio Scagliagrigia",
+                dungeon_Ia: "Giungla Bassa",
+                dungeon: "Dungeon",
+                base: "Livello Base",
+                orologio: "Stanza dell'Orologio"
+            };
+            const playerLocation = isMe
+                ? character.current_location
+                : player.current_location;
+            status.textContent = inCombat
+                ? "⚔ In combattimento"
+                : (locationLabels[playerLocation] || "Nel dungeon");
 
 
             const dot =
