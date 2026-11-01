@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Palazzo Eterno — Piano Id · Tempio di Scintilla</title>
+<link rel="stylesheet" href="../../css/style.css">
+<link rel="stylesheet" href="css/piano-Id.css?v=1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="../../js/config.js?v=10"></script>
+<script defer src="js/piano-Id.js?v=1"></script>
+</head>
+<body>
+<main class="id-page">
+<header class="id-header">
+<a class="id-button" href="../../scheda.html">ESCI</a>
+<div class="id-heading"><b>PALAZZO ETERNO</b><span>PIANO I · TEMPIO DI SCINTILLA</span></div>
+<div class="id-status" id="id-status" role="status">Caricamento del Tempio...</div>
+</header>
+<section class="id-layout">
+<aside class="id-panel id-left">
+<h2>IL TEMPIO</h2>
+<p>Il silenzio del mausoleo custodisce il ricordo di Phaethon.</p>
+<h3>ESPLORAZIONE</h3>
+<div class="id-info">Posizione <strong id="id-coords">—</strong></div>
+<div class="id-info">Caselle esplorabili <strong id="id-walkable">—</strong></div>
+<p class="id-muted">Movimento: WASD, frecce o clic su una casella adiacente.</p>
+</aside>
+<section class="id-center" aria-label="Mappa del Tempio di Scintilla">
+<div class="id-toolbar"><button type="button" id="id-zoom-out">−</button><button type="button" id="id-zoom-reset">ADATTA</button><button type="button" id="id-zoom-in">+</button></div>
+<div id="id-map-viewport" class="id-map-viewport" tabindex="0" aria-label="Mappa del Piano Id">
+<div id="id-map" class="id-map"><img class="id-map-image" src="immagini/piano-Id.png" alt="Tempio di Scintilla" draggable="false"><div id="id-token" class="id-token" aria-label="Il tuo personaggio"></div><div id="id-grid" class="id-grid" aria-hidden="true"></div></div>
+</div>
+</section>
+<aside class="id-panel id-right"><h2>PERSONAGGIO</h2><div class="id-character-name" id="id-name">AVVENTURIERO</div><div class="id-info">Vita <strong id="id-hp">—</strong></div><div class="id-info">Mana <strong id="id-mp">—</strong></div><div class="id-info">Risonanza <strong id="id-score">—</strong></div><a class="id-button id-sheet" href="../../scheda.html">APRI SCHEDA</a><h3>SIGILLO DELLE UNDICI MEMORIE</h3><p class="id-muted">Il puzzle e il combattimento finale saranno collegati alle rispettive stanze quando saranno state definite le loro coordinate.</p></aside>
+</section>
+</main>
+</body></html>

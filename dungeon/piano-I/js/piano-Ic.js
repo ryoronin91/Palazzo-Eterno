@@ -15773,13 +15773,13 @@ function icBrazierRender(){
  if(!icBrazierState.portal){
   const portal=document.createElement('button');portal.type='button';portal.title='Varco verso il Piano I-D';
   const img=document.createElement('img');img.src='immagini/gtot.png';img.alt='Varco del Tempio';img.draggable=false;img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none';portal.append(img);
-  portal.onclick=()=>void icBrazierModal('IL VARCO DI SCINTILLA','Le tre gemme hanno risvegliato il varco verso il Piano I-D. ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo. Il collegamento al Tempio sarà disponibile quando verrà implementato il Piano I-D.');
+  portal.onclick=()=>void icBrazierEnterPortal();
   map.append(portal);icBrazierState.portal=portal;
  }
  icBrazierTile(icBrazierState.portal,31,3);
  icBrazierState.portal.style.transform=icBrazierGemTransform(icBrazierPortalVisual);
  icBrazierState.portal.style.transformOrigin='center center';
- icBrazierState.portal.style.display=icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)?'block':'none';
+ icBrazierState.portal.style.display='block'; // Visibile anche quando spento: mostra l'indizio.
 }
 async function icBrazierRefresh(){
  if(!icBrazierState.ready||!db)return;
@@ -15849,12 +15849,37 @@ async function icBrazierInteract(id){
  }
  await refresh();timer=setInterval(refresh,5000);
 }
+// Varco Ic -> Id, accessibile dalla casella X31 Y3 o cliccando il portale.
+// Legge lo stato aggiornato da Supabase prima di consentire l'ingresso.
+let icPortalDialogBusy=false;
+async function icBrazierEnterPortal(){
+ if(icPortalDialogBusy || eventLocked || icBrazierState.busy)return;
+ if(Math.abs(playerX-31)+Math.abs(playerY-3)>1){setMessage('Avvicinati al teletrasporto per interagire.');return;}
+ icPortalDialogBusy=true;
+ try{
+  if(!db)throw new Error('Connessione non disponibile.');
+  const {data,error}=await db.rpc('piano_ic_braziers_status');
+  if(error)throw error;
+  icBrazierState.status=Array.isArray(data?.braziers)?data.braziers:[];
+  icBrazierRender();
+  const active=icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active);
+  if(!active){
+   await icBrazierModal('IL VARCO DI SCINTILLA','Sicuramente all’interno della giungla c’è un modo per attivare questo teletrasporto.');
+   return;
+  }
+  const confirmed=await icBrazierModal('IL VARCO DI SCINTILLA',
+   'ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo.',
+   'ENTRA NEL TEMPIO');
+  if(confirmed)window.location.assign('piano-Id.html');
+ }catch(e){
+  console.error('Teletrasporto Ic -> Id:',e);
+  setMessage('Impossibile verificare il teletrasporto. Riprova.',true);
+ }finally{icPortalDialogBusy=false;}
+}
 function icBrazierTryStep(x,y){
  const hit=icBrazierCoords.find(c=>c.x===x&&c.y===y);
  if(hit){void icBrazierInteract(hit.id);return true;}
- if(x===31&&y===3&&icBrazierCoords.every(c=>icBrazierState.status.find(v=>v.id===c.id)?.active)){
-  void icBrazierModal('IL VARCO DI SCINTILLA','ATTENZIONE: una volta raggiunto il Tempio di Scintilla non potrai più tornare indietro. Porta con te tutto il necessario per sopravvivere: nel Tempio non troverai venditori né zone di riposo. Il passaggio non è ancora disponibile: il Piano I-D è in preparazione.');return true;
- }
+ if(x===31&&y===3){void icBrazierEnterPortal();return true;}
  return false;
 }
 function icBrazierStart(){if(icBrazierState.ready)return;icBrazierState.ready=true;void icBrazierRefresh();setInterval(icBrazierRefresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)void icBrazierRefresh()});}
