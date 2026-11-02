@@ -742,6 +742,37 @@ let dungeonCharacterRefreshInterval = null;
 // ============================================================
 
 
+// Tempio di Scintilla: mostra il mosaico soltanto quando tutte
+// le 4 immagini sono caricate; in caso contrario resta piano-Id.png.
+// L'elemento #dungeon-map-image resta nel DOM per la nebbia.
+function initializeIdMapMosaic() {
+    const map = document.getElementById('dungeon-map');
+    const mosaic = document.getElementById('pia-id-mosaic');
+    if (!map || !mosaic) return;
+    const images = Array.from(mosaic.querySelectorAll('img'));
+    if (images.length !== 4) return;
+    let failed = false;
+    const refresh = () => {
+        if (failed) {
+            map.classList.remove('pia-id-mosaic-ready');
+            return;
+        }
+        if (images.every(image => image.complete && image.naturalWidth > 0)) {
+            map.classList.add('pia-id-mosaic-ready');
+        }
+    };
+    images.forEach(image => {
+        if (image.complete && image.naturalWidth === 0) failed = true;
+        image.addEventListener('load', refresh);
+        image.addEventListener('error', () => {
+            failed = true;
+            refresh();
+            console.warn('Tempio Id: manca una delle immagini del mosaico:', image.src);
+        });
+    });
+    refresh();
+}
+
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
@@ -753,6 +784,8 @@ document.addEventListener(
 
 
 
+
+        initializeIdMapMosaic();
 
         setupDungeonVolumeControl();
 
