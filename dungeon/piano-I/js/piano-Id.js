@@ -471,7 +471,7 @@ const GRID_OFFSET_Y = 0;
 
 
 const INITIAL_PLAYER_X = 33;
-const INITIAL_PLAYER_Y = 42;
+const INITIAL_PLAYER_Y = 41;
 
 
 

@@ -3137,7 +3137,7 @@
   "egress": [
     {
       "col": 33,
-      "row": 42,
+      "row": 41,
       "dir": "south",
       "type": "corridor",
       "depth": 0
