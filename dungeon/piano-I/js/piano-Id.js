@@ -4811,9 +4811,18 @@ async function performMovement(dx,dy) {
         if(error) throw error;
         playerX=Number(data.x);playerY=Number(data.y);
         showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
-
+        if (data.plat_completed) updateIdPlatformPuzzle(true);
+        if (data.plat_failed) {
+            if (data.hp !== null && data.hp !== undefined) {
+                character.current_hp = Number(data.hp);
+                updateCharacterPanel();
+            }
+            movementQueue.length = 0;
+            setMessage('Percorso errato! Il Tempio ti respinge in X7 Y18. Hai subito 5 danni.');
+        } else {
+            setMessage(data.plat_completed ? 'Il percorso è completo! La piattaforma e il totem si attivano.' : `Tempio di Scintilla - X ${playerX} Y ${playerY}`);
+        }
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
-        setMessage(`Tempio di Scintilla - X ${playerX} Y ${playerY}`);
         return true;
     }catch(error){console.error('Movimento Piano Ia:',error);setMessage(error.message||'Movimento non riuscito');return false;}
 }
@@ -15614,3 +15623,24 @@ function updateSpatialCoinPia() {
     document.addEventListener('DOMContentLoaded', setupInscriptionWatcher, { once:true });
   } else { setupInscriptionWatcher(); }
 })();
+
+
+// Stato condiviso: gli effetti grafici della piattaforma sono persistenti su Supabase.
+async function updateIdPlatformPuzzle(forceCompleted = false) {
+    try {
+        let completed = forceCompleted;
+        if (!completed) {
+            const result = await db.rpc('piano_id_plat_status');
+            if (result.error) throw result.error;
+            completed = result.data === true;
+        }
+        const platform = document.getElementById('id-plat-a');
+        const totem = document.getElementById('id-totem-a');
+        if (platform) platform.src = completed ? 'immagini/platB.png' : 'immagini/platA.png';
+        if (totem) totem.src = completed ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+    } catch (error) { console.warn('Stato puzzle piattaforma non disponibile:', error); }
+}
+window.addEventListener('DOMContentLoaded', () => {
+    updateIdPlatformPuzzle();
+    window.setInterval(updateIdPlatformPuzzle, 12000);
+});
