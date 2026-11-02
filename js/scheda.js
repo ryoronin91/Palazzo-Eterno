@@ -3949,7 +3949,7 @@ async function enterPalazzoAtLastLocation(event) {
             dungeon_ia: "dungeon/piano-I/piano-Ia.html",
             dungeon_ib: "dungeon/piano-I/piano-Ib.html",
             dungeon_ic: "dungeon/piano-I/piano-Ic.html",
-	    dungeon_id: "dungeon/piano-I/piano-Id.html",,
+	    dungeon_id: "dungeon/piano-I/piano-Id.html",
             orologio: "orologio/orologio.html",
             vendor: "base/services/vendor/vendor.html"
         };
