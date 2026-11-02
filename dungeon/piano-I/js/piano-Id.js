@@ -15326,53 +15326,48 @@ function updateSpatialCoinPia() {
 }
 
 // ============================================================
-// MODULO INTEGRATO: piano-Id-decorazioni.js
+// MODULO INTEGRATO: piano-Id-decorazioni.js (posizioni definitive)
 // ============================================================
-// Palazzo Eterno — Piano Id: piattaforma e due totem decorativi.
-// Solo overlay grafici. Non modifica la griglia JSON, le collisioni o la posizione PG.
+// Elementi puramente grafici: nessuna modifica al JSON o ai movimenti.
 (() => {
   'use strict';
-  const WIDTH = 67;
-  const HEIGHT = 45;
-  const DECORATIONS = [
-    // Rettangolo inclusivo X 3..10, Y 13..16: 8 colonne × 4 righe
-    { id: 'id-plat-a', src: 'immagini/platA.png', x: 3, y: 13, w: 8, h: 4, z: 2 },
-    // Il totem è centrato esattamente nella cella indicata.
-    { id: 'id-totem-a', src: 'immagini/totem_0.png', x: 8, y: 11, w: 2.5, h: 2.5, center: true, z: 3 },
-    { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 12, w: 2.5, h: 2.5, center: true, z: 3 }
+  const COLS = 67, ROWS = 45;
+  const decorazioni = [
+    { id: 'id-plat-a', src: 'immagini/platA.png', x: 3, y: 13, w: 8, h: 4, z: 1 },
+    // X/Y sono il centro della casella, come nello strumento di calibrazione.
+    { id: 'id-totem-a', src: 'immagini/totem_0.png', x: 8, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
+    { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 }
   ];
-
   function mount() {
     const map = document.getElementById('dungeon-map');
     if (!map) return;
-    for (const item of DECORATIONS) {
-      if (document.getElementById(item.id)) continue;
+    // La piattaforma deve stare sotto ai token, anche se questi vengono creati dopo.
+    if (!document.getElementById('id-decor-layer-style')) {
+      const style = document.createElement('style');
+      style.id = 'id-decor-layer-style';
+      style.textContent = '#dungeon-map #id-plat-a{z-index:1!important} #dungeon-map .dungeon-player-token{z-index:20!important}';
+      document.head.appendChild(style);
+    }
+    for (const d of decorazioni) {
+      if (document.getElementById(d.id)) continue;
       const img = document.createElement('img');
-      img.id = item.id;
-      img.src = item.src;
+      img.id = d.id;
+      img.src = d.src;
       img.alt = '';
       img.setAttribute('aria-hidden', 'true');
       img.draggable = false;
-      img.style.position = 'absolute';
-      img.style.pointerEvents = 'none';
-      img.style.userSelect = 'none';
-      img.style.objectFit = 'fill';
-      img.style.maxWidth = 'none';
-      img.style.maxHeight = 'none';
-      img.style.zIndex = String(item.z);
-      img.style.width = `${item.w / WIDTH * 100}%`;
-      img.style.height = `${item.h / HEIGHT * 100}%`;
-      img.style.left = `${(item.x + (item.center ? (1 - item.w)/2 : 0)) / WIDTH * 100}%`;
-      img.style.top = `${(item.y + (item.center ? (1 - item.h)/2 : 0)) / HEIGHT * 100}%`;
+      Object.assign(img.style, {
+        position: 'absolute', pointerEvents: 'none', userSelect: 'none', objectFit: 'fill',
+        maxWidth: 'none', maxHeight: 'none', zIndex: String(d.z),
+        width: `${d.w / COLS * 100}%`, height: `${d.h / ROWS * 100}%`,
+        left: `${(d.x + (d.center ? (1 - d.w) / 2 : 0)) / COLS * 100}%`,
+        top: `${(d.y + (d.center ? (1 - d.h) / 2 : 0)) / ROWS * 100}%`
+      });
       map.appendChild(img);
     }
   }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount, { once: true });
-  } else {
-    mount();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
+  else mount();
 })();
 
 // ============================================================
