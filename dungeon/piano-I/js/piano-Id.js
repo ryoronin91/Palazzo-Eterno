@@ -752,8 +752,8 @@ function setupIdMapImageCalibration() {
     const img = document.getElementById('dungeon-map-image');
     const open = document.getElementById('id-calibration-open');
     if (!map || !img || !open || document.getElementById('id-map-calibration-panel')) return;
-    const key = 'palazzo-eterno:id:image-calibration:v1';
-    const baseline = { sx: 100, sy: 100, dx: 0, dy: 0 };
+    const key = 'palazzo-eterno:id:image-calibration:v2';
+    const baseline = { sx: 94, sy: 95.8, dx: 122, dy: 8 };
     let data = { ...baseline };
     try {
         const saved = JSON.parse(localStorage.getItem(key) || 'null');
