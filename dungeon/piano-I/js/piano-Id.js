@@ -4811,8 +4811,8 @@ async function performMovement(dx,dy) {
         if(error) throw error;
         playerX=Number(data.x);playerY=Number(data.y);
         showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
-        if (data.plat_completed) updateIdPlatformPuzzle(true);
-        if (data.plat_completed) movementQueue.length = 0; // Teletrasporto finale senza danni
+        if (data.plat_completed || data.plat_second_completed) updateIdPlatformPuzzle();
+        if ((data.plat_completed && playerX === 7 && playerY === 18) || data.plat_second_just_completed) movementQueue.length = 0; // Teletrasporto finale senza danni
         if (data.plat_failed) {
             if (data.hp !== null && data.hp !== undefined) {
                 character.current_hp = Number(data.hp);
@@ -4821,7 +4821,7 @@ async function performMovement(dx,dy) {
             movementQueue.length = 0;
             setMessage('Percorso errato! Il Tempio ti respinge in X7 Y18. Hai subito 5 danni.');
         } else {
-            setMessage(data.plat_completed ? 'Percorso completato! Piattaforma e totem attivati. Sei stato riportato in X7 Y18 senza danni.' : `Tempio di Scintilla - X ${playerX} Y ${playerY}`);
+            setMessage(data.plat_second_just_completed ? 'Secondo percorso completato! Il secondo totem si accende e la piattaforma scompare.' : (data.plat_completed && playerX === 7 && playerY === 18 ? 'Percorso completato! Sei stato riportato in X7 Y18 senza danni.' : `Tempio di Scintilla - X ${playerX} Y ${playerY}`));
         }
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         return true;
@@ -12002,6 +12002,8 @@ function isVisionBlockingCell(
     x,
     y
 ) {
+    // Totem del Tempio: bloccano solo movimento, mai visuale.
+    if (y === 11 && (x === 5 || x === 8)) return false;
 
 
     // I varchi della stanza Boss bloccano anche la visuale
@@ -15115,7 +15117,11 @@ let piaLastFogPosition = '';
 
 // Celle visibili adesso, separate dallo storico esplorato.
 let piaVisibleNow = new Set();
-function piaBlocksSight(x, y) { return !canMoveTo(x, y); }
+function piaBlocksSight(x, y) {
+    // I totem occupano la casella ma non sono muri ottici.
+    if (y === 11 && (x === 5 || x === 8)) return false;
+    return !canMoveTo(x, y);
+}
 function piaHasLineOfSight(targetX, targetY) {
     if (targetX === playerX && targetY === playerY) return true;
     const dx = targetX - playerX, dy = targetY - playerY;
@@ -15628,19 +15634,22 @@ function updateSpatialCoinPia() {
 })();
 
 
-// Stato condiviso: gli effetti grafici della piattaforma sono persistenti su Supabase.
-async function updateIdPlatformPuzzle(forceCompleted = false) {
+// Stato condiviso del puzzle ambientale: due percorsi consecutivi.
+async function updateIdPlatformPuzzle() {
     try {
-        let completed = forceCompleted;
-        if (!completed) {
-            const result = await db.rpc('piano_id_plat_status');
-            if (result.error) throw result.error;
-            completed = result.data === true;
-        }
+        const result = await db.rpc('piano_id_plat_status_v2');
+        if (result.error) throw result.error;
+        const first = result.data?.completed === true;
+        const second = result.data?.second_completed === true;
         const platform = document.getElementById('id-plat-a');
-        const totem = document.getElementById('id-totem-a');
-        if (platform) platform.src = completed ? 'immagini/platB.png' : 'immagini/platA.png';
-        if (totem) totem.src = completed ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+        const totem1 = document.getElementById('id-totem-a');
+        const totem2 = document.getElementById('id-totem-b');
+        if (platform) {
+            platform.src = first ? 'immagini/platB.png' : 'immagini/platA.png';
+            platform.style.display = second ? 'none' : '';
+        }
+        if (totem1) totem1.src = first ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+        if (totem2) totem2.src = second ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
     } catch (error) { console.warn('Stato puzzle piattaforma non disponibile:', error); }
 }
 window.addEventListener('DOMContentLoaded', () => {
