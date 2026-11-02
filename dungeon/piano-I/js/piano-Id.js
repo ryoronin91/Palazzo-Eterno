@@ -4812,6 +4812,7 @@ async function performMovement(dx,dy) {
         playerX=Number(data.x);playerY=Number(data.y);
         showToken(playerX,playerY);piaRevealAroundPlayer();updateDungeonCamera();
         if (data.plat_completed) updateIdPlatformPuzzle(true);
+        if (data.plat_completed) movementQueue.length = 0; // Teletrasporto finale senza danni
         if (data.plat_failed) {
             if (data.hp !== null && data.hp !== undefined) {
                 character.current_hp = Number(data.hp);
@@ -4820,7 +4821,7 @@ async function performMovement(dx,dy) {
             movementQueue.length = 0;
             setMessage('Percorso errato! Il Tempio ti respinge in X7 Y18. Hai subito 5 danni.');
         } else {
-            setMessage(data.plat_completed ? 'Il percorso è completo! La piattaforma e il totem si attivano.' : `Tempio di Scintilla - X ${playerX} Y ${playerY}`);
+            setMessage(data.plat_completed ? 'Percorso completato! Piattaforma e totem attivati. Sei stato riportato in X7 Y18 senza danni.' : `Tempio di Scintilla - X ${playerX} Y ${playerY}`);
         }
         if(typeof broadcastDungeonPosition==='function') broadcastDungeonPosition();
         return true;
@@ -6327,6 +6328,8 @@ function isCombatEventCellOccupied(
 
 function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
+    // Totem solidi: bloccano il movimento, ma NON la linea di vista.
+    if (y === 11 && (x === 5 || x === 8)) return false;
     const cell=Number(dungeonData.cells[y+GRID_OFFSET_Y]?.[x+GRID_OFFSET_X]);
     if(!Number.isFinite(cell)||cell===0)return false;
     const b=dungeonData.cell_bit||{};
