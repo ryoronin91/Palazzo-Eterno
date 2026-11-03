@@ -1,5 +1,6 @@
-/* Palazzo Eterno — Puzzacinta, Piano I. Colori ricavati da piano-Id.css:
-   fondo #e6f1e6, pannelli #eaf3ea, cornici #101611, verde #295431. */
+/* Palazzo Eterno — Puzzacinta, Piano I.
+   Tema del tempio in rovina: pietra, ombre e oro antico.
+   Sfondi senza velature verde pallido. */
 :root {--ink:#101611;--green:#295431;--pale:#eaf3ea;--base:#e6f1e6;--edge:#101611;--soft:#b0ccaf}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Georgia,"Times New Roman",serif;color:var(--ink);background:var(--base)}
 button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
@@ -44,3 +45,34 @@ button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;curs
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-width:850px){.puzzle-page{padding:7px}.puzzle-layout{grid-template-columns:1fr}.portrait-panel{min-height:490px}.dialogue-panel{min-height:540px}.puzzle-header{grid-template-columns:auto 1fr auto;padding:10px}.heading h1{font-size:20px}.back-button{font-size:10px;padding:9px 7px}.eyebrow{font-size:9px}}
 @media(max-width:450px){.portrait-panel{min-height:380px}.dialogue-panel{padding:12px}.dialogue-heading h2{font-size:21px}.question-form input{font-size:13px}.question-form button{padding:10px}.portrait-caption{font-size:13px}}
+
+/* TEMA TEMPIO DI SCINTILLA — PIANO ID */
+:root {--ink:#eadbc5;--green:#d5ae70;--pale:#211e1a;--base:#171a16;--edge:#675c45;--soft:#4b4436}
+html,body {color:var(--ink);background:#151714}
+.puzzle-page {background:linear-gradient(180deg,rgba(7,13,9,.44),rgba(8,12,9,.76)),url("immagini/puzzacinta_sfondoI.png") center/cover fixed}
+.puzzle-header {background:rgba(23,26,22,.94);border-color:#75674e;box-shadow:0 10px 30px #0007}
+.heading h1 {color:#e4c18b;text-shadow:0 2px 10px #0008}
+.eyebrow {color:#bca77b}
+.back-button,#rare-volume {background:#383328;color:#efe0ba;border-color:#a58a59}
+.back-button:hover,#rare-volume:hover {background:#51442e}
+#rare-volume-controls {background:#252620;border-color:#a58a59;color:#e7d8ba}
+#rare-volume-slider {accent-color:#cda76d}
+.portrait-panel,.dialogue-panel {background:rgba(26,29,24,.94);border-color:#75674e;box-shadow:0 12px 34px #0009}
+.portrait-panel {background:linear-gradient(0deg,rgba(9,14,10,.40),rgba(12,15,11,.10)),url("immagini/puzzacinta_sfondoI.png") center/cover}
+.portrait-caption {background:rgba(8,12,9,.72);color:#eee0c6}
+.dialogue-heading {border-color:#73654a}
+.dialogue-heading h2,.counter {color:#e4c18b}
+.question-pips i {background:#383a31;border-color:#645944}
+.question-pips i.remaining {background:#c5a269;border-color:#ebce90}
+.notice,.status-note {color:#b7aa8e}
+.messages {background:rgba(13,17,14,.75);border-color:#5b5340}
+.bubble {background:rgba(48,51,39,.80);border-left-color:#c6a367;color:#e9e1cf}
+.bubble strong {color:#e3bf83}
+.bubble.player {background:rgba(38,52,52,.72);border-right-color:#87aba5}
+.bubble.player strong {color:#a9c9c1}
+.question-form input {background:#1a1d18;color:#f0e4cb;border-color:#857350}
+.question-form input::placeholder {color:#a89d88}
+.question-form button,.reward button {background:#886c41;border-color:#d0ac71;color:#fff1d4}
+.question-form button:hover:not(:disabled),.reward button:hover:not(:disabled) {background:#a27e49}
+.reward {background:rgba(63,52,31,.82);border-color:#d1ac69}
+.reward h3 {color:#f1d49a}

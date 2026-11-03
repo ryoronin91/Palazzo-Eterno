@@ -15332,7 +15332,7 @@ function updateSpatialCoinPia() {
     // Stanza nord-est: terzo enigma ambientale.
     { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-puzzacinta-I-token', src: 'immagini/eventi/puzzacinta.png', x: 33, y: 29, w: 1, h: 1, center: true, z: 9 }
+    { id: 'id-puzzacinta-I-token', src: '../../immagini/eventi/puzzacinta.png', x: 33, y: 29, w: 1, h: 1, center: true, z: 9 }
   ];
   const barrierCells = [
     { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
