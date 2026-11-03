@@ -743,108 +743,6 @@ let dungeonCharacterRefreshInterval = null;
 
 
 
-// ============================================================
-// ID - CALIBRAZIONE VISIVA DELLA SOLA IMMAGINE
-// Le coordinate 67x45 di gioco e i valori JSON non cambiano.
-// ============================================================
-function setupIdMapImageCalibration() {
-    const map = document.getElementById('dungeon-map');
-    const img = document.getElementById('dungeon-map-image');
-    const open = document.getElementById('id-calibration-open');
-    if (!map || !img || !open || document.getElementById('id-map-calibration-panel')) return;
-    const key = 'palazzo-eterno:id:image-calibration:v2';
-    const baseline = { sx: 94, sy: 95.8, dx: 122, dy: 8 };
-    let data = { ...baseline };
-    try {
-        const saved = JSON.parse(localStorage.getItem(key) || 'null');
-        if (saved && ['sx','sy','dx','dy'].every(k => Number.isFinite(saved[k])))
-            data = { ...baseline, ...saved };
-    } catch (_) {}
-    const grid = document.createElement('canvas');
-    grid.id = 'id-map-grid-calibration';
-    grid.setAttribute('aria-hidden', 'true');
-    map.appendChild(grid);
-    const panel = document.createElement('div');
-    panel.id = 'id-map-calibration-panel';
-    panel.hidden = true;
-    panel.innerHTML = `
-      <div style="font-size:16px;font-weight:bold;margin-bottom:9px">Calibrazione mappa Id</div>
-      <div class="id-calibration-note">Le linee rosse sono le 67×45 celle logiche. Regola SOLO il disegno sottostante. Non modifica il JSON o le coordinate del PG.</div>
-      <label>Scala orizzontale <strong id="id-cal-sx-val"></strong></label>
-      <input id="id-cal-sx" type="range" min="80" max="115" step="0.1">
-      <label>Scala verticale <strong id="id-cal-sy-val"></strong></label>
-      <input id="id-cal-sy" type="range" min="80" max="115" step="0.1">
-      <label>Spostamento X <strong id="id-cal-dx-val"></strong></label>
-      <input id="id-cal-dx" type="range" min="-150" max="150" step="1">
-      <label>Spostamento Y <strong id="id-cal-dy-val"></strong></label>
-      <input id="id-cal-dy" type="range" min="-150" max="150" step="1">
-      <div><button type="button" id="id-cal-grid">Nascondi griglia</button><button type="button" id="id-cal-reset">Ripristina</button><button type="button" id="id-cal-copy">Copia valori</button><button type="button" id="id-cal-close">Chiudi</button></div>
-      <div class="id-calibration-note">Gli spostamenti sono espressi nei pixel del PNG originale. Le impostazioni si salvano solo nel tuo browser. Se i muri non coincidono ovunque, una semplice scala non basta a correggere il disegno.</div>`;
-    document.body.appendChild(panel);
-    const $ = id => panel.querySelector('#' + id);
-    let showGrid = false;
-    function paintGrid() {
-        if (!showGrid) return;
-        const w = map.clientWidth, h = map.clientHeight;
-        if (!w || !h) return;
-        const dpr = window.devicePixelRatio || 1;
-        grid.width = Math.round(w * dpr);
-        grid.height = Math.round(h * dpr);
-        const ctx = grid.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-        ctx.strokeStyle = 'rgba(255,36,36,.75)';
-        ctx.lineWidth = Math.max(0.65, Math.min(w / 67, h / 45) / 60);
-        ctx.beginPath();
-        for (let x = 0; x <= 67; x++) { const px = x * w / 67; ctx.moveTo(px,0);ctx.lineTo(px,h); }
-        for (let y = 0; y <= 45; y++) { const py = y * h / 45; ctx.moveTo(0,py);ctx.lineTo(w,py); }
-        ctx.stroke();
-    }
-    function apply() {
-        const mw = map.clientWidth, mh = map.clientHeight;
-        const iw = img.naturalWidth || 2048, ih = img.naturalHeight || 1390;
-        const dx = data.dx * mw / iw, dy = data.dy * mh / ih;
-        img.style.transformOrigin = 'top left';
-        img.style.transform = `translate(${dx}px,${dy}px) scale(${data.sx / 100},${data.sy / 100})`;
-        for (const k of ['sx','sy','dx','dy']) {
-            const control = $('id-cal-'+k);
-            if (control) control.value = data[k];
-            const value = $('id-cal-'+k+'-val');
-            if (value) value.textContent = data[k] + (k[0] === 's' ? '%' : ' px');
-        }
-        try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) {}
-        paintGrid();
-    }
-    for (const k of ['sx','sy','dx','dy']) $('id-cal-'+k).addEventListener('input', e => {
-        data[k] = Number(e.target.value);
-        apply();
-    });
-    open.addEventListener('click', () => {
-        panel.hidden = false; showGrid = true; grid.classList.add('is-visible');
-        $('id-cal-grid').textContent = 'Nascondi griglia'; apply();
-    });
-    $('id-cal-grid').onclick = () => {
-        showGrid = !showGrid;
-        grid.classList.toggle('is-visible', showGrid);
-        $('id-cal-grid').textContent = showGrid ? 'Nascondi griglia' : 'Mostra griglia';
-        paintGrid();
-    };
-    $('id-cal-reset').onclick = () => { data = {...baseline}; apply(); };
-    $('id-cal-copy').onclick = async () => {
-        const value = JSON.stringify({ ...data, imageWidth: img.naturalWidth, imageHeight: img.naturalHeight, grid: '67x45' },null,2);
-        console.log('CALIBRAZIONE ID:',value);
-        try { await navigator.clipboard.writeText(value); $('id-cal-copy').textContent='Copiato!'; }
-        catch (_) { $('id-cal-copy').textContent='Vedi console'; }
-    };
-    $('id-cal-close').onclick = () => {
-        panel.hidden = true; showGrid = false; grid.classList.remove('is-visible');
-    };
-    const ro = new ResizeObserver(() => { apply(); });
-    ro.observe(map);
-    img.addEventListener('load', apply);
-    apply();
-}
-
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
@@ -983,7 +881,6 @@ document.addEventListener(
 
 
             setupDungeonCamera();
-            setupIdMapImageCalibration();
             await setupPiaZoomAndExploration();
             // Nessun incontro del Piano Ia su Id.
             // Nessun accampamento o frutto del Piano Ia su Id.
@@ -15121,8 +15018,11 @@ let piaLastFogPosition = '';
 // Celle visibili adesso, separate dallo storico esplorato.
 let piaVisibleNow = new Set();
 function piaBlocksSight(x, y) {
-    // I totem occupano la casella ma non sono muri ottici.
-    if (y === 11 && (x === 5 || x === 8)) return false;
+    // I quattro totem e le sei celle della barriera luminosa
+    // impediscono il movimento ma NON interrompono la visuale.
+    if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
+    if ((y === 12 && x >= 58 && x <= 61) ||
+        (y === 10 && (x === 58 || x === 61))) return false;
     return !canMoveTo(x, y);
 }
 function piaHasLineOfSight(targetX, targetY) {
@@ -15359,8 +15259,8 @@ function updateSpatialCoinPia() {
     { id: 'id-totem-a', src: 'immagini/totem_0.png', x: 8, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     // Stanza nord-est: terzo enigma ambientale.
-    { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.25, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.25, w: 2.1, h: 2.1, center: true, z: 4 }
+    { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
+    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 }
   ];
   const barrierCells = [
     { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
