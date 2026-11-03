@@ -1,7 +1,7 @@
-// Palazzo Eterno — Anziano Scagliagrigia: IA autenticata + missioni verificate server-side.
+// Palazzo Eterno — Anziano Scagliagrigia: IA, missioni e Braci di Scintilla.
 (function () {
   'use strict';
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
   function initChat() {
     const form = $('capo-chat-form'), input = $('capo-chat-input'), log = $('capo-chat-log');
     if (!form || !input || !log) return;
@@ -39,6 +39,68 @@
       } finally { busy = false; if (send) send.disabled = false; input.focus(); }
     });
   }
+  let braciBusy = false;
+  async function loadBraci() {
+    const label = $('capo-rare-status');
+    const button = $('capo-braci-claim');
+    const note = $('capo-braci-note');
+    if (!label || !button) return;
+    try {
+      const { data, error } = await supabaseClient.rpc('scagliagrigia_braci_status');
+      if (error) throw error;
+      const current = Number(data?.level || 0);
+      if (data?.claimed) {
+        label.textContent = current > 0
+          ? 'Braci ottenute in questo ciclo · Livello ' + current
+          : 'Ricompensa riscattata in questo ciclo';
+      } else if (data?.can_claim) {
+        label.textContent = current >= 6 ? 'Livello massimo raggiunto' : 'Hai meritato le Braci di Scintilla!';
+      } else {
+        label.textContent = 'Mancano ' + Math.max(0,5-Number(data?.completed||0)) + ' missioni';
+      }
+      button.disabled = braciBusy || !data?.can_claim;
+      button.hidden = !data?.can_claim;
+      if (note) note.textContent = current
+        ? 'Braci attuali: livello ' + current + '/6. Ogni nuova copia aumenta il livello di uno.'
+        : 'La prima copia si ottiene completando tutte le cinque missioni della tribù.';
+    } catch (e) {
+      label.textContent = 'Impossibile leggere lo stato delle Braci.';
+      button.disabled = true;
+      if (note) note.textContent = e.message || 'Errore di connessione';
+    }
+  }
+  function initBraci() {
+    const label = $('capo-rare-status');
+    if (!label || $('capo-braci-claim')) return;
+    const milestone = label.closest('.quest-milestone') || label.parentElement;
+    const heading = milestone.querySelector('span');
+    if (heading) heading.textContent = 'Braci di Scintilla';
+    const button = document.createElement('button');
+    button.id = 'capo-braci-claim'; button.type = 'button';
+    button.textContent = 'RITIRA BRACI DI SCINTILLA';
+    button.disabled = true; button.hidden = true;
+    button.style.cssText = 'margin:12px 0 6px;padding:10px 12px;background:#324e2e;color:#fff3d4;border:1px solid #b89f59;border-radius:4px;font-weight:700;cursor:pointer';
+    const note = document.createElement('small');
+    note.id = 'capo-braci-note'; note.style.cssText='display:block;margin-top:5px;line-height:1.5';
+    milestone.append(button,note);
+    button.addEventListener('click', async () => {
+      if (braciBusy) return;
+      braciBusy = true; button.disabled = true;
+      note.textContent = 'Consegna in corso...';
+      try {
+        const {data,error} = await supabaseClient.rpc('scagliagrigia_braci_claim');
+        if (error) throw error;
+        note.textContent = data?.max_level
+          ? 'Braci al livello massimo (6/6).'
+          : data?.upgraded
+            ? 'Braci potenziate! Nuovo livello: ' + data.level
+            : 'Hai ricevuto le Braci di Scintilla, livello 1!';
+        await loadProgress();
+      } catch (e) {
+        note.textContent = 'Consegna non riuscita: ' + (e.message || 'errore');
+      } finally { braciBusy=false; await loadBraci(); }
+    });
+  }
   async function loadProgress() {
     const label = $('capo-quest-status');
     try {
@@ -51,13 +113,13 @@
       $('capo-progress-fill').style.width = capped * 20 + '%';
       $('capo-progress').setAttribute('aria-valuenow', String(capped));
       $('capo-pass-status').textContent = count >= 2 ? 'Requisito raggiunto — consegna da attivare' : 'Mancano ' + (2-count) + ' missioni';
-      $('capo-rare-status').textContent = count >= 5 ? 'Requisito raggiunto — premio da definire' : 'Mancano ' + (5-count) + ' missioni';
       label.textContent = 'Progresso del ciclo attuale del Piano I.';
+      await loadBraci();
     } catch (e) {
       if (label) label.textContent = 'Impossibile caricare il progresso: ' + (e.message || 'errore');
     }
   }
-  function init() { initChat(); loadProgress(); }
+  function init() { initChat(); initBraci(); loadProgress(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
