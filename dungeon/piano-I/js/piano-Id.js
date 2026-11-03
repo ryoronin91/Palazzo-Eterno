@@ -743,6 +743,44 @@ let dungeonCharacterRefreshInterval = null;
 
 
 
+// ============================================================
+// ID - ALLINEAMENTO IMMAGINE MAPPA (SENZA PANNELLO)
+// Il pannello è rimosso, ma la trasformazione visuale originale
+// rimane necessaria per mantenere immagine, griglia e nebbia allineate.
+// Non modifica JSON, coordinate logiche o percorribilità.
+// ============================================================
+function setupIdMapImageAlignment() {
+    const map = document.getElementById('dungeon-map');
+    const img = document.getElementById('dungeon-map-image');
+    if (!map || !img) return;
+
+    const key = 'palazzo-eterno:id:image-calibration:v2';
+    const defaults = { sx: 94, sy: 95.8, dx: 122, dy: 8 };
+    let data = { ...defaults };
+    try {
+        const saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (saved && ['sx', 'sy', 'dx', 'dy'].every(k => Number.isFinite(saved[k]))) {
+            data = { ...defaults, ...saved };
+        }
+    } catch (_) {}
+
+    const apply = () => {
+        const mw = map.clientWidth;
+        const mh = map.clientHeight;
+        if (mw <= 0 || mh <= 0) return;
+        const iw = img.naturalWidth || 2048;
+        const ih = img.naturalHeight || 1390;
+        img.style.transformOrigin = 'top left';
+        img.style.transform = `translate(${data.dx * mw / iw}px,${data.dy * mh / ih}px) scale(${data.sx / 100},${data.sy / 100})`;
+        // La nebbia deve seguire l'immagine calibrata.
+        if (typeof piaRenderFog === 'function') piaRenderFog();
+    };
+
+    new ResizeObserver(apply).observe(map);
+    img.addEventListener('load', apply);
+    apply();
+}
+
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
@@ -881,6 +919,7 @@ document.addEventListener(
 
 
             setupDungeonCamera();
+            setupIdMapImageAlignment();
             await setupPiaZoomAndExploration();
             // Nessun incontro del Piano Ia su Id.
             // Nessun accampamento o frutto del Piano Ia su Id.
