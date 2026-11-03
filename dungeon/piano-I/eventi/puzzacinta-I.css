@@ -76,3 +76,46 @@ html,body {color:var(--ink);background:#151714}
 .question-form button:hover:not(:disabled),.reward button:hover:not(:disabled) {background:#a27e49}
 .reward {background:rgba(63,52,31,.82);border-color:#d1ac69}
 .reward h3 {color:#f1d49a}
+
+
+/* FIX IMMAGINE EVENTO: una sola scena, senza sovrapposizioni.
+   Il file puzzacinta_eventoI.png include gia' tempio e personaggio. */
+.portrait-panel {
+    align-self: start;
+    min-height: 0;
+    height: auto;
+    background: #171a16;
+}
+.portrait {
+    position: relative;
+    inset: auto;
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    filter: none;
+}
+@media (max-width: 850px) {
+    .portrait-panel { min-height: 0; }
+}
+@media (max-width: 450px) {
+    .portrait-panel { min-height: 0; }
+}
+
+/* FIX DEFINITIVO: una sola immagine completa nel pannello. */
+.puzzle-layout { align-items: start; }
+.portrait-panel {
+  position: relative; display: block; align-self: start;
+  min-height: 0 !important; height: auto !important;
+  background: #171a16 !important; overflow: hidden;
+}
+.portrait-panel .portrait {
+  position: static !important; inset: auto !important;
+  display: block; width: 100%; height: auto !important;
+  max-width: 100%; object-fit: contain !important;
+  object-position: center; filter: none;
+}
+@media(max-width:850px) {
+  .portrait-panel { min-height: 0 !important; height: auto !important; }
+}
