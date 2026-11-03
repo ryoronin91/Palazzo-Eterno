@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Il Rito della Memoria — Palazzo Eterno</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../../js/config.js?v=10"></script>
+<style>
+:root{color-scheme:dark;--gold:#e7c46e;--ink:#0b131c;--paper:#f4e9cd}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 22%,#33404a 0%,#111823 55%,#06090e 100%);color:var(--paper);font-family:Georgia,serif;display:flex;align-items:center;justify-content:center;padding:18px}
+main{width:min(760px,100%);border:2px solid #a68b4b;border-radius:16px;padding:clamp(15px,4vw,32px);background:linear-gradient(155deg,#0d151fe8,#131820f5);box-shadow:0 15px 55px #000b,inset 0 0 38px #c49b2512;text-align:center}
+.eyebrow{letter-spacing:.24em;text-transform:uppercase;color:#baae8b;font:12px Arial,sans-serif}
+h1{color:var(--gold);font-size:clamp(27px,6vw,43px);font-weight:normal;margin:12px 0 8px}
+.subtitle{font:15px/1.6 Arial,sans-serif;color:#c8c4b9;max-width:550px;margin:8px auto 20px}
+.status-row{display:flex;justify-content:center;gap:18px;align-items:center;flex-wrap:wrap;font:700 14px Arial,sans-serif;margin-bottom:14px}
+.status-row span{padding:7px 12px;background:#26303d;border:1px solid #776d52;border-radius:50px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.7vw,14px);max-width:610px;margin:18px auto}
+.symbol{aspect-ratio:1;min-height:74px;border:2px solid #907f56;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,var(--tile),#1b2531);color:#f0e8d7;box-shadow:inset 0 0 16px #0007,0 4px 10px #0005;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:transform .12s,filter .12s,box-shadow .12s;font-family:Georgia,serif}
+.symbol .glyph{font-size:clamp(28px,5vw,47px);line-height:1;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif}
+.symbol small{font:11px Arial,sans-serif;letter-spacing:.04em}
+.symbol:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.25)}
+.symbol:disabled{cursor:default;opacity:.7}
+.symbol.lit{opacity:1;transform:scale(1.05);filter:brightness(2.05);box-shadow:0 0 28px 8px var(--glow),inset 0 0 24px #fff6;border-color:#fff1bd}
+.symbol:focus-visible,.action:focus-visible{outline:3px solid #fce4a2;outline-offset:3px}
+#message{min-height:52px;font:16px/1.5 Arial,sans-serif;padding:8px;margin:12px auto;max-width:580px}
+#message.error{color:#ffc3ae}#message.success{color:#b8f1c8}
+.controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.action{border:1px solid #e1bb60;background:#655025;color:#fff5d8;border-radius:8px;padding:13px 22px;cursor:pointer;font:700 14px Arial,sans-serif;letter-spacing:.07em;text-decoration:none;display:inline-block}
+.action.secondary{background:#273442;border-color:#718191}
+.action:disabled{opacity:.55;cursor:default}
+.progress{display:flex;justify-content:center;gap:7px;margin:14px 0 5px}
+.pip{width:27px;height:7px;border-radius:10px;background:#37424b}.pip.passed{background:#d7b661}.pip.current{background:#f9dea1;box-shadow:0 0 9px #e5b356}
+.note{margin-top:16px;font:12px/1.6 Arial,sans-serif;color:#a9aeac}
+@media(max-width:460px){.board{gap:7px}.symbol{min-height:60px}.symbol small{font-size:9px}.status-row{gap:7px}main{padding:14px 10px}}
+</style>
+</head>
+<body>
+<main>
+<div class="eyebrow">Tempio di Scintilla · Enigma II</div>
+<h1>Il Secondo Rito della Memoria</h1>
+<p class="subtitle">Osserva i simboli che si illuminano e ripeti la sequenza. Ogni round aggiunge un simbolo. Un solo errore annulla la prova e costa 5 punti vita.</p>
+<div class="status-row"><span id="round">Round — / 6</span><span id="length">Sequenza: — simboli</span><span id="phase">In attesa</span></div>
+<div class="progress" id="progress" aria-label="Progressi nei sei round"></div>
+<div class="board" id="board" aria-label="Otto simboli del rito"></div>
+<div id="message" role="status" aria-live="polite">Premi AVVIA per iniziare la prova.</div>
+<div class="controls"><button class="action" id="start" type="button">AVVIA</button><a class="action secondary" href="../piano-Id.html">TORNA AL TEMPIO</a></div>
+<p class="note">6 round · 3, 4, 5, 6, 7 e 8 simboli · un errore: −5 PF e ripartenza dal round 1</p>
+</main>
+<script>
+(() => {
+ 'use strict';
+ const colors=['#ac7a31','#496d9a','#90546f','#447b6b','#8b5944','#7b6eac','#a88f45','#627e84'];
+ const icons=['🐻','🐂','🐈','🦊','🦉','🦅','🐉','❤️'];
+ const names=['Orso','Toro','Gatto','Volpe','Gufo','Aquila','Drago','Cuore'];
+ const db=typeof supabaseClient!=='undefined'?supabaseClient:null;
+ const $=id=>document.getElementById(id);
+ const board=$('board'), tiles=[];
+ let busy=false,phase='idle',sequence=[],round=0,position=0,run=0;
+ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ for(let i=0;i<8;i++){
+   const button=document.createElement('button');button.type='button';button.className='symbol';
+   button.style.setProperty('--tile',colors[i]);button.style.setProperty('--glow',colors[i]);
+   const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent=icons[i];
+   const label=document.createElement('small');label.textContent=names[i];button.append(glyph,label);
+   button.disabled=true;button.setAttribute('aria-label',names[i]);
+   button.addEventListener('click',()=>choose(i));board.appendChild(button);tiles.push(button);
+ }
+ function say(t,kind=''){const e=$('message');e.textContent=t;e.className=kind;}
+ function setPhase(p){phase=p;$('phase').textContent=({idle:'In attesa',show:'Osserva',input:'Ripeti',wait:'Verifica',won:'Completato',fail:'Errore'})[p]||p;tiles.forEach(t=>t.disabled=p!=='input');}
+ function render(){
+   $('round').textContent=round?`Round ${round} / 6`:'Round — / 6';
+   $('length').textContent=round?`Sequenza: ${round+2} simboli`:'Sequenza: — simboli';
+   $('progress').replaceChildren(...Array.from({length:6},(_,i)=>{const el=document.createElement('span');el.className='pip'+(i<round-1?' passed':i===round-1?' current':'');return el;}));
+ }
+ async function play(){
+   const version=++run;
+   setPhase('show');$('start').disabled=true;
+   say(`Round ${round}: osserva la sequenza di ${sequence.length} simboli.`);
+   await delay(650);
+   for(const symbol of sequence){
+     if(version!==run)return;
+     tiles[symbol].classList.add('lit');
+     await delay(680);
+     tiles[symbol].classList.remove('lit');
+     await delay(250);
+   }
+   if(version!==run)return;
+   setPhase('input');
+   say(`Ora ripeti ${sequence.length} simboli nell’ordine corretto. ${position?`Già confermati: ${position}.`:''}`);
+ }
+ async function start(){
+   if(busy)return;
+   busy=true;setPhase('wait');$('start').disabled=true;say('Preparazione del rito…');
+   try{
+     if(!db)throw new Error('Connessione Supabase non disponibile');
+     const {data,error}=await db.rpc('piano_id_says2_begin');
+     if(error)throw error;
+     if(data?.status==='completed'){
+       round=6;render();setPhase('won');say('Questo totem è già acceso. Il rito è stato completato!', 'success');return;
+     }
+     sequence=data.sequence||[];round=data.round;position=data.position||0;
+     if(sequence.length!==round+2)throw new Error('Sequenza del round non valida');
+     render();await play();
+   }catch(error){setPhase('idle');say(error.message||'Non è possibile avviare la prova','error');$('start').disabled=false;}
+   finally{busy=false;}
+ }
+ async function choose(id){
+   if(phase!=='input'||busy)return;
+   busy=true;setPhase('wait');tiles[id].classList.add('lit');await delay(210);tiles[id].classList.remove('lit');
+   try{
+     const {data,error}=await db.rpc('piano_id_says2_press',{p_symbol:id});
+     if(error)throw error;
+     if(data?.status==='failed'){
+       ++run;round=0;position=0;sequence=[];render();setPhase('fail');
+       say(`Sequenza errata! Hai perso 5 PF (PF rimasti: ${data.hp}). Tutti i sei round sono azzerati.`,'error');
+       $('start').textContent='RIPROVA DAL ROUND 1';$('start').disabled=false;
+     }else if(data?.status==='won'||data?.status==='completed'){
+       ++run;round=6;render();setPhase('won');
+       say('Rito completato! Il totem X58 Y11 ora è acceso.','success');$('start').disabled=true;
+     }else if(data?.status==='next_round'){
+       round=data.round;position=0;sequence=data.sequence||[];render();
+       say(`Round ${round-1} superato! Preparati al round ${round}.`,'success');
+       await delay(1000);await play();
+     }else if(data?.status==='correct'){
+       position=data.position;setPhase('input');say(`Corretto! ${position} di ${sequence.length} simboli.`);
+     }else throw new Error('Risposta inattesa dal server');
+   }catch(error){setPhase('idle');say(error.message||'Errore di connessione: riprova','error');$('start').disabled=false;$('start').textContent='RIPRENDI';}
+   finally{busy=false;}
+ }
+ $('start').addEventListener('click',start);
+ render();
+ if(db){db.rpc('piano_id_says2_status').then(({data,error})=>{if(!error&&data?.completed){round=6;render();setPhase('won');say('Il rito è già stato completato e il totem è acceso.','success');$('start').disabled=true;}});}
+ else say('Configurazione Supabase non disponibile. Torna al Tempio e riprova.','error');
+})();
+</script>
+</body>
+</html>

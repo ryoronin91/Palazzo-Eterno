@@ -4739,11 +4739,12 @@ async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
 
-    // Il totem X61 Y11 apre il primo Simon Says. Non viene calpestato.
-    if (nx === 61 && ny === 11) {
+    // I totem del rito della memoria aprono due pagine separate.
+    // La loro casella rimane solida, il personaggio non vi entra.
+    if (ny === 11 && (nx === 61 || nx === 58)) {
         movementQueue.length = 0;
         eventLocked = true;
-        window.location.assign('puzzle/says1.html');
+        window.location.assign(nx === 61 ? 'puzzle/says1.html' : 'puzzle/says2.html');
         return false;
     }
 
@@ -6265,6 +6266,9 @@ function isCombatEventCellOccupied(
 
 
 
+// Stato grafico della barriera, sincronizzato da Supabase.
+let idSimonBarrierUnlocked = false;
+
 // ============================================================
 // CONTROLLO CASELLA ACCESSIBILE
 // ============================================================
@@ -6274,8 +6278,9 @@ function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
     if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
-    // Barriera luminosa del terzo enigma ambientale.
-    if ((y === 12 && x >= 58 && x <= 61) || (y === 10 && (x === 58 || x === 61))) return false;
+    // Le sei celle si liberano soltanto quando i DUE Simon Says sono completati.
+    if (!idSimonBarrierUnlocked && ((y === 12 && x >= 58 && x <= 61) ||
+        (y === 10 && (x === 58 || x === 61)))) return false;
     const cell=Number(dungeonData.cells[y+GRID_OFFSET_Y]?.[x+GRID_OFFSET_X]);
     if(!Number.isFinite(cell)||cell===0)return false;
     const b=dungeonData.cell_bit||{};
@@ -15694,20 +15699,32 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// SIMON SAYS 1 — Stato del totem X61 Y11 (persistente su Supabase)
+// SIMON SAYS 1 + 2 — Due totem e barriera luminosa condivisa
 // ============================================================
-async function updateIdSimonTotem() {
-    const totem = document.getElementById('id-totem-c');
-    if (!totem || typeof db === 'undefined') return;
+async function updateIdSimonTotems() {
+    if (typeof db === 'undefined') return;
     try {
-        const {data, error} = await db.rpc('piano_id_says1_status');
-        if (error) throw error;
-        totem.src = data?.completed ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+        const [one, two] = await Promise.all([
+            db.rpc('piano_id_says1_status'),
+            db.rpc('piano_id_says2_status')
+        ]);
+        if (one.error) throw one.error;
+        if (two.error) throw two.error;
+        const a = one.data?.completed === true;
+        const b = two.data?.completed === true;
+        const first = document.getElementById('id-totem-c');
+        const second = document.getElementById('id-totem-d');
+        if (first) first.src = a ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+        if (second) second.src = b ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+        idSimonBarrierUnlocked = a && b;
+        document.querySelectorAll('.id-light-barrier-cell').forEach(cell => {
+            cell.style.display = idSimonBarrierUnlocked ? 'none' : '';
+        });
     } catch (error) {
-        console.warn('Stato Simon Says 1 non disponibile:', error);
+        console.warn('Stato dei due Simon Says non disponibile:',error);
     }
 }
 window.addEventListener('DOMContentLoaded', () => {
-    updateIdSimonTotem();
-    window.setInterval(updateIdSimonTotem, 12000);
+    updateIdSimonTotems();
+    window.setInterval(updateIdSimonTotems, 12000);
 });
