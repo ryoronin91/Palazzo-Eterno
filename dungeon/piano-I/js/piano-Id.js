@@ -6285,6 +6285,8 @@ let idSimonBarrierUnlocked = false;
 
 function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
+    // Ostacoli del Tempio: bloccano il cammino, non la visuale.
+    if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
     // Il token di Puzzacinta è solido finché non ha concluso le cinque risposte.
     if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
@@ -11964,6 +11966,8 @@ function isVisionBlockingCell(
     x,
     y
 ) {
+    // Le cinque caselle speciali lasciano passare la visuale.
+    if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
     // Puzzacinta è un personaggio, non un muro: blocca il passaggio ma non la visuale.
     if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem del Tempio e barriere luminose: bloccano solo il movimento, mai la visuale.
@@ -15083,6 +15087,8 @@ let piaLastFogPosition = '';
 // Celle visibili adesso, separate dallo storico esplorato.
 let piaVisibleNow = new Set();
 function piaBlocksSight(x, y) {
+    // Ostacoli solidi, ma trasparenti alla visuale.
+    if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
     // I quattro totem e le sei celle della barriera luminosa
     // impediscono il movimento ma NON interrompono la visuale.
     if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
