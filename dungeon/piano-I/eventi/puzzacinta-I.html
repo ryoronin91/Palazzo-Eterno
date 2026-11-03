@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Palazzo Eterno — Puzzacinta · Piano I</title>
+  <link rel="stylesheet" href="puzzacinta-I.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../../js/config.js?v=10"></script>
+</head>
+<body>
+  <main class="puzzle-page">
+    <section class="puzzle-stage" aria-label="Incontro con Puzzacinta">
+      <header class="puzzle-header">
+        <a class="back-button" href="../piano-Id.html">← TORNA AL TEMPIO</a>
+        <div class="heading">
+          <span class="eyebrow">PIANO I · TEMPIO DI SCINTILLA</span>
+          <h1>PUZZACINTA</h1>
+        </div>
+        <div class="volume-wrap">
+          <button id="rare-volume" aria-label="Volume musica" type="button">🔉</button>
+          <div id="rare-volume-controls" hidden>
+            <input id="rare-volume-slider" type="range" min="0" max="100" step="5" value="35" aria-label="Regola volume">
+            <span id="rare-volume-label">35%</span>
+          </div>
+        </div>
+      </header>
+      <div class="puzzle-layout">
+        <section class="portrait-panel">
+          <img class="portrait" src="immagini/puzzacinta_eventoI.png" alt="Puzzacinta nel Tempio di Scintilla">
+          <div class="portrait-caption">«Cinque domande… cinque risposte. Poi, chi lo sa?»</div>
+        </section>
+        <section class="dialogue-panel" aria-label="Dialogo con Puzzacinta">
+          <div class="dialogue-heading">
+            <div><span class="eyebrow">IL VIANDANTE DEGLI ENIGMI</span><h2>Le cinque risposte</h2></div>
+            <div class="counter"><strong id="rare-remaining">5</strong><small>RIMASTE</small></div>
+          </div>
+          <div class="question-pips" id="rare-pips" aria-hidden="true">
+            <i class="remaining"></i><i class="remaining"></i><i class="remaining"></i><i class="remaining"></i><i class="remaining"></i>
+          </div>
+          <p class="notice" id="rare-status">Le domande riguarderanno esclusivamente il Piano I.</p>
+          <div class="messages" id="rare-messages" role="log" aria-live="polite">
+            <div class="bubble npc"><strong>PUZZACINTA</strong><p>Ah, il Tempio! Dicono che qui ogni domanda faccia più rumore di un passo… Avanti, vediamo che cosa sai chiedere!</p></div>
+          </div>
+          <form id="rare-question-form" class="question-form" autocomplete="off">
+            <label class="sr-only" for="rare-question">Fai una domanda a Puzzacinta</label>
+            <input id="rare-question" type="text" minlength="2" maxlength="500" placeholder="Chiedi qualcosa sul Piano I…" disabled>
+            <button id="rare-send" type="submit" disabled>CHIEDI</button>
+          </form>
+          <p id="rare-notice" class="status-note" role="status">Anteprima grafica: il collegamento all'IA sarà aggiunto in seguito.</p>
+          <section class="reward" id="id-puzzacinta-reward" hidden aria-label="Ricompensa">
+            <h3>IL TERZO FRAMMENTO</h3>
+            <p>Le cinque risposte sono terminate. Puzzacinta lascia il terzo pezzo di mosaico e svanisce.</p>
+            <button type="button" id="id-puzzacinta-collect" disabled>RACCOGLI — PEZZO DI MOSAICO 3</button>
+          </section>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="puzzacinta-I.js?v=1"></script>
+</body>
+</html>

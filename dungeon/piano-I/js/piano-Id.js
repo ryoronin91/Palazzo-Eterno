@@ -4739,6 +4739,25 @@ async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
 
+    // Incontro Puzzacinta del Tempio, senza spostare il personaggio.
+    if (nx === 33 && ny === 29 && !idPuzzacintaFinished) {
+        movementQueue.length = 0;
+        if (!canMoveTo(nx, ny)) { setMessage('Il passaggio è bloccato.'); return false; }
+        eventLocked = true;
+        try {
+            const { data, error } = await db.rpc('piano_id_move', { p_x: nx, p_y: ny });
+            if (error) throw error;
+            playerX = Number(data.x); playerY = Number(data.y);
+            showToken(playerX, playerY);
+            piaRevealAroundPlayer(); updateDungeonCamera();
+            window.location.assign('eventi/puzzacinta-I.html');
+        } catch (error) {
+            eventLocked = false;
+            setMessage(error.message || 'Impossibile raggiungere Puzzacinta.');
+        }
+        return false;
+    }
+
     // I totem del rito della memoria aprono due pagine separate.
     // La loro casella rimane solida, il personaggio non vi entra.
     if (ny === 11 && (nx === 61 || nx === 58)) {
@@ -15312,7 +15331,8 @@ function updateSpatialCoinPia() {
     { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     // Stanza nord-est: terzo enigma ambientale.
     { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 }
+    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
+    { id: 'id-puzzacinta-I-token', src: 'immagini/eventi/puzzacinta.png', x: 33, y: 29, w: 1, h: 1, center: true, z: 9 }
   ];
   const barrierCells = [
     { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
@@ -15730,4 +15750,24 @@ async function updateIdSimonTotems() {
 window.addEventListener('DOMContentLoaded', () => {
     updateIdSimonTotems();
     window.setInterval(updateIdSimonTotems, 12000);
+});
+
+// Piano Id — stato dell'apparizione di Puzzacinta.
+// La figura scompare dopo cinque risposte; nessun intervento sul JSON.
+let idPuzzacintaFinished = false;
+async function updateIdPuzzacintaAppearance() {
+  if (typeof db === 'undefined') return;
+  try {
+    const { data, error } = await db.rpc('piano_id_puzzacinta_status');
+    if (error) throw error;
+    idPuzzacintaFinished = Number(data?.answered ?? 0) >= 5;
+    const token = document.getElementById('id-puzzacinta-I-token');
+    if (token) token.style.display = idPuzzacintaFinished ? 'none' : '';
+  } catch (error) {
+    console.warn('Stato apparizione Puzzacinta:', error);
+  }
+}
+window.addEventListener('DOMContentLoaded', () => {
+  updateIdPuzzacintaAppearance();
+  window.setInterval(updateIdPuzzacintaAppearance, 12000);
 });

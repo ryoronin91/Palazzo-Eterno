@@ -1,0 +1,46 @@
+/* Palazzo Eterno — Puzzacinta, Piano I. Colori ricavati da piano-Id.css:
+   fondo #e6f1e6, pannelli #eaf3ea, cornici #101611, verde #295431. */
+:root {--ink:#101611;--green:#295431;--pale:#eaf3ea;--base:#e6f1e6;--edge:#101611;--soft:#b0ccaf}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Georgia,"Times New Roman",serif;color:var(--ink);background:var(--base)}
+button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
+[hidden]{display:none!important}
+.puzzle-page{min-height:100vh;padding:18px;background:linear-gradient(#e6f1e6eb,#e6f1e6ef),url("immagini/puzzacinta_sfondoI.png") center/cover fixed}
+.puzzle-stage{width:min(1480px,100%);margin:auto}
+.puzzle-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:12px 18px;background:#eaf3ea;border:3px solid var(--edge);margin-bottom:12px}
+.heading{text-align:center}.heading h1{font-size:clamp(23px,3vw,35px);letter-spacing:.12em;margin:4px 0 0}
+.eyebrow{font:800 11px Arial,sans-serif;letter-spacing:.15em;color:#4a6950}
+.back-button,#rare-volume{background:#d3e5d3;color:var(--ink);border:2px solid var(--edge);padding:10px 14px;text-decoration:none;font:800 12px Arial,sans-serif;width:fit-content}
+.back-button:hover,#rare-volume:hover{background:#b5d9b4}
+.volume-wrap{justify-self:end;position:relative}
+#rare-volume-controls{position:absolute;right:0;top:calc(100% + 8px);z-index:5;display:flex;align-items:center;gap:8px;background:var(--pale);padding:12px;border:2px solid var(--edge);white-space:nowrap}
+#rare-volume-slider{width:110px;accent-color:#295431}
+.puzzle-layout{display:grid;grid-template-columns:minmax(350px,1.13fr) minmax(360px,1fr);gap:12px;min-height:min(780px,calc(100vh - 120px))}
+.portrait-panel,.dialogue-panel{border:3px solid var(--edge);background:var(--pale);min-width:0}
+.portrait-panel{position:relative;overflow:hidden;min-height:640px;background:linear-gradient(0deg,#0d201b99,#10201520),url("immagini/puzzacinta_sfondoI.png") center/cover}
+.portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 12px 16px #0009)}
+.portrait-caption{position:absolute;bottom:14px;left:14px;right:14px;color:#f5f8ed;text-align:center;font-style:italic;font-size:16px;line-height:1.5;text-shadow:0 2px 5px #000;background:#091911aa;padding:12px}
+.dialogue-panel{display:flex;flex-direction:column;padding:20px;max-height:850px}
+.dialogue-heading{display:flex;align-items:start;justify-content:space-between;gap:15px;border-bottom:2px solid var(--edge);padding-bottom:12px}
+.dialogue-heading h2{font-size:25px;margin:5px 0}
+.counter{display:flex;align-items:center;gap:6px;color:var(--green)}.counter strong{font:900 42px Arial,sans-serif}.counter small{font:900 11px Arial,sans-serif;max-width:50px}
+.question-pips{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:15px 0 5px}
+.question-pips i{height:8px;background:#b8c8b8;border:1px solid #7e967d}
+.question-pips i.remaining{background:#3e8b51;border-color:#295431}
+.notice{color:#4a6950;font-size:13px;line-height:1.5;margin:10px 0 15px}
+.messages{flex:1;min-height:235px;overflow:auto;background:#f7fcf5;border:2px solid #b0ccaf;padding:12px}
+.bubble{padding:10px 12px;margin:0 0 12px;background:#e4f1e1;border-left:4px solid #295431;line-height:1.5}
+.bubble strong{display:block;color:#295431;font:900 12px Arial,sans-serif;letter-spacing:.05em;margin-bottom:5px}
+.bubble p{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.bubble.player{border-left:0;border-right:4px solid #557eaa;background:#eaf1f7;text-align:right}
+.bubble.player strong{color:#355d81}
+.question-form{display:flex;gap:8px;margin-top:12px}
+.question-form input{flex:1;min-width:0;padding:12px;border:2px solid var(--edge);background:#fff;color:var(--ink)}
+.question-form button,.reward button{border:2px solid var(--edge);padding:11px 17px;color:var(--ink);font:900 12px Arial,sans-serif;background:#9bcd9a}
+.question-form button:hover:not(:disabled),.reward button:hover:not(:disabled){background:#7cbb7b}
+.status-note{font-size:12px;color:#4a6950;margin:10px 0 0;line-height:1.4}
+.reward{border:2px solid #295431;padding:15px;background:#dcebd6;margin-top:15px}
+.reward h3{color:#295431;font-size:16px;margin:0 0 9px}
+.reward p{margin:0 0 12px;line-height:1.5}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:850px){.puzzle-page{padding:7px}.puzzle-layout{grid-template-columns:1fr}.portrait-panel{min-height:490px}.dialogue-panel{min-height:540px}.puzzle-header{grid-template-columns:auto 1fr auto;padding:10px}.heading h1{font-size:20px}.back-button{font-size:10px;padding:9px 7px}.eyebrow{font-size:9px}}
+@media(max-width:450px){.portrait-panel{min-height:380px}.dialogue-panel{padding:12px}.dialogue-heading h2{font-size:21px}.question-form input{font-size:13px}.question-form button{padding:10px}.portrait-caption{font-size:13px}}
