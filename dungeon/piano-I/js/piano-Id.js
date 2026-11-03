@@ -4739,6 +4739,14 @@ async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
 
+    // Il totem X61 Y11 apre il primo Simon Says. Non viene calpestato.
+    if (nx === 61 && ny === 11) {
+        movementQueue.length = 0;
+        eventLocked = true;
+        window.location.assign('puzzle/says1.html');
+        return false;
+    }
+
     if(nx<0||ny<0||nx>=MAP_COLUMNS||ny>=MAP_ROWS||!canMoveTo(nx,ny)){
         setMessage('Il passaggio e` bloccato.');return false;
     }
@@ -15683,4 +15691,23 @@ async function updateIdPlatformPuzzle() {
 window.addEventListener('DOMContentLoaded', () => {
     updateIdPlatformPuzzle();
     window.setInterval(updateIdPlatformPuzzle, 12000);
+});
+
+// ============================================================
+// SIMON SAYS 1 — Stato del totem X61 Y11 (persistente su Supabase)
+// ============================================================
+async function updateIdSimonTotem() {
+    const totem = document.getElementById('id-totem-c');
+    if (!totem || typeof db === 'undefined') return;
+    try {
+        const {data, error} = await db.rpc('piano_id_says1_status');
+        if (error) throw error;
+        totem.src = data?.completed ? 'immagini/totem_1.png' : 'immagini/totem_0.png';
+    } catch (error) {
+        console.warn('Stato Simon Says 1 non disponibile:', error);
+    }
+}
+window.addEventListener('DOMContentLoaded', () => {
+    updateIdSimonTotem();
+    window.setInterval(updateIdSimonTotem, 12000);
 });
