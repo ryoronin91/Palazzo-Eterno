@@ -787,7 +787,7 @@ document.addEventListener(
 
 
         startBackgroundMusic(
-            "../../music/piano-Ia.mp3"
+            "../../music/puzzacinta.mp3"
         );
 
 
@@ -4739,22 +4739,12 @@ async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
 
-    // Incontro Puzzacinta del Tempio, senza spostare il personaggio.
+    // Puzzacinta occupa X33 Y29: incontro dalla casella adiacente,
+    // senza inviare un movimento al server e senza sovrapporre il PG al token.
     if (nx === 33 && ny === 29 && !idPuzzacintaFinished) {
         movementQueue.length = 0;
-        if (!canMoveTo(nx, ny)) { setMessage('Il passaggio è bloccato.'); return false; }
         eventLocked = true;
-        try {
-            const { data, error } = await db.rpc('piano_id_move', { p_x: nx, p_y: ny });
-            if (error) throw error;
-            playerX = Number(data.x); playerY = Number(data.y);
-            showToken(playerX, playerY);
-            piaRevealAroundPlayer(); updateDungeonCamera();
-            window.location.assign('eventi/puzzacinta-I.html');
-        } catch (error) {
-            eventLocked = false;
-            setMessage(error.message || 'Impossibile raggiungere Puzzacinta.');
-        }
+        window.location.assign('eventi/puzzacinta-I.html');
         return false;
     }
 
@@ -6295,6 +6285,8 @@ let idSimonBarrierUnlocked = false;
 
 function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
+    // Il token di Puzzacinta è solido finché non ha concluso le cinque risposte.
+    if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
     if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
     // Le sei celle si liberano soltanto quando i DUE Simon Says sono completati.
@@ -11972,6 +11964,8 @@ function isVisionBlockingCell(
     x,
     y
 ) {
+    // Puzzacinta è un personaggio, non un muro: blocca il passaggio ma non la visuale.
+    if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem del Tempio e barriere luminose: bloccano solo il movimento, mai la visuale.
     if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
     if ((y === 12 && x >= 58 && x <= 61) || (y === 10 && (x === 58 || x === 61))) return false;
