@@ -6329,7 +6329,9 @@ function isCombatEventCellOccupied(
 function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
-    if (y === 11 && (x === 5 || x === 8)) return false;
+    if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
+    // Barriera luminosa del terzo enigma ambientale.
+    if ((y === 12 && x >= 58 && x <= 61) || (y === 10 && (x === 58 || x === 61))) return false;
     const cell=Number(dungeonData.cells[y+GRID_OFFSET_Y]?.[x+GRID_OFFSET_X]);
     if(!Number.isFinite(cell)||cell===0)return false;
     const b=dungeonData.cell_bit||{};
@@ -15354,7 +15356,14 @@ function updateSpatialCoinPia() {
     { id: 'id-plat-a', src: 'immagini/platA.png', x: 3, y: 13, w: 8, h: 4, z: 1 },
     // X/Y sono il centro della casella, come nello strumento di calibrazione.
     { id: 'id-totem-a', src: 'immagini/totem_0.png', x: 8, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 }
+    { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
+    // Stanza nord-est: terzo enigma ambientale.
+    { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 11, w: 2.1, h: 2.1, center: true, z: 4 },
+    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 11, w: 2.1, h: 2.1, center: true, z: 4 }
+  ];
+  const barrierCells = [
+    { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
+    { x: 61, y: 10 }, { x: 58, y: 10 }
   ];
   function mount() {
     const map = document.getElementById('dungeon-map');
@@ -15363,7 +15372,20 @@ function updateSpatialCoinPia() {
     if (!document.getElementById('id-decor-layer-style')) {
       const style = document.createElement('style');
       style.id = 'id-decor-layer-style';
-      style.textContent = '#dungeon-map #id-plat-a{z-index:1!important} #dungeon-map .dungeon-player-token{z-index:20!important}';
+      style.textContent = `
+        #dungeon-map #id-plat-a{z-index:1!important}
+        #dungeon-map .dungeon-player-token{z-index:20!important}
+        #dungeon-map .id-light-barrier-cell{
+          position:absolute; pointer-events:none; box-sizing:border-box; z-index:8;
+          border:1px solid rgba(255,241,170,.82);
+          background:linear-gradient(180deg, rgba(255,247,195,.28), rgba(255,223,106,.6), rgba(255,245,185,.28));
+          box-shadow:0 0 10px 2px rgba(255,221,92,.95), inset 0 0 10px rgba(255,248,197,.85);
+          animation:idLightBarrierPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes idLightBarrierPulse{
+          0%,100%{opacity:.82; filter:brightness(1)}
+          50%{opacity:1; filter:brightness(1.18)}
+        }`;
       document.head.appendChild(style);
     }
     for (const d of decorazioni) {
@@ -15383,6 +15405,21 @@ function updateSpatialCoinPia() {
       });
       map.appendChild(img);
     }
+    barrierCells.forEach(({x,y}, index) => {
+      const id = `id-light-barrier-${index}`;
+      if (document.getElementById(id)) return;
+      const glow = document.createElement('div');
+      glow.id = id;
+      glow.className = 'id-light-barrier-cell';
+      glow.setAttribute('aria-hidden', 'true');
+      Object.assign(glow.style, {
+        left: `${x / COLS * 100}%`,
+        top: `${y / ROWS * 100}%`,
+        width: `${100 / COLS}%`,
+        height: `${100 / ROWS}%`
+      });
+      map.appendChild(glow);
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
   else mount();
