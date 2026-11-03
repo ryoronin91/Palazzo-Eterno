@@ -15581,7 +15581,10 @@ function updateSpatialCoinPia() {
     close.textContent = 'CHIUDI';
     close.addEventListener('click', closeInscription);
     panel.append(roman,heading,content);
-    if (inscription.n === 'XI') {
+    // La stessa finestra delle iscrizioni XI e XII ospita la raccolta dei
+    // due pezzi: nessun popup duplicato e nessun cambiamento alla mappa.
+    if (inscription.n === 'XI' || inscription.n === 'XII') {
+      const pieceNumber = inscription.n === 'XI' ? 1 : 2;
       const discovery = document.createElement('p');
       discovery.className = 'id-inscription-discovery';
       discovery.textContent = 'Trovi un pezzo di mosaico che sembra entrare perfettamente nel pannello della stanza centrale';
@@ -15593,15 +15596,15 @@ function updateSpatialCoinPia() {
       const feedback = document.createElement('p');
       feedback.className = 'id-inscription-feedback';
       feedback.setAttribute('role', 'status');
-      panel.append(discovery,collect,feedback);
-      // Un controllo lato server determina se il pezzo e' ancora disponibile.
+      panel.append(discovery, collect, feedback);
+      // Lo stato di disponibilità è globale, verificato su Supabase.
       (async () => {
         try {
-          const { data, error } = await db.rpc('piano_id_mosaic_piece1_available');
+          const { data, error } = await db.rpc(`piano_id_mosaic_piece${pieceNumber}_available`);
           if (error) throw error;
-          if (!overlay || !panel.isConnected) return;
+          if (!panel.isConnected) return;
           if (data !== true) {
-            discovery.textContent = 'Il pezzo di mosaico non è più qui: è già stato raccolto o inserito nel mosaico.';
+            discovery.textContent = 'Il pezzo di mosaico non è più disponibile qui.';
             collect.remove();
           } else {
             collect.disabled = false;
@@ -15610,24 +15613,24 @@ function updateSpatialCoinPia() {
           if (panel.isConnected) feedback.textContent = 'Impossibile verificare il pezzo: ' + (error.message || error);
         }
       })();
-      collect.addEventListener('click',async () => {
+      collect.addEventListener('click', async () => {
         if (collect.disabled) return;
         collect.disabled = true;
         feedback.textContent = 'Raccolta in corso...';
         try {
-          const { error } = await db.rpc('piano_id_collect_mosaic_piece1');
+          const { error } = await db.rpc(`piano_id_collect_mosaic_piece${pieceNumber}`);
           if (error) throw error;
           if (!panel.isConnected) return;
-          feedback.textContent = 'Hai raccolto il Pezzo di mosaico 1!';
+          feedback.textContent = `Hai raccolto il Pezzo di mosaico ${pieceNumber}!`;
           discovery.textContent = 'Il pezzo di mosaico è stato raccolto.';
           collect.remove();
           if (typeof loadCharacterInventory === 'function') {
-            try { await loadCharacterInventory(); } catch (e) { console.warn('Aggiornamento inventario:',e); }
+            try { await loadCharacterInventory(); } catch (e) { console.warn('Aggiornamento inventario:', e); }
           }
         } catch (error) {
           if (!panel.isConnected) return;
           feedback.textContent = error.message || 'Non puoi raccogliere il pezzo.';
-          // Lo stato server impedisce la doppia assegnazione; al prossimo ingresso il popup si aggiorna.
+          // Una raccolta concorrente non può produrre una seconda copia.
         }
       });
     }
