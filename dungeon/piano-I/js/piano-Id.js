@@ -787,7 +787,7 @@ document.addEventListener(
 
 
         startBackgroundMusic(
-            "../../music/puzzacinta.mp3"
+            "../../music/piano-Ia.mp3"
         );
 
 
@@ -15402,6 +15402,7 @@ function updateSpatialCoinPia() {
  const CELLS=[32,33,34], Y=16;
  const IMAGE="puzzle/immagini/12I.png";
  let state=[false,false,false], dialog=null, busy=false, previousFocus=null;
+ let mosaicUnlocked=false;
  const style=document.createElement("style");
  style.textContent=`
  .id-mosaic-barrier{position:absolute;z-index:12;pointer-events:none;box-sizing:border-box;
@@ -15433,6 +15434,7 @@ function updateSpatialCoinPia() {
   if(barrier.parentElement!==map)map.appendChild(barrier);
   barrier.style.left=(32/67*100)+"%";barrier.style.top=(16/45*100)+"%";
   barrier.style.width=(3/67*100)+"%";barrier.style.height=(1/45*100)+"%";
+  barrier.style.display=mosaicUnlocked?'none':'';
  }
  async function refresh(){
   const {data,error}=await db.rpc("piano_id_mosaic_status");
@@ -15504,7 +15506,15 @@ function updateSpatialCoinPia() {
   }
  }
  document.addEventListener("keydown",e=>{if(dialog&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();close()}},true);
- function isBarrier(x,y){return y===Y&&CELLS.includes(x);}
+ async function refreshMosaicBarrier(){
+  try{
+   const {data,error}=await db.rpc('piano_id_mosaic_solved');
+   if(error)throw error;
+   mosaicUnlocked=data===true;
+   updateBarrier();
+  }catch(e){console.warn('Stato Sigillo delle Memorie:',e)}
+ }
+ function isBarrier(x,y){return !mosaicUnlocked&&y===Y&&CELLS.includes(x);}
  // Blocca il movimento prima della chiamata Supabase; non altera il JSON.
  const original=performMovement;
  performMovement=async function(dx,dy){
@@ -15513,8 +15523,10 @@ function updateSpatialCoinPia() {
   }
   return original.apply(this,arguments);
  };
- if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",updateBarrier);
- else updateBarrier();
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{updateBarrier();refreshMosaicBarrier();});
+ else {updateBarrier();refreshMosaicBarrier();}
+ window.setInterval(refreshMosaicBarrier,5000);
+ window.addEventListener("focus",refreshMosaicBarrier);
  window.addEventListener("resize",updateBarrier);
 })();
 
