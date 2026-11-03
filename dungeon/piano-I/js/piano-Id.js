@@ -12004,8 +12004,9 @@ function isVisionBlockingCell(
     x,
     y
 ) {
-    // Totem del Tempio: bloccano solo movimento, mai visuale.
-    if (y === 11 && (x === 5 || x === 8)) return false;
+    // Totem del Tempio e barriere luminose: bloccano solo il movimento, mai la visuale.
+    if (y === 11 && (x === 5 || x === 8 || x === 58 || x === 61)) return false;
+    if ((y === 12 && x >= 58 && x <= 61) || (y === 10 && (x === 58 || x === 61))) return false;
 
 
     // I varchi della stanza Boss bloccano anche la visuale
@@ -15358,8 +15359,8 @@ function updateSpatialCoinPia() {
     { id: 'id-totem-a', src: 'immagini/totem_0.png', x: 8, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     { id: 'id-totem-b', src: 'immagini/totem_0.png', x: 5, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     // Stanza nord-est: terzo enigma ambientale.
-    { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 11, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 11, w: 2.1, h: 2.1, center: true, z: 4 }
+    { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.25, w: 2.1, h: 2.1, center: true, z: 4 },
+    { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.25, w: 2.1, h: 2.1, center: true, z: 4 }
   ];
   const barrierCells = [
     { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
