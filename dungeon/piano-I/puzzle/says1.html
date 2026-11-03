@@ -18,7 +18,7 @@ h1{color:var(--gold);font-size:clamp(27px,6vw,43px);font-weight:normal;margin:12
 .status-row span{padding:7px 12px;background:#26303d;border:1px solid #776d52;border-radius:50px}
 .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.7vw,14px);max-width:610px;margin:18px auto}
 .symbol{aspect-ratio:1;min-height:74px;border:2px solid #907f56;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,var(--tile),#1b2531);color:#f0e8d7;box-shadow:inset 0 0 16px #0007,0 4px 10px #0005;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:transform .12s,filter .12s,box-shadow .12s;font-family:Georgia,serif}
-.symbol .glyph{font-size:clamp(28px,5vw,47px);line-height:1}
+.symbol .glyph{font-size:clamp(28px,5vw,47px);line-height:1;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif}
 .symbol small{font:11px Arial,sans-serif;letter-spacing:.04em}
 .symbol:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.25)}
 .symbol:disabled{cursor:default;opacity:.7}
@@ -52,8 +52,8 @@ h1{color:var(--gold);font-size:clamp(27px,6vw,43px);font-weight:normal;margin:12
 (() => {
  'use strict';
  const colors=['#ac7a31','#496d9a','#90546f','#447b6b','#8b5944','#7b6eac','#a88f45','#627e84'];
- const icons=['☀','◆','✦','☾','♨','✿','✺','❖'];
- const names=['Sole','Cristallo','Stella','Luna','Fiamma','Fiore','Raggi','Sigillo'];
+ const icons=['🐻','🐂','🐈','🦊','🦉','🦅','🐉','❤️'];
+ const names=['Orso','Toro','Gatto','Volpe','Gufo','Aquila','Drago','Cuore'];
  const db=typeof supabaseClient!=='undefined'?supabaseClient:null;
  const $=id=>document.getElementById(id);
  const board=$('board'), tiles=[];
