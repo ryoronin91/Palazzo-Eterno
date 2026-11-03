@@ -4735,9 +4735,124 @@ async function processMovementQueue() {
 // ============================================================
 
 
+// ============================================================
+// SCINTILLA — Incontro narrativo nel Tempio (X33 Y7)
+// Il token è solido; interazione dalla casella adiacente.
+// ============================================================
+function openIdScintillaEncounter() {
+    if (document.getElementById('id-scintilla-dialog') || eventLocked) return;
+    eventLocked = true;
+    movementQueue.length = 0;
+    const previousFocus = document.activeElement;
+    const styleId = 'id-scintilla-narrative-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            #id-scintilla-dialog{position:fixed;inset:0;z-index:110000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:15px;box-sizing:border-box}
+            #id-scintilla-dialog .id-scintilla-panel{position:relative;max-width:750px;width:min(96vw,750px);max-height:95vh;overflow:auto;text-align:center;background:linear-gradient(170deg,#102016,#050b08);border:2px solid #bd9850;box-shadow:0 12px 70px #000,0 0 18px #9c702f55;padding:17px 18px 22px;color:#f4e5c8;font-family:Georgia,'Times New Roman',serif}
+            #id-scintilla-dialog .id-scintilla-scene{display:block;width:100%;max-height:min(56vh,540px);object-fit:contain;margin:0 auto 17px}
+            #id-scintilla-dialog .id-scintilla-name{font-size:22px;color:#f2c877;letter-spacing:.13em;margin:6px 0 10px}
+            #id-scintilla-dialog .id-scintilla-story{font-size:clamp(16px,2.3vw,21px);font-style:italic;line-height:1.55;margin:13px auto 20px;max-width:620px}
+            #id-scintilla-dialog .id-scintilla-action{font-family:Georgia,serif;font-size:27px;color:#ffe5a0;min-width:62px;min-height:44px;background:#27372a;border:2px solid #bc9651;cursor:pointer;border-radius:5px;padding:6px 22px}
+            #id-scintilla-dialog .id-scintilla-action:disabled{opacity:.65;cursor:wait}
+            #id-scintilla-dialog .id-scintilla-action:focus-visible,#id-scintilla-dialog .id-scintilla-close:focus-visible{outline:3px solid #ffe5a0;outline-offset:3px}
+            #id-scintilla-dialog .id-scintilla-close{position:absolute;right:10px;top:8px;border:0;background:#0b150f;color:#e6d4af;font-size:23px;cursor:pointer;padding:3px 10px}
+            #id-scintilla-dialog .id-scintilla-error{color:#ffb8a7;font:14px Arial,sans-serif;min-height:20px;margin:10px 0 0}
+        `;
+        document.head.appendChild(style);
+    }
+    const overlay = document.createElement('div');
+    overlay.id = 'id-scintilla-dialog';
+    const panel = document.createElement('section');
+    panel.className = 'id-scintilla-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-label', 'Scintilla — Guardiano della Prima Ora');
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'id-scintilla-close';
+    closeButton.setAttribute('aria-label', 'Chiudi');
+    closeButton.textContent = '×';
+    const image = document.createElement('img');
+    image.className = 'id-scintilla-scene';
+    image.alt = 'Incontro con Scintilla';
+    const title = document.createElement('h2');
+    title.className = 'id-scintilla-name';
+    const story = document.createElement('p');
+    story.className = 'id-scintilla-story';
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'id-scintilla-action';
+    next.textContent = '➜';
+    next.setAttribute('aria-label', 'Continua');
+    const error = document.createElement('p');
+    error.className = 'id-scintilla-error';
+    error.setAttribute('role', 'status');
+    panel.append(closeButton, image, title, story, next, error);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    let stage = 0;
+    let busy = false;
+    function showStage() {
+        if (stage === 0) {
+            image.src = 'eventi/immagini/scintilla1.png';
+            title.textContent = '';
+            title.hidden = true;
+            story.textContent = 'La tiepida brezza della giungla qua si fa più calda. Un fragile automa veglia in silenzio su una bara ricoperta di polvere.';
+        } else {
+            image.src = 'eventi/immagini/scintilla2.png';
+            title.textContent = 'SCINTILLA';
+            title.hidden = false;
+            story.textContent = '“Questo è il luogo di riposo del pezzo più importante della mia anima. Non vi permetterò di disturbarlo oltre..”';
+        }
+        error.textContent = '';
+    }
+    function close() {
+        if (busy) return;
+        overlay.remove();
+        document.removeEventListener('keydown', onKey, true);
+        eventLocked = false;
+        if (previousFocus?.isConnected) previousFocus.focus();
+    }
+    function onKey(ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); close(); }
+    }
+    closeButton.addEventListener('click', close);
+    overlay.addEventListener('click', ev => { if (ev.target === overlay) close(); });
+    document.addEventListener('keydown', onKey, true);
+    next.addEventListener('click', async () => {
+        if (busy) return;
+        if (stage === 0) { stage = 1; showStage(); return; }
+        busy = true;
+        next.disabled = true;
+        error.textContent = 'Scintilla si prepara al combattimento...';
+        try {
+            const { data, error: rpcError } = await db.rpc('piano_id_enter_scintilla_combat');
+            if (rpcError) throw rpcError;
+            const combatId = typeof data === 'string' ? data : data?.combat_id;
+            if (!combatId) throw new Error('Sessione di combattimento non disponibile.');
+            window.location.assign('../../combat.html?combat_id=' + encodeURIComponent(combatId));
+        } catch (err) {
+            console.error('Avvio scontro Scintilla:', err);
+            error.textContent = err.message || 'Impossibile avviare il combattimento.';
+            next.disabled = false;
+            busy = false;
+        }
+    });
+    showStage();
+    next.focus();
+}
+
 async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
+    // Il guardiano Scintilla è solido: apri il dialogo senza spostare il PG.
+    if (nx === 33 && ny === 7) {
+        openIdScintillaEncounter();
+        return false;
+    }
+
 
     // Puzzacinta occupa X33 Y29: incontro dalla casella adiacente,
     // senza inviare un movimento al server e senza sovrapporre il PG al token.
@@ -6287,6 +6402,7 @@ function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
     // Ostacoli del Tempio: bloccano il cammino, non la visuale.
     if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
+    if (x === 33 && y === 7) return false; // Scintilla: token solido.
     // Il token di Puzzacinta è solido finché non ha concluso le cinque risposte.
     if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
@@ -11968,6 +12084,7 @@ function isVisionBlockingCell(
 ) {
     // Le cinque caselle speciali lasciano passare la visuale.
     if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
+    if (x === 33 && y === 7) return false; // Scintilla non è un muro.
     // Puzzacinta è un personaggio, non un muro: blocca il passaggio ma non la visuale.
     if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem del Tempio e barriere luminose: bloccano solo il movimento, mai la visuale.
@@ -15087,6 +15204,7 @@ let piaLastFogPosition = '';
 // Celle visibili adesso, separate dallo storico esplorato.
 let piaVisibleNow = new Set();
 function piaBlocksSight(x, y) {
+    if (x === 33 && y === 7) return false; // Scintilla non blocca la visuale.
     // Ostacoli solidi, ma trasparenti alla visuale.
     if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
     // I quattro totem e le sei celle della barriera luminosa
@@ -15332,7 +15450,8 @@ function updateSpatialCoinPia() {
     // Stanza nord-est: terzo enigma ambientale.
     { id: 'id-totem-c', src: 'immagini/totem_0.png', x: 61, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
     { id: 'id-totem-d', src: 'immagini/totem_0.png', x: 58, y: 10.45, w: 2.1, h: 2.1, center: true, z: 4 },
-    { id: 'id-puzzacinta-I-token', src: '../../immagini/eventi/puzzacinta.png', x: 33, y: 29, w: 1, h: 1, center: true, z: 9 }
+    { id: 'id-puzzacinta-I-token', src: '../../immagini/eventi/puzzacinta.png', x: 33, y: 29, w: 1, h: 1, center: true, z: 9 },
+    { id: 'id-scintilla-boss-token', src: '../../immagini/nemici/Scintilla.png', x: 33, y: 7, w: 1, h: 1, center: true, z: 9 }
   ];
   const barrierCells = [
     { x: 58, y: 12 }, { x: 59, y: 12 }, { x: 60, y: 12 }, { x: 61, y: 12 },
