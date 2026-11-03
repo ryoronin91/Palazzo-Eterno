@@ -74,11 +74,56 @@
     }
   };
 
+  // Stile riservato al post-combat di Scintilla. Gli altri boss restano invariati.
+  function ensureScintillaVictoryStyle() {
+    if (document.getElementById('scintilla-victory-style')) return;
+    const style = document.createElement('style');
+    style.id = 'scintilla-victory-style';
+    style.textContent = `
+      .combat-victory-panel #combat-victory-exit.scintilla-victory-exit {
+        display:block; width:min(100%, 390px); min-height:56px; margin:22px auto 8px;
+        padding:13px 20px; border:2px solid #c6a35d; border-radius:8px;
+        background:linear-gradient(180deg,#3c3020 0%,#241a11 53%,#15110d 100%);
+        box-shadow:inset 0 1px 0 #f5df9d66,0 4px 0 #100b08,0 8px 20px #0008;
+        color:#f7dea0; font:700 clamp(14px,2.8vw,17px)/1.25 Georgia,'Times New Roman',serif;
+        letter-spacing:.055em; text-align:center; text-shadow:0 1px 2px #000;
+        cursor:pointer; transition:filter .14s ease,transform .14s ease,box-shadow .14s ease;
+      }
+      .combat-victory-panel #combat-victory-exit.scintilla-victory-exit:hover:not(:disabled) {
+        filter:brightness(1.18); transform:translateY(-1px);
+        box-shadow:inset 0 1px 0 #f5df9d99,0 5px 0 #100b08,0 10px 24px #0009;
+      }
+      .combat-victory-panel #combat-victory-exit.scintilla-victory-exit:active:not(:disabled) {
+        transform:translateY(2px);box-shadow:inset 0 1px 4px #0008,0 2px 0 #100b08;
+      }
+      .combat-victory-panel #combat-victory-exit.scintilla-victory-exit:focus-visible {
+        outline:3px solid #ffe8ad;outline-offset:4px;
+      }
+      .combat-victory-panel #combat-victory-exit.scintilla-victory-exit:disabled {
+        opacity:.68;cursor:progress;
+      }
+      .combat-victory-panel #scintilla-return-info {
+        font:italic 15px/1.55 Georgia,'Times New Roman',serif;
+        color:#edd4a0;text-align:center;padding:11px 16px;
+        border-top:1px solid #9b783e;border-bottom:1px solid #9b783e;
+        background:linear-gradient(90deg,transparent,#30241766,transparent);
+        margin:18px 0 5px;
+      }
+      .combat-victory-panel #scintilla-return-error {
+        color:#ffb8a7;font:14px/1.5 Georgia,serif;text-align:center;
+        margin:8px 0 0;padding:6px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // Avviso nel post-combat: il click su CHIUDI condurrà davvero alla Base.
   function showVictoryReturnNotice() {
     if (!isScintilla() || combatSession?.status !== 'victory') return;
     const button = document.getElementById('combat-victory-exit');
     if (!button) return;
+    ensureScintillaVictoryStyle();
+    button.classList.add('scintilla-victory-exit');
     button.textContent = 'CHIUDI — TORNA ALLA BASE';
     if (document.getElementById('scintilla-return-info')) return;
     const note = document.createElement('p');
@@ -99,18 +144,30 @@
   setupVictoryExitButton = function () {
     if (!isScintilla()) return originalSetupVictoryExitButton.apply(this, arguments);
     const button = document.getElementById('combat-victory-exit');
-    if (!button) return;
+    if (!button || button.dataset.scintillaExitReady === 'true') return;
+    button.dataset.scintillaExitReady = 'true';
+    ensureScintillaVictoryStyle();
+    button.classList.add('scintilla-victory-exit');
+    button.textContent = 'CHIUDI — TORNA ALLA BASE';
+    // L'avviso è già nella schermata di vittoria: nessun confirm/alert del browser.
     button.addEventListener('click', async () => {
-      if (combatSession?.status !== 'victory') return;
-      if (!window.confirm('Hai sconfitto Scintilla! Chiudendo lo scontro tornerai alla Base. Vuoi proseguire?')) return;
+      if (combatSession?.status !== 'victory' || button.disabled) return;
       button.disabled = true;
+      button.textContent = 'RITORNO ALLA BASE…';
+      const oldError = document.getElementById('scintilla-return-error');
+      oldError?.remove();
       try {
         const {error} = await db.rpc('piano_id_scintilla_return_to_base', {p_combat_id: combatId});
         if (error) throw error;
         window.location.assign('base/base.html');
       } catch (error) {
         console.error('Ritorno alla Base dopo Scintilla:', error);
-        window.alert(error?.message || 'Impossibile tornare alla Base.');
+        const message = document.createElement('p');
+        message.id = 'scintilla-return-error';
+        message.setAttribute('role','alert');
+        message.textContent = error?.message || 'Impossibile tornare alla Base. Riprova.';
+        button.insertAdjacentElement('afterend', message);
+        button.textContent = 'CHIUDI — TORNA ALLA BASE';
         button.disabled = false;
       }
     });
