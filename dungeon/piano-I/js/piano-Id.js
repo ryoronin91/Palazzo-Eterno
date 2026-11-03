@@ -4739,7 +4739,32 @@ async function processMovementQueue() {
 // SCINTILLA — Incontro narrativo nel Tempio (X33 Y7)
 // Il token è solido; interazione dalla casella adiacente.
 // ============================================================
+// Stato del custode condiviso sul server: scompare dopo la vittoria,
+// ricompare trascorse quattro ore, anche per chi resta nella mappa.
+let idScintillaAvailable = true;
+let idScintillaRespawnAt = null;
+async function refreshIdScintillaAvailability() {
+    if (typeof db === 'undefined') return;
+    try {
+        const {data,error} = await db.rpc('piano_id_scintilla_status');
+        if (error) throw error;
+        idScintillaAvailable = data?.available !== false;
+        idScintillaRespawnAt = data?.respawn_at || null;
+        const token = document.getElementById('id-scintilla-boss-token');
+        if (token) token.style.display = idScintillaAvailable ? '' : 'none';
+    } catch(error) {
+        console.warn('Stato Scintilla non disponibile:', error);
+        // In caso di errore conserviamo lo stato precedente; il server
+        // continua comunque a proteggere movimento e ingresso al combat.
+    }
+}
+window.addEventListener('load', () => {
+    void refreshIdScintillaAvailability();
+    window.setInterval(() => { void refreshIdScintillaAvailability(); }, 30000);
+});
+
 function openIdScintillaEncounter() {
+    if (!idScintillaAvailable) { setMessage('Scintilla è stato sconfitto e deve ancora rinascere.'); return; }
     if (document.getElementById('id-scintilla-dialog') || eventLocked) return;
     eventLocked = true;
     movementQueue.length = 0;
@@ -4848,7 +4873,7 @@ async function performMovement(dx,dy) {
     if(!character||!dungeonData||eventLocked)return false;
     const nx=playerX+dx,ny=playerY+dy;
     // Il guardiano Scintilla è solido: apri il dialogo senza spostare il PG.
-    if (nx === 33 && ny === 7) {
+    if (nx === 33 && ny === 7 && idScintillaAvailable) {
         openIdScintillaEncounter();
         return false;
     }
@@ -6402,7 +6427,7 @@ function canMoveTo(x,y) {
     if(!dungeonData?.cells||x<0||y<0||x>=MAP_COLUMNS||y>=MAP_ROWS)return false;
     // Ostacoli del Tempio: bloccano il cammino, non la visuale.
     if ((y === 6 && x >= 32 && x <= 34) || (y === 4 && (x === 29 || x === 37))) return false;
-    if (x === 33 && y === 7) return false; // Scintilla: token solido.
+    if (x === 33 && y === 7 && idScintillaAvailable) return false; // Scintilla presente: token solido.
     // Il token di Puzzacinta è solido finché non ha concluso le cinque risposte.
     if (x === 33 && y === 29 && !idPuzzacintaFinished) return false;
     // Totem solidi: bloccano il movimento, ma NON la linea di vista.
