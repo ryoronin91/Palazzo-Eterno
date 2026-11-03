@@ -15590,7 +15590,58 @@ function updateSpatialCoinPia() {
     close.className = 'id-inscription-close';
     close.textContent = 'CHIUDI';
     close.addEventListener('click', closeInscription);
-    panel.append(roman,heading,content,close);
+    panel.append(roman,heading,content);
+    if (inscription.n === 'XI') {
+      const discovery = document.createElement('p');
+      discovery.className = 'id-inscription-discovery';
+      discovery.textContent = 'Trovi un pezzo di mosaico che sembra entrare perfettamente nel pannello della stanza centrale';
+      const collect = document.createElement('button');
+      collect.type = 'button';
+      collect.className = 'id-inscription-close id-inscription-collect';
+      collect.textContent = 'RACCOGLI';
+      collect.disabled = true;
+      const feedback = document.createElement('p');
+      feedback.className = 'id-inscription-feedback';
+      feedback.setAttribute('role', 'status');
+      panel.append(discovery,collect,feedback);
+      // Un controllo lato server determina se il pezzo e' ancora disponibile.
+      (async () => {
+        try {
+          const { data, error } = await db.rpc('piano_id_mosaic_piece1_available');
+          if (error) throw error;
+          if (!overlay || !panel.isConnected) return;
+          if (data !== true) {
+            discovery.textContent = 'Il pezzo di mosaico non è più qui: è già stato raccolto o inserito nel mosaico.';
+            collect.remove();
+          } else {
+            collect.disabled = false;
+          }
+        } catch (error) {
+          if (panel.isConnected) feedback.textContent = 'Impossibile verificare il pezzo: ' + (error.message || error);
+        }
+      })();
+      collect.addEventListener('click',async () => {
+        if (collect.disabled) return;
+        collect.disabled = true;
+        feedback.textContent = 'Raccolta in corso...';
+        try {
+          const { error } = await db.rpc('piano_id_collect_mosaic_piece1');
+          if (error) throw error;
+          if (!panel.isConnected) return;
+          feedback.textContent = 'Hai raccolto il Pezzo di mosaico 1!';
+          discovery.textContent = 'Il pezzo di mosaico è stato raccolto.';
+          collect.remove();
+          if (typeof loadCharacterInventory === 'function') {
+            try { await loadCharacterInventory(); } catch (e) { console.warn('Aggiornamento inventario:',e); }
+          }
+        } catch (error) {
+          if (!panel.isConnected) return;
+          feedback.textContent = error.message || 'Non puoi raccogliere il pezzo.';
+          // Lo stato server impedisce la doppia assegnazione; al prossimo ingresso il popup si aggiorna.
+        }
+      });
+    }
+    panel.appendChild(close);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
     close.focus();
