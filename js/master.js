@@ -11272,46 +11272,44 @@ function renderMasterPianoIOverviewMap() {
             el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});}
         place(el,x,y,iconSize);
     }
-    // Piano Ia: mostra TUTTE le stanze possibili, anche se nessuno dei
-    // 20 incontri ha al momento una stanza assegnata (es. dopo il reset).
-    // Stanze libere = grigio, incontro pronto = verde, in combattimento = rosso.
-    // Non modifica né forza spawn: questa è una vista di sola lettura Master.
+    // Ia: sulla mappa compaiono SOLO gli incontri effettivamente attivi
+    // o impegnati. Nessun indicatore per stanze vuote, cooldown o slot non assegnati.
     if (config.key==='dungeon_Ia') {
         const slots=masterPianoICombatSlots.get('slots_Ia')||[];
         const rooms=masterPianoICombatRooms.get('rooms_Ia')||[];
-        const assigned=new Map();
+        const roomsById=new Map(rooms.map(room=>[Number(room.room_number),room]));
         for(const slot of slots){
-            if(slot.room_number===null||slot.room_number===undefined)continue;
-            assigned.set(Number(slot.room_number),slot);
+            if(slot.status!=='active' && slot.status!=='engaged')continue;
+            if(slot.room_number===null || slot.room_number===undefined)continue;
+            const room=roomsById.get(Number(slot.room_number));
+            if(!room || room.enabled===false)continue;
+            const state=getMasterPianoICombatMarkerState(slot);
+            const isFighting=slot.status==='engaged' || Boolean(state.combat);
+            marker(room.token_x,room.token_y,'⚔',isFighting?'state-live':'state-active',
+                `${slot.encounter_id} · ${isFighting?'combattimento in corso':'incontro disponibile'} · Stanza ${room.room_number}`,
+                isFighting?'':state.time,
+                state.combat?()=>openMasterCombat(state.combat.id):null);
         }
-        for(const room of rooms){
-            if(room.enabled===false)continue;
-            const slot=assigned.get(Number(room.room_number));
-            const activeSlot=slot && (slot.status==='active'||slot.status==='engaged');
-            const state=activeSlot?getMasterPianoICombatMarkerState(slot):null;
-            const title=activeSlot
-                ? `${slot.encounter_id} · ${state.label} · Stanza ${room.room_number}`
-                : `Stanza ${room.room_number} · nessun incontro attualmente presente`;
-            marker(room.token_x,room.token_y,'⚔',state?.css||'state-inactive',title,
-                state?.time||'',state?.combat?()=>openMasterCombat(state.combat.id):null);
-        }
-        // L'Allosauro Dominante ha uno spawn fisso, indipendente dalle stanze a rotazione.
+        // Boss fisso: visibile solo se disponibile oppure in combattimento.
         const boss=(masterPianoIExtraStates.get('boss_Ia')||[])[0]||{};
-        const fightId=boss.engaged_combat_id;
-        const combat= fightId ? activeMasterCombats.get(fightId) : getActiveCombatForEncounter('p1_allosauro_dominante');
-        const isFighting=!!combat && ['waiting','active'].includes(String(combat.status||'active'));
-        const cooldown=!!boss.cooldown_until && new Date(boss.cooldown_until).getTime()>Date.now();
-        marker(27,32,'👹',isFighting?'state-live':cooldown?'state-cooldown':'state-active',
-            isFighting?'Allosauro Dominante · combattimento in corso':cooldown?'Allosauro Dominante · cooldown':'Allosauro Dominante · disponibile',
-            !isFighting&&cooldown?(formatMasterCooldown(boss.cooldown_until)||''):'',
-            isFighting?()=>openMasterCombat(combat.id):null);
-        // Stesso stile del Livello Base: grigio se non attivo, verde se attivo.
+        const combat=boss.engaged_combat_id
+            ? activeMasterCombats.get(boss.engaged_combat_id)
+            : getActiveCombatForEncounter('p1_allosauro_dominante');
+        const isFighting=Boolean(combat && ['waiting','active'].includes(String(combat.status||'active')));
+        const cooldown=Boolean(boss.cooldown_until && Date.parse(boss.cooldown_until)>Date.now());
+        if(isFighting || !cooldown){
+            marker(27,32,'👹',isFighting?'state-live':'state-active',
+                `Allosauro Dominante · ${isFighting?'combattimento in corso':'disponibile'}`,
+                '',isFighting?()=>openMasterCombat(combat.id):null);
+        }
+        // Identica icona 🛠 dei servizi del Piano Base, colorata dal reale stato.
         const camp=(masterPianoIExtraStates.get('camp_Ia')||[])[0]||{};
         const active=camp.active===true;
-        marker(29,35,'⛺',active?'state-active':'state-inactive',
-            active?`Accampamento attivo · combustibile ${Number(camp.fuel)||0}`:'Accampamento disattivato · materiali da consegnare / combustibile esaurito');
-        // Combattimento delle Guardie del Varco: accesso da X0 Y67.
-        marker(0,67,'⚔','state-active','Guardie del Varco · combattimento d’accesso al Villaggio Scagliagrigia');
+        marker(29,35,'🛠',active?'state-active':'state-inactive',
+            active?`Accampamento attivo · combustibile ${Number(camp.fuel)||0}`
+                :'Accampamento disattivato · materiali da consegnare / combustibile esaurito');
+        // Guardie del Varco: direzione di uscita verso sinistra.
+        marker(0,67,'←','state-active','Guardie del Varco · uscita verso il Villaggio Scagliagrigia');
     }
     // Le altre mappe restano immutate rispetto alla v24.
     if (config.key==='dungeon_Ic') {
