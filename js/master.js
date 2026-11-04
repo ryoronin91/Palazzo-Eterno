@@ -11281,9 +11281,10 @@ function renderMasterPianoIOverviewMap() {
             // L'icona precedente aveva un arco superiore che sembrava un lucchetto.
             chest:'<path d="M3 10V8C3 3 7 2 12 2s9 1 9 6v2Z" fill="#dfaa42" stroke="#fff2cb"/><rect x="2" y="10" width="20" height="12" rx="2" fill="#865020" stroke="#fff2cb"/><path d="M6 10V22M18 10V22" stroke="#ffd36b" stroke-width="3"/><rect x="10" y="11" width="4" height="7" rx="1" fill="#ffdf7d" stroke="#fff2cb"/>',
             apple:'<path d="M12 8c-4-5-10-3-10 4 0 5 3 10 7 10 2 0 2-1 3-1s1 1 3 1c4 0 7-5 7-10 0-7-6-9-10-4Z"/><path d="M12 8c-1-3 0-5 3-6M12 7c3-4 6-4 8-3"/>',
-            egg:'<path d="M12 2c-5 0-9 8-9 13a9 9 0 0 0 18 0c0-5-4-13-9-13Z"/>'
+            egg:'<path d="M12 2c-5 0-9 8-9 13a9 9 0 0 0 18 0c0-5-4-13-9-13Z"/>',
+            lock:'<rect x="4" y="10" width="16" height="12" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.2"/><path d="M12 17.5v1.5"/>'
         };
-        const iconType=glyph==='⚔'?'combat':glyph==='▣'?'chest':glyph==='🍎'?'apple':glyph==='🥚'?'egg':null;
+        const iconType=glyph==='⚔'?'combat':glyph==='▣'?'chest':glyph==='🍎'?'apple':glyph==='🥚'?'egg':glyph==='🔒'?'lock':null;
         if(iconType){
             const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
             svg.setAttribute('viewBox','0 0 24 24');
@@ -11298,6 +11299,13 @@ function renderMasterPianoIOverviewMap() {
             if(iconType==='chest'){ic.classList.add('is-chest');el.classList.add('master-marker-chest');}
             if(iconType==='combat'){ic.classList.add('is-combat');el.classList.add('master-marker-combat');}
             if(iconType==='egg'){ic.classList.add('is-egg');el.classList.add('master-marker-egg');}
+        } else if(glyph==='puzzacinta-token') {
+            // Immagine identica al token di Puzzacinta nel Piano I.
+            const img=document.createElement('img');
+            img.src='immagini/eventi/puzzacinta.png';
+            img.alt='';img.draggable=false;
+            img.className='master-marker-puzzacinta-image';
+            ic.appendChild(img);el.classList.add('master-marker-puzzacinta');
         } else {
             ic.textContent=glyph;
         }
@@ -11405,7 +11413,11 @@ function renderMasterPianoIOverviewMap() {
         marker(33,7,'👹',active?'state-live':inCooldown?'state-cooldown':'state-active',
             'Scintilla · Guardiano del Tempio',inCooldown?formatMasterCooldown(boss.respawn_at)||'':'',
             active?()=>openMasterCombat(active.id):null);
-        marker(33,29,'◆','state-active','Puzzacinta · Viandante del Tempio');
+        // Come sul Piano I: il Viandante scompare dopo le cinque risposte.
+        const puzzacinta=(masterPianoIExtraStates.get('puzzacinta_Id')||[])[0]||{};
+        if(Number(puzzacinta.answered_count||0)<5){
+            marker(33,29,'puzzacinta-token','state-active','Puzzacinta · Viandante del Tempio');
+        }
     }
     // Oggetti ambientali verificati e stati condivisi dei quattro sottopiani.
     const first=(key)=> (masterPianoIExtraStates.get(key)||[])[0]||{};
@@ -11429,13 +11441,19 @@ function renderMasterPianoIOverviewMap() {
     if(config.key==='dungeon_Id'){
         const mosaic=first('mosaic_Id'),plat=first('plat_Id');
         const says1=first('says1_Id'),says2=first('says2_Id');
-        addState(6,10,'◇','Pezzo di mosaico 1',!mosaic.piece1);
-        addState(59,10,'◇','Pezzo di mosaico 2',!mosaic.piece2);
-        addState(8,11,'◆','Percorso pedane A',!plat.completed);
-        addState(5,12,'◆','Percorso pedane B',!plat.second_completed);
-        addState(61,11,'✦','Totem Simon 1',!says1.completed);
-        addState(58,11,'✦','Totem Simon 2',!says2.completed);
-        addState(33,16,'◇','Sigillo del mosaico',!mosaic.solved);
+        // Posizioni ricavate dalle decorazioni vere di piano-Id.js:
+        // i quattro totem hanno y=10.45 come centro immagine, cioè cella Y11.
+        // Grigio non risolto, verde risolto (non invertire il significato).
+        addState(8,11,'◆','Pedane · percorso A',plat.completed===true);
+        addState(5,11,'◆','Pedane · percorso B',plat.second_completed===true);
+        addState(61,11,'✦','Totem Simon 1',says1.completed===true);
+        addState(58,11,'✦','Totem Simon 2',says2.completed===true);
+        // Sigillo: barriera PRESENTE => verde. Mosaico risolto => grigio.
+        const barrierActive=mosaic.solved!==true;
+        addState(33,16,'🔒',
+            barrierActive?'Sigillo del mosaico · barriera attiva':'Sigillo del mosaico · barriera disattivata',
+            barrierActive);
+        // Nessun indicatore per i pezzi di mosaico.
     }
     (masterPianoIExtraStates.get('rare_bosses')||[]).filter(b=>b.floor_id===config.key&&
         (b.status==='active'||b.status==='engaged')&&(!b.expires_at||new Date(b.expires_at)>new Date()))
