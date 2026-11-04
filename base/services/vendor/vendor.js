@@ -308,71 +308,27 @@ let vendorAiBusy =
 // HEADER INVENTARIO PG
 // ============================================================
 
-function updateVendorPlayerInventoryHeader() {
-    const title =
-        document.getElementById(
-            "player-inventory-title"
-        );
+// Il DB può contenere più stack di moneta_oro per personaggio.
+// Ogni acquisto/vendita e il contatore devono considerare il saldo complessivo.
+function getVendorGoldBalance() {
+    return characterInventory.reduce((total, entry) => {
+        if (entry?.item?.id !== "moneta_oro") return total;
+        const quantity = Number(entry.quantity);
+        return total + (Number.isFinite(quantity) ? Math.max(0, quantity) : 0);
+    }, 0);
+}
 
-    const goldAmount =
-        document.getElementById(
-            "player-gold-amount"
-        );
+function updateVendorPlayerInventoryHeader() {
+    const title = document.getElementById("player-inventory-title");
+    const goldAmount = document.getElementById("player-gold-amount");
 
     if (title) {
-        const characterName =
-            String(
-                character?.nome ||
-                "PG"
-            )
-                .trim()
-                .toUpperCase();
-
-        title.textContent =
-            `INVENTARIO ${characterName}`;
+        const characterName = String(character?.nome || "PG").trim().toUpperCase();
+        title.textContent = `INVENTARIO ${characterName}`;
     }
 
     if (goldAmount) {
-        const goldEntry =
-            characterInventory.find(
-                entry => {
-                    const item =
-                        entry?.item || {};
-
-                    const itemType =
-                        String(
-                            item.item_type ||
-                            ""
-                        ).toLowerCase();
-
-                    const itemName =
-                        String(
-                            item.name ||
-                            ""
-                        )
-                            .trim()
-                            .toLowerCase();
-
-                    return (
-                        itemType ===
-                            "currency"
-                        ||
-                        item.id ===
-                            "moneta_oro"
-                        ||
-                        itemName ===
-                            "moneta d'oro"
-                        ||
-                        itemName ===
-                            "monete d'oro"
-                    );
-                }
-            );
-
-        goldAmount.textContent =
-            Number(
-                goldEntry?.quantity
-            ) || 0;
+        goldAmount.textContent = getVendorGoldBalance().toLocaleString("it-IT");
     }
 }
 
@@ -877,20 +833,7 @@ function renderVendorItems() {
     container.innerHTML =
         html;
 
-    const goldEntry =
-        characterInventory.find(
-            entry =>
-                entry?.item?.id ===
-                "moneta_oro"
-        );
-
-    const gold =
-        Math.max(
-            0,
-            Number(
-                goldEntry?.quantity
-            ) || 0
-        );
+    const gold = getVendorGoldBalance();
 
     container
         .querySelectorAll(
