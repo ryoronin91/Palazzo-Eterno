@@ -11325,12 +11325,10 @@ function renderMasterPianoIOverviewMap() {
                 state.combat?()=>openMasterCombat(state.combat.id):null);
         });
     }
+    // Ib: esclusivamente i due passaggi, senza icone per NPC o Arena.
     if (config.key==='dungeon_Ib') {
-        marker(7,4,'◆','state-active','Capanna dell’Anziano Scagliagrigia');
-        marker(4,9,'🛠','state-active','Mercante Scagliagrigia');
-        marker(9,15,'◆','state-active','Guardiana della Covata e zona di riposo');
-        marker(14,5,'◆','state-active','Sciamano Scagliagrigia');
-        marker(15,10,'⚔','state-active','Arena del Campione · 10 ondate');
+        marker(10,0,'↑','state-active','Passaggio verso Ic · Giungla Alta');
+        marker(18,19,'↓','state-active','Passaggio verso Ia · Giungla Bassa');
     }
     if (config.key==='dungeon_Ic') {
         const boss=(masterPianoIExtraStates.get('boss_Ic')||[])[0];
@@ -11361,12 +11359,6 @@ function renderMasterPianoIOverviewMap() {
         const chests=masterPianoIExtraStates.get('chests_Ia')||[];
         chests.forEach(c=>{const ready=!c.collected_at||new Date(c.available_at)<=new Date();
             marker(c.x,c.y,'▣',ready?'state-active':'state-cooldown','Forziere della Giungla Bassa',ready?'':formatMasterCooldown(c.available_at)||'');});
-    }
-    if(config.key==='dungeon_Ib'){
-        [[7,4,'♛','Anziano Scagliagrigia'],[4,9,'◆','Mercante Scagliagrigia'],
-         [9,15,'♥','Guardiana della Covata / Nidi'],[14,5,'✦','Sciamano Scagliagrigia'],
-         [15,10,'⚔','Campione Scagliagrigia / Arena'],[10,0,'➜','Varco verso Giungla Alta']]
-         .forEach(([x,y,glyph,label])=>addState(x,y,glyph,label));
     }
     if(config.key==='dungeon_Ic'){
         (masterPianoIExtraStates.get('fruits_Ic')||[]).forEach(f=>addState(f.x,f.y,'●','Frutto Carnoso'));
