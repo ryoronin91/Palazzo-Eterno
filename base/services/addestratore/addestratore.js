@@ -267,15 +267,16 @@ function renderUpgradeState() {
     if (!container) return;
 
     const currentLevel = Math.max(1, Number(upgradePayload?.current_level) || 1);
-    const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 6);
+    const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 13);
     const targetLevel = Number(upgradePayload?.target_level);
+    const eraNames = ["I ORA", "II ORA", "III ORA", "IV ORA", "V ORA", "VI ORA", "VII ORA", "VIII ORA", "IX ORA", "X ORA", "XI ORA", "XII ORA"];
     const enabled = upgradePayload?.enabled === true;
     const requirements = Array.isArray(upgradePayload?.requirements) ? upgradePayload.requirements : [];
 
     if (levelElement) {
         levelElement.textContent = currentLevel >= maxLevel
-            ? `LV ${currentLevel} · MASSIMO`
-            : `LV ${currentLevel} → LV ${targetLevel || currentLevel + 1}`;
+            ? `XII ORA · COMPLETO`
+            : eraNames[Math.min(11, Math.max(0, (targetLevel || currentLevel + 1) - 2))];
     }
 
     if (statusElement) {
@@ -306,7 +307,9 @@ function renderUpgradeState() {
         const required = Math.max(0, Number(requirement.required_quantity) || 0);
         const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
         const remaining = Math.max(0, required - contributed);
-        const owned = getInventoryQuantity(itemId);
+        const owned = itemId === "moneta_oro"
+            ? Math.max(0, Number(state?.gold) || 0)
+            : getInventoryQuantity(itemId);
         const percentage = required > 0 ? Math.min(100, Math.round(contributed / required * 100)) : 0;
         const complete = remaining <= 0;
 
@@ -317,11 +320,11 @@ function renderUpgradeState() {
                     <span>${contributed} / ${required}</span>
                 </div>
                 <div class="addestratore-upgrade-progress"><span style="width:${percentage}%"></span></div>
-                <div class="addestratore-upgrade-owned">Possiedi: <strong>${owned}</strong></div>
+                <div class="addestratore-upgrade-owned">${itemId === "moneta_oro" ? "Oro nella borsa" : "Possiedi"}: <strong>${owned}</strong></div>
                 ${complete
                     ? `<div class="addestratore-upgrade-complete">REQUISITO COMPLETO</div>`
                     : `<form class="addestratore-upgrade-form" data-item-id="${escapeHtml(itemId)}">
-                           <input class="addestratore-upgrade-quantity" type="number" min="1" max="${remaining}" step="1" value="1" inputmode="numeric">
+                           <input class="addestratore-upgrade-quantity" type="number" min="1" max="${Math.min(remaining, owned)}" step="1" value="1" inputmode="numeric">
                            <button type="submit" class="merchant-button addestratore-upgrade-button" ${owned <= 0 ? "disabled" : ""}>CONTRIBUISCI</button>
                        </form>`}
             </article>`;
@@ -375,7 +378,7 @@ async function contributeUpgrade(form) {
         renderTraining();
 
         if (data?.upgraded === true) {
-            setUpgradeFeedback(`Upgrade completato: Addestratore LV ${Number(data?.current_level) || "?"}.`);
+            setUpgradeFeedback(`Potenziamento completato! Hai sbloccato 12 nuovi punti allenamento (massimo ${state?.training_cap ?? "?"}).`);
             showDialogue("PIÙ LIVELLO! PIÙ MUSCOLI! PIÙ TUTTO! ECCEZIONALE!");
         } else {
             setUpgradeFeedback(`${Math.max(0, Number(data?.quantity_contributed) || quantity)} unità consegnate al potenziamento.`);
@@ -414,9 +417,9 @@ function renderTraining() {
     if (!state) return;
 
     const spent = Math.max(0, Number(state.training_points_spent) || 0);
-    const trainingCap = Math.max(0, Number(state.training_cap) || 27);
+    const trainingCap = Math.max(0, Number(state.training_cap) || 20);
     const maxTrainingPoints = Math.max(trainingCap, Number(state.max_training_points) || 164);
-    const serviceLevel = Math.max(1, Math.min(6, Number(state.service_level) || 1));
+    const serviceLevel = Math.max(1, Math.min(13, Number(state.service_level) || 1));
     const nextLevelPoints = Math.max(0, Number(state.next_level_points) || 0);
 
     setText("score", String(state.score ?? 0));
@@ -431,7 +434,7 @@ function renderTraining() {
         nextBox.innerHTML = `
             <div class="next-box">
                 <strong>Punto #${nextTraining.number}</strong><br>
-                Score richiesto: <strong>${nextTraining.required_score}</strong><br>
+                Risonanza richiesta: <strong>${nextTraining.required_score}</strong><br>
                 Costo: <strong>${nextTraining.gold_cost} oro</strong>
             </div>`;
     } else if (spent >= maxTrainingPoints) {
@@ -441,13 +444,13 @@ function renderTraining() {
                 Hai acquistato tutti i ${maxTrainingPoints} punti disponibili.
             </div>`;
     } else if (spent >= trainingCap) {
-        const unlockText = serviceLevel < 6
-            ? `Potenzia l'Addestratore al LV ${serviceLevel + 1} per sbloccare altri ${nextLevelPoints || 27} punti.`
+        const unlockText = serviceLevel < 13
+            ? `Potenzia l'Addestratore al LV ${serviceLevel + 1} per sbloccare altri ${nextLevelPoints || 12} punti.`
             : "Hai raggiunto il limite previsto per questo livello del servizio.";
 
         nextBox.innerHTML = `
             <div class="next-box">
-                <strong>LIMITE LV ${serviceLevel} RAGGIUNTO</strong><br>
+                <strong>LIMITE ALLENAMENTO RAGGIUNTO</strong><br>
                 Hai utilizzato tutti i ${trainingCap} punti sbloccati.<br>
                 ${unlockText}
             </div>`;
