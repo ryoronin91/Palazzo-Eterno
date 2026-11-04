@@ -3,7 +3,7 @@
 (() => {
     'use strict';
     const missionStock = new Set([
-        'spada_pietra', 'lancia_pietra', 'scudo_tartaruga',
+        'spada_pietra', 'lancia_pietra', 'scudo_tartaruga', 'sciabola_mietitore',
         'piuma_allosauro', 'frutto_carnoso',
         'coscia_uccello_stigio', 'foglia_nutriente', 'funghetto'
     ]);
