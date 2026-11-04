@@ -12,7 +12,7 @@
 
 <main class="vendor-page questgiver-page">
 
-    <!-- SINISTRA: SERVIZIO / MANUTENZIONE / UPGRADE -->
+    <!-- SINISTRA: SERVIZIO / MANUTENZIONE / ZONE MISSIONI -->
     <section class="merchant-panel player-inventory questgiver-service-panel" aria-label="Servizio Missioni">
         <div class="player-inventory-header">
             <div class="player-inventory-title">SERVIZIO MISSIONI</div>
@@ -47,20 +47,23 @@
                 <div id="questgiver-maintenance-feedback" class="questgiver-maintenance-feedback" aria-live="polite"></div>
             </section>
 
-            <section class="questgiver-upgrade-box" aria-label="Potenziamento Missioni">
-                <div class="questgiver-upgrade-heading">
-                    <div>
-                        <div class="questgiver-service-title">POTENZIAMENTO</div>
-                        <strong id="questgiver-upgrade-level">LV 1 → LV 2</strong>
-                    </div>
-                    <span id="questgiver-upgrade-status" class="questgiver-upgrade-status">NON DISPONIBILE</span>
-                </div>
-
-                <div id="questgiver-upgrade-requirements" class="questgiver-upgrade-requirements">
-                    <div class="inventory-empty">Caricamento requisiti...</div>
-                </div>
-
-                <div id="questgiver-upgrade-feedback" class="questgiver-maintenance-feedback" aria-live="polite"></div>
+            <section class="questgiver-zone-box" aria-label="Seleziona zona del Palazzo Eterno">
+                <div class="questgiver-service-title">ZONE DEL PALAZZO ETERNO</div>
+                <nav class="questgiver-zones" aria-label="Zone delle missioni">
+                    <button type="button" class="questgiver-zone-button is-selected" data-quest-zone="ingresso" aria-pressed="true">INGRESSO</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="I" aria-pressed="false">I ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="II" aria-pressed="false">II ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="III" aria-pressed="false">III ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="IV" aria-pressed="false">IV ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="V" aria-pressed="false">V ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="VI" aria-pressed="false">VI ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="VII" aria-pressed="false">VII ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="VIII" aria-pressed="false">VIII ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="IX" aria-pressed="false">IX ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="X" aria-pressed="false">X ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="XI" aria-pressed="false">XI ORA</button>
+                    <button type="button" class="questgiver-zone-button" data-quest-zone="XII" aria-pressed="false">XII ORA</button>
+                </nav>
             </section>
         </div>
     </section>
@@ -100,13 +103,13 @@
 
     <!-- DESTRA: MISSIONI DISPONIBILI -->
     <section class="merchant-panel vendor-inventory" aria-label="Missioni di Dente di Castoro">
-        <div class="ornate-heading">MISSIONI</div>
+        <div id="questgiver-zone-heading" class="ornate-heading">MISSIONI — INGRESSO</div>
         <div class="ornate-subheading">Non devi accettarle. Completa il requisito, torna qui e ritira il premio.</div>
         <div class="ornate-divider"></div>
 
         <div class="questgiver-missions-scroll">
             <section class="questgiver-score-box">
-                <span>SCORE ATTUALE</span>
+                <span>RISONANZA ATTUALE</span>
                 <strong id="quest-score">0</strong>
             </section>
 
@@ -116,7 +119,7 @@
             </div>
 
             <div class="quest-section-label">MISSIONI GIORNALIERE</div>
-            <div class="ornate-subheading">Si sbloccano consegnando per la prima volta la Testa del Boss Goblin. Si azzerano ogni giorno a mezzanotte (ora italiana).</div>
+            <div id="questgiver-daily-caption" class="ornate-subheading">Si sbloccano consegnando per la prima volta la Testa del Boss Goblin. Si azzerano ogni giorno a mezzanotte (ora italiana).</div>
             <div id="daily-quest-list" class="quest-list"><div class="inventory-empty">Caricamento missioni giornaliere...</div></div>
             <div id="quest-feedback" class="questgiver-maintenance-feedback quest-feedback" aria-live="polite"></div>
         </div>
@@ -125,5 +128,73 @@
 </main>
 
 <script src="questgiver.js?v=daily20261029"></script>
+
+<style>
+/* Navigazione missioni: 13 zone, senza potenziamenti acquistabili. */
+.questgiver-zone-box { margin: 0 18px 12px; padding: 12px; border: 1px solid rgba(198,164,92,.4); background: linear-gradient(135deg,rgba(198,164,92,.075),rgba(5,6,8,.68)); }
+.questgiver-zone-box .questgiver-service-title { margin-bottom: 10px; }
+.questgiver-zones { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.questgiver-zone-button { min-height: 40px; min-width: 0; background:rgba(0,0,0,.23); border:1px solid rgba(198,164,92,.28); color:var(--ivory); font:inherit; font-size:11px; letter-spacing:.08em; cursor:pointer; padding:8px 5px; }
+.questgiver-zone-button:first-child { grid-column: 1 / -1; }
+.questgiver-zone-button:hover, .questgiver-zone-button:focus-visible { border-color: var(--gold-bright); color:var(--gold-bright); outline-offset:2px; }
+.questgiver-zone-button.is-selected { background:rgba(198,164,92,.19); color:var(--gold-bright); border-color:var(--gold-bright); box-shadow:inset 0 0 0 1px rgba(198,164,92,.13); }
+.questgiver-zone-button:disabled { cursor:not-allowed; opacity:.4; }
+</style>
+<script>
+/* Estensione non invasiva: mantiene intatti gli RPC e la logica delle missioni del branch main. */
+(function () {
+    'use strict';
+    let selectedZone = 'ingresso';
+    const originalRenderQuests = renderQuests;
+    const originalRenderDailyQuests = renderDailyQuests;
+
+    function emptyZone(containerId) {
+        const el = document.getElementById(containerId);
+        if (el) el.innerHTML = '<div class="inventory-empty">Nessuna missione disponibile per questa Ora.</div>';
+    }
+    function changeVisibleScoreText(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const nodes = container.querySelectorAll('.quest-reward strong, .inventory-empty');
+        nodes.forEach(el => { el.textContent = el.textContent.replace(/\bscore\b/gi, 'risonanza'); });
+    }
+    renderQuests = function () {
+        if (selectedZone !== 'ingresso') { emptyZone('quest-list'); return; }
+        originalRenderQuests();
+        changeVisibleScoreText('quest-list');
+    };
+    renderDailyQuests = function () {
+        if (selectedZone !== 'ingresso') { emptyZone('daily-quest-list'); return; }
+        originalRenderDailyQuests();
+    };
+
+    function showZone(zone) {
+        if (typeof pendingQuestKey !== 'undefined' && pendingQuestKey && !questClaimBusy) {
+            cancelPendingQuestCompletion();
+        }
+        selectedZone = zone;
+        document.querySelectorAll('[data-quest-zone]').forEach(button => {
+            const active = button.dataset.questZone === zone;
+            button.classList.toggle('is-selected', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+        const heading = document.getElementById('questgiver-zone-heading');
+        if (heading) heading.textContent = zone === 'ingresso' ? 'MISSIONI — INGRESSO' : 'MISSIONI — ' + zone + ' ORA';
+        const caption = document.getElementById('questgiver-daily-caption');
+        if (caption) caption.hidden = zone !== 'ingresso';
+        renderQuests();
+        renderDailyQuests();
+        const feedback = document.getElementById('quest-feedback');
+        if (feedback) feedback.textContent = '';
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-quest-zone]').forEach(button => {
+            button.addEventListener('click', () => showZone(button.dataset.questZone));
+        });
+        showZone('ingresso');
+    });
+})();
+</script>
+
 </body>
 </html>
