@@ -48,9 +48,15 @@
             const [arrivalX, arrivalY] = CLOCK_ARRIVAL_CELLS[
                 Math.floor(Math.random() * CLOCK_ARRIVAL_CELLS.length)
             ];
+            // Il portale registra anche l'ambiente effettivo: Cura e ingresso
+            // al Piano I verificano current_location sul server.
             const { error: arrivalError } = await db
                 .from("characters")
-                .update({ orologio_x: arrivalX, orologio_y: arrivalY })
+                .update({
+                    orologio_x: arrivalX,
+                    orologio_y: arrivalY,
+                    current_location: "orologio"
+                })
                 .eq("id", character.id);
             if (arrivalError) throw arrivalError;
             character.orologio_x = arrivalX;
@@ -62,9 +68,8 @@
                 console.warn("Salvataggio posizione Orologio nel browser:", storageError);
             }
 
-            // La Stanza dell'Orologio gestisce coordinate indipendenti da quelle della Base.
-            // Conserviamo current_location='base' per compatibilità con la Moneta Spaziale
-            // già utilizzabile nella Stanza dell'Orologio.
+            // La Stanza dell'Orologio gestisce coordinate indipendenti dalla Base.
+            // La Moneta Spaziale supporta ora esplicitamente current_location='orologio'.
             if (typeof baseChannel !== "undefined" && baseChannel) {
                 try { await baseChannel.untrack(); }
                 catch (presenceError) { console.warn("Presence Base:", presenceError); }
