@@ -245,6 +245,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
         await loadBaseMapDefinition();
+
+        // Teletrasporto principale Base -> Dungeon: area 2x2 X9-10, Y28-29.
+        // Il Set originale e il suo controllo restano in eventi_base.js;
+        // aggiorniamo soltanto le celle, senza interferire con le altre scale.
+        if (typeof BASE_TELEPORT_CELLS !== "undefined") {
+            BASE_TELEPORT_CELLS.clear();
+            ["9,28", "10,28", "9,29", "10,29"].forEach(
+                cell => BASE_TELEPORT_CELLS.add(cell)
+            );
+        }
+
         await loadCharacter();
         await loadCharacterEquipment();
         await loadBaseAbilities();
