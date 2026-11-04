@@ -158,14 +158,67 @@
         const nodes = container.querySelectorAll('.quest-reward strong, .inventory-empty');
         nodes.forEach(el => { el.textContent = el.textContent.replace(/\bscore\b/gi, 'risonanza'); });
     }
+    const SPECIAL_REWARDS = {
+        p1_arena_honor: 'Sblocca Spada di pietra, Lancia di Pietra e Scudo tartaruga da Mano di Scimmia.',
+        p1_allosauro_trade: 'Sblocca la Piuma di Allosauro da Mano di Scimmia.',
+        p1_sabotaggio: 'ATTENZIONE: il pezzo di mosaico verrà distrutto. Il Tempio non potrà essere completato in questo ciclo.',
+        p1_frutti_uovo: 'Sblocca la vendita dei Frutti Carnosi da Mano di Scimmia.',
+        p1_amici_scagliagrigia: 'Sblocca gli ingredienti del Lautopasto da Mano di Scimmia.',
+        p1_tempio_visitato: 'Sblocca le missioni giornaliere della I Ora.'
+    };
     renderQuests = function () {
-        if (selectedZone !== 'ingresso') { emptyZone('quest-list'); return; }
-        originalRenderQuests();
-        changeVisibleScoreText('quest-list');
+        if (selectedZone !== 'ingresso' && selectedZone !== 'I') { emptyZone('quest-list'); return; }
+        if (!state || !Array.isArray(state.quests)) { originalRenderQuests(); return; }
+        const full = state.quests;
+        state.quests = full.filter(q => selectedZone === 'I'
+            ? q.quest_key.startsWith('p1_')
+            : !q.quest_key.startsWith('p1_'));
+        try {
+            originalRenderQuests();
+            changeVisibleScoreText('quest-list');
+            if (selectedZone === 'I') {
+                const cards = document.querySelectorAll('#quest-list .quest-card');
+                state.quests.forEach((quest, i) => {
+                    const note = SPECIAL_REWARDS[quest.quest_key];
+                    if (!note || !cards[i]) return;
+                    const el = document.createElement('div');
+                    el.className = 'quest-progress';
+                    const label = document.createElement('span');
+                    label.textContent = 'Ricompensa speciale';
+                    const value = document.createElement('strong');
+                    value.textContent = note;
+                    el.append(label, value);
+                    const button = cards[i].querySelector('button');
+                    if (button) cards[i].insertBefore(el, button);
+                    else cards[i].appendChild(el);
+                });
+            }
+        } finally { state.quests = full; }
     };
     renderDailyQuests = function () {
-        if (selectedZone !== 'ingresso') { emptyZone('daily-quest-list'); return; }
-        originalRenderDailyQuests();
+        if (selectedZone !== 'ingresso' && selectedZone !== 'I') { emptyZone('daily-quest-list'); return; }
+        if (!dailyQuestState || !Array.isArray(dailyQuestState.quests)) { originalRenderDailyQuests(); return; }
+        const full = dailyQuestState.quests;
+        dailyQuestState.quests = full.filter(q => selectedZone === 'I'
+            ? q.quest_key.startsWith('daily_p1_')
+            : !q.quest_key.startsWith('daily_p1_'));
+        try {
+            originalRenderDailyQuests();
+            if (selectedZone === 'I') {
+                document.querySelectorAll('#daily-quest-list button').forEach(button => {
+                    if (button.textContent === 'BOSS NON COMPLETATO') {
+                        button.textContent = 'COMPLETA PRIMA LA QUEST DEL TEMPIO';
+                    }
+                });
+            }
+        } finally { dailyQuestState.quests = full; }
+    };
+    const originalClaimQuest = claimQuest;
+    claimQuest = async function (questKey) {
+        if (questKey === 'p1_sabotaggio' && !window.confirm(
+            'ATTENZIONE! Il pezzo di mosaico sarà consumato in modo irreversibile per questo ciclo. Non potrai raggiungere Scintilla fino al reset del Piano I. Vuoi procedere?'
+        )) return;
+        return originalClaimQuest.apply(this, arguments);
     };
 
     function showZone(zone) {
@@ -181,7 +234,7 @@
         const heading = document.getElementById('questgiver-zone-heading');
         if (heading) heading.textContent = zone === 'ingresso' ? 'MISSIONI — INGRESSO' : 'MISSIONI — ' + zone + ' ORA';
         const caption = document.getElementById('questgiver-daily-caption');
-        if (caption) caption.hidden = zone !== 'ingresso';
+        if (caption) { caption.hidden = zone !== 'ingresso' && zone !== 'I'; caption.textContent = zone === 'I' ? 'Le missioni giornaliere della I Ora si sbloccano dopo aver completato e riscosso la missione di visita al Tempio di Scintilla. Si azzerano a mezzanotte (ora italiana).' : 'Si sbloccano consegnando per la prima volta la Testa del Boss Goblin. Si azzerano ogni giorno a mezzanotte (ora italiana).'; }
         renderQuests();
         renderDailyQuests();
         const feedback = document.getElementById('quest-feedback');
