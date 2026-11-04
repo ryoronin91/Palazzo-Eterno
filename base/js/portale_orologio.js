@@ -13,9 +13,13 @@
     }
 
     async function checkClockUnlock() {
-        const {data, error} = await db.rpc("can_use_clock_teleport");
-        if (error) throw error;
-        return data === true;
+        // Fonte autorevole: missione riscossa dall'utente autenticato.
+        const { data, error } = await db.rpc("can_use_clock_teleport");
+        if (error) throw new Error(`Verifica missione: ${error.message}`);
+        if (typeof data !== "boolean") {
+            throw new Error("Risposta inattesa dal controllo dello sblocco.");
+        }
+        return data;
     }
 
     async function travelToClock(button) {
@@ -89,10 +93,11 @@
             if (clockButton) { clockButton.hidden = !unlocked; clockButton.style.display = unlocked ? "" : "none"; }
             if (status) status.textContent = unlocked
                 ? "Hai scoperto una seconda destinazione. Scegli dove andare."
-                : "Completa «Occhio che è facile perdersi qui..» e riscuoti la ricompensa per sbloccare la Stanza dell'Orologio.";
+                : "La missione «Occhio che è facile perdersi qui..» non risulta ancora riscossa per questo personaggio.";
         }).catch(error => {
             console.warn("Verifica sblocco Orologio:", error);
-            if (overlay.isConnected && status) status.textContent = "Dungeon disponibile. Impossibile verificare lo sblocco della Stanza dell'Orologio.";
+            if (overlay.isConnected && status) status.textContent =
+                `Dungeon disponibile. Verifica Orologio fallita: ${error?.message || "errore sconosciuto"}.`;
         });
     };
 })();
