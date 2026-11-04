@@ -11272,11 +11272,51 @@ function renderMasterPianoIOverviewMap() {
             el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});}
         place(el,x,y,iconSize);
     }
-    // I combattimenti ruotano tra stanze effettive; niente simboli in stanze disabilitate.
-    if (config.key==='dungeon_Ia'||config.key==='dungeon_Ic') {
-        const suffix=config.key==='dungeon_Ia'?'Ia':'Ic';
-        const slots=masterPianoICombatSlots.get('slots_'+suffix)||[];
-        const rooms=masterPianoICombatRooms.get('rooms_'+suffix)||[];
+    // Piano Ia: mostra TUTTE le stanze possibili, anche se nessuno dei
+    // 20 incontri ha al momento una stanza assegnata (es. dopo il reset).
+    // Stanze libere = grigio, incontro pronto = verde, in combattimento = rosso.
+    // Non modifica né forza spawn: questa è una vista di sola lettura Master.
+    if (config.key==='dungeon_Ia') {
+        const slots=masterPianoICombatSlots.get('slots_Ia')||[];
+        const rooms=masterPianoICombatRooms.get('rooms_Ia')||[];
+        const assigned=new Map();
+        for(const slot of slots){
+            if(slot.room_number===null||slot.room_number===undefined)continue;
+            assigned.set(Number(slot.room_number),slot);
+        }
+        for(const room of rooms){
+            if(room.enabled===false)continue;
+            const slot=assigned.get(Number(room.room_number));
+            const activeSlot=slot && (slot.status==='active'||slot.status==='engaged');
+            const state=activeSlot?getMasterPianoICombatMarkerState(slot):null;
+            const title=activeSlot
+                ? `${slot.encounter_id} · ${state.label} · Stanza ${room.room_number}`
+                : `Stanza ${room.room_number} · nessun incontro attualmente presente`;
+            marker(room.token_x,room.token_y,'⚔',state?.css||'state-inactive',title,
+                state?.time||'',state?.combat?()=>openMasterCombat(state.combat.id):null);
+        }
+        // L'Allosauro Dominante ha uno spawn fisso, indipendente dalle stanze a rotazione.
+        const boss=(masterPianoIExtraStates.get('boss_Ia')||[])[0]||{};
+        const fightId=boss.engaged_combat_id;
+        const combat= fightId ? activeMasterCombats.get(fightId) : getActiveCombatForEncounter('p1_allosauro_dominante');
+        const isFighting=!!combat && ['waiting','active'].includes(String(combat.status||'active'));
+        const cooldown=!!boss.cooldown_until && new Date(boss.cooldown_until).getTime()>Date.now();
+        marker(27,32,'👹',isFighting?'state-live':cooldown?'state-cooldown':'state-active',
+            isFighting?'Allosauro Dominante · combattimento in corso':cooldown?'Allosauro Dominante · cooldown':'Allosauro Dominante · disponibile',
+            !isFighting&&cooldown?(formatMasterCooldown(boss.cooldown_until)||''):'',
+            isFighting?()=>openMasterCombat(combat.id):null);
+        // Stesso stile del Livello Base: grigio se non attivo, verde se attivo.
+        const camp=(masterPianoIExtraStates.get('camp_Ia')||[])[0]||{};
+        const active=camp.active===true;
+        marker(29,35,'⛺',active?'state-active':'state-inactive',
+            active?`Accampamento attivo · combustibile ${Number(camp.fuel)||0}`:'Accampamento disattivato · materiali da consegnare / combustibile esaurito');
+        // Combattimento delle Guardie del Varco: accesso da X0 Y67.
+        marker(0,67,'⚔','state-active','Guardie del Varco · combattimento d’accesso al Villaggio Scagliagrigia');
+    }
+    // Le altre mappe restano immutate rispetto alla v24.
+    if (config.key==='dungeon_Ic') {
+        const slots=masterPianoICombatSlots.get('slots_Ic')||[];
+        const rooms=masterPianoICombatRooms.get('rooms_Ic')||[];
         rooms.filter(r=>r.enabled!==false).forEach(r=>{
             const slot=slots.find(s=>Number(s.room_number)===Number(r.room_number)&&
                 s.status!=='available'&&s.status!=='idle');
@@ -11286,10 +11326,6 @@ function renderMasterPianoIOverviewMap() {
                 `${slot.encounter_id||'Incontro'} · ${state.label}`,state.time,
                 state.combat?()=>openMasterCombat(state.combat.id):null);
         });
-    }
-    if (config.key==='dungeon_Ia') {
-        const camp=(masterPianoIExtraStates.get('camp_Ia')||[])[0];
-        marker(29,35,'⛺',camp?.active?'state-active':'state-building',camp?.active?'Accampamento attivo':'Accampamento da costruire');
     }
     if (config.key==='dungeon_Ib') {
         marker(7,4,'◆','state-active','Capanna dell’Anziano Scagliagrigia');
