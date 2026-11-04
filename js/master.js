@@ -11214,6 +11214,9 @@ function getMasterPianoIVisualStage(config,image,container) {
     }
     image.style.display='none';
     if(!tiles){tiles=document.createElement('div');tiles.className='master-overview-piano-i-mosaic';layer.appendChild(tiles);}
+    tiles.style.position='relative';
+    tiles.style.zIndex='0';
+    tiles.style.pointerEvents='none';
     tiles.setAttribute('aria-label',config.imageAlt);
     const id=String(config.tiles);
     if(tiles.dataset.floor!==id){
@@ -11246,6 +11249,7 @@ function renderMasterPianoIOverviewMap() {
     const stage=getMasterPianoIVisualStage(config,image,viewport);
     if(!stage)return;
     const markerLayer=viewport.querySelector('.master-piano-i-zoom-stage');
+    markerLayer.classList.add('master-piano-i-overlay-ready');
     setText('master-overview-floor-name',config.title);
     setText('master-overview-slide-count',`${config.index} / ${config.total}`);
     clearMasterOverviewMarkers();
@@ -11253,7 +11257,7 @@ function renderMasterPianoIOverviewMap() {
     const containerRect=markerLayer.getBoundingClientRect();
     if (!mapRect.width || !mapRect.height) return;
     const stepX=mapRect.width/config.columns,stepY=mapRect.height/config.rows;
-    const iconSize=Math.max(13,Math.min(stepX,stepY)*0.85);
+    const iconSize=Math.max(20,Math.min(28,Math.min(stepX,stepY)*1.25));
     const tokenSize=Math.max(15,Math.min(stepX,stepY)*0.98);
     const offX=mapRect.left-containerRect.left,offY=mapRect.top-containerRect.top;
     function place(node,x,y,size){
@@ -11266,7 +11270,31 @@ function renderMasterPianoIOverviewMap() {
     function marker(x,y,glyph,css,title,time='',action=null){
         const el=document.createElement('div');el.className=`master-overview-marker ${css}`;
         el.title=`${title} · X ${x} Y ${y}`;
-        const ic=document.createElement('span');ic.className='icon';ic.textContent=glyph;el.appendChild(ic);
+        const ic=document.createElement('span');ic.className='icon';
+        // SVG per i pittogrammi: niente caratteri ⚔/▣ che possono essere
+        // visualizzati come quadratini dai font installati sul computer.
+        const pictograms={
+            combat:'<path d="M4 3l6 6m4 4 7 7m-5 1 5-5M20 3l-6 6m-4 4-7 7m5 1-5-5"/><path d="M3 3l3 0 4 4-3 3-4-4zM21 3h-3l-4 4 3 3 4-4z"/>',
+            chest:'<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M3 13h18M6 9V6a6 6 0 0 1 12 0v3M11 9v12"/>',
+            apple:'<path d="M12 8c-4-5-10-3-10 4 0 5 3 10 7 10 2 0 2-1 3-1s1 1 3 1c4 0 7-5 7-10 0-7-6-9-10-4Z"/><path d="M12 8c-1-3 0-5 3-6M12 7c3-4 6-4 8-3"/>',
+            egg:'<path d="M12 2c-5 0-9 8-9 13a9 9 0 0 0 18 0c0-5-4-13-9-13Z"/>'
+        };
+        const iconType=glyph==='⚔'?'combat':glyph==='▣'?'chest':glyph==='🍎'?'apple':glyph==='🥚'?'egg':null;
+        if(iconType){
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+            svg.setAttribute('viewBox','0 0 24 24');
+            svg.setAttribute('aria-hidden','true');
+            svg.setAttribute('fill','none');
+            svg.setAttribute('stroke','currentColor');
+            svg.setAttribute('stroke-width','2');
+            svg.setAttribute('stroke-linecap','round');
+            svg.setAttribute('stroke-linejoin','round');
+            svg.innerHTML=pictograms[iconType];ic.appendChild(svg);
+            if(iconType==='apple'){ic.classList.add('is-fruit');el.title='🍎 '+el.title;}
+        } else {
+            ic.textContent=glyph;
+        }
+        el.appendChild(ic);
         if(time){const t=document.createElement('span');t.className='timer';t.textContent=String(time);el.appendChild(t);}
         if(action){el.tabIndex=0;el.setAttribute('role','button');el.addEventListener('click',action);
             el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});}

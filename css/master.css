@@ -3044,3 +3044,37 @@
 .master-piano-i-zoom-stage .master-overview-marker {min-width:13px;min-height:13px;}
 .master-piano-i-zoom-stage .master-overview-marker .icon {font-size:clamp(10px,1.5vw,16px);}
 @media (max-width:780px){.master-overview-map-toolbar{flex-wrap:wrap}.master-piano-i-zoom-controls button{font-size:.69rem;padding:3px 6px}}
+
+/* Master v29 - marcatori robusti sui mosaici Ia e Ic */
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-marker {
+  z-index: 30;
+  min-width: 20px;
+  min-height: 20px;
+  pointer-events: auto;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-marker .icon {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-marker svg {
+  width: 72%;
+  height: 72%;
+  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-marker .is-fruit svg {
+  fill: #d93435;
+  stroke: #fff1e3;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-token {
+  z-index: 40;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-overview-piano-i-mosaic {
+  z-index: 0;
+  pointer-events: none;
+}
