@@ -260,80 +260,99 @@ async function refreshUpgradeState() {
     return upgradePayload;
 }
 
+// Stato della tendina: resta aperta anche dopo i contributi e il refresh.
+let expandedUpgradeHour = null;
+
+const UPGRADE_HOURS = ["I ORA", "II ORA", "III ORA", "IV ORA", "V ORA", "VI ORA", "VII ORA", "VIII ORA", "IX ORA", "X ORA", "XI ORA", "XII ORA"];
+
 function renderUpgradeState() {
-    const levelElement = document.getElementById("addestratore-upgrade-level");
-    const statusElement = document.getElementById("addestratore-upgrade-status");
-    const container = document.getElementById("addestratore-upgrade-requirements");
-    if (!container) return;
+    const accordion = document.getElementById("addestratore-upgrade-accordion");
+    if (!accordion) return;
 
     const currentLevel = Math.max(1, Number(upgradePayload?.current_level) || 1);
     const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 13);
-    const targetLevel = Number(upgradePayload?.target_level);
-    const eraNames = ["I ORA", "II ORA", "III ORA", "IV ORA", "V ORA", "VI ORA", "VII ORA", "VIII ORA", "IX ORA", "X ORA", "XI ORA", "XII ORA"];
+    const activeTarget = currentLevel < maxLevel ? currentLevel + 1 : null;
     const enabled = upgradePayload?.enabled === true;
     const requirements = Array.isArray(upgradePayload?.requirements) ? upgradePayload.requirements : [];
+    const completed = requirements.filter(r => Number(r.contributed_quantity) >= Number(r.required_quantity)).length;
 
-    if (levelElement) {
-        levelElement.textContent = currentLevel >= maxLevel
-            ? `XII ORA · COMPLETO`
-            : eraNames[Math.min(11, Math.max(0, (targetLevel || currentLevel + 1) - 2))];
-    }
+    accordion.innerHTML = UPGRADE_HOURS.map((label, index) => {
+        const targetLevel = index + 2;
+        const isComplete = targetLevel <= currentLevel;
+        const isCurrent = targetLevel === activeTarget;
+        const isFuture = targetLevel > (activeTarget ?? maxLevel);
+        const open = isCurrent && expandedUpgradeHour === targetLevel;
+        const status = isComplete ? "COMPLETATO" : isFuture ? "DA SBLOCCARE" : enabled && requirements.length ? "IN CORSO" : "NON DISPONIBILE";
+        const statusClass = isComplete ? " is-complete" : isFuture ? " is-locked" : "";
 
-    if (statusElement) {
-        statusElement.classList.remove("is-complete");
-        if (currentLevel >= maxLevel) {
-            statusElement.textContent = "COMPLETO";
-            statusElement.classList.add("is-complete");
-        } else if (!enabled) {
-            statusElement.textContent = "NON DISPONIBILE";
-        } else {
-            statusElement.textContent = "IN CORSO";
+        // Le Ore future sono visibili in forma compatta, senza inventare requisiti non ancora configurati.
+        // Le Ore già concluse sono riapribili per consultare il loro stato.
+        const isExpandable = isCurrent || isComplete;
+        const summary = `<span class="addestratore-hour-label">${label}</span><span class="addestratore-upgrade-status${statusClass}">${status}</span>`;
+
+        if (!isExpandable) {
+            return `<div class="addestratore-hour-locked" aria-label="${label}: da sbloccare">${summary}<span class="addestratore-hour-chevron" aria-hidden="true">·</span></div>`;
         }
-    }
-
-    if (currentLevel >= maxLevel) {
-        container.innerHTML = `<div class="inventory-empty">L'Addestratore ha raggiunto il livello massimo.</div>`;
-        return;
-    }
-
-    if (!enabled || requirements.length === 0) {
-        container.innerHTML = `<div class="inventory-empty">I requisiti per il prossimo livello non sono ancora stati definiti.</div>`;
-        return;
-    }
-
-    container.innerHTML = requirements.map(requirement => {
-        const itemId = String(requirement.item_id || "");
-        const itemName = String(requirement.item_name || itemId);
-        const required = Math.max(0, Number(requirement.required_quantity) || 0);
-        const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
-        const remaining = Math.max(0, required - contributed);
-        const owned = itemId === "moneta_oro"
-            ? Math.max(0, Number(state?.gold) || 0)
-            : getInventoryQuantity(itemId);
-        const percentage = required > 0 ? Math.min(100, Math.round(contributed / required * 100)) : 0;
-        const complete = remaining <= 0;
-
-        return `
-            <article class="addestratore-upgrade-requirement${complete ? " is-complete" : ""}">
-                <div class="addestratore-upgrade-row">
-                    <strong>${escapeHtml(itemName)}</strong>
-                    <span>${contributed} / ${required}</span>
-                </div>
-                <div class="addestratore-upgrade-progress"><span style="width:${percentage}%"></span></div>
-                <div class="addestratore-upgrade-owned">${itemId === "moneta_oro" ? "Oro nella borsa" : "Possiedi"}: <strong>${owned}</strong></div>
-                ${complete
-                    ? `<div class="addestratore-upgrade-complete">REQUISITO COMPLETO</div>`
-                    : `<form class="addestratore-upgrade-form" data-item-id="${escapeHtml(itemId)}">
-                           <input class="addestratore-upgrade-quantity" type="number" min="1" max="${Math.min(remaining, owned)}" step="1" value="1" inputmode="numeric">
-                           <button type="submit" class="merchant-button addestratore-upgrade-button" ${owned <= 0 ? "disabled" : ""}>CONTRIBUISCI</button>
-                       </form>`}
-            </article>`;
+        const body = isComplete
+            ? `<p class="addestratore-hour-help">Potenziamento completato. Hai sbloccato 12 punti allenamento aggiuntivi.</p>`
+            : (!enabled || requirements.length === 0)
+                ? `<p class="addestratore-hour-help">I requisiti per questa Ora non sono ancora disponibili.</p>`
+                : `<p class="addestratore-upgrade-description">Contribuisci anche con piccole quantità: ogni risorsa depositata rimane nella riserva comune. Completando tutti i requisiti sbloccherete altri 12 punti allenamento.</p>
+                   <div class="addestratore-upgrade-requirements">${requirements.map(renderUpgradeRequirement).join("")}</div>`;
+        const progress = isCurrent && enabled && requirements.length
+            ? `<span class="addestratore-hour-progress">${completed}/${requirements.length} requisiti</span>` : "";
+        return `<details class="addestratore-hour${isComplete ? " is-complete" : ""}" data-target-level="${targetLevel}" ${open ? "open" : ""}>
+            <summary class="addestratore-hour-summary">${summary}${progress}<span class="addestratore-hour-chevron" aria-hidden="true"></span></summary>
+            <div class="addestratore-hour-content">${body}</div>
+        </details>`;
     }).join("");
 }
 
+function renderUpgradeRequirement(requirement) {
+    const itemId = String(requirement.item_id || "");
+    const itemName = String(requirement.item_name || itemId);
+    const required = Math.max(0, Number(requirement.required_quantity) || 0);
+    const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
+    const remaining = Math.max(0, required - contributed);
+    const owned = itemId === "moneta_oro"
+        ? Math.max(0, Number(state?.gold) || 0)
+        : getInventoryQuantity(itemId);
+    const percentage = required > 0 ? Math.min(100, Math.round(contributed / required * 100)) : 0;
+    const complete = remaining <= 0;
+
+    return `
+        <article class="addestratore-upgrade-requirement${complete ? " is-complete" : ""}">
+            <div class="addestratore-upgrade-row">
+                <strong>${escapeHtml(itemName)}</strong>
+                <span>${contributed} / ${required}</span>
+            </div>
+            <div class="addestratore-upgrade-progress"><span style="width:${percentage}%"></span></div>
+            <div class="addestratore-upgrade-owned">${itemId === "moneta_oro" ? "Oro nella borsa" : "Possiedi"}: <strong>${owned}</strong></div>
+            ${complete
+                ? `<div class="addestratore-upgrade-complete">REQUISITO COMPLETO</div>`
+                : `<form class="addestratore-upgrade-form" data-item-id="${escapeHtml(itemId)}">
+                       <input class="addestratore-upgrade-quantity" type="number" min="1" max="${Math.min(remaining, owned)}" step="1" value="1" inputmode="numeric" aria-label="Quantità di ${escapeHtml(itemName)} da contribuire">
+                       <button type="submit" class="merchant-button addestratore-upgrade-button" ${owned <= 0 ? "disabled" : ""}>CONTRIBUISCI</button>
+                   </form>`}
+        </article>`;
+}
+
 function setupUpgradeContributions() {
-    const container = document.getElementById("addestratore-upgrade-requirements");
+    const container = document.getElementById("addestratore-upgrade-accordion");
     if (!container) return;
+
+    container.addEventListener("toggle", event => {
+        if (!event.target.matches("details.addestratore-hour")) return;
+        const targetLevel = Number(event.target.dataset.targetLevel);
+        if (event.target.open) {
+            expandedUpgradeHour = targetLevel;
+            container.querySelectorAll("details.addestratore-hour[open]").forEach(other => {
+                if (other !== event.target) other.open = false;
+            });
+        } else if (expandedUpgradeHour === targetLevel) {
+            expandedUpgradeHour = null;
+        }
+    }, true);
 
     container.addEventListener("submit", async event => {
         const form = event.target.closest(".addestratore-upgrade-form");
@@ -374,6 +393,7 @@ async function contributeUpgrade(form) {
 
         await Promise.all([loadCharacterInventory(), refreshUpgradeState(), refreshTrainingState()]);
         updateGoldHeader();
+        if (data?.upgraded === true) expandedUpgradeHour = null;
         renderUpgradeState();
         renderTraining();
 

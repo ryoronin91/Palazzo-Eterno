@@ -2715,3 +2715,39 @@ input {
 .trainer-summary-grid strong {
     white-space: nowrap;
 }
+
+/* Ore dell'Addestratore: fisarmonica compatta e accessibile */
+.addestratore-upgrade-section-title { margin: 0 0 10px; color: var(--gold-bright); }
+.addestratore-upgrade-accordion { display: flex; flex-direction: column; gap: 7px; }
+.addestratore-hour, .addestratore-hour-locked {
+    border: 1px solid rgba(198,164,92,.32);
+    background: rgba(5,6,8,.43);
+    min-width: 0;
+}
+.addestratore-hour-locked, .addestratore-hour-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 41px;
+    padding: 8px 9px;
+}
+.addestratore-hour-summary { cursor: pointer; list-style: none; }
+.addestratore-hour-summary::-webkit-details-marker { display: none; }
+.addestratore-hour-summary::marker { content: ""; }
+.addestratore-hour-summary:hover { background: rgba(198,164,92,.07); }
+.addestratore-hour-summary:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: -2px; }
+.addestratore-hour-label { color: var(--ivory); font-size: 12px; font-weight: 700; letter-spacing: .07em; }
+.addestratore-hour-progress { font-size: 9px; color: var(--muted); white-space: nowrap; }
+.addestratore-hour-summary .addestratore-upgrade-status, .addestratore-hour-locked .addestratore-upgrade-status { margin-left: auto; white-space: nowrap; }
+.addestratore-upgrade-status.is-locked { opacity: .58; border-color: rgba(255,255,255,.12); color: var(--muted); }
+.addestratore-hour-locked { opacity: .75; }
+.addestratore-hour-chevron { color: var(--gold-bright); font-size: 12px; flex: 0 0 auto; margin-left: 2px; }
+.addestratore-hour-summary .addestratore-hour-chevron::before { content: "▾"; display: inline-block; transition: transform .2s; }
+.addestratore-hour[open] .addestratore-hour-chevron::before { transform: rotate(180deg); }
+.addestratore-hour-content { padding: 12px 9px 10px; border-top: 1px solid rgba(198,164,92,.22); }
+.addestratore-hour-help { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+@media (max-width: 420px) {
+    .addestratore-hour-progress { display: none; }
+    .addestratore-hour-locked, .addestratore-hour-summary { gap: 5px; padding: 8px 6px; }
+    .addestratore-hour-label { font-size: 11px; }
+}
