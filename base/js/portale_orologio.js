@@ -6,6 +6,14 @@
     const DESTINATION = "../orologio/orologio.html";
     const PORTAL_CELLS = ["9,28", "10,28", "9,29", "10,29"];
 
+    // Le 16 caselle di arrivo richieste, tutte percorribili in orologio.json.
+    const CLOCK_ARRIVAL_CELLS = [
+        [25,13], [25,12], [24,12], [24,13],
+        [13,23], [14,23], [13,24], [14,24],
+        [2,12], [3,12], [2,13], [3,13],
+        [13,2], [14,2], [13,3], [14,3]
+    ];
+
     // Garanzia per le quattro nuove caselle anche in caso di cache del precedente base.js.
     if (typeof BASE_TELEPORT_CELLS !== "undefined") {
         BASE_TELEPORT_CELLS.clear();
@@ -33,6 +41,27 @@
             }
             if (!character || !character.id) throw new Error("Personaggio non disponibile.");
             if (typeof flushBasePositionSave === "function") await flushBasePositionSave();
+
+            // Il caricamento della Stanza dell'Orologio legge orologio_x/y
+            // direttamente dal personaggio: impostarli PRIMA del cambio pagina
+            // evita che l'ultima posizione salvata prevalga sul nuovo arrivo.
+            const [arrivalX, arrivalY] = CLOCK_ARRIVAL_CELLS[
+                Math.floor(Math.random() * CLOCK_ARRIVAL_CELLS.length)
+            ];
+            const { error: arrivalError } = await db
+                .from("characters")
+                .update({ orologio_x: arrivalX, orologio_y: arrivalY })
+                .eq("id", character.id);
+            if (arrivalError) throw arrivalError;
+            character.orologio_x = arrivalX;
+            character.orologio_y = arrivalY;
+            try {
+                sessionStorage.setItem("palazzo_eterno_orologio_position",
+                    JSON.stringify({ x: arrivalX, y: arrivalY }));
+            } catch (storageError) {
+                console.warn("Salvataggio posizione Orologio nel browser:", storageError);
+            }
+
             // La Stanza dell'Orologio gestisce coordinate indipendenti da quelle della Base.
             // Conserviamo current_location='base' per compatibilità con la Moneta Spaziale
             // già utilizzabile nella Stanza dell'Orologio.
