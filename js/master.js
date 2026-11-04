@@ -12047,3 +12047,257 @@ window.addEventListener('DOMContentLoaded',()=>{
     },1000);
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 });
+
+
+// ============================================================
+// MASTER v37 — EVENTI/SEGRETI Piano I e Mietitore di Smeraldo.
+// Le RPC eseguono il controllo Master e proteggono gli oggetti unici.
+// ============================================================
+const MASTER_I_SECRET_META=Object.freeze({
+ brazier_1:{icon:'🛠',hint:'Totem 1 · X4 Y34'},
+ brazier_2:{icon:'🛠',hint:'Totem 2 · X31 Y39 · Stato legato al Boss Tiki'},
+ brazier_3:{icon:'🛠',hint:'Totem 3 · X59 Y35'},
+ plat_1:{icon:'◈',hint:'Prima pedana · X8 Y11'},
+ plat_2:{icon:'◈',hint:'Seconda pedana · X5 Y11'},
+ simon_1:{icon:'♫',hint:'Simon 1 · X61 Y11'},
+ simon_2:{icon:'♫',hint:'Simon 2 · X58 Y11'},
+ mosaic_barrier:{icon:'🔒',hint:'Sigillo · X33 Y16 · Attivo = passaggio bloccato'},
+ puzzacinta_id:{icon:'🧙',hint:'Puzzacinta · X33 Y29 · Disponibile fino alla quinta risposta'}
+});
+let masterISecretsState=null;
+let masterISecretsBusy=false,masterISecretsLoading=false,masterISecretsLastFetch=0;
+let masterMietitoreState=null;
+let masterMietitoreLoading=false,masterMietitoreSaving=false,masterMietitoreLastFetch=0;
+function masterIElement(tag,className,text){
+ const el=document.createElement(tag);
+ if(className)el.className=className;
+ if(text!==undefined)el.textContent=String(text);
+ return el;
+}
+function masterIIsPaneActive(pane){
+ return !!document.querySelector(`[data-master-control-pane="${pane}"]`)?.classList.contains('is-active');
+}
+function masterIFormatDateTime(timestamp){
+ const value=Date.parse(timestamp||'');
+ return Number.isFinite(value)?new Date(value).toLocaleString('it-IT'):'—';
+}
+function masterISecretsNotice(message,bad=false){
+ const p=document.querySelector('#master-piano-i-secrets-panel .master-i-feedback');
+ if(p){p.textContent=message||'';p.classList.toggle('is-error',!!bad);}
+}
+function masterISecretCard(record){
+ const meta=MASTER_I_SECRET_META[record.id]||{icon:'◆',hint:''};
+ const active=record.active===true;
+ const card=masterIElement('article','master-event-admin-card master-i-secret-card '+(active?'is-active':'is-disabled'));
+ const header=masterIElement('div','master-event-admin-header');
+ const label=masterIElement('div','master-event-admin-title');
+ const ico=masterIElement('span','master-event-admin-icon',meta.icon);
+ const text=masterIElement('div');
+ text.append(masterIElement('strong','',record.name),masterIElement('small','',meta.hint));
+ label.append(ico,text);
+ const status=masterIElement('span','master-event-admin-state'+(active?' is-enabled':''),
+     active?(record.id==='mosaic_barrier'?'BARRIERA ATTIVA':'ATTIVO'):'DISATTIVATO');
+ header.append(label,status);
+ const detail=masterIElement('div','master-event-admin-detail');
+ if(record.id==='puzzacinta_id')detail.textContent='Domande completate: '+Number(record.answered_count||0)+'/5';
+ else if(record.active_until && active){
+  detail.textContent='Attivo fino alle '+masterIFormatDateTime(record.active_until);
+  const time=masterIElement('div','master-i-secret-countdown');time.dataset.masterISecretDeadline=record.active_until;
+  detail.appendChild(time);
+ }else detail.textContent=record.detail||'Stato condiviso con i giocatori sul Piano I.';
+ const footer=masterIElement('div','master-event-admin-footer');
+ footer.appendChild(masterIElement('span','','Controllo Master'));
+ const toggle=masterIElement('label','master-event-toggle');
+ const input=masterIElement('input');input.type='checkbox';input.role='switch';
+ input.checked=active;input.disabled=masterISecretsBusy;
+ input.setAttribute('aria-label','Modifica '+record.name);
+ const track=masterIElement('span','master-event-toggle-track');track.setAttribute('aria-hidden','true');
+ const statusText=masterIElement('span','',active?'ON':'OFF');
+ input.addEventListener('change',async()=>{
+  const next=input.checked;
+  let warning='';
+  if(record.id==='brazier_2')warning='Attenzione: il Totem 2 dipende dal cooldown del Boss Tiki. Questa operazione ne modifica anche lo stato di respawn.\n\n';
+  if(record.id==='plat_1'&&!next)warning='Disattivare il Percorso 1 resetta anche il Percorso 2.\n\n';
+  if(record.id==='plat_2'&&next)warning='Completare il Percorso 2 completa anche il Percorso 1.\n\n';
+  if(record.id==='puzzacinta_id')warning='L’operazione resetta o completa tutte e 5 le domande di Puzzacinta.\n\n';
+  if(!confirm(warning+(next?'Attivare ':'Disattivare ')+record.name+'?')){input.checked=active;return;}
+  await masterISecretsToggle(record.id,next);
+ });
+ toggle.append(input,track,statusText);footer.appendChild(toggle);
+ card.append(header,detail,footer);
+ return card;
+}
+function masterIUniqueCard(piece){
+ const holders=Array.isArray(piece.holders)?piece.holders:[];
+ const placed=piece.placed===true;
+ const available=!placed && holders.length===0;
+ const card=masterIElement('article','master-event-admin-card master-i-unique-card '+(available?'is-active':'is-disabled'));
+ const head=masterIElement('div','master-event-admin-header');
+ const label=masterIElement('div','master-event-admin-title');
+ const ico=masterIElement('span','master-event-admin-icon','🧩');
+ const title=masterIElement('div');title.append(masterIElement('strong','',piece.name),masterIElement('small','',piece.id+' · pezzo unico del Tempio'));
+ label.append(ico,title);
+ const status=masterIElement('span','master-event-admin-state'+(available?' is-enabled':''),
+  placed?'INSERITO':holders.length?'IN POSSESSO':'DISPONIBILE');
+ head.append(label,status);
+ const detail=masterIElement('div','master-event-admin-detail',
+  placed?'Il pezzo è stato inserito nel mosaico.':holders.length?
+   'In possesso di: '+holders.map(h=>h.name+' (×'+Number(h.quantity||0)+')').join(', '):
+   'Nessun proprietario: il pezzo è disponibile tramite il suo evento.');
+ const footer=masterIElement('div','master-event-admin-footer');
+ footer.append(masterIElement('span','','Gestione automatica · unicità globale'),
+  masterIElement('span','master-i-readonly','SOLA LETTURA'));
+ card.append(head,detail,footer);return card;
+}
+function renderMasterISecrets(){
+ const root=document.getElementById('master-piano-i-secrets-panel');if(!root)return;
+ root.replaceChildren();
+ const top=masterIElement('div','master-piano-i-event-head');
+ top.append(masterIElement('h4','','PIANO I · EVENTI E SEGRETI'),
+  masterIElement('p','','Totem Ic, enigmi Id e controllo degli oggetti unici del mosaico.'));
+ root.appendChild(top);
+ root.appendChild(masterIElement('p','master-i-feedback'));
+ if(!masterISecretsState){root.appendChild(masterIElement('p','master-control-empty','Stati non disponibili.'));return;}
+ const controls=Array.isArray(masterISecretsState.controls)?masterISecretsState.controls:[];
+ for(const floor of ['Ic','Id']){
+  const section=masterIElement('section','master-i-secret-group');
+  section.appendChild(masterIElement('h5','',floor==='Ic'?'GIUNGLA ALTA · IC':'TEMPIO DI SCINTILLA · ID'));
+  const grid=masterIElement('div','master-events-management-grid');
+  controls.filter(s=>s.floor===floor).forEach(s=>grid.appendChild(masterISecretCard(s)));
+  section.appendChild(grid);root.appendChild(section);
+ }
+ const section=masterIElement('section','master-i-secret-group master-i-unique-group');
+ section.appendChild(masterIElement('h5','','OGGETTI UNICI · PEZZI DEL MOSAICO'));
+ const grid=masterIElement('div','master-events-management-grid');
+ (masterISecretsState.unique_pieces||[]).forEach(p=>grid.appendChild(masterIUniqueCard(p)));
+ section.appendChild(grid);root.appendChild(section);
+ masterIUpdateSecretTimers();
+}
+function masterIUpdateSecretTimers(){
+ document.querySelectorAll('[data-master-i-secret-deadline]').forEach(el=>{
+  const remain=masterEventsDuration(el.dataset.masterISecretDeadline);
+  el.textContent=remain?'Tempo residuo: '+remain:'';
+ });
+}
+async function masterISecretsLoad(force=false){
+ if(masterISecretsLoading||masterISecretsBusy)return;
+ if(!force&&Date.now()-masterISecretsLastFetch<11000)return;
+ masterISecretsLoading=true;
+ try{
+  const {data,error}=await db.rpc('master_get_piano_i_event_secrets');
+  if(error)throw error;
+  if(!data?.ok||!Array.isArray(data.controls)||!Array.isArray(data.unique_pieces))throw Error('Stati Id/Ic incompleti');
+  masterISecretsState=data;masterISecretsLastFetch=Date.now();renderMasterISecrets();
+ }catch(error){console.error('Eventi segreti Piano I:',error);masterISecretsNotice(error.message||'Lettura non riuscita',true);
+  if(!masterISecretsState){const root=document.getElementById('master-piano-i-secrets-panel');if(root)root.textContent='Impossibile leggere eventi del Piano I: '+(error.message||'errore');}}
+ finally{masterISecretsLoading=false;}
+}
+async function masterISecretsToggle(id,active){
+ if(masterISecretsBusy)return;
+ masterISecretsBusy=true;masterISecretsNotice('Salvataggio...');
+ try{
+  const {data,error}=await db.rpc('master_set_piano_i_event_secret',{p_id:id,p_active:active});
+  if(error)throw error;
+  if(!data?.ok)throw Error('Modifica non confermata');
+ }catch(error){alert('Modifica non riuscita: '+(error.message||'errore'));console.error(error);}
+ finally{masterISecretsBusy=false;masterISecretsLastFetch=0;await masterISecretsLoad(true);}
+ // Mantiene sincronizzata anche la Panoramica con gli eventi.
+ if(typeof loadMasterPianoIOverviewData==='function')void loadMasterPianoIOverviewData(true);
+}
+function masterMietitoreNotice(msg,bad=false){
+ const n=document.querySelector('#master-mietitore-combat-panel .master-mietitore-feedback');
+ if(n){n.textContent=msg||'';n.classList.toggle('is-error',bad);}
+}
+function masterMietitoreRender(){
+ const root=document.getElementById('master-mietitore-combat-panel');if(!root)return;
+ root.replaceChildren();
+ const head=masterIElement('div','master-piano-i-combat-head');
+ head.append(masterIElement('h3','','EVENTO RARO · MIETITORE DI SMERALDO'),
+  masterIElement('p','','Apparizioni speciali indipendenti dalla rotazione degli incontri ordinari.'));
+ root.append(head,masterIElement('p','master-mietitore-feedback'));
+ const state=masterMietitoreState;
+ if(!state){root.appendChild(masterIElement('p','master-control-empty','Stato Mietitore non disponibile.'));return;}
+ const grid=masterIElement('div','master-events-management-grid');
+ for(const rule of (state.rules||[])){
+  const spawns=(state.spawns||[]).filter(s=>s.floor_id===rule.floor_id);
+  const active=rule.enabled===true;
+  const card=masterIElement('article','master-event-admin-card master-mietitore-card '+(active?'is-active':'is-disabled'));
+  const header=masterIElement('div','master-event-admin-header');
+  const label=masterIElement('div','master-event-admin-title');
+  const icon=masterIElement('span','master-event-admin-icon','💀');
+  const title=masterIElement('div');title.append(masterIElement('strong','',rule.floor_id==='dungeon_Ia'?'Mietitore · Giungla Bassa Ia':'Mietitore · Giungla Alta Ic'),
+   masterIElement('small','','Evento raro · '+rule.floor_id));label.append(icon,title);
+  header.append(label,masterIElement('span','master-event-admin-state'+(active?' is-enabled':''),active?'COMPARSA ABILITATA':'COMPARSA DISABILITATA'));
+  card.appendChild(header);
+  const detail=masterIElement('div','master-event-admin-detail');
+  const mins=Math.round(Number(rule.wait_seconds||0)/60);
+  detail.appendChild(masterIElement('p','',`Risonanza minima: ${Number(rule.minimum_resonance||0).toLocaleString('it-IT')} · Vita sotto il 50% · Attesa: ${mins} minuti.`));
+  if(spawns.length){
+   for(const spawn of spawns){
+    const engaged=spawn.status==='engaged';
+    detail.appendChild(masterIElement('p','master-mietitore-spawn',
+     (engaged?'COMBATTIMENTO IN CORSO':'MIETITORE PRESENTE')+' · X'+spawn.x+' Y'+spawn.y+
+      (!engaged && spawn.expires_at?' · fino alle '+masterIFormatDateTime(spawn.expires_at):'')));
+    if(engaged&&spawn.combat_id){
+     detail.appendChild(masterIElement('p','',`Round ${Number(spawn.session_round||1)} · Giocatori: ${
+      (spawn.participants||[]).map(p=>p.name).filter(Boolean).join(', ')||'nessuno'}`));
+     const observe=masterIElement('button','button secondary master-mietitore-observe','OSSERVA');
+     observe.type='button';observe.addEventListener('click',()=>openMasterCombat(spawn.combat_id));detail.appendChild(observe);
+    }
+   }
+  }else detail.appendChild(masterIElement('p','master-mietitore-spawn','Nessuna apparizione in corso.'));
+  card.appendChild(detail);
+  const footer=masterIElement('div','master-event-admin-footer');
+  footer.appendChild(masterIElement('span','','Nuove apparizioni'));
+  const toggle=masterIElement('label','master-event-toggle');
+  const input=masterIElement('input');input.type='checkbox';input.role='switch';input.checked=active;
+  input.disabled=masterMietitoreSaving;
+  input.setAttribute('aria-label','Abilita apparizioni Mietitore '+rule.floor_id);
+  const track=masterIElement('span','master-event-toggle-track');track.setAttribute('aria-hidden','true');
+  const text=masterIElement('span','',active?'ON':'OFF');
+  input.addEventListener('change',async()=>{
+   if(!confirm((input.checked?'Abilitare':'Disabilitare')+' nuove apparizioni del Mietitore in '+rule.floor_id+'?\nLe apparizioni e le sessioni già attive proseguiranno normalmente.')){
+    input.checked=active;return;
+   }
+   await masterMietitoreToggle(rule.floor_id,input.checked);
+  });
+  toggle.append(input,track,text);footer.appendChild(toggle);card.appendChild(footer);grid.appendChild(card);
+ }
+ root.appendChild(grid);
+}
+async function masterMietitoreLoad(force=false){
+ if(masterMietitoreLoading||masterMietitoreSaving)return;
+ if(!force&&Date.now()-masterMietitoreLastFetch<10000)return;
+ masterMietitoreLoading=true;
+ try{
+  const {data,error}=await db.rpc('master_get_mietitore_combat');
+  if(error)throw error;
+  if(!data?.ok||!Array.isArray(data.rules)||!Array.isArray(data.spawns))throw Error('Stato Mietitore incompleto');
+  masterMietitoreState=data;masterMietitoreLastFetch=Date.now();masterMietitoreRender();
+ }catch(error){console.error('Mietitore Master:',error);masterMietitoreNotice(error.message||'Errore lettura',true);
+  if(!masterMietitoreState){const root=document.getElementById('master-mietitore-combat-panel');if(root)root.textContent='Errore lettura Mietitore: '+(error.message||'errore');}}
+ finally{masterMietitoreLoading=false;}
+}
+async function masterMietitoreToggle(floor,enabled){
+ if(masterMietitoreSaving)return;
+ masterMietitoreSaving=true;
+ try{
+  const {data,error}=await db.rpc('master_set_mietitore_enabled',{p_floor_id:floor,p_enabled:enabled});
+  if(error)throw error;if(!data?.ok)throw Error('Operazione non confermata');
+ }catch(error){alert('Modifica Mietitore non riuscita: '+(error.message||'errore'));console.error(error);}
+ finally{masterMietitoreSaving=false;masterMietitoreLastFetch=0;await masterMietitoreLoad(true);}
+}
+const masterV37SetTab=setMasterControlTab;
+setMasterControlTab=function(tab){
+ masterV37SetTab(tab);
+ if(tab==='events')void masterISecretsLoad(true);
+ if(tab==='combats')void masterMietitoreLoad(true);
+};
+window.addEventListener('DOMContentLoaded',()=>{
+ document.getElementById('master-events-refresh')?.addEventListener('click',()=>{masterISecretsLastFetch=0;void masterISecretsLoad(true);});
+ document.getElementById('master-combats-refresh')?.addEventListener('click',()=>{masterMietitoreLastFetch=0;void masterMietitoreLoad(true);});
+ window.setInterval(()=>{
+  if(masterIIsPaneActive('events')){masterIUpdateSecretTimers();void masterISecretsLoad();}
+  if(masterIIsPaneActive('combats'))void masterMietitoreLoad();
+ },1000);
+});

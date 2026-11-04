@@ -3156,3 +3156,28 @@
 .master-page-redesigned .master-piano-i-combat-card .master-piano-i-combat-position {font-size:11px;color:#ceb479;margin-bottom:5px;}
 .master-page-redesigned .master-piano-i-combat-card .master-piano-i-combat-in-progress {display:block;color:#f0bd79;margin:8px 0;}
 .master-page-redesigned .master-piano-i-combats-panel.is-saving {opacity:.65;pointer-events:none;}
+
+
+/* Master v37 — Eventi e Segreti del Piano I e Mietitore */
+.master-page-redesigned .master-piano-i-secrets-panel,
+.master-page-redesigned .master-mietitore-panel{border-top:1px solid rgba(185,151,90,.48);margin-top:24px;padding-top:19px;}
+.master-page-redesigned .master-piano-i-event-head h4,
+.master-page-redesigned .master-i-secret-group h5{margin:0 0 9px;font-size:1.06rem;letter-spacing:.065em;color:#e7d8ad;}
+.master-page-redesigned .master-piano-i-event-head p{margin:0 0 13px;font-size:.85rem;color:#c2b9ac;}
+.master-page-redesigned .master-i-secret-group{margin-top:22px;}
+.master-page-redesigned .master-i-secret-group h5{font-size:.86rem;border-bottom:1px solid #726042;padding-bottom:8px;}
+.master-page-redesigned .master-i-feedback,
+.master-page-redesigned .master-mietitore-feedback{font-size:12px;color:#b2e4be;min-height:16px;}
+.master-page-redesigned .master-i-feedback.is-error,
+.master-page-redesigned .master-mietitore-feedback.is-error{color:#ffaaa1;}
+.master-page-redesigned .master-i-secret-card,
+.master-page-redesigned .master-i-unique-card,
+.master-page-redesigned .master-mietitore-card{min-width:0;}
+.master-page-redesigned .master-i-secret-card .master-event-admin-title small,
+.master-page-redesigned .master-i-unique-card .master-event-admin-title small{line-height:1.35;}
+.master-page-redesigned .master-i-unique-card .master-event-admin-detail{overflow-wrap:anywhere;}
+.master-page-redesigned .master-i-secret-countdown{font-variant-numeric:tabular-nums;font-weight:700;color:#a5dba6;margin-top:6px;}
+.master-page-redesigned .master-i-readonly{font-size:.74rem;color:#d0c8b8;font-weight:800;letter-spacing:.035em;}
+.master-page-redesigned .master-mietitore-spawn{font-weight:700;color:#c7d9bd;}
+.master-page-redesigned .master-mietitore-observe{margin-top:6px;}
+@media(max-width:700px){.master-page-redesigned .master-i-secret-group .master-events-management-grid{grid-template-columns:minmax(0,1fr)}}
