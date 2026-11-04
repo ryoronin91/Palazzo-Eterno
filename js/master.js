@@ -11312,18 +11312,24 @@ function renderMasterPianoIOverviewMap() {
         marker(0,67,'←','state-active','Guardie del Varco · uscita verso il Villaggio Scagliagrigia');
     }
     // Le altre mappe restano immutate rispetto alla v24.
+    // Ic: stesso criterio di Ia. Solo incontri effettivamente disponibili
+    // o impegnati. Stanze vuote e slot in cooldown non hanno indicatori.
     if (config.key==='dungeon_Ic') {
         const slots=masterPianoICombatSlots.get('slots_Ic')||[];
         const rooms=masterPianoICombatRooms.get('rooms_Ic')||[];
-        rooms.filter(r=>r.enabled!==false).forEach(r=>{
-            const slot=slots.find(s=>Number(s.room_number)===Number(r.room_number)&&
-                s.status!=='available'&&s.status!=='idle');
-            if(!slot)return;
+        const roomsById=new Map(rooms.map(r=>[Number(r.room_number),r]));
+        for(const slot of slots){
+            if(slot.status!=='active' && slot.status!=='engaged')continue;
+            if(slot.room_number===null || slot.room_number===undefined)continue;
+            const room=roomsById.get(Number(slot.room_number));
+            if(!room || room.enabled===false)continue;
             const state=getMasterPianoICombatMarkerState(slot);
-            marker(r.token_x,r.token_y,'⚔',state.css,
-                `${slot.encounter_id||'Incontro'} · ${state.label}`,state.time,
+            const fighting=slot.status==='engaged' || Boolean(state.combat);
+            marker(room.token_x,room.token_y,'⚔',fighting?'state-live':'state-active',
+                `${slot.encounter_id} · ${fighting?'combattimento in corso':'incontro disponibile'} · Stanza ${room.room_number}`,
+                fighting?'':state.time,
                 state.combat?()=>openMasterCombat(state.combat.id):null);
-        });
+        }
     }
     // Ib: esclusivamente i due passaggi, senza icone per NPC o Arena.
     if (config.key==='dungeon_Ib') {
@@ -11333,10 +11339,12 @@ function renderMasterPianoIOverviewMap() {
     if (config.key==='dungeon_Ic') {
         const boss=(masterPianoIExtraStates.get('boss_Ic')||[])[0];
         const active=getActiveCombatForEncounter('ic_boss_tiki_preview');
-        const inCooldown=boss?.respawn_at && new Date(boss.respawn_at)>new Date();
-        marker(31,40,'👹',active?'state-live':inCooldown?'state-cooldown':'state-active',
-            'Boss Tiki',active?'':inCooldown?formatMasterCooldown(boss.respawn_at)||'':'',
-            active?()=>openMasterCombat(active.id):null);
+        const inCooldown=Boolean(boss?.respawn_at && new Date(boss.respawn_at)>new Date());
+        if(active || !inCooldown){
+            marker(31,40,'👹',active?'state-live':'state-active',
+                'Boss Tiki · '+(active?'combattimento in corso':'disponibile'),
+                '',active?()=>openMasterCombat(active.id):null);
+        }
         (masterPianoIExtraStates.get('braziers_Ic')||[]).forEach(b=>{
             marker(b.x,b.y,'◆','state-active','Braciere del Tempio · '+b.id);
         });
@@ -11361,8 +11369,8 @@ function renderMasterPianoIOverviewMap() {
             marker(c.x,c.y,'▣',ready?'state-active':'state-cooldown','Forziere della Giungla Bassa',ready?'':formatMasterCooldown(c.available_at)||'');});
     }
     if(config.key==='dungeon_Ic'){
-        (masterPianoIExtraStates.get('fruits_Ic')||[]).forEach(f=>addState(f.x,f.y,'●','Frutto Carnoso'));
-        (masterPianoIExtraStates.get('egg_Ic')||[]).forEach(e=>addState(e.x,e.y,'◇','Uovo smarrito'));
+        (masterPianoIExtraStates.get('fruits_Ic')||[]).forEach(f=>addState(f.x,f.y,'🍎','Frutto Carnoso'));
+        (masterPianoIExtraStates.get('egg_Ic')||[]).forEach(e=>addState(e.x,e.y,'🥚','Uovo smarrito'));
         addState(31,3,'➜','Varco verso il Tempio di Scintilla');
     }
     if(config.key==='dungeon_Id'){
