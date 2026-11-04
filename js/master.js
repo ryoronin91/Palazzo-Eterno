@@ -11828,3 +11828,222 @@ loadMasterServicesAdminPanel=async function(force=false){
 window.addEventListener('DOMContentLoaded',()=>{
     window.setInterval(()=>{if(masterServicesIsVisible())masterCampTick();},1000);
 });
+
+
+// ============================================================
+// MASTER v36 — Gestione combattimenti dei piani Ia, Ic e Id.
+// Non tocca gli incontri della Base e del vecchio Piano 1.
+// ============================================================
+let masterPianoICombatRows=[];
+let masterPianoICombatBusy=false;
+let masterPianoICombatSaving=false;
+let masterPianoICombatLastFetch=0;
+const masterPianoICombatIntervals=Object.freeze({dungeon_Ia:'GIUNGLA BASSA · Ia',dungeon_Ic:'GIUNGLA ALTA · Ic',dungeon_Id:'TEMPIO DI SCINTILLA · Id'});
+function masterPianoICombatNode(tag,cls,text){
+    const e=document.createElement(tag);
+    if(cls)e.className=cls;
+    if(text!==undefined)e.textContent=String(text);
+    return e;
+}
+function masterPianoICombatFeedback(message,bad=false){
+    const n=document.querySelector('#master-piano-i-combats-panel .master-piano-i-combat-feedback');
+    if(n){n.textContent=message||'';n.classList.toggle('is-error',bad);}
+}
+function masterPianoICombatFriendlyName(row){
+    if(row.kind==='boss')return row.name;
+    const id=String(row.encounter_id||'');
+    if(row.floor==='dungeon_Ia'){
+        const match=id.match(/^p1_(.+)_(\d+)$/);
+        if(match){
+            const family=match[1].replaceAll('_',' ');
+            return family.charAt(0).toUpperCase()+family.slice(1)+' · '+match[2];
+        }
+    }
+    if(row.floor==='dungeon_Ic'){
+        const match=id.match(/^ic_(.+)_(facile|medio|difficile)_(\d+)$/);
+        if(match){
+            const fam=match[1].replaceAll('_',' ');
+            return fam.charAt(0).toUpperCase()+fam.slice(1)+' · '+match[2]+' · '+match[3];
+        }
+    }
+    return row.name||id;
+}
+function masterPianoICombatState(row){
+    if(row.session_id || row.status==='engaged')return 'in_progress';
+    if(row.status==='cooldown')return 'cooldown';
+    return 'available';
+}
+function masterPianoICombatCard(row){
+    const state=masterPianoICombatState(row),name=masterPianoICombatFriendlyName(row);
+    const card=masterPianoICombatNode('article','master-combat-manage-card master-piano-i-combat-card state-'+state);
+    const head=masterPianoICombatNode('div','master-combat-card-header');
+    const identity=masterPianoICombatNode('div');
+    identity.append(masterPianoICombatNode('h4','',name),
+        masterPianoICombatNode('small','master-combat-id',row.encounter_id));
+    const pill=masterPianoICombatNode('span','master-combat-pill is-'+state,
+        state==='in_progress'?'IN CORSO':state==='cooldown'?'COOLDOWN':'DISPONIBILE');
+    head.append(identity,pill);card.appendChild(head);
+    const body=masterPianoICombatNode('div','master-combat-card-body');
+    if(row.room_number!=null){
+        body.appendChild(masterPianoICombatNode('div','master-piano-i-combat-position','Stanza '+row.room_number));
+    }
+    if(state==='in_progress'){
+        body.appendChild(masterPianoICombatNode('strong','master-piano-i-combat-in-progress',
+            'Combattimento in corso · comandi bloccati'));
+        if(row.session_id){
+            const line=masterPianoICombatNode('div','master-combat-session-header');
+            line.appendChild(masterPianoICombatNode('span','',
+                'Round '+(Number(row.session_round)||1)+' · '+(row.session_status==='waiting'?'In attesa':'In corso')));
+            const watch=masterPianoICombatNode('button','button master-combat-watch','OSSERVA');
+            watch.type='button';watch.addEventListener('click',()=>openMasterCombat(row.session_id));
+            line.appendChild(watch);body.appendChild(line);
+            const participants=Array.isArray(row.participants)?row.participants:[];
+            body.appendChild(masterPianoICombatNode('div','master-combat-help',
+                'Giocatori: '+(participants.map(p=>p.name).filter(Boolean).join(', ')||'Nessuno')));
+        }
+    } else {
+        const status=masterPianoICombatNode('div','master-combat-state-line');
+        status.append(masterPianoICombatNode('span','',state==='cooldown'?'Ricomparsa tra':'Stato attuale'),
+            masterPianoICombatNode('strong',state==='cooldown'?'is-cooldown':'',
+               state==='cooldown'?masterCombatPanelTimeLeft(row.cooldown_until):'PRONTO'));
+        if(state==='cooldown')status.lastChild.dataset.masterCombatDeadline=row.cooldown_until||'';
+        body.appendChild(status);
+        const line=masterPianoICombatNode('div','master-combat-slider-row');
+        line.appendChild(masterPianoICombatNode('span','master-combat-slider-label','ATTIVO'));
+        const slider=masterPianoICombatNode('input','master-combat-state-slider');
+        slider.type='range';slider.min='0';slider.max='1';slider.step='1';
+        slider.value=state==='cooldown'?'1':'0';
+        slider.setAttribute('aria-label','Stato incontro '+name);
+        line.append(slider,masterPianoICombatNode('span','master-combat-slider-label','COOLDOWN'));
+        body.appendChild(line);
+        const editor=masterPianoICombatNode('div','master-combat-editor');
+        const label=masterPianoICombatNode('label','master-combat-minutes-label','Cooldown (minuti)');
+        const minutes=masterPianoICombatNode('input','master-combat-minutes-input');
+        minutes.type='number';minutes.step='1';minutes.min='1';minutes.max='10080';
+        minutes.value=String(state==='cooldown' && Date.parse(row.cooldown_until)>Date.now()
+            ? Math.max(1,Math.ceil((Date.parse(row.cooldown_until)-Date.now())/60000))
+            : Number(row.suggested_cooldown_minutes)||5);
+        label.appendChild(minutes);
+        const btn=masterPianoICombatNode('button','button master-combat-apply');
+        btn.type='button';
+        const update=()=>{
+            const toCooldown=slider.value==='1';
+            label.hidden=!toCooldown;
+            const changed=(state==='cooldown')!==toCooldown;
+            editor.hidden=!changed && !toCooldown;
+            btn.hidden=!changed && !toCooldown;
+            btn.textContent=toCooldown?'IMPOSTA COOLDOWN':'RENDI DISPONIBILE';
+        };
+        slider.addEventListener('input',update);update();
+        btn.addEventListener('click',async()=>{
+            const time=slider.value==='1'?Number(minutes.value):0;
+            if(!Number.isSafeInteger(time)||time<0||time>10080||(slider.value==='1'&&time===0)){
+                masterPianoICombatFeedback('Inserisci una durata valida da 1 a 10080 minuti.',true);return;
+            }
+            if(!window.confirm(time===0
+                ?'Riattivare '+name+'? L’incontro verrà assegnato a una stanza libera (quando previsto).'
+                :'Impostare '+time+' minuti di cooldown per '+name+'?'))return;
+            await masterPianoICombatSubmit(row.encounter_id,time);
+        });
+        editor.append(label,btn);body.appendChild(editor);
+        body.appendChild(masterPianoICombatNode('div','master-combat-help',
+            row.kind==='slot'?'La rotazione automatica continua a gestire la posizione nelle stanze.'
+                               :'Il cooldown del boss viene aggiornato direttamente sul server.'));
+    }
+    card.appendChild(body);
+    return card;
+}
+function renderMasterPianoICombatPanel(){
+    const root=document.getElementById('master-piano-i-combats-panel');
+    if(!root)return;
+    // Non perdere il valore dello slider o del cooldown mentre il Master lo modifica.
+    if(root.contains(document.activeElement) &&
+       ['INPUT','BUTTON'].includes(document.activeElement?.tagName)){
+        masterCombatPanelUpdateCountdowns();
+        return;
+    }
+    const openGroups=new Set([...root.querySelectorAll('details[open]')].map(e=>e.dataset.floor));
+    root.replaceChildren();
+    const heading=masterPianoICombatNode('div','master-piano-i-combat-head');
+    heading.append(masterPianoICombatNode('h3','','PIANO I — GIUNGLA E TEMPIO'),
+        masterPianoICombatNode('p','',
+            'Incontri a rotazione e boss. Gli incontri già in combattimento non possono essere modificati.'));
+    root.appendChild(heading);
+    root.appendChild(masterPianoICombatNode('div','master-piano-i-combat-feedback'));
+    for(const floor of ['dungeon_Ia','dungeon_Ic','dungeon_Id']){
+        const rows=masterPianoICombatRows.filter(x=>x.floor===floor);
+        if(!rows.length)continue;
+        const group=masterPianoICombatNode('details','master-piano-i-combat-group');
+        group.dataset.floor=floor;
+        group.open=openGroups.size ? openGroups.has(floor) : floor==='dungeon_Ia';
+        const summary=masterPianoICombatNode('summary','',' '+masterPianoICombatIntervals[floor]);
+        const active=rows.filter(x=>masterPianoICombatState(x)==='available').length;
+        const running=rows.filter(x=>masterPianoICombatState(x)==='in_progress').length;
+        summary.appendChild(masterPianoICombatNode('small','',` ${active} disponibili · ${running} in corso · ${rows.length} totali`));
+        group.appendChild(summary);
+        const grid=masterPianoICombatNode('div','master-combat-manage-grid');
+        rows.forEach(x=>grid.appendChild(masterPianoICombatCard(x)));
+        group.appendChild(grid);root.appendChild(group);
+    }
+    masterCombatPanelUpdateCountdowns();
+}
+async function loadMasterPianoICombatPanel(force=false){
+    if(masterPianoICombatBusy||masterPianoICombatSaving)return;
+    if(!force && Date.now()-masterPianoICombatLastFetch<8000)return;
+    masterPianoICombatBusy=true;
+    try{
+        const {data,error}=await db.rpc('master_get_piano_i_combat_panel');
+        if(error)throw error;
+        if(!data?.ok||!Array.isArray(data.encounters))throw new Error('Dati incontri non validi');
+        masterPianoICombatRows=data.encounters;
+        masterPianoICombatLastFetch=Date.now();
+        renderMasterPianoICombatPanel();
+    }catch(error){
+        console.error('Gestione incontri Piano I:',error);
+        const root=document.getElementById('master-piano-i-combats-panel');
+        if(root && !masterPianoICombatRows.length)root.textContent='Incontri Piano I non disponibili: '+(error?.message||'errore');
+        else masterPianoICombatFeedback(error?.message||'Impossibile aggiornare il Piano I',true);
+    }finally{masterPianoICombatBusy=false;}
+}
+async function masterPianoICombatSubmit(id,minutes){
+    if(masterPianoICombatSaving)return;
+    masterPianoICombatSaving=true;
+    const root=document.getElementById('master-piano-i-combats-panel');
+    root?.classList.add('is-saving');
+    masterPianoICombatFeedback('Aggiornamento incontro...');
+    try{
+        const {data,error}=await db.rpc('master_manage_piano_i_combat',{
+            p_encounter_id:id,p_minutes:minutes
+        });
+        if(error)throw error;
+        if(!data?.ok)throw new Error('Salvataggio non confermato');
+        masterPianoICombatFeedback('Incontro aggiornato.');
+    }catch(error){
+        console.error('Gestione incontro Piano I:',error);
+        masterPianoICombatFeedback('Modifica non eseguita: '+(error?.message||'errore'),true);
+        return;
+    }finally{
+        masterPianoICombatSaving=false;
+        root?.classList.remove('is-saving');
+    }
+    masterPianoICombatLastFetch=0;
+    await loadMasterPianoICombatPanel(true);
+    if(typeof loadMasterPianoIOverviewData==='function')void loadMasterPianoIOverviewData(true);
+}
+const masterPianoICombatOldSetTab=setMasterControlTab;
+setMasterControlTab=function(tab){
+    masterPianoICombatOldSetTab(tab);
+    if(tab==='combats')void loadMasterPianoICombatPanel(true);
+};
+window.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('master-combats-refresh')?.addEventListener('click',()=>{
+        masterPianoICombatLastFetch=0;
+        void loadMasterPianoICombatPanel(true);
+    });
+    const timer=window.setInterval(()=>{
+        if(!masterCombatPanelVisible())return;
+        masterCombatPanelUpdateCountdowns();
+        if(!masterPianoICombatSaving)void loadMasterPianoICombatPanel();
+    },1000);
+    window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
+});

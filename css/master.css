@@ -3142,3 +3142,17 @@
  .master-page-redesigned #master-camp-panel .master-service-card-body {display:flex;flex-direction:column;}
  .master-page-redesigned #master-camp-panel .master-service-card-body>* {width:100%;box-sizing:border-box;}
 }
+
+/* Master v36 - incontri della Giungla Bassa, Alta e del Tempio */
+.master-page-redesigned .master-piano-i-combats-panel {border-top:1px solid rgba(182,150,85,.48);margin-top:22px;padding-top:20px;}
+.master-page-redesigned .master-piano-i-combat-head h3 {margin:0 0 5px;font-size:1.08rem;letter-spacing:.06em;}
+.master-page-redesigned .master-piano-i-combat-head p {margin:0 0 15px;color:#c2bbaf;font-size:.84rem;}
+.master-page-redesigned .master-piano-i-combat-feedback {min-height:16px;color:#a6e2b1;font-size:12px;margin-bottom:10px;}
+.master-page-redesigned .master-piano-i-combat-feedback.is-error {color:#ff9b95;}
+.master-page-redesigned .master-piano-i-combat-group {margin-bottom:13px;border:1px solid #66583b;border-radius:9px;background:rgba(14,16,16,.4);}
+.master-page-redesigned .master-piano-i-combat-group>summary {cursor:pointer;list-style-position:inside;padding:13px 14px;font-weight:800;color:#e8dbbd;background:rgba(110,85,39,.19);}
+.master-page-redesigned .master-piano-i-combat-group>summary small {font-size:11px;font-weight:500;color:#bfb8a4;margin-left:8px;}
+.master-page-redesigned .master-piano-i-combat-group>.master-combat-manage-grid {padding:13px;}
+.master-page-redesigned .master-piano-i-combat-card .master-piano-i-combat-position {font-size:11px;color:#ceb479;margin-bottom:5px;}
+.master-page-redesigned .master-piano-i-combat-card .master-piano-i-combat-in-progress {display:block;color:#f0bd79;margin:8px 0;}
+.master-page-redesigned .master-piano-i-combats-panel.is-saving {opacity:.65;pointer-events:none;}
