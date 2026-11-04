@@ -11378,8 +11378,15 @@ function renderMasterPianoIOverviewMap() {
                 'Boss Tiki · '+(active?'combattimento in corso':'disponibile'),
                 '',active?()=>openMasterCombat(active.id):null);
         }
+        // Stessa icona e stessi colori dell'accampamento di Ia.
+        // Il braciere 2 dipende dal cooldown del Boss Tiki, come nella
+        // RPC piano_ic_braziers_status; 1 e 3 usano active_until.
+        const tikiState=(masterPianoIExtraStates.get('boss_Ic')||[])[0];
         (masterPianoIExtraStates.get('braziers_Ic')||[]).forEach(b=>{
-            marker(b.x,b.y,'◆','state-active','Braciere del Tempio · '+b.id);
+            const until=Number(b.id)===2?tikiState?.respawn_at:b.active_until;
+            const active=Boolean(until && new Date(until).getTime()>Date.now());
+            marker(b.x,b.y,'🛠',active?'state-active':'state-inactive',
+                `Braciere del Tempio ${b.id} · ${active?'attivo':'disattivato'}`);
         });
     }
     if (config.key==='dungeon_Id') {
