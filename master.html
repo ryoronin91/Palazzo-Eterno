@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=23" rel="stylesheet"/>
+<link href="css/master.css?v=24" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -188,6 +188,12 @@
 <div class="master-control-body"><section class="master-control-pane is-active" data-master-control-pane="overview"><div class="master-overview-clean">
 <div class="master-overview-map-toolbar">
 <span class="master-overview-floor-name" id="master-overview-floor-name">PIANO 1</span>
+<div class="master-piano-i-zoom-controls" id="master-piano-i-zoom-controls" role="group" aria-label="Zoom mappa Piano I" hidden>
+<button type="button" id="master-piano-i-zoom-out" aria-label="Riduci zoom">−</button>
+<output id="master-piano-i-zoom-value">100%</output>
+<button type="button" id="master-piano-i-zoom-in" aria-label="Aumenta zoom">+</button>
+<button type="button" id="master-piano-i-zoom-reset" aria-label="Ripristina zoom">ADATTA</button>
+</div>
 <div aria-label="Cambia piano visualizzato" class="master-overview-slider" role="group">
 <button aria-label="Piano precedente" class="master-overview-slide-button" id="master-overview-prev" type="button">‹</button>
 <span aria-live="polite" class="master-overview-slide-count" id="master-overview-slide-count">1 / 6</span>
@@ -478,5 +484,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=23"></script>
+<script src="js/master.js?v=24"></script>
 </body></html>

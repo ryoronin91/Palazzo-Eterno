@@ -9924,11 +9924,8 @@ async function loadMasterPuzzacintaState() {
     };
 
     try {
-        const { data, error } = await db
-            .from('dungeon_rare_events')
-            .select('event_id, x, y, enabled, timezone, start_hours, duration_minutes')
-            .eq('event_id', 'puzzacinta_p1')
-            .maybeSingle();
+        const { data: controls, error } = await db.rpc('master_get_event_controls');
+        const data = controls?.puzzacinta || null;
         if (!error && data) {
             next.x = Number(data.x);
             next.y = Number(data.y);
@@ -11157,80 +11154,76 @@ let masterPianoILoading = false;
 let masterPianoILastLoaded = 0;
 
 async function loadMasterPianoIOverviewData(force=false) {
-    if (masterPianoILoading || (!force && Date.now()-masterPianoILastLoaded<3500)) return;
+    if (masterPianoILoading || (!force && Date.now()-masterPianoILastLoaded<5000)) return;
     masterPianoILoading=true;
     try {
-        const specs = [
-            ['dungeon_Ia','piano_ia_positions','character_id,x,y,is_active'],
-            ['dungeon_Ib','piano_ib_positions','character_id,x,y,is_active'],
-            ['dungeon_Ic','piano_ic_positions','character_id,x,y,is_active'],
-            ['dungeon_Id','piano_id_positions','character_id,x,y,is_active'],
-            ['rooms_Ia','p1_rotating_combat_rooms','room_number,token_x,token_y,enabled'],
-            ['rooms_Ic','piano_ic_combat_rooms','room_number,token_x,token_y,enabled'],
-            ['slots_Ia','p1_rotating_combat_slots','encounter_id,room_number,status,respawn_at,expires_at'],
-            ['slots_Ic','piano_ic_combat_slots','encounter_id,room_number,status,respawn_at,expires_at'],
-            ['braziers_Ic','piano_ic_braziers','id,x,y,active_until'],
-            ['boss_Ic','piano_ic_tiki_boss_state','id,respawn_at'],
-            ['boss_Id','piano_id_scintilla_cooldown','singleton,respawn_at']
-        ];
-        const settled=await Promise.all(specs.map(async ([key,table,fields])=>{
-            try {
-                const {data,error}=await db.from(table).select(fields);
-                if(error) throw error;
-                return [key,Array.isArray(data)?data:[]];
-            } catch(error){
-                console.warn('Master Piano I: impossibile leggere '+table,error);
-                return null;
-            }
-        }));
-        for (const entry of settled) {
-            if (!entry) continue;
-            const [key,rows]=entry;
-            if (key.startsWith('dungeon_I')) masterPianoIPositions.set(key,new Map(rows.map(r=>[r.character_id,r])));
-            else if (key.startsWith('rooms_')) masterPianoICombatRooms.set(key,rows);
-            else if (key.startsWith('slots_')) masterPianoICombatSlots.set(key,rows);
-            else masterPianoIExtraStates.set(key,rows);
+        // Funzione privilegiata che controlla user_roles.role='master'.
+        // Nessun GRANT SELECT indiscriminato sulle tabelle di gioco.
+        const {data,error}=await db.rpc('master_get_piano_i_overview');
+        if (error) throw error;
+        if (!data || typeof data!=='object') throw Error('Risposta Panoramica I non valida');
+        for (const [key,rows] of Object.entries(data)) {
+            const list=Array.isArray(rows)?rows:[];
+            if (key.startsWith('dungeon_I')) masterPianoIPositions.set(key,new Map(list.map(r=>[r.character_id,r])));
+            else if (key.startsWith('rooms_')) masterPianoICombatRooms.set(key,list);
+            else if (key.startsWith('slots_')) masterPianoICombatSlots.set(key,list);
+            else masterPianoIExtraStates.set(key,list);
         }
         masterPianoILastLoaded=Date.now();
+    } catch(error){
+        console.warn('Master Piano I: lettura protetta non riuscita',error);
     } finally {
         masterPianoILoading=false;
-        if (MASTER_PIANO_I_FLOORS[masterOverviewFloor] &&
-            document.querySelector('[data-master-control-pane="overview"].is-active')) {
-            renderMasterOverviewMap();
-        }
+        if(MASTER_PIANO_I_FLOORS[masterOverviewFloor] &&
+           document.querySelector('[data-master-control-pane="overview"].is-active'))renderMasterOverviewMap();
     }
 }
 
+let masterPianoIZoom=1;
+const MASTER_PIANO_I_ZOOM_LEVELS=[1,1.5,2,3,4];
+function masterPianoIZoomUpdate(){
+    const text=document.getElementById('master-piano-i-zoom-value');
+    if(text)text.textContent=Math.round(masterPianoIZoom*100)+'%';
+    const panel=document.getElementById('master-piano-i-zoom-controls');
+    if(panel)panel.hidden=!MASTER_PIANO_I_FLOORS[masterOverviewFloor];
+}
+function masterPianoISetZoom(next){
+    masterPianoIZoom=Math.max(1,Math.min(4,Number(next)||1));
+    masterPianoIZoomUpdate();
+    renderMasterOverviewMap();
+}
 function getMasterPianoIVisualStage(config,image,container) {
-    let tiles=container.querySelector('.master-overview-piano-i-mosaic');
-    if (!config.tiles) {
-        if (tiles) tiles.remove();
-        image.style.display='block';
-        image.alt=config.imageAlt;
-        if(image.getAttribute('src')!==config.image) image.setAttribute('src',config.image);
-        if(!image.complete || !image.naturalWidth) return null;
+    // La mappa e TUTTI gli indicatori condividono lo stesso livello scorrevole.
+    let layer=container.querySelector(':scope > .master-piano-i-zoom-stage');
+    if(!layer){
+        layer=document.createElement('div');layer.className='master-piano-i-zoom-stage';
+        container.appendChild(layer);
+    }
+    if(image.parentNode!==layer)layer.prepend(image);
+    const cw=container.clientWidth-2,ch=container.clientHeight-2;
+    if(cw<=0||ch<=0)return null;
+    const ratio=config.columns/config.rows;
+    const fitW=Math.min(cw,ch*ratio),fitH=fitW/ratio;
+    layer.style.width=fitW*masterPianoIZoom+'px';
+    layer.style.height=fitH*masterPianoIZoom+'px';
+    let tiles=layer.querySelector('.master-overview-piano-i-mosaic');
+    if(!config.tiles){
+        tiles?.remove();image.style.display='block';image.alt=config.imageAlt;
+        if(image.getAttribute('src')!==config.image)image.setAttribute('src',config.image);
         return image;
     }
     image.style.display='none';
-    if (!tiles) {
-        tiles=document.createElement('div');
-        tiles.className='master-overview-piano-i-mosaic';
-        tiles.setAttribute('role','img');
-        container.prepend(tiles);
-    }
+    if(!tiles){tiles=document.createElement('div');tiles.className='master-overview-piano-i-mosaic';layer.appendChild(tiles);}
     tiles.setAttribute('aria-label',config.imageAlt);
     const id=String(config.tiles);
-    if (tiles.dataset.floor!==id) {
-        tiles.dataset.floor=id;
-        tiles.replaceChildren();
+    if(tiles.dataset.floor!==id){
+        tiles.dataset.floor=id;tiles.replaceChildren();
         for(let n=1;n<=9;n++){
-            const img=document.createElement('img');
-            img.alt=''; img.draggable=false;
+            const img=document.createElement('img');img.alt='';img.draggable=false;
             img.src=`dungeon/piano-I/immagini/piano-${id}-${String(n).padStart(2,'0')}.png`;
             tiles.appendChild(img);
         }
     }
-    tiles.style.aspectRatio=config.columns+' / '+config.rows;
     return tiles;
 }
 
@@ -11247,26 +11240,28 @@ function getMasterPianoICombatMarkerState(slot) {
 function renderMasterPianoIOverviewMap() {
     const config=getMasterOverviewFloorConfig();
     const image=document.getElementById('master-overview-map-image');
-    const container=document.getElementById('master-overview-map');
-    if (!image || !container) return;
+    const viewport=document.getElementById('master-overview-map');
+    const container=viewport?.querySelector('.master-piano-i-zoom-stage')||viewport;
+    if (!image || !viewport) return;
+    const stage=getMasterPianoIVisualStage(config,image,viewport);
+    if(!stage)return;
+    const markerLayer=viewport.querySelector('.master-piano-i-zoom-stage');
     setText('master-overview-floor-name',config.title);
     setText('master-overview-slide-count',`${config.index} / ${config.total}`);
     clearMasterOverviewMarkers();
-    const stage=getMasterPianoIVisualStage(config,image,container);
-    if (!stage) return;
     const mapRect=stage.getBoundingClientRect();
-    const containerRect=container.getBoundingClientRect();
+    const containerRect=markerLayer.getBoundingClientRect();
     if (!mapRect.width || !mapRect.height) return;
     const stepX=mapRect.width/config.columns,stepY=mapRect.height/config.rows;
-    const iconSize=Math.max(10,Math.min(stepX,stepY)*0.68);
-    const tokenSize=Math.max(10,Math.min(stepX,stepY)*0.93);
+    const iconSize=Math.max(13,Math.min(stepX,stepY)*0.85);
+    const tokenSize=Math.max(15,Math.min(stepX,stepY)*0.98);
     const offX=mapRect.left-containerRect.left,offY=mapRect.top-containerRect.top;
     function place(node,x,y,size){
         x=Number(x);y=Number(y);
         if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>=config.columns||y>=config.rows)return;
         node.style.width=`${size}px`;node.style.minWidth=`${size}px`;node.style.height=`${size}px`;
         node.style.left=`${offX+(x+.5)*stepX}px`;node.style.top=`${offY+(y+.5)*stepY}px`;
-        container.appendChild(node);
+        markerLayer.appendChild(node);
     }
     function marker(x,y,glyph,css,title,time='',action=null){
         const el=document.createElement('div');el.className=`master-overview-marker ${css}`;
@@ -11293,7 +11288,8 @@ function renderMasterPianoIOverviewMap() {
         });
     }
     if (config.key==='dungeon_Ia') {
-        marker(29,35,'⛺','state-active','Accampamento della Giungla Bassa');
+        const camp=(masterPianoIExtraStates.get('camp_Ia')||[])[0];
+        marker(29,35,'⛺',camp?.active?'state-active':'state-building',camp?.active?'Accampamento attivo':'Accampamento da costruire');
     }
     if (config.key==='dungeon_Ib') {
         marker(7,4,'◆','state-active','Capanna dell’Anziano Scagliagrigia');
@@ -11321,8 +11317,47 @@ function renderMasterPianoIOverviewMap() {
             'Scintilla · Guardiano del Tempio',inCooldown?formatMasterCooldown(boss.respawn_at)||'':'',
             active?()=>openMasterCombat(active.id):null);
         marker(33,29,'◆','state-active','Puzzacinta · Viandante del Tempio');
-        marker(33,16,'◆','state-active','Barriera del mosaico');
     }
+    // Oggetti ambientali verificati e stati condivisi dei quattro sottopiani.
+    const first=(key)=> (masterPianoIExtraStates.get(key)||[])[0]||{};
+    const addState=(x,y,glyph,label,enabled=true)=>marker(x,y,glyph,enabled?'state-active':'state-inactive',label);
+    if(config.key==='dungeon_Ia'){
+        const camp=first('camp_Ia');
+        // Sostituisce l'indicatore fisso del campo con il suo stato reale.
+        const chests=masterPianoIExtraStates.get('chests_Ia')||[];
+        chests.forEach(c=>{const ready=!c.collected_at||new Date(c.available_at)<=new Date();
+            marker(c.x,c.y,'▣',ready?'state-active':'state-cooldown','Forziere della Giungla Bassa',ready?'':formatMasterCooldown(c.available_at)||'');});
+    }
+    if(config.key==='dungeon_Ib'){
+        [[7,4,'♛','Anziano Scagliagrigia'],[4,9,'◆','Mercante Scagliagrigia'],
+         [9,15,'♥','Guardiana della Covata / Nidi'],[14,5,'✦','Sciamano Scagliagrigia'],
+         [15,10,'⚔','Campione Scagliagrigia / Arena'],[10,0,'➜','Varco verso Giungla Alta']]
+         .forEach(([x,y,glyph,label])=>addState(x,y,glyph,label));
+    }
+    if(config.key==='dungeon_Ic'){
+        (masterPianoIExtraStates.get('fruits_Ic')||[]).forEach(f=>addState(f.x,f.y,'●','Frutto Carnoso'));
+        (masterPianoIExtraStates.get('egg_Ic')||[]).forEach(e=>addState(e.x,e.y,'◇','Uovo smarrito'));
+        addState(31,3,'➜','Varco verso il Tempio di Scintilla');
+    }
+    if(config.key==='dungeon_Id'){
+        const mosaic=first('mosaic_Id'),plat=first('plat_Id');
+        const says1=first('says1_Id'),says2=first('says2_Id');
+        addState(6,10,'◇','Pezzo di mosaico 1',!mosaic.piece1);
+        addState(59,10,'◇','Pezzo di mosaico 2',!mosaic.piece2);
+        addState(8,11,'◆','Percorso pedane A',!plat.completed);
+        addState(5,12,'◆','Percorso pedane B',!plat.second_completed);
+        addState(61,11,'✦','Totem Simon 1',!says1.completed);
+        addState(58,11,'✦','Totem Simon 2',!says2.completed);
+        addState(33,16,'◇','Sigillo del mosaico',!mosaic.solved);
+    }
+    (masterPianoIExtraStates.get('rare_bosses')||[]).filter(b=>b.floor_id===config.key&&
+        (b.status==='active'||b.status==='engaged')&&(!b.expires_at||new Date(b.expires_at)>new Date()))
+        .forEach(b=>{
+            const live=b.combat_id?activeMasterCombats.get(b.combat_id):null;
+            marker(b.x,b.y,'☠',b.status==='engaged'?'state-live':'state-active',
+                `Boss raro ${b.encounter_id} · ${b.status}`,b.expires_at?formatMasterCooldown(b.expires_at)||'':'',
+                live?()=>openMasterCombat(live.id):null);
+        });
     // I personaggi usano la posizione ESATTA della tabella del sottopiano.
     // Non riutilizziamo dungeon_x/dungeon_y: appartengono al Dungeon principale.
     const positions=masterPianoIPositions.get(config.key)||new Map();
@@ -11356,8 +11391,9 @@ renderMasterOverviewMap=function(){
         void loadMasterPianoIOverviewData();
     } else {
         const image=document.getElementById('master-overview-map-image');
-        const mosaic=document.querySelector('#master-overview-map .master-overview-piano-i-mosaic');
-        mosaic?.remove();
+        const viewport=document.getElementById('master-overview-map');
+        const stage=viewport?.querySelector('.master-piano-i-zoom-stage');
+        if(stage){ if(image)viewport.prepend(image);stage.remove(); }
         if(image)image.style.display='block';
         masterOriginalOverviewRendererV23();
     }
@@ -11365,6 +11401,7 @@ renderMasterOverviewMap=function(){
 const masterOriginalOverviewSetFloorV23=setMasterOverviewFloor;
 setMasterOverviewFloor=function(floor){
     masterOriginalOverviewSetFloorV23(floor);
+    masterPianoIZoom=1; masterPianoIZoomUpdate();
     if(MASTER_PIANO_I_FLOORS[floor])void loadMasterPianoIOverviewData(true);
 };
 window.addEventListener('DOMContentLoaded',()=>{
@@ -11375,4 +11412,18 @@ window.addEventListener('DOMContentLoaded',()=>{
             void loadMasterPianoIOverviewData();
         }
     },4000);
+});
+
+// Master v24 — controlli di zoom della panoramica Piano I.
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('master-piano-i-zoom-in')?.addEventListener('click',()=>masterPianoISetZoom(masterPianoIZoom<4?masterPianoIZoom+.5:4));
+  document.getElementById('master-piano-i-zoom-out')?.addEventListener('click',()=>masterPianoISetZoom(masterPianoIZoom>.5?masterPianoIZoom-.5:1));
+  document.getElementById('master-piano-i-zoom-reset')?.addEventListener('click',()=>masterPianoISetZoom(1));
+  const viewport=document.getElementById('master-overview-map');
+  viewport?.addEventListener('wheel',event=>{
+    if(!MASTER_PIANO_I_FLOORS[masterOverviewFloor]||!(event.ctrlKey||event.metaKey))return;
+    event.preventDefault();masterPianoISetZoom(masterPianoIZoom+(event.deltaY<0?.5:-.5));
+  },{passive:false});
+  window.addEventListener('resize',()=>{if(MASTER_PIANO_I_FLOORS[masterOverviewFloor])renderMasterOverviewMap();});
+  masterPianoIZoomUpdate();
 });

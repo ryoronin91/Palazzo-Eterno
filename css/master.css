@@ -3021,3 +3021,26 @@
     display: block; width: 100%; height: 100%; max-width: none; max-height: none;
     min-width: 0; min-height: 0; object-fit: fill; flex: initial;
 }
+
+/* Master v24 — zoom e navigazione panoramica Piano I */
+.master-piano-i-zoom-controls {display:flex;align-items:center;gap:5px;flex-wrap:nowrap;}
+.master-piano-i-zoom-controls[hidden] {display:none!important;}
+.master-piano-i-zoom-controls button {min-height:30px;padding:3px 8px;color:#edcf94;border:1px solid #755c36;border-radius:6px;background:#252320;cursor:pointer;font-weight:700;}
+.master-piano-i-zoom-controls output {font-size:.72rem;min-width:42px;text-align:center;color:#f0d8ad;}
+.master-page-redesigned .master-overview-clean > .master-overview-map:has(.master-piano-i-zoom-stage) {
+    overflow:auto;display:block;scrollbar-width:thin;scrollbar-color:#846338 #191817;
+}
+.master-page-redesigned .master-overview-clean .master-overview-map .master-piano-i-zoom-stage {
+    position:relative;flex:none;margin:auto;max-width:none;max-height:none;
+}
+.master-page-redesigned .master-overview-clean .master-overview-map .master-piano-i-zoom-stage > #master-overview-map-image {
+    display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:fill;
+}
+.master-page-redesigned .master-overview-clean .master-overview-map .master-piano-i-zoom-stage > #master-overview-map-image[style*="display: none"] {display:none!important;}
+.master-page-redesigned .master-overview-clean .master-overview-map .master-piano-i-zoom-stage > .master-overview-piano-i-mosaic {
+    width:100%;height:100%;max-width:none;max-height:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));
+}
+.master-page-redesigned .master-overview-clean .master-overview-map .master-piano-i-zoom-stage > .master-overview-piano-i-mosaic img {width:100%;height:100%;max-width:none;max-height:none;}
+.master-piano-i-zoom-stage .master-overview-marker {min-width:13px;min-height:13px;}
+.master-piano-i-zoom-stage .master-overview-marker .icon {font-size:clamp(10px,1.5vw,16px);}
+@media (max-width:780px){.master-overview-map-toolbar{flex-wrap:wrap}.master-piano-i-zoom-controls button{font-size:.69rem;padding:3px 6px}}
