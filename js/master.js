@@ -11633,3 +11633,198 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.setInterval(updateMasterClockCountdown,1000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&masterOverviewFloor==='orologio')void loadMasterPianoIOverviewData(true);});
 });
+
+
+// ============================================================
+// MASTER v35 — ACCAMPAMENTO Ia, PANNELLO VENDOR / SERVIZI
+// Letture e scritture solo tramite RPC con autorizzazione Master.
+// Rispetta il combustibile reale: 1 Legname = 3 minuti.
+// ============================================================
+let masterCampAdminState=null;
+let masterCampAdminLoading=false;
+let masterCampAdminActionBusy=false;
+let masterCampAdminLastFetch=0;
+let masterCampAdminLastSignature='';
+
+function masterCampPanelNode(tag,cl='',value){
+    const e=masterServiceElement(tag,cl,value);
+    return e;
+}
+function masterCampPanelMessage(text,error=false){
+    masterServicesNotify(text,error);
+}
+function masterCampPanelRemaining(until){
+    if(!until)return 'INATTIVO';
+    const delta=Math.max(0,Math.ceil((Date.parse(until)-Date.now())/1000));
+    if(!Number.isFinite(delta))return 'N/D';
+    const h=Math.floor(delta/3600),m=Math.floor(delta%3600/60),s=delta%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function masterCampTick(){
+    const node=document.getElementById('master-camp-countdown');
+    if(node&&masterCampAdminState){
+        node.textContent=masterCampAdminState.active?masterCampPanelRemaining(masterCampAdminState.active_until):'INATTIVO';
+    }
+}
+async function loadMasterCampAdminPanel(force=false){
+    if(!masterServicesIsVisible()||masterCampAdminLoading||masterCampAdminActionBusy)return;
+    if(!force&&Date.now()-masterCampAdminLastFetch<12000)return;
+    masterCampAdminLoading=true;
+    try{
+        const {data,error}=await db.rpc('master_get_p1_camp_state');
+        if(error)throw error;
+        if(!data?.ok||!Array.isArray(data.requirements))throw new Error('Risposta camp non valida');
+        masterCampAdminState=data;
+        masterCampAdminLastFetch=Date.now();
+        renderMasterCampAdminPanel(force);
+    }catch(err){
+        console.error('Master: accampamento Ia',err);
+        const parent=document.getElementById('master-camp-panel');
+        if(parent&&!masterCampAdminState)parent.textContent='Accampamento Ia non disponibile: '+(err?.message||'errore');
+        masterCampPanelMessage('Accampamento Ia: '+(err?.message||'errore di caricamento'),true);
+    }finally{masterCampAdminLoading=false;}
+}
+async function masterCampAdminSubmit(action,itemId=null,quantity=null){
+    if(masterCampAdminActionBusy)return;
+    masterCampAdminActionBusy=true;
+    const wrapper=document.getElementById('master-camp-panel');
+    wrapper?.classList.add('is-saving');
+    masterCampPanelMessage('Aggiornamento accampamento...');
+    try{
+        const {data,error}=await db.rpc('master_manage_p1_camp',{
+            p_action:action,p_item_id:itemId,p_delta:quantity
+        });
+        if(error)throw error;
+        if(!data?.ok)throw new Error('Il server non ha confermato l’operazione');
+        masterCampAdminState=data;
+        masterCampAdminLastSignature='';
+        masterCampAdminLastFetch=Date.now();
+        renderMasterCampAdminPanel(true);
+        masterCampPanelMessage('Accampamento Ia aggiornato.');
+        if(typeof loadMasterPianoIOverviewData==='function')void loadMasterPianoIOverviewData(true);
+    }catch(err){
+        console.error('Master: modifica accampamento',err);
+        masterCampPanelMessage('Modifica non salvata: '+(err?.message||'errore sconosciuto'),true);
+    }finally{
+        masterCampAdminActionBusy=false;
+        wrapper?.classList.remove('is-saving');
+    }
+}
+function renderMasterCampAdminPanel(force=false){
+    const root=document.getElementById('master-camp-panel');
+    const state=masterCampAdminState;
+    if(!root||!state)return;
+    const signature=JSON.stringify(state);
+    if(!force&&signature===masterCampAdminLastSignature){masterCampTick();return;}
+    if(!force&&root.contains(document.activeElement))return;
+    masterCampAdminLastSignature=signature;
+    root.replaceChildren();
+    const active=state.active===true;
+    const card=masterCampPanelNode('article',`master-service-card master-camp-card is-${active?'active':'unbuilt'}`);
+    const header=masterCampPanelNode('div','master-service-card-head');
+    const identity=masterCampPanelNode('div','master-service-identity');
+    const headline=masterCampPanelNode('div','master-service-headline');
+    headline.append(masterCampPanelNode('h3','master-service-name','⛺ Accampamento · Piano Ia'),
+                    masterCampPanelNode('span','master-service-level','X29 Y35'));
+    identity.append(headline,masterCampPanelNode('span',`master-service-state-label is-${active?'active':'unbuilt'}`,active?'ACTIVE · ATTIVO':'UNBUILT · DA COSTRUIRE'));
+    const sliderBox=masterCampPanelNode('div','master-service-state-controls');
+    const sliderCaption=masterCampPanelNode('label','master-service-slider-caption','Stato accampamento');
+    const slider=masterCampPanelNode('input','master-service-state-slider');
+    slider.id='master-camp-admin-slider';sliderCaption.htmlFor=slider.id;
+    slider.type='range';slider.min='0';slider.max='1';slider.step='1';slider.value=active?'1':'0';
+    slider.setAttribute('aria-label','Accampamento: UNBUILT o ACTIVE');
+    const sliderLabels=masterCampPanelNode('div','master-service-slider-labels');
+    sliderLabels.append(masterCampPanelNode('span','','UNBUILT'),masterCampPanelNode('span','','ACTIVE'));
+    slider.addEventListener('change',async()=>{
+        const makeActive=slider.value==='1';
+        slider.value=active?'1':'0';
+        if(makeActive===active)return;
+        const text=makeActive
+           ?'Attivare ora l’accampamento? I requisiti saranno impostati come completati e partirà con 20 unità di combustibile (60 minuti). Nessun inventario verrà modificato.'
+           :'Disattivare l’accampamento? Il combustibile e tutti i contributi di costruzione verranno azzerati, come quando il campo si esaurisce.';
+        if(!window.confirm(text))return;
+        await masterCampAdminSubmit(makeActive?'set_active':'set_unbuilt');
+    });
+    sliderBox.append(sliderCaption,slider,sliderLabels);
+    header.append(identity,sliderBox);card.appendChild(header);
+
+    const body=masterCampPanelNode('div','master-service-card-body');
+    const timeBox=masterCampPanelNode('div',`master-service-time-box is-${active?'active':'unbuilt'}`);
+    timeBox.append(masterCampPanelNode('span','master-service-time-caption','RESTERÀ ATTIVO PER'),
+        masterCampPanelNode('strong','master-service-time-value',active?masterCampPanelRemaining(state.active_until):'INATTIVO'));
+    timeBox.lastChild.id='master-camp-countdown';
+    body.appendChild(timeBox);
+    body.appendChild(masterCampPanelNode('div','master-service-note',
+       active?`Combustibile residuo: ${state.fuel} unità di Legname · ogni unità dura 3 minuti.`
+             :'Costruzione: 20 Legname, 5 Pelle di Dinosauro, 5 Piroblasti. Al completamento parte automaticamente per 60 minuti.'));
+
+    const requirements=masterCampPanelNode('div','master-service-requirements');
+    requirements.appendChild(masterCampPanelNode('div','master-service-requirements-title','REQUISITI DI COSTRUZIONE'));
+    for(const req of state.requirements){
+        const needed=Number(req.needed)||0;
+        const contributed=Number(req.contributed)||0;
+        const line=masterCampPanelNode('div','master-service-resource-row');
+        const title=masterCampPanelNode('div','master-service-resource-heading');
+        title.append(masterCampPanelNode('span','master-service-resource-name',req.item_name||req.item_id),
+                     masterCampPanelNode('span','master-service-resource-count',`${contributed} / ${needed}`));
+        const progress=masterCampPanelNode('progress','master-service-resource-progress');
+        progress.max=Math.max(1,needed);progress.value=Math.min(needed,contributed);
+        line.append(title,progress);
+        if(!active){
+            const controls=masterCampPanelNode('div','master-service-resource-controls');
+            const amount=masterCampPanelNode('input','master-service-resource-amount');
+            amount.type='number';amount.min='1';amount.max='1000';amount.step='1';amount.value='1';
+            amount.setAttribute('aria-label','Quantità '+(req.item_name||req.item_id));
+            controls.appendChild(amount);
+            for(const sign of [-1,1]){
+                const btn=masterCampPanelNode('button','button secondary master-service-quantity-button',sign<0?'− TOGLI':'+ AGGIUNGI');
+                btn.type='button';btn.disabled=sign<0?contributed<=0:contributed>=needed;
+                btn.addEventListener('click',async()=>{
+                    const n=Number(amount.value);
+                    if(!Number.isSafeInteger(n)||n<1||n>1000){masterCampPanelMessage('Indica una quantità intera tra 1 e 1000.',true);return;}
+                    const updated=contributed+sign*n;
+                    if(updated<0||updated>needed){masterCampPanelMessage(`Il contributo deve restare tra 0 e ${needed}.`,true);return;}
+                    if(!window.confirm(`${sign<0?'Togliere':'Aggiungere'} ${n} ${req.item_name||req.item_id} al progresso dell’accampamento?\nNessun inventario verrà modificato.`))return;
+                    await masterCampAdminSubmit('adjust_construction',req.item_id,sign*n);
+                });
+                controls.appendChild(btn);
+            }
+            line.appendChild(controls);
+        }
+        requirements.appendChild(line);
+    }
+    body.appendChild(requirements);
+
+    if(active){
+        const extension=masterCampPanelNode('div','master-service-gold-box');
+        extension.append(masterCampPanelNode('strong','master-service-gold-heading','ESTENDI LA DURATA CON LEGNAME'),
+            masterCampPanelNode('small','master-service-muted','1 Legname = +3 minuti · accredito amministrativo, senza usare gli inventari dei personaggi.'));
+        const controls=masterCampPanelNode('div','master-service-gold-controls');
+        const amount=masterCampPanelNode('input','master-service-gold-input');
+        amount.type='number';amount.min='1';amount.max='1000';amount.step='1';amount.value='20';
+        amount.setAttribute('aria-label','Unità di Legname da accreditare');
+        const btn=masterCampPanelNode('button','button master-service-gold-add','+ AGGIUNGI LEGNAME');
+        btn.type='button';
+        btn.addEventListener('click',async()=>{
+            const n=Number(amount.value);
+            if(!Number.isSafeInteger(n)||n<1||n>1000){masterCampPanelMessage('Indica da 1 a 1000 unità di Legname.',true);return;}
+            if(!window.confirm(`Accreditare ${n} Legname e prolungare la durata del campo di ${n*3} minuti?\nNon verrà consumato Legname dei giocatori.`))return;
+            await masterCampAdminSubmit('extend_fuel',null,n);
+        });
+        controls.append(amount,btn);extension.appendChild(controls);body.appendChild(extension);
+    }
+    card.appendChild(body);root.appendChild(card);masterCampTick();
+}
+
+// L'integrazione usa il refresh già presente nella scheda Vendor / Servizi,
+// senza modificare le RPC della Base o i servizi esistenti.
+const masterCampPreviousServicesLoader=loadMasterServicesAdminPanel;
+loadMasterServicesAdminPanel=async function(force=false){
+    await Promise.all([
+        masterCampPreviousServicesLoader(force),
+        loadMasterCampAdminPanel(force)
+    ]);
+};
+window.addEventListener('DOMContentLoaded',()=>{
+    window.setInterval(()=>{if(masterServicesIsVisible())masterCampTick();},1000);
+});

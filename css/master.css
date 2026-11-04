@@ -3128,3 +3128,17 @@
 .master-page-redesigned .master-overview-map .master-overview-marker.master-marker-puzzacinta .master-marker-puzzacinta-image {
   display:block;width:100%;height:100%;object-fit:contain;
 }
+
+/* Master v35 — Accampamento Ia nel pannello Vendor / Servizi. */
+.master-page-redesigned #master-camp-panel {margin:0 0 16px;min-width:0;}
+.master-page-redesigned #master-camp-panel .master-camp-card {max-width:100%;}
+.master-page-redesigned #master-camp-panel .master-service-card-body {
+    display:grid; grid-template-columns: minmax(210px,0.72fr) minmax(280px,1.28fr);align-items:start;gap:14px;
+}
+.master-page-redesigned #master-camp-panel .master-service-requirements {grid-column:2;grid-row:1 / span 3;}
+.master-page-redesigned #master-camp-panel .master-service-gold-box {grid-column:1 / -1;}
+.master-page-redesigned #master-camp-panel.is-saving {opacity:.6;pointer-events:none;}
+@media(max-width:850px){
+ .master-page-redesigned #master-camp-panel .master-service-card-body {display:flex;flex-direction:column;}
+ .master-page-redesigned #master-camp-panel .master-service-card-body>* {width:100%;box-sizing:border-box;}
+}
