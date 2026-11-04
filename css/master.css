@@ -3078,3 +3078,29 @@
   z-index: 0;
   pointer-events: none;
 }
+
+/* V30 - Forzieri esplicitamente dorati e separati dalle spade */
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-chest.state-active > .icon {
+  background: #8b5220;
+  border: 2px solid #ffda75;
+  box-shadow: 0 0 0 2px rgba(27,16,5,.9),0 2px 9px rgba(0,0,0,.9);
+  filter: none;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-chest.state-cooldown > .icon {
+  background: #434343;
+  border-color: #999;
+  filter: grayscale(1);
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-chest .icon svg {
+  width: 80%;height: 80%;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-combat .icon svg {
+  width: 80%;height: 80%;stroke-width: 1.8;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-egg.state-active > .icon {
+  background: #986e2d;
+  border: 2px solid #ffe1a2;
+}
+.master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-egg svg {
+  fill: #fff1cc;stroke: #845a25;
+}

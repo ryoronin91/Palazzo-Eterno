@@ -11274,8 +11274,10 @@ function renderMasterPianoIOverviewMap() {
         // SVG per i pittogrammi: niente caratteri ⚔/▣ che possono essere
         // visualizzati come quadratini dai font installati sul computer.
         const pictograms={
-            combat:'<path d="M4 3l6 6m4 4 7 7m-5 1 5-5M20 3l-6 6m-4 4-7 7m5 1-5-5"/><path d="M3 3l3 0 4 4-3 3-4-4zM21 3h-3l-4 4 3 3 4-4z"/>',
-            chest:'<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M3 13h18M6 9V6a6 6 0 0 1 12 0v3M11 9v12"/>',
+            combat:'<path d="M4 2 L18 16 M15 19 L21 13 M2 4 L16 18 M13 21 L19 15"/><path d="M20 2 L6 16 M9 19 L3 13 M22 4 L8 18 M11 21 L5 15"/><path d="M2 2 L6 3 L3 6 Z M22 2 L18 3 L21 6 Z"/>',
+            // Forziere stilizzato: coperchio bombato, corpo e fasce metalliche.
+            // L'icona precedente aveva un arco superiore che sembrava un lucchetto.
+            chest:'<path d="M3 10V8C3 3 7 2 12 2s9 1 9 6v2Z" fill="#dfaa42" stroke="#fff2cb"/><rect x="2" y="10" width="20" height="12" rx="2" fill="#865020" stroke="#fff2cb"/><path d="M6 10V22M18 10V22" stroke="#ffd36b" stroke-width="3"/><rect x="10" y="11" width="4" height="7" rx="1" fill="#ffdf7d" stroke="#fff2cb"/>',
             apple:'<path d="M12 8c-4-5-10-3-10 4 0 5 3 10 7 10 2 0 2-1 3-1s1 1 3 1c4 0 7-5 7-10 0-7-6-9-10-4Z"/><path d="M12 8c-1-3 0-5 3-6M12 7c3-4 6-4 8-3"/>',
             egg:'<path d="M12 2c-5 0-9 8-9 13a9 9 0 0 0 18 0c0-5-4-13-9-13Z"/>'
         };
@@ -11291,6 +11293,9 @@ function renderMasterPianoIOverviewMap() {
             svg.setAttribute('stroke-linejoin','round');
             svg.innerHTML=pictograms[iconType];ic.appendChild(svg);
             if(iconType==='apple'){ic.classList.add('is-fruit');el.title='🍎 '+el.title;}
+            if(iconType==='chest'){ic.classList.add('is-chest');el.classList.add('master-marker-chest');}
+            if(iconType==='combat'){ic.classList.add('is-combat');el.classList.add('master-marker-combat');}
+            if(iconType==='egg'){ic.classList.add('is-egg');el.classList.add('master-marker-egg');}
         } else {
             ic.textContent=glyph;
         }
@@ -11393,8 +11398,12 @@ function renderMasterPianoIOverviewMap() {
         const camp=first('camp_Ia');
         // Sostituisce l'indicatore fisso del campo con il suo stato reale.
         const chests=masterPianoIExtraStates.get('chests_Ia')||[];
+        // Ia: stesso simbolo dei Frutti Carnosi di Ic (🍎).
+        // Le coordinate e lo stato restano quelli già letti per Ia.
         chests.forEach(c=>{const ready=!c.collected_at||new Date(c.available_at)<=new Date();
-            marker(c.x,c.y,'▣',ready?'state-active':'state-cooldown','Forziere della Giungla Bassa',ready?'':formatMasterCooldown(c.available_at)||'');});
+            marker(c.x,c.y,'🍎',ready?'state-active':'state-cooldown',
+                ready?'Frutto Carnoso · Disponibile':'Frutto Carnoso · In cooldown',
+                ready?'':formatMasterCooldown(c.available_at)||'');});
     }
     if(config.key==='dungeon_Ic'){
         (masterPianoIExtraStates.get('fruits_Ic')||[]).forEach(f=>addState(f.x,f.y,'🍎','Frutto Carnoso'));
