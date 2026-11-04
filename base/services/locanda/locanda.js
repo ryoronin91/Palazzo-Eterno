@@ -52,6 +52,9 @@ let servicePayload =
 let upgradePayload =
     null;
 
+let openedInnHour = 2;
+let lautopastoCookingBusy = false;
+
 let innPayload =
     null;
 
@@ -137,6 +140,8 @@ document.addEventListener(
             setupUpgradeContributions();
 
             setupHotMeal();
+
+            setupLautopastoCooking();
 
             setupAiChat();
 
@@ -452,286 +457,81 @@ async function refreshUpgradeState() {
 }
 
 
+const LOCANDA_HOURS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+
 function renderUpgradeState() {
+    const levelElement = document.getElementById("locanda-upgrade-level");
+    const statusElement = document.getElementById("locanda-upgrade-status");
+    const container = document.getElementById("locanda-upgrade-requirements");
+    if (!container) return;
 
-    const levelElement =
-        document.getElementById(
-            "locanda-upgrade-level"
-        );
+    const currentLevel = Math.max(1, Number(upgradePayload?.current_level) || 1);
+    const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 13);
+    const targetLevel = Number(upgradePayload?.target_level);
+    const enabled = upgradePayload?.enabled === true;
+    const requirements = Array.isArray(upgradePayload?.requirements) ? upgradePayload.requirements : [];
 
-    const statusElement =
-        document.getElementById(
-            "locanda-upgrade-status"
-        );
+    if (levelElement) levelElement.textContent = "LE 12 ORE";
+    if (statusElement) statusElement.textContent = `LV ${currentLevel} / ${maxLevel}`;
 
-    const container =
-        document.getElementById(
-            "locanda-upgrade-requirements"
-        );
+    container.innerHTML = LOCANDA_HOURS.map((hour, index) => {
+        const hourTarget = index + 2;
+        const completed = currentLevel >= hourTarget;
+        const active = !completed && targetLevel === hourTarget && enabled;
+        const status = completed ? "COMPLETATA" : active ? "IN CORSO" : "BLOCCATA";
+        const isOpen = active && openedInnHour === hourTarget;
 
-    if (!container) {
-        return;
-    }
+        const rows = active ? requirements.map(requirement => {
+            const itemId = String(requirement.item_id || "");
+            const itemName = String(requirement.item_name || itemId);
+            const required = Math.max(0, Number(requirement.required_quantity) || 0);
+            const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
+            const remaining = Math.max(0, required - contributed);
+            const owned = getInventoryQuantity(itemId);
+            const percentage = required ? Math.min(100, Math.round(100 * contributed / required)) : 0;
+            const complete = remaining <= 0;
+            return `
+                <article class="locanda-upgrade-requirement${complete ? " is-complete" : ""}">
+                    <div class="locanda-upgrade-row">
+                        <strong>${escapeHtml(itemName)}</strong><span>${contributed} / ${required}</span>
+                    </div>
+                    <div class="locanda-upgrade-progress"><span style="width:${percentage}%"></span></div>
+                    <div class="locanda-upgrade-owned">Possiedi: <strong>${owned}</strong></div>
+                    ${complete ? '<div class="locanda-upgrade-complete">REQUISITO COMPLETO</div>' : `
+                        <form class="locanda-upgrade-form" data-item-id="${escapeHtml(itemId)}">
+                            <input class="locanda-upgrade-quantity" type="number" min="1"
+                                   max="${remaining}" step="1" value="1" inputmode="numeric"
+                                   aria-label="Quantità di ${escapeHtml(itemName)} da contribuire">
+                            <button type="submit" class="merchant-button locanda-upgrade-button"
+                                    ${owned <= 0 ? "disabled" : ""}>CONTRIBUISCI</button>
+                        </form>`}
+                </article>`;
+        }).join("") : "";
 
-    const currentLevel =
-        Math.max(
-            1,
-            Number(
-                upgradePayload
-                    ?.current_level
-            ) || 1
-        );
-
-    const maxLevel =
-        Math.max(
-            1,
-            Number(
-                upgradePayload
-                    ?.max_level
-            ) || 6
-        );
-
-    const targetLevel =
-        Number(
-            upgradePayload
-                ?.target_level
-        );
-
-    const enabled =
-        upgradePayload
-            ?.enabled ===
-        true;
-
-    const requirements =
-        Array.isArray(
-            upgradePayload
-                ?.requirements
-        )
-            ? upgradePayload
-                .requirements
-            : [];
-
-    if (levelElement) {
-
-        levelElement.textContent =
-            currentLevel >=
-                maxLevel
-                ? `LV ${currentLevel} · MASSIMO`
-                : `LV ${currentLevel} → LV ${targetLevel || currentLevel + 1}`;
-    }
-
-    if (statusElement) {
-
-        statusElement.classList.remove(
-            "is-complete"
-        );
-
-        if (
-            currentLevel >=
-            maxLevel
-        ) {
-
-            statusElement.textContent =
-                "COMPLETO";
-
-            statusElement.classList.add(
-                "is-complete"
-            );
-
-        } else if (
-            !enabled
-        ) {
-
-            statusElement.textContent =
-                "NON DISPONIBILE";
-
+        let body;
+        if (completed) {
+            body = hourTarget === 2
+                ? "I Ora completata: recupero +3 PF e +3 PM al minuto e cucina del Lautopasto sbloccata."
+                : "Potenziamento completato.";
+        } else if (active) {
+            body = rows || "I requisiti di questa Ora non sono ancora stati definiti.";
         } else {
-
-            statusElement.textContent =
-                "IN CORSO";
+            body = hourTarget === targetLevel
+                ? "I requisiti di questa Ora non sono ancora disponibili."
+                : "Completa le Ore precedenti per sbloccare questa Ora.";
         }
-    }
-
-    if (
-        currentLevel >=
-        maxLevel
-    ) {
-
-        container.innerHTML = `
-            <div class="inventory-empty">
-                La Locanda ha raggiunto il livello massimo.
-            </div>
-        `;
-
-        return;
-    }
-
-    if (
-        !enabled
-        ||
-        requirements.length ===
-            0
-    ) {
-
-        container.innerHTML = `
-            <div class="inventory-empty">
-                I requisiti per il prossimo livello
-                non sono ancora stati definiti.
-            </div>
-        `;
-
-        return;
-    }
-
-    container.innerHTML =
-        requirements
-            .map(
-                requirement => {
-
-                    const itemId =
-                        String(
-                            requirement
-                                .item_id ||
-                            ""
-                        );
-
-                    const itemName =
-                        String(
-                            requirement
-                                .item_name ||
-                            itemId
-                        );
-
-                    const required =
-                        Math.max(
-                            0,
-                            Number(
-                                requirement
-                                    .required_quantity
-                            ) || 0
-                        );
-
-                    const contributed =
-                        Math.max(
-                            0,
-                            Number(
-                                requirement
-                                    .contributed_quantity
-                            ) || 0
-                        );
-
-                    const remaining =
-                        Math.max(
-                            0,
-                            required -
-                            contributed
-                        );
-
-                    const owned =
-                        getInventoryQuantity(
-                            itemId
-                        );
-
-                    const percentage =
-                        required > 0
-                            ? Math.min(
-                                100,
-                                Math.round(
-                                    contributed /
-                                    required *
-                                    100
-                                )
-                            )
-                            : 0;
-
-                    const complete =
-                        remaining <=
-                        0;
-
-                    return `
-                        <article
-                            class="locanda-upgrade-requirement${
-                                complete
-                                    ? " is-complete"
-                                    : ""
-                            }"
-                        >
-
-                            <div class="locanda-upgrade-row">
-
-                                <strong>
-                                    ${escapeHtml(
-                                        itemName
-                                    )}
-                                </strong>
-
-                                <span>
-                                    ${contributed}
-                                    /
-                                    ${required}
-                                </span>
-
-                            </div>
-
-                            <div class="locanda-upgrade-progress">
-                                <span
-                                    style="width:${percentage}%"
-                                ></span>
-                            </div>
-
-                            <div class="locanda-upgrade-owned">
-                                Possiedi:
-                                <strong>${owned}</strong>
-                            </div>
-
-                            ${
-                                complete
-                                    ? `
-                                        <div class="locanda-upgrade-complete">
-                                            REQUISITO COMPLETO
-                                        </div>
-                                    `
-                                    : `
-                                        <form
-                                            class="locanda-upgrade-form"
-                                            data-item-id="${escapeHtml(
-                                                itemId
-                                            )}"
-                                        >
-
-                                            <input
-                                                class="locanda-upgrade-quantity"
-                                                type="number"
-                                                min="1"
-                                                max="${remaining}"
-                                                step="1"
-                                                value="1"
-                                                inputmode="numeric"
-                                            >
-
-                                            <button
-                                                type="submit"
-                                                class="merchant-button locanda-upgrade-button"
-                                                ${
-                                                    owned <= 0
-                                                        ? "disabled"
-                                                        : ""
-                                                }
-                                            >
-                                                CONTRIBUISCI
-                                            </button>
-
-                                        </form>
-                                    `
-                            }
-
-                        </article>
-                    `;
-                }
-            )
-            .join("");
+        return `
+            <details name="locanda-ore" class="locanda-hour ${completed ? "is-complete" : active ? "is-active" : "is-locked"}"
+                     data-hour="${hourTarget}" ${isOpen ? "open" : ""}>
+                <summary class="locanda-hour-summary">
+                    <span class="locanda-hour-name">${hour} ORA</span>
+                    <span class="locanda-hour-status">${status}</span>
+                    <span class="locanda-hour-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="locanda-hour-content">${body}</div>
+            </details>`;
+    }).join("");
 }
-
 
 function setupUpgradeContributions() {
 
@@ -743,6 +543,12 @@ function setupUpgradeContributions() {
     if (!container) {
         return;
     }
+
+    container.addEventListener("toggle", event => {
+        if (event.target?.matches?.(".locanda-hour") && event.target.open) {
+            openedInnHour = Number(event.target.dataset.hour);
+        }
+    }, true);
 
     container.addEventListener(
         "submit",
@@ -850,6 +656,7 @@ async function contributeToUpgrade(
         await loadCharacterInventory();
 
         await refreshUpgradeState();
+        await refreshInnState();
 
         updateGoldHeader();
 
@@ -869,6 +676,8 @@ async function contributeToUpgrade(
             true
         ) {
 
+            openedInnHour = Number(data?.current_level || 2) + 1;
+            renderUpgradeState();
             setUpgradeFeedback(
                 `Upgrade completato: Locanda LV ${Number(
                     data?.current_level
@@ -988,6 +797,11 @@ async function refreshInnState() {
 
 
 function renderInnState() {
+    const firstHourUnlocked = Number(upgradePayload?.current_level || 1) >= 2;
+    const rate = firstHourUnlocked ? 3 : 1;
+    const recoveryLabel = document.getElementById("locanda-recovery-rate");
+    if (recoveryLabel) recoveryLabel.textContent = `${rate} PF e ${rate} PM al minuto`;
+    renderLautopastoCooking();
 
     if (!innPayload) {
         return;
@@ -2654,4 +2468,71 @@ function escapeHtml(
             "'",
             "&#039;"
         );
+}
+
+// ============================================================
+// CUCINA LAUTOPASTO — ricetta dell'accampamento Ia
+// ============================================================
+
+const LAUTOPASTO_RECIPE = [
+    { id: "coscia_uccello_stigio", name: "Coscia di uccello parassita", amount: 4 },
+    { id: "foglia_nutriente", name: "Foglia Nutriente", amount: 6 },
+    { id: "funghetto", name: "Funghetto", amount: 8 },
+    { id: "frutto_carnoso", name: "Frutto Carnoso", amount: 5 }
+];
+
+function renderLautopastoCooking() {
+    const section = document.getElementById("locanda-cooking-box");
+    const list = document.getElementById("locanda-cooking-recipe");
+    const button = document.getElementById("locanda-cooking-button");
+    if (!section || !list || !button) return;
+
+    const unlocked = Number(upgradePayload?.current_level || 1) >= 2;
+    section.hidden = !unlocked;
+    if (!unlocked) return;
+
+    list.innerHTML = LAUTOPASTO_RECIPE.map(ingredient => {
+        const owned = getInventoryQuantity(ingredient.id);
+        const ready = owned >= ingredient.amount;
+        return `<div class="locanda-recipe-row${ready ? " is-ready" : ""}">
+          <span>${escapeHtml(ingredient.name)}</span>
+          <strong>${owned} / ${ingredient.amount}</strong>
+        </div>`;
+    }).join("");
+    button.disabled = lautopastoCookingBusy || LAUTOPASTO_RECIPE.some(x => getInventoryQuantity(x.id) < x.amount);
+}
+
+function setupLautopastoCooking() {
+    document.getElementById("locanda-cooking-button")?.addEventListener("click", cookLautopasto);
+}
+
+async function cookLautopasto() {
+    if (lautopastoCookingBusy || Number(upgradePayload?.current_level || 1) < 2) return;
+    const button = document.getElementById("locanda-cooking-button");
+    const feedbackElement = document.getElementById("locanda-cooking-feedback");
+    lautopastoCookingBusy = true;
+    if (button) { button.disabled = true; button.textContent = "..."; }
+    try {
+        await ensureServiceActive();
+        const { data, error } = await db.rpc("cook_inn_lautopasto");
+        if (error) throw error;
+        await loadCharacterInventory();
+        updateGoldHeader();
+        renderUpgradeState();
+        if (feedbackElement) {
+            feedbackElement.textContent = `${Number(data?.quantity) || 1} Lautopasto cucinato!`;
+            feedbackElement.classList.remove("is-error");
+        }
+        showDialogue("Un Lautopasto appena fatto. Fegato d'Oca annuisce soddisfatto.");
+    } catch (error) {
+        console.error("Errore cucina Lautopasto:", error);
+        if (feedbackElement) {
+            feedbackElement.textContent = error?.message || "Preparazione non riuscita.";
+            feedbackElement.classList.add("is-error");
+        }
+    } finally {
+        lautopastoCookingBusy = false;
+        if (button) button.textContent = "CUCINA LAUTOPASTO";
+        renderLautopastoCooking();
+    }
 }

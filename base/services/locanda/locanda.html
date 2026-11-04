@@ -6,7 +6,7 @@
 
     <title>Palazzo Eterno - Locanda</title>
 
-    <link rel="stylesheet" href="locanda.css?v=1">
+    <link rel="stylesheet" href="locanda.css?v=2">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../../../js/config.js?v=11"></script>
@@ -96,7 +96,7 @@
                     <div class="locanda-upgrade-heading">
                         <div>
                             <div class="locanda-service-title">POTENZIAMENTO</div>
-                            <strong id="locanda-upgrade-level">LV 1 → LV 2</strong>
+                            <strong id="locanda-upgrade-level">LE 12 ORE</strong>
                         </div>
 
                         <span id="locanda-upgrade-status" class="locanda-upgrade-status">
@@ -255,7 +255,7 @@
 
             <div class="ornate-subheading">
                 Finché resti nella Locanda recuperi
-                <strong>1 PF e 1 PM al minuto</strong>.
+                <strong id="locanda-recovery-rate">1 PF e 1 PM al minuto</strong>.
             </div>
 
             <div class="ornate-divider"></div>
@@ -335,6 +335,14 @@
 
                 </section>
 
+                <section id="locanda-cooking-box" class="locanda-cooking-box" hidden>
+                    <div class="locanda-service-title">CUCINA DEL LAUTOPASTO</div>
+                    <p>Prepara un Lautopasto usando la ricetta dell'accampamento di Ia.</p>
+                    <div id="locanda-cooking-recipe" class="locanda-cooking-recipe"></div>
+                    <button id="locanda-cooking-button" type="button" class="merchant-button">CUCINA LAUTOPASTO</button>
+                    <div id="locanda-cooking-feedback" class="locanda-maintenance-feedback" aria-live="polite"></div>
+                </section>
+
             </div>
 
         </section>
@@ -342,7 +350,7 @@
     </main>
 
 
-    <script src="locanda.js?v=3"></script>
+    <script src="locanda.js?v=4"></script>
 
 </body>
 </html>

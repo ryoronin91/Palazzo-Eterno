@@ -2483,3 +2483,27 @@ input {
     opacity: 0.48;
     cursor: not-allowed;
 }
+
+/* LOCANDA - ORE A TENDINA E CUCINA LAUTOPASTO */
+.locanda-upgrade-requirements { display: flex; flex-direction: column; gap: 7px; }
+.locanda-hour { border: 1px solid rgba(198,164,92,.28); background: rgba(0,0,0,.24); }
+.locanda-hour.is-complete { border-color: rgba(94,231,255,.3); }
+.locanda-hour.is-locked { opacity: .7; }
+.locanda-hour-summary { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 9px 10px; cursor: pointer; list-style: none; }
+.locanda-hour-summary::-webkit-details-marker { display: none; }
+.locanda-hour-summary::marker { content: ""; }
+.locanda-hour-name { flex: 1; color: var(--gold-bright); font-weight: bold; font-size: 12px; letter-spacing: .10em; }
+.locanda-hour-status { color: var(--muted); font-size: 9px; letter-spacing: .05em; }
+.locanda-hour.is-complete .locanda-hour-status { color: #8ceeff; }
+.locanda-hour-chevron { color: var(--gold-bright); font-size: 19px; transition: transform .2s; }
+.locanda-hour[open] .locanda-hour-chevron { transform: rotate(180deg); }
+.locanda-hour-content { padding: 4px 9px 11px; border-top: 1px solid rgba(198,164,92,.17); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.locanda-hour-content .locanda-upgrade-requirement { margin-top: 8px; }
+.locanda-cooking-box { padding: 13px; border: 1px solid rgba(198,164,92,.35); margin: 12px 18px 18px; background: rgba(0,0,0,.2); }
+.locanda-cooking-box[hidden] { display: none !important; }
+.locanda-cooking-box p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.locanda-cooking-recipe { display: flex; flex-direction: column; gap: 7px; margin: 12px 0; }
+.locanda-recipe-row { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; }
+.locanda-recipe-row strong { white-space: nowrap; color: var(--ivory); }
+.locanda-recipe-row.is-ready strong { color: #8ceeff; }
+.locanda-cooking-box .merchant-button:disabled { opacity: .5; cursor: not-allowed; }
