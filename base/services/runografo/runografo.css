@@ -2324,3 +2324,27 @@ input {
     .runografo-upgrade-form { grid-template-columns: 1fr; }
     .runografo-upgrade-button { width: 100%; }
 }
+
+/* ============================================================
+   RUNOGRAFO: 12 ORE A FISARMONICA
+============================================================ */
+.runografo-upgrade-requirements { display: flex; flex-direction: column; gap: 7px; }
+.runografo-hour { border: 1px solid rgba(198,164,92,.28); background: rgba(0,0,0,.24); }
+.runografo-hour.is-complete { border-color: rgba(94,231,255,.3); }
+.runografo-hour.is-locked { opacity: .72; }
+.runografo-hour-summary {
+    display: flex; align-items: center; gap: 8px; min-height: 40px;
+    padding: 9px 10px; cursor: pointer; list-style: none;
+}
+.runografo-hour-summary::-webkit-details-marker { display: none; }
+.runografo-hour-summary::marker { content: ""; }
+.runografo-hour-name { flex: 1; color: var(--gold-bright); font-weight: bold; font-size: 12px; letter-spacing: .1em; }
+.runografo-hour-status { color: var(--muted); font-size: 9px; letter-spacing: .05em; }
+.runografo-hour.is-complete .runografo-hour-status { color: #8ceeff; }
+.runografo-hour-chevron { color: var(--gold-bright); font-size: 19px; transition: transform .2s; }
+.runografo-hour[open] .runografo-hour-chevron { transform: rotate(180deg); }
+.runografo-hour-content {
+    padding: 4px 9px 11px; border-top: 1px solid rgba(198,164,92,.17);
+    color: var(--muted); font-size: 12px; line-height: 1.5;
+}
+.runografo-hour-content .runografo-upgrade-requirement { margin-top: 8px; }

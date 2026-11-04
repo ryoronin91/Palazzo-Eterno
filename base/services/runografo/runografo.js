@@ -57,6 +57,9 @@ let servicePayload =
 let upgradePayload =
     null;
 
+// L'Ora aperta viene conservata quando aggiorniamo i contributi.
+let openedUpgradeHour = 2;
+
 let serviceTimer =
     null;
 
@@ -481,15 +484,16 @@ async function loadRunografoItems() {
         throw error;
     }
 
-    runografoItems =
-        (data || [])
-            .filter(
-                row =>
-                    row?.item
-                    &&
-                    row.item
-                        .grants_ability_id
-            );
+    // Il controllo d'acquisto è applicato anche dalla RPC Supabase.
+    // Filtriamo qui soltanto per non mostrare le pergamene prima dello sblocco.
+    const firstHourUnlocked = Number(upgradePayload?.current_level || 1) >= 2;
+    const firstHourScrolls = new Set([
+        "pergamena_sanguinamento", "pergamena_veleno", "pergamena_succhiasangue"
+    ]);
+    runografoItems = (data || []).filter(row =>
+        row?.item?.grants_ability_id &&
+        (firstHourUnlocked || !firstHourScrolls.has(row.item_id))
+    );
 }
 
 
@@ -521,7 +525,7 @@ function renderRunografoItems() {
             <div class="inventory-empty">
                 Il Runografo ti osserva in silenzio.
                 Le pergamene abilità saranno disponibili
-                quando avrai raggiunto score ${MIN_SCROLL_SCORE}.
+                quando avrai raggiunto ${MIN_SCROLL_SCORE} punti risonanza.
             </div>
         `;
 
@@ -809,101 +813,80 @@ async function refreshUpgradeState() {
 }
 
 
+const RUNOGRAFO_HOUR_NAMES = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
 function renderUpgradeState() {
     const levelElement = document.getElementById("runografo-upgrade-level");
     const statusElement = document.getElementById("runografo-upgrade-status");
     const container = document.getElementById("runografo-upgrade-requirements");
-
     if (!container) return;
 
     const currentLevel = Math.max(1, Number(upgradePayload?.current_level) || 1);
-    const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 6);
+    const maxLevel = Math.max(1, Number(upgradePayload?.max_level) || 13);
     const targetLevel = Number(upgradePayload?.target_level);
     const enabled = upgradePayload?.enabled === true;
     const requirements = Array.isArray(upgradePayload?.requirements)
-        ? upgradePayload.requirements
-        : [];
+        ? upgradePayload.requirements : [];
 
-    if (levelElement) {
-        levelElement.textContent = currentLevel >= maxLevel
-            ? `LV ${currentLevel} · MASSIMO`
-            : `LV ${currentLevel} → LV ${targetLevel || currentLevel + 1}`;
-    }
+    if (levelElement) levelElement.textContent = "LE 12 ORE";
+    if (statusElement) statusElement.textContent = `LV ${currentLevel} / ${maxLevel}`;
 
-    if (statusElement) {
-        statusElement.classList.remove("is-complete");
-        if (currentLevel >= maxLevel) {
-            statusElement.textContent = "COMPLETO";
-            statusElement.classList.add("is-complete");
-        } else if (!enabled) {
-            statusElement.textContent = "NON DISPONIBILE";
-        } else {
-            statusElement.textContent = "IN CORSO";
-        }
-    }
+    container.innerHTML = RUNOGRAFO_HOUR_NAMES.map((hour, index) => {
+        const hourTarget = index + 2;
+        const completed = currentLevel >= hourTarget;
+        const active = !completed && targetLevel === hourTarget && enabled;
+        const status = completed ? "COMPLETATA" : active ? "IN CORSO" : "BLOCCATA";
+        const isOpen = openedUpgradeHour === hourTarget;
 
-    if (currentLevel >= maxLevel) {
-        container.innerHTML = `<div class="inventory-empty">Il Runografo ha raggiunto il livello massimo.</div>`;
-        return;
-    }
+        const rows = active ? requirements.map(requirement => {
+            const itemId = String(requirement.item_id || "");
+            const itemName = String(requirement.item_name || itemId);
+            const required = Math.max(0, Number(requirement.required_quantity) || 0);
+            const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
+            const remaining = Math.max(0, required - contributed);
+            const owned = getInventoryQuantity(itemId);
+            const percentage = required > 0 ? Math.min(100, Math.round(contributed / required * 100)) : 0;
+            const complete = remaining <= 0;
+            return `
+                <article class="runografo-upgrade-requirement${complete ? " is-complete" : ""}">
+                    <div class="runografo-upgrade-row">
+                        <strong>${escapeHtml(itemName)}</strong>
+                        <span>${contributed} / ${required}</span>
+                    </div>
+                    <div class="runografo-upgrade-progress"><span style="width:${percentage}%"></span></div>
+                    <div class="runografo-upgrade-owned">Possiedi: <strong>${owned}</strong></div>
+                    ${complete
+                        ? `<div class="runografo-upgrade-complete">REQUISITO COMPLETO</div>`
+                        : `<form class="runografo-upgrade-form" data-item-id="${escapeHtml(itemId)}">
+                            <input class="runografo-upgrade-quantity" type="number" min="1"
+                                max="${remaining}" step="1" value="1" inputmode="numeric"
+                                aria-label="Quantità di ${escapeHtml(itemName)} da contribuire">
+                            <button type="submit" class="merchant-button runografo-upgrade-button"
+                                ${owned <= 0 ? "disabled" : ""}>CONTRIBUISCI</button>
+                        </form>`}
+                </article>`;
+        }).join("") : "";
 
-    if (!enabled || requirements.length === 0) {
-        container.innerHTML = `<div class="inventory-empty">I requisiti per il prossimo livello non sono ancora stati definiti.</div>`;
-        return;
-    }
-
-    container.innerHTML = requirements.map(requirement => {
-        const itemId = String(requirement.item_id || "");
-        const itemName = String(requirement.item_name || itemId);
-        const required = Math.max(0, Number(requirement.required_quantity) || 0);
-        const contributed = Math.max(0, Number(requirement.contributed_quantity) || 0);
-        const remaining = Math.max(0, required - contributed);
-        const owned = getInventoryQuantity(itemId);
-        const percentage = required > 0
-            ? Math.min(100, Math.round(contributed / required * 100))
-            : 0;
-        const complete = remaining <= 0;
+        const body = completed
+            ? (hourTarget === 2
+                ? "Potenziamento completato: pergamene di Sanguinamento, Veleno e Succhiasangue sbloccate."
+                : "Potenziamento completato.")
+            : active
+                ? (rows || "I requisiti di questa Ora non sono ancora stati definiti.")
+                : hourTarget === targetLevel
+                    ? "I requisiti di questa Ora non sono ancora disponibili."
+                    : "Completa le Ore precedenti per sbloccare questo potenziamento.";
 
         return `
-            <article class="runografo-upgrade-requirement${complete ? " is-complete" : ""}">
-                <div class="runografo-upgrade-row">
-                    <strong>${escapeHtml(itemName)}</strong>
-                    <span>${contributed} / ${required}</span>
-                </div>
-
-                <div class="runografo-upgrade-progress">
-                    <span style="width:${percentage}%"></span>
-                </div>
-
-                <div class="runografo-upgrade-owned">
-                    Possiedi: <strong>${owned}</strong>
-                </div>
-
-                ${complete
-                    ? `<div class="runografo-upgrade-complete">REQUISITO COMPLETO</div>`
-                    : `
-                        <form class="runografo-upgrade-form" data-item-id="${escapeHtml(itemId)}">
-                            <input
-                                class="runografo-upgrade-quantity"
-                                type="number"
-                                min="1"
-                                max="${remaining}"
-                                step="1"
-                                value="1"
-                                inputmode="numeric"
-                                aria-label="Quantità di ${escapeHtml(itemName)} da contribuire"
-                            >
-                            <button
-                                type="submit"
-                                class="merchant-button runografo-upgrade-button"
-                                ${owned <= 0 ? "disabled" : ""}
-                            >
-                                CONTRIBUISCI
-                            </button>
-                        </form>
-                    `}
-            </article>
-        `;
+            <details name="runografo-ore" class="runografo-hour ${completed ? "is-complete" : active ? "is-active" : "is-locked"}"
+                data-hour="${hourTarget}" ${isOpen ? "open" : ""}>
+                <summary class="runografo-hour-summary">
+                    <span class="runografo-hour-name">${hour} ORA</span>
+                    <span class="runografo-hour-status">${status}</span>
+                    <span class="runografo-hour-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="runografo-hour-content">${body}</div>
+            </details>`;
     }).join("");
 }
 
@@ -911,6 +894,15 @@ function renderUpgradeState() {
 function setupUpgradeContributions() {
     const container = document.getElementById("runografo-upgrade-requirements");
     if (!container) return;
+
+    container.addEventListener("toggle", event => {
+        if (!event.target?.matches?.(".runografo-hour")) return;
+        if (event.target.open) {
+            openedUpgradeHour = Number(event.target.dataset.hour);
+        } else if (openedUpgradeHour === Number(event.target.dataset.hour)) {
+            openedUpgradeHour = null;
+        }
+    }, true);
 
     container.addEventListener("submit", async event => {
         const form = event.target.closest(".runografo-upgrade-form");
@@ -954,13 +946,17 @@ async function contributeToUpgrade(form) {
 
         await loadCharacterInventory();
         await refreshUpgradeState();
+        await loadRunografoItems();
 
         updateInventoryHeader();
+        renderRunografoItems();
         renderUpgradeState();
 
         const contributed = Math.max(0, Number(data?.quantity_contributed) || quantity);
 
         if (data?.upgraded === true) {
+            openedUpgradeHour = Math.min(13, Number(data?.current_level || 2) + 1);
+            renderUpgradeState();
             setUpgradeFeedback(`Upgrade completato: Runografo LV ${Number(data?.current_level) || "?"}.`);
             showDialogue("Le rune si accendono. Il Runografo ha raggiunto un nuovo livello.");
         } else {
