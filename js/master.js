@@ -8768,7 +8768,7 @@ function renderActiveMasterCombats() {
 
 let masterOverviewFloor = "dungeon";
 
-const MASTER_OVERVIEW_FLOORS = ["dungeon", "base", "dungeon_Ia", "dungeon_Ib", "dungeon_Ic", "dungeon_Id"];
+const MASTER_OVERVIEW_FLOORS = ["dungeon", "base", "orologio", "dungeon_Ia", "dungeon_Ib", "dungeon_Ic", "dungeon_Id"];
 
 const MASTER_OVERVIEW_BASE_SERVICE_POSITIONS = [
     { x: 5, y: 33 },
@@ -11125,6 +11125,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 // Estensione isolata: il renderer originale di Dungeon/Base resta invariato.
 // ============================================================
 const MASTER_PIANO_I_FLOORS = Object.freeze({
+    orologio: {key:'orologio',title:'STANZA DELL’OROLOGIO',columns:29,rows:29,
+        image:'orologio/immagini/stanza_orologio.png',imageAlt:'Mappa completa della Stanza dell’Orologio'},
     dungeon_Ia: { key:'dungeon_Ia', title:'PIANO I-A · GIUNGLA BASSA', columns:63, rows:81,
         tiles:'Ia', imageAlt:'Mappa completa della Giungla Bassa' },
     dungeon_Ib: { key:'dungeon_Ib', title:'PIANO I-B · VILLAGGIO SCAGLIAGRIGIA', columns:20, rows:20,
@@ -11305,6 +11307,13 @@ function renderMasterPianoIOverviewMap() {
             el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});}
         place(el,x,y,iconSize);
     }
+    // Stanza dell'Orologio: i 12 simboli sono renderizzati nelle loro
+    // posizioni originali (stessa calibrazione usata da orologio.js).
+    if(config.key==='orologio'){
+        renderMasterOrologioSymbols(markerLayer);
+        updateMasterClockCountdown();
+        return;
+    }
     // Ia: sulla mappa compaiono SOLO gli incontri effettivamente attivi
     // o impegnati. Nessun indicatore per stanze vuote, cooldown o slot non assegnati.
     if (config.key==='dungeon_Ia') {
@@ -11464,6 +11473,9 @@ function renderMasterPianoIOverviewMap() {
 
 const masterOriginalOverviewRendererV23=renderMasterOverviewMap;
 renderMasterOverviewMap=function(){
+    // Evita icone della Stanza dell'Orologio rimaste quando si cambia piano.
+    document.querySelectorAll('#master-overview-map .master-orologio-numeral, #master-overview-map .master-orologio-hand').forEach(el=>el.remove());
+    updateMasterClockCountdown();
     if(MASTER_PIANO_I_FLOORS[masterOverviewFloor]) {
         renderMasterPianoIOverviewMap();
         void loadMasterPianoIOverviewData();
@@ -11504,4 +11516,102 @@ window.addEventListener('DOMContentLoaded',()=>{
   },{passive:false});
   window.addEventListener('resize',()=>{if(MASTER_PIANO_I_FLOORS[masterOverviewFloor])renderMasterOverviewMap();});
   masterPianoIZoomUpdate();
+});
+
+
+// ============================================================
+// MASTER v33 — STANZA DELL'OROLOGIO E TIMER PIANO I
+// Coordinate, asset e griglia ripresi dalla Stanza dell'Orologio.
+// Stato dati: master_get_piano_i_overview (solo accesso Master).
+// ============================================================
+const MASTER_OROLOGIO_NUMERALS=Object.freeze([
+    {n:'XII',type:'Dies',x:13,y:5},
+    {n:'I',type:'Nox',x:17,y:6},
+    {n:'II',type:'Dies',x:19,y:9},
+    {n:'III',type:'Nox',x:20,y:12},
+    {n:'IV',type:'Dies',x:19,y:15},
+    {n:'V',type:'Nox',x:17,y:18},
+    {n:'VI',type:'Dies',x:13,y:19},
+    {n:'VII',type:'Nox',x:9,y:18},
+    {n:'VIII',type:'Dies',x:7,y:15},
+    {n:'IX',type:'Nox',x:6,y:12},
+    {n:'X',type:'Dies',x:7,y:9},
+    {n:'XI',type:'Nox',x:9,y:6}
+]);
+const MASTER_OROLOGIO_ANGLES=Object.freeze({XII:0,I:30,II:60,III:90,IV:120,V:150,VI:180,VII:210,VIII:240,IX:270,X:300,XI:330});
+// I valori corrispondono alla calibrazione usata da orologio/js/orologio.js.
+const MASTER_OROLOGIO_CALIBRATION={size:1254,offset:19,cell:43.44};
+function masterOrologioPixelPercent(value){
+    return ((MASTER_OROLOGIO_CALIBRATION.offset+value*MASTER_OROLOGIO_CALIBRATION.cell)/MASTER_OROLOGIO_CALIBRATION.size*100)+'%';
+}
+function renderMasterOrologioSymbols(stage){
+    if(!stage)return;
+    const state=(masterPianoIExtraStates.get('orologio_state')||[])[0]||{};
+    const selected=Array.isArray(state.selected_numbers)?state.selected_numbers:[];
+    const active=state.active_number||null;
+    for(const node of MASTER_OROLOGIO_NUMERALS){
+        const isActive=node.n===active;
+        const variant=isActive?'A':selected.includes(node.n)?'C':'B';
+        const group=document.createElement('div');
+        group.className='master-orologio-numeral '+(isActive?'is-active':'is-inactive');
+        group.style.left=masterOrologioPixelPercent(node.x);
+        group.style.top=masterOrologioPixelPercent(node.y);
+        group.style.width=(2*MASTER_OROLOGIO_CALIBRATION.cell/MASTER_OROLOGIO_CALIBRATION.size*100)+'%';
+        group.style.height=(2*MASTER_OROLOGIO_CALIBRATION.cell/MASTER_OROLOGIO_CALIBRATION.size*100)+'%';
+        group.title=`Numero ${node.n} · ${isActive?'ATTIVO':'Disattivato'} · Variante ${variant}`;
+        const img=document.createElement('img');
+        img.src=`orologio/immagini/${node.type}${variant}.png`;
+        img.alt='';img.draggable=false;
+        group.appendChild(img);
+        const label=document.createElement('span');label.textContent=node.n;
+        label.className='master-orologio-numeral-label';
+        group.appendChild(label);
+        stage.appendChild(group);
+    }
+    const hand=document.createElement('img');
+    hand.src='orologio/immagini/lancetta.png';
+    hand.alt='Lancetta dell’Orologio';
+    hand.className='master-orologio-hand';hand.draggable=false;
+    hand.style.left=masterOrologioPixelPercent(14-1.75);
+    hand.style.top=masterOrologioPixelPercent(13-4.25);
+    hand.style.width=(3.6*MASTER_OROLOGIO_CALIBRATION.cell/MASTER_OROLOGIO_CALIBRATION.size*100)+'%';
+    hand.style.height=(19.8*MASTER_OROLOGIO_CALIBRATION.cell/MASTER_OROLOGIO_CALIBRATION.size*100)+'%';
+    hand.style.transform=`rotate(${MASTER_OROLOGIO_ANGLES[active]??0}deg)`;
+    stage.appendChild(hand);
+}
+function updateMasterClockCountdown(){
+    const panel=document.getElementById('master-clock-panel');
+    if(!panel)return;
+    panel.hidden=masterOverviewFloor!=='orologio';
+    if(panel.hidden)return;
+    const schedule=(masterPianoIExtraStates.get('piano_i_schedule')||[])[0];
+    const clock=(masterPianoIExtraStates.get('orologio_state')||[])[0];
+    const timer=document.getElementById('master-clock-countdown');
+    const status=document.getElementById('master-clock-status');
+    const hand=document.getElementById('master-clock-hand');
+    if(hand)hand.textContent=clock?.active_number||'—';
+    if(!schedule||!timer||!status){if(timer)timer.textContent='--:--:--';return;}
+    // Compensa la differenza tra orologio client e timestamp restituito dal server.
+    const offset=Date.parse(schedule.server_now)-masterPianoILastLoaded;
+    const now=Date.now()+(Number.isFinite(offset)?offset:0);
+    const first=Date.parse(schedule.first_open_at);
+    const nextClose=Date.parse(schedule.next_close_at);
+    const open=Boolean(schedule.is_open) && Number.isFinite(nextClose) && now<nextClose;
+    // La pubblicazione è il 5/11 alle 05:00; durante la manutenzione
+    // giornaliera la riapertura è 23h prima della chiusura successiva.
+    let target,description;
+    if(Number.isFinite(first)&&now<first){target=first;description='APERTURA DEL PIANO I TRA';}
+    else if(open){target=nextClose;description='CHIUSURA / RESET TRA';}
+    else{target=nextClose-23*60*60*1000;description='PIANO CHIUSO · RIAPERTURA TRA';}
+    status.textContent=description;
+    if(!Number.isFinite(target)){timer.textContent='--:--:--';return;}
+    let secs=Math.max(0,Math.ceil((target-now)/1000));
+    const h=Math.floor(secs/3600),m=Math.floor(secs%3600/60),s=secs%60;
+    timer.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if(secs===0 && !open){status.textContent='IN ATTESA DI AGGIORNAMENTO SERVER';}
+}
+window.addEventListener('DOMContentLoaded',()=>{
+    updateMasterClockCountdown();
+    window.setInterval(updateMasterClockCountdown,1000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&masterOverviewFloor==='orologio')void loadMasterPianoIOverviewData(true);});
 });

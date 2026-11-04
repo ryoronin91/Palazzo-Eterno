@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Master - Palazzo Eterno</title>
 <link href="css/style.css" rel="stylesheet"/>
-<link href="css/master.css?v=30" rel="stylesheet"/>
+<link href="css/master.css?v=33" rel="stylesheet"/>
 <style>
 
     /* ========================================================
@@ -194,9 +194,14 @@
 <button type="button" id="master-piano-i-zoom-in" aria-label="Aumenta zoom">+</button>
 <button type="button" id="master-piano-i-zoom-reset" aria-label="Ripristina zoom">ADATTA</button>
 </div>
+<div id="master-clock-panel" class="master-clock-panel" aria-label="Stato e durata Piano I" hidden>
+<span id="master-clock-status">IN ATTESA DATI</span>
+<strong id="master-clock-countdown" aria-live="off">--:--:--</strong>
+<span class="master-clock-current">ORA ATTIVA <b id="master-clock-hand">—</b></span>
+</div>
 <div aria-label="Cambia piano visualizzato" class="master-overview-slider" role="group">
 <button aria-label="Piano precedente" class="master-overview-slide-button" id="master-overview-prev" type="button">‹</button>
-<span aria-live="polite" class="master-overview-slide-count" id="master-overview-slide-count">1 / 6</span>
+<span aria-live="polite" class="master-overview-slide-count" id="master-overview-slide-count">1 / 7</span>
 <button aria-label="Piano successivo" class="master-overview-slide-button" id="master-overview-next" type="button">›</button>
 </div>
 </div>
@@ -484,5 +489,5 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/master.js?v=32"></script>
+<script src="js/master.js?v=33"></script>
 </body></html>

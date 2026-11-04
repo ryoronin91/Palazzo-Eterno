@@ -3104,3 +3104,19 @@
 .master-page-redesigned .master-overview-map .master-piano-i-zoom-stage > .master-marker-egg svg {
   fill: #fff1cc;stroke: #845a25;
 }
+
+/* MASTER v33 — Stanza dell'Orologio */
+.master-clock-panel[hidden]{display:none!important}
+.master-clock-panel{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;min-width:0;padding:4px 9px;border:1px solid rgba(183,144,73,.5);border-radius:8px;background:#1d211e;color:#e1dbc4}
+.master-clock-panel #master-clock-status{font-size:10px;letter-spacing:.07em;font-weight:700;color:#c4c3b4}
+.master-clock-panel #master-clock-countdown{font-size:16px;letter-spacing:.07em;color:#eecb79;font-variant-numeric:tabular-nums}
+.master-clock-current{font-size:10px;color:#a5b5a2;white-space:nowrap}
+.master-clock-current b{color:#86efac;font-size:13px}
+.master-piano-i-zoom-stage>.master-orologio-numeral{position:absolute;z-index:19;box-sizing:border-box;pointer-events:auto;display:block;border-radius:8px;transform:translateZ(0)}
+.master-piano-i-zoom-stage>.master-orologio-numeral>img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain;display:block;pointer-events:none}
+.master-piano-i-zoom-stage>.master-orologio-numeral.is-inactive{filter:grayscale(1) brightness(.75);opacity:.88}
+.master-piano-i-zoom-stage>.master-orologio-numeral.is-active{background:rgba(36,194,98,.24);box-shadow:0 0 0 2px #47dc7a,0 0 18px 6px rgba(30,200,91,.55);filter:drop-shadow(0 0 5px #57e999)}
+.master-orologio-numeral-label{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);background:#272b29;border:1px solid #74736c;border-radius:4px;padding:0 4px;font-size:9px;line-height:14px;font-weight:800;color:#acacac;z-index:3;pointer-events:none}
+.master-orologio-numeral.is-active .master-orologio-numeral-label{background:#17542a;border-color:#4bdf78;color:#d9ffe0}
+.master-piano-i-zoom-stage>.master-orologio-hand{position:absolute;z-index:20;max-width:none!important;max-height:none!important;object-fit:contain;object-position:center top;transform-origin:50% 22.2%;pointer-events:none}
+@media(max-width:1050px){.master-clock-panel{gap:4px;padding:3px 5px}.master-clock-panel #master-clock-status{font-size:9px}.master-clock-panel #master-clock-countdown{font-size:13px}}
