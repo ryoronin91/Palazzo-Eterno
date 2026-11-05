@@ -1,8 +1,10 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // COMBAT-AI.JS
 // IA E MOVIMENTO DEI NEMICI
 // ============================================================
+
+
 
 
 // ============================================================
@@ -12,8 +14,9 @@
 // diagonali comprese.
 // ============================================================
 
+
 // Ingombro nemici grandi: preserva le collisioni del branch main.
-const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande','tiki_pietra']);
+const COMBAT_LARGE_ENEMY_IDS = new Set(['anchilosauro', 'allosauro_dominante', 'miconide_grande', 'trex', 'tiki_pietra', 'boss_tiki']);
 function getCombatFootprint(entity) {
     const large = entity?.entity_type === 'enemy' && COMBAT_LARGE_ENEMY_IDS.has(entity.enemy_id);
     return large ? 2 : 1;
@@ -36,6 +39,7 @@ function canCombatEntityOccupy(entity, x, y) {
     });
 }
 
+
 function getCombatDistance(
     x1,
     y1,
@@ -43,39 +47,52 @@ function getCombatDistance(
     y2
 ) {
 
+
     return Math.max(
+
 
         Math.abs(
             Number(x1) -
             Number(x2)
         ),
 
+
         Math.abs(
             Number(y1) -
             Number(y2)
         )
 
+
     );
 
+
 }
+
+
 
 
 // ============================================================
 // IA GOBLIN BASE - UTILITÀ
 // ============================================================
 
+
 function chooseRandomEntity(
     entities
 ) {
+
 
     if (
         !entities ||
         entities.length === 0
     ) {
 
+
         return null;
 
+
     }
+
+
 
 
     const index =
@@ -85,16 +102,23 @@ function chooseRandomEntity(
         );
 
 
+
+
     return entities[index];
 
+
 }
+
+
 
 
 // ============================================================
 // PG VIVI
 // ============================================================
 
+
 function getAliveCombatPlayers() {
+
 
     return Array.from(
         combatEntities.values()
@@ -111,48 +135,67 @@ function getAliveCombatPlayers() {
             ) > 0
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PG PIÙ VICINO
 // ============================================================
 
+
 function chooseNearestPlayer(
     enemy,
     players
 ) {
+
 
     if (
         !enemy ||
         !players?.length
     ) {
 
+
         return null;
 
+
     }
+
+
 
 
     let minimumDistance =
         Infinity;
 
 
+
+
     let candidates = [];
+
+
 
 
     players.forEach(
         player => {
 
+
             const distance =
                 getCombatDistance(
+
 
                     enemy.x,
                     enemy.y,
 
+
                     player.x,
                     player.y
 
+
                 );
+
+
 
 
             if (
@@ -160,48 +203,65 @@ function chooseNearestPlayer(
                 minimumDistance
             ) {
 
+
                 minimumDistance =
                     distance;
+
 
                 candidates = [
                     player
                 ];
+
 
             } else if (
                 distance ===
                 minimumDistance
             ) {
 
+
                 candidates.push(
                     player
                 );
 
+
             }
+
 
         }
     );
+
+
 
 
     return chooseRandomEntity(
         candidates
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PG CON PIÙ PF
 // ============================================================
 
+
 function choosePlayerWithMostHP(
     players
 ) {
 
+
     if (!players?.length) {
+
 
         return null;
 
+
     }
+
+
 
 
     const maxHP =
@@ -213,6 +273,8 @@ function choosePlayerWithMostHP(
                     ) || 0
             )
         );
+
+
 
 
     const candidates =
@@ -227,26 +289,37 @@ function choosePlayerWithMostHP(
         );
 
 
+
+
     return chooseRandomEntity(
         candidates
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PG CON MENO PF
 // ============================================================
 
+
 function choosePlayerWithLeastHP(
     players
 ) {
 
+
     if (!players?.length) {
+
 
         return null;
 
+
     }
+
+
 
 
     const minHP =
@@ -258,6 +331,8 @@ function choosePlayerWithLeastHP(
                     ) || 0
             )
         );
+
+
 
 
     const candidates =
@@ -272,37 +347,54 @@ function choosePlayerWithLeastHP(
         );
 
 
+
+
     return chooseRandomEntity(
         candidates
     );
 
+
 }
+
+
 
 
 // ============================================================
 // IA GOBLIN BASE - SCELTA BERSAGLIO
 // ============================================================
 
+
 function chooseGoblinTarget(
     goblin
 ) {
 
+
     if (!goblin) {
+
 
         return null;
 
+
     }
+
+
 
 
     const players =
         getAliveCombatPlayers();
 
 
+
+
     if (!players.length) {
+
 
         return null;
 
+
     }
+
+
 
 
     const currentHP =
@@ -311,19 +403,26 @@ function chooseGoblinTarget(
         ) || 0;
 
 
+
+
     // ========================================================
     // 7 - 10 PF
     // Attacca il PG più vicino
     // ========================================================
 
+
     if (currentHP >= 7) {
+
 
         return chooseNearestPlayer(
             goblin,
             players
         );
 
+
     }
+
+
 
 
     // ========================================================
@@ -331,13 +430,18 @@ function chooseGoblinTarget(
     // Attacca il PG con più PF
     // ========================================================
 
+
     if (currentHP >= 4) {
+
 
         return choosePlayerWithMostHP(
             players
         );
 
+
     }
+
+
 
 
     // ========================================================
@@ -345,23 +449,32 @@ function chooseGoblinTarget(
     // Attacca il PG con meno PF
     // ========================================================
 
+
     if (currentHP >= 1) {
+
 
         return choosePlayerWithLeastHP(
             players
         );
 
+
     }
+
+
 
 
     return null;
 
+
 }
+
+
 
 
 // ============================================================
 // IA GOBLIN BASE - MOVIMENTO
 // ============================================================
+
 
 function isCombatCellOccupied(x, y, ignoreEntityId = null) {
     return Array.from(combatEntities.values()).some(entity => {
@@ -373,23 +486,31 @@ function isCombatCellOccupied(x, y, ignoreEntityId = null) {
 }
 
 
+
+
 // ============================================================
 // PROSSIMA CASELLA VERSO IL BERSAGLIO
 // ============================================================
+
 
 function chooseGoblinNextStep(
     goblin,
     target
 ) {
 
+
     if (
         !goblin ||
         !target
     ) {
 
+
         return null;
 
+
     }
+
+
 
 
     const currentDistance =
@@ -401,47 +522,66 @@ function chooseGoblinNextStep(
         );
 
 
+
+
     // È già adiacente:
     // non deve muoversi.
     if (currentDistance <= 1) {
 
+
         return null;
+
 
     }
 
 
+
+
     const directions = [
+
 
         { dx: -1, dy: -1 },
         { dx:  0, dy: -1 },
         { dx:  1, dy: -1 },
 
+
         { dx: -1, dy:  0 },
         { dx:  1, dy:  0 },
+
 
         { dx: -1, dy:  1 },
         { dx:  0, dy:  1 },
         { dx:  1, dy:  1 }
 
+
     ];
+
+
 
 
     let bestDistance =
         currentDistance;
 
+
     let candidates = [];
+
+
 
 
     directions.forEach(
         direction => {
 
+
             const newX =
                 Number(goblin.x) +
                 direction.dx;
 
+
             const newY =
                 Number(goblin.y) +
                 direction.dy;
+
+
 
 
             // Fuori dalla mappa.
@@ -452,9 +592,13 @@ function chooseGoblinNextStep(
                 newY >= COMBAT_ROWS
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             // Casella occupata.
@@ -462,9 +606,13 @@ function chooseGoblinNextStep(
                 !canCombatEntityOccupy(goblin, newX, newY)
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             const distance =
@@ -476,6 +624,8 @@ function chooseGoblinNextStep(
                 );
 
 
+
+
             // Accettiamo soltanto mosse
             // che avvicinano realmente.
             if (
@@ -483,8 +633,10 @@ function chooseGoblinNextStep(
                 bestDistance
             ) {
 
+
                 bestDistance =
                     distance;
+
 
                 candidates = [
                     {
@@ -495,11 +647,13 @@ function chooseGoblinNextStep(
                     }
                 ];
 
+
             } else if (
                 distance === bestDistance
                 &&
                 distance < currentDistance
             ) {
+
 
                 candidates.push(
                     {
@@ -510,33 +664,44 @@ function chooseGoblinNextStep(
                     }
                 );
 
+
             }
+
 
         }
     );
+
+
 
 
     return chooseRandomEntity(
         candidates
     );
 
+
 }// ============================================================
 // IA GOBLIN BASE - PERCORSO DEL TURNO
 // ============================================================
+
 
 function chooseGoblinMovementPath(
     goblin,
     target
 ) {
 
+
     if (
         !goblin ||
         !target
     ) {
 
+
         return [];
 
+
     }
+
+
 
 
     const movement =
@@ -548,31 +713,45 @@ function chooseGoblinMovementPath(
         );
 
 
+
+
     if (movement <= 0) {
+
 
         return [];
 
+
     }
+
+
 
 
     const path = [];
 
 
+
+
     const simulatedGoblin = {
 
+
         ...goblin,
+
 
         x:
             Number(
                 goblin.x
             ),
 
+
         y:
             Number(
                 goblin.y
             )
 
+
     };
+
+
 
 
     for (
@@ -580,6 +759,7 @@ function chooseGoblinMovementPath(
         stepNumber < movement;
         stepNumber++
     ) {
+
 
         const distance =
             getCombatDistance(
@@ -590,14 +770,20 @@ function chooseGoblinMovementPath(
             );
 
 
+
+
         // È già abbastanza vicino per attaccare.
         if (
             distance <= 1
         ) {
 
+
             break;
 
+
         }
+
+
 
 
         const nextStep =
@@ -607,13 +793,19 @@ function chooseGoblinMovementPath(
             );
 
 
+
+
         if (
             !nextStep
         ) {
 
+
             break;
 
+
         }
+
+
 
 
         path.push(
@@ -621,18 +813,27 @@ function chooseGoblinMovementPath(
         );
 
 
+
+
         simulatedGoblin.x =
             nextStep.x;
+
 
         simulatedGoblin.y =
             nextStep.y;
 
+
     }
+
+
 
 
     return path;
 
+
 }
+
+
 
 
 // ============================================================
@@ -641,10 +842,12 @@ function chooseGoblinMovementPath(
 // Le azioni effettive restano soggette ai controlli RPC server.
 // ============================================================
 
+
 // Distanza in caselle, diagonali comprese.
 function getAIEnemyDistance(a, b) {
     return getCombatRectDistance(a,b);
 }
+
 
 function getAliveAlliedEnemies(enemy = null) {
     return Array.from(combatEntities.values()).filter(entity =>
@@ -654,6 +857,7 @@ function getAliveAlliedEnemies(enemy = null) {
         (!enemy || entity.id !== enemy.id)
     );
 }
+
 
 // Preferisce un valore alto o basso; spareggia per vicinanza,
 // poi in maniera casuale (senza imporre un ordine artificiale).
@@ -667,6 +871,7 @@ function chooseAIPlayerByStat(enemy, players, field, preferHighest = false) {
     const minDistance = Math.min(...tied.map(p => getAIEnemyDistance(enemy, p)));
     return chooseRandomEntity(tied.filter(p => getAIEnemyDistance(enemy, p) === minDistance));
 }
+
 
 // Per valori non presenti in combat_entities (es. Costituzione):
 // passarli solo dopo averli caricati in modo autorizzato dal server.
@@ -683,6 +888,7 @@ function chooseAIPlayerByValue(enemy, players, getValue, preferHighest = false) 
     return chooseRandomEntity(tied.filter(p => getAIEnemyDistance(enemy, p) === distance));
 }
 
+
 function hasAICombatEffect(entityId, effectType) {
     return combatEffects.some(effect =>
         effect.target_entity_id === entityId &&
@@ -690,6 +896,7 @@ function hasAICombatEffect(entityId, effectType) {
         Number(effect.remaining_rounds) > 0
     );
 }
+
 
 // Ricerca BFS su griglia: non attraversa caselle occupate.
 // Può trovare un percorso anche aggirando ostacoli; non muove
@@ -722,11 +929,13 @@ function findAIGridPath(enemy, isGoal, maximumSteps = Infinity) {
     return [];
 }
 
+
 function findAIPathToRange(enemy, target, range, availableMovement) {
     const steps = Math.max(0, Number(availableMovement) || 0);
     return findAIGridPath(enemy, (x, y) =>
         getCombatRectDistance({...enemy,x,y}, target) <= range, steps);
 }
+
 
 // Per il mordi e fuggi: scelta di una casella raggiungibile
 // che massimizza la distanza dal PG più vicino, entro il MOV
@@ -761,6 +970,7 @@ function findAIRetreatPath(enemy, players, availableMovement) {
     return best.path;
 }
 
+
 // ============================================================
 // NUOVE IA: motore di orchestrazione (nessuna modifica ai Goblin)
 // ============================================================
@@ -773,11 +983,13 @@ const PE_NEW_AI_TYPES = new Set([
     'tiki_legno','tiki_pietra'
 ]);
 
+
 async function peAIRpc(name, args = {}) {
     const { data, error } = await db.rpc(name, { p_combat_id: combatId, ...args });
     if (error) throw error;
     return data;
 }
+
 
 function peAIPath(enemy, target, range, budget) {
     if (!enemy || !target || budget <= 0) return [];
@@ -803,6 +1015,7 @@ function peAIPath(enemy, target, range, budget) {
     return best.path;
 }
 
+
 async function peAIMove(enemy, path) {
     if (!path?.length) return enemy;
     const result=await peAIRpc('move_new_enemy_ai_path',{p_path:path});
@@ -814,6 +1027,7 @@ async function peAIMove(enemy, path) {
     }
     return enemy;
 }
+
 
 async function peAIAttack(rpc, label) {
     const result=await peAIRpc(rpc);
@@ -828,6 +1042,8 @@ async function peAIAttack(rpc, label) {
 }
 
 
+
+
 // FUGA UCCELLI PARASSITA — animazione dei passi fino al bordo.
 // Il server ha già convalidato il percorso; questa funzione anima
 // soltanto la rappresentazione locale, senza consumare movimento due volte.
@@ -838,12 +1054,14 @@ async function peAIAnimateParasiticBirdEscape(before, after, path) {
     const moved = Number(before.x) !== Number(after.x) ||
         Number(before.y) !== Number(after.y);
 
+
     if (!moved || !steps.length || !last ||
         Number(last.x) !== Number(after.x) ||
         Number(last.y) !== Number(after.y) || !token) {
         renderCombatTokens();
         return;
     }
+
 
     const originalTransition = token.style.transition;
     const stepDuration = 220;
@@ -861,6 +1079,7 @@ async function peAIAnimateParasiticBirdEscape(before, after, path) {
     }
 }
 
+
 // Animazione visiva per assalitori mobili: il server convalida le caselle,
 // poi il client le mostra una alla volta, senza un secondo movimento RPC.
 async function peAIMoveAnimated(enemy, path) {
@@ -872,6 +1091,7 @@ async function peAIMoveAnimated(enemy, path) {
     return after;
 }
 
+
 // ============================================================
 // SCIAMANO LUCERTOLOIDE — VELENO, SUCCHIASANGUE E RITIRATA
 // La RPC verifica costi, portata, bersaglio, effetti e azioni.
@@ -879,6 +1099,7 @@ async function peAIMoveAnimated(enemy, path) {
 async function peAIShamanTurn(enemy) {
     const players = getAliveCombatPlayers();
     if (!players.length) return;
+
 
     const distance = (a,b) => getCombatRectDistance(a,b);
     const nearest = list => list.slice().sort((a,b) =>
@@ -888,6 +1109,7 @@ async function peAIShamanTurn(enemy) {
     const budget = Math.max(0,Number(enemy.movement_remaining) || 0);
     const adjacent = players.filter(p => distance(enemy,p) === 1);
     const poisoned = p => hasAICombatEffect(p.id,'dot_veleno');
+
 
     // Nessun PM per alcuna magia: si comporta come un combattente aggressivo.
     if (pm < 2) {
@@ -900,6 +1122,7 @@ async function peAIShamanTurn(enemy) {
         }
         return;
     }
+
 
     // Prima si difende da un giocatore in corpo a corpo.
     const drainTarget = missingHp && pm >= 2
@@ -933,12 +1156,14 @@ async function peAIShamanTurn(enemy) {
         }
     }
 
+
     // Consumiamo soltanto i punti movimento rimasti sulla scheda server.
     // Scegliamo una casella che aumenti la distanza dal giocatore più vicino.
     const retreat=findAIRetreatPath(enemy,getAliveCombatPlayers(),
         Math.max(0,Number(enemy.movement_remaining)||0));
     await peAIMove(enemy,retreat);
 }
+
 
 // DINOSAURI PIANO I-C — gruppo Velociraptor e T-Rex.
 async function peAIDinosaurTurn(enemy) {
@@ -991,6 +1216,7 @@ async function peAIDinosaurTurn(enemy) {
     await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
 }
 
+
 // IA Tiki: potenziamento una sola volta finche' e' attivo, poi assalto al PG piu' vicino.
 async function peAITikiTurn(enemy) {
     const players=getAliveCombatPlayers();
@@ -1012,6 +1238,7 @@ async function peAITikiTurn(enemy) {
     if(getCombatRectDistance(enemy,chosen)<=1 && !enemy.action_used)
         await peAIAttack('run_enemy_melee_attack_turn',enemy.display_name);
 }
+
 
 async function peAINewEnemyTurn(enemy) {
     const type=String(enemy.monster_type||'').toLowerCase();
@@ -1079,9 +1306,11 @@ async function peAINewEnemyTurn(enemy) {
         enemy = await peAIMove(enemy, escapePath);
         await peAIAnimateParasiticBirdEscape(beforeMove, enemy, escapePath);
 
+
         const atEdge = Number(enemy.x) === 0 || Number(enemy.x) === COMBAT_COLUMNS - 1 ||
             Number(enemy.y) === 0 || Number(enemy.y) === COMBAT_ROWS - 1;
         if (!atEdge) return; // Non può ancora scappare: riproverà al turno seguente.
+
 
         // Rimane fermo e visibile al bordo per tre secondi interi.
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -1150,13 +1379,16 @@ async function peAINewEnemyTurn(enemy) {
     }
 }
 
+
 // ============================================================
 // ESECUZIONE IA NEMICO
 // ============================================================
 
+
 async function runEnemyAI(
     currentEntity
 ) {
+
 
     if (
         !currentEntity ||
@@ -1167,13 +1399,19 @@ async function runEnemyAI(
             "active"
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     const aiTurnKey =
         `${combatSession.round_number}:${currentEntity.id}`;
+
+
 
 
     if (
@@ -1182,9 +1420,13 @@ async function runEnemyAI(
             aiTurnKey
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const monsterType =
@@ -1194,15 +1436,22 @@ async function runEnemyAI(
         ).toLowerCase();
 
 
+
+
     enemyAITurnKey =
         aiTurnKey;
+
+
 
 
     enemyAIInProgress =
         true;
 
 
+
+
     try {
+
 
         // Boss Tiki: due azioni server-side, potenziamenti, evocazioni e attacchi.
         if (monsterType === 'boss_tiki') {
@@ -1242,6 +1491,7 @@ async function runEnemyAI(
             }
             return;
         }
+
 
         // Allosauro Dominante: l'intero turno è atomico lato database.
         if (monsterType === 'allosauro_dominante') {
@@ -1285,12 +1535,14 @@ async function runEnemyAI(
             return;
         }
 
+
         // ====================================================
         // BERSERK DI PUZZACINTA — IA TATTICA SERVER-SIDE
         // ====================================================
         // Incontro isolato: non modifica l'IA dei normali Goblin.
         // Il server decide percorso senza spuntoni, catena e fase.
         if (monsterType === "goblin_berserk") {
+
 
             const {
                 data: berserkData,
@@ -1300,20 +1552,25 @@ async function runEnemyAI(
                 { p_combat_id: combatId }
             );
 
+
             if (berserkError) {
                 throw berserkError;
             }
 
+
             if (berserkData?.executed === true) {
+
 
                 const bossName =
                     berserkData.enemy_name || "Berserk";
+
 
                 if (Number(berserkData.phase) === 2) {
                     addCombatLog(
                         `${bossName} è in FURIA! Agisce due volte in questo turno.`
                     );
                 }
+
 
                 if (berserkData.move?.escaped_spikes) {
                     addCombatLog(
@@ -1325,19 +1582,24 @@ async function runEnemyAI(
                     );
                 }
 
+
                 for (const action of berserkData.actions || []) {
+
 
                     if (action?.executed !== true) {
                         continue;
                     }
+
 
                     if (action.type === "chain") {
                         const verb = action.ability === "attrazione"
                             ? "attira"
                             : "respinge";
 
+
                         let line =
                             `${bossName} usa ${action.ability}: ${verb} ${action.target_name}!`;
+
 
                         if (action.on_spikes) {
                             line += ` Il bersaglio finisce sugli spuntoni: ` +
@@ -1347,12 +1609,15 @@ async function runEnemyAI(
                             line += " Lo avvicina agli spuntoni.";
                         }
 
+
                         if (action.target_dead) {
                             line += ` ${action.target_name} è sconfitto!`;
                         }
 
+
                         addCombatLog(line);
                     }
+
 
                     if (action.type === "melee") {
                         let line =
@@ -1361,9 +1626,11 @@ async function runEnemyAI(
                             `1d10 (${action.roll}) + ATT ${action.attack} = ${action.total} ` +
                             `contro DIF ${action.defense}. `;
 
+
                         line += action.hit
                             ? `${action.damage} danni · PF ${action.target_hp}/${action.target_max_hp}.`
                             : "MANCATO.";
+
 
                         if (action.target_dead) {
                             line += ` ${action.target_name} è sconfitto!`;
@@ -1373,10 +1640,12 @@ async function runEnemyAI(
                 }
             }
 
+
             await loadCombatSession();
             await loadCombatEntities();
             lastCombatEntitiesSnapshot = createCombatSnapshot();
             renderCombat();
+
 
             // Se l'ultima azione ha causato la vittoria/sconfitta,
             // non bisogna forzare il passaggio a un nuovo turno.
@@ -1389,9 +1658,11 @@ async function runEnemyAI(
                     p_round_number: Number(berserkData?.round ?? combatSession.round_number)
                 });
 
+
                 if (endError) {
                     throw endError;
                 }
+
 
                 await loadCombatSession();
                 await loadCombatEntities();
@@ -1399,12 +1670,15 @@ async function runEnemyAI(
                 renderCombat();
             }
 
+
             return;
         }
+
 
         // ====================================================
         // AGGRO
         // ====================================================
+
 
         const {
             data: aggroData,
@@ -1419,13 +1693,19 @@ async function runEnemyAI(
             );
 
 
+
+
         if (
             aggroError
         ) {
 
+
             throw aggroError;
 
+
         }
+
+
 
 
         if (
@@ -1433,11 +1713,15 @@ async function runEnemyAI(
             true
         ) {
 
+
             addCombatLog(
                 `${aggroData.enemy_name} è provocato da ${aggroData.target_name}!`
             );
 
+
         }
+
+
 
 
         // ====================================================
@@ -1462,18 +1746,23 @@ async function runEnemyAI(
             return;
         }
 
+
         // ====================================================
         // GOBLIN BOSS
         // ====================================================
+
 
         if (
             monsterType ===
             "goblin_boss"
         ) {
 
+
             console.log(
                 "IA: GOBLIN BOSS"
             );
+
+
 
 
             const {
@@ -1489,13 +1778,19 @@ async function runEnemyAI(
                 );
 
 
+
+
             if (
                 bossError
             ) {
 
+
                 throw bossError;
 
+
             }
+
+
 
 
             console.log(
@@ -1504,20 +1799,28 @@ async function runEnemyAI(
             );
 
 
+
+
             if (
                 bossData?.spawned_enemy_name
             ) {
+
 
                 addCombatLog(
                     `${bossData.boss_name || "Goblin Boss"} evoca ${bossData.spawned_enemy_name}!`
                 );
 
+
             }
+
+
 
 
             const bossMove =
                 bossData?.move ||
                 null;
+
+
 
 
             if (
@@ -1529,6 +1832,7 @@ async function runEnemyAI(
                 ) > 0
             ) {
 
+
                 addCombatLog(
                     `${bossMove.enemy_name || bossData.boss_name || "Goblin Boss"} si muove di ${bossMove.steps} ${
                         Number(bossMove.steps) === 1
@@ -1537,13 +1841,17 @@ async function runEnemyAI(
                     } verso ${bossMove.target_name}.`
                 );
 
+
             }
+
+
 
 
             if (
                 bossData?.mode ===
                 "heal"
             ) {
+
 
                 addCombatLog(
                     `${bossData.boss_name || "Goblin Boss"} usa Cura su se stesso: `
@@ -1555,7 +1863,10 @@ async function runEnemyAI(
                     `· PM ${bossData.current_pm}/${bossData.max_pm}.`
                 );
 
+
             }
+
+
 
 
             if (
@@ -1565,14 +1876,18 @@ async function runEnemyAI(
                 bossData?.attack
             ) {
 
+
                 const attackData =
                     bossData.attack;
+
+
 
 
                 if (
                     attackData.hit ===
                     true
                 ) {
+
 
                     let attackText =
                         `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
@@ -1588,21 +1903,29 @@ async function runEnemyAI(
                         ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
 
 
+
+
                     if (
                         attackData.target_dead
                     ) {
 
+
                         attackText +=
                             ` · ${attackData.target_name} è sconfitto!`;
 
+
                     }
+
+
 
 
                     addCombatLog(
                         attackText
                     );
 
+
                 } else {
+
 
                     addCombatLog(
                         `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
@@ -1614,9 +1937,13 @@ async function runEnemyAI(
                         `PM ${attackData.current_pm}/${attackData.max_pm}.`
                     );
 
+
                 }
 
+
             }
+
+
 
 
             if (
@@ -1624,13 +1951,17 @@ async function runEnemyAI(
                 "fire_bolt_out_of_range"
             ) {
 
+
                 addCombatLog(
                     `${bossData.boss_name || "Goblin Boss"} prova a prendere di mira ${bossData.target_name}, `
                     +
                     `ma resta fuori portata (${bossData.distance}/${bossData.range}).`
                 );
 
+
             }
+
+
 
 
             if (
@@ -1638,10 +1969,13 @@ async function runEnemyAI(
                 "double_melee"
             ) {
 
+
                 const attacks = [
                     bossData.attack_1,
                     bossData.attack_2
                 ];
+
+
 
 
                 attacks.forEach(
@@ -1650,19 +1984,25 @@ async function runEnemyAI(
                         index
                     ) => {
 
+
                         if (
                             !attackData?.executed
                         ) {
 
+
                             return;
 
+
                         }
+
+
 
 
                         if (
                             attackData.hit ===
                             true
                         ) {
+
 
                             let attackText =
                                 `${attackData.attacker_name} attacca ${attackData.target_name} `
@@ -1678,21 +2018,29 @@ async function runEnemyAI(
                                 ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
 
 
+
+
                             if (
                                 attackData.target_dead
                             ) {
 
+
                                 attackText +=
                                     ` · ${attackData.target_name} è sconfitto!`;
 
+
                             }
+
+
 
 
                             addCombatLog(
                                 attackText
                             );
 
+
                         } else {
+
 
                             addCombatLog(
                                 `${attackData.attacker_name} attacca ${attackData.target_name} `
@@ -1704,22 +2052,32 @@ async function runEnemyAI(
                                 `contro DIF ${attackData.defense}. MANCATO.`
                             );
 
+
                         }
+
 
                     }
                 );
 
+
             }
 
 
+
+
             await loadCombatEntities();
+
+
 
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
 
+
+
             renderCombat();
+
 
         } else         // ====================================================
         // GOBLIN SCIAMANO
@@ -1730,14 +2088,18 @@ async function runEnemyAI(
         // - rispettare un eventuale Aggro già applicato.
         // ====================================================
 
+
         if (
             monsterType ===
             "goblin_sciamano"
         ) {
 
+
             console.log(
                 "IA: GOBLIN SCIAMANO"
             );
+
+
 
 
             const {
@@ -1753,19 +2115,27 @@ async function runEnemyAI(
                 );
 
 
+
+
             if (
                 shamanError
             ) {
 
+
                 throw shamanError;
 
+
             }
+
+
 
 
             console.log(
                 "AZIONE IA SCIAMANO:",
                 shamanData
             );
+
+
 
 
             if (
@@ -1775,6 +2145,7 @@ async function runEnemyAI(
                 shamanData?.executed ===
                 true
             ) {
+
 
                 addCombatLog(
                     `${shamanData.enemy_name} usa Cura su ${shamanData.target_name}: `
@@ -1786,11 +2157,15 @@ async function runEnemyAI(
                     `· PM ${shamanData.current_pm}/${shamanData.max_pm}.`
                 );
 
+
             } else {
+
 
                 const moveData =
                     shamanData?.move ||
                     null;
+
+
 
 
                 if (
@@ -1798,11 +2173,13 @@ async function runEnemyAI(
                     true
                 ) {
 
+
                     if (
                         Number(
                             moveData.steps
                         ) > 0
                     ) {
+
 
                         addCombatLog(
                             `${moveData.enemy_name} si muove di ${moveData.steps} ${
@@ -1812,17 +2189,23 @@ async function runEnemyAI(
                             } verso ${moveData.target_name}.`
                         );
 
+
                     } else if (
                         moveData.target_name
                     ) {
+
 
                         addCombatLog(
                             `${moveData.enemy_name} prende di mira ${moveData.target_name}.`
                         );
 
+
                     }
 
+
                 }
+
+
 
 
                 const attackData =
@@ -1830,15 +2213,19 @@ async function runEnemyAI(
                     null;
 
 
+
+
                 if (
                     attackData?.executed ===
                     true
                 ) {
 
+
                     if (
                         attackData.hit ===
                         true
                     ) {
+
 
                         let attackText =
                             `${attackData.attacker_name} attacca ${attackData.target_name}: `
@@ -1852,21 +2239,29 @@ async function runEnemyAI(
                             ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
 
 
+
+
                         if (
                             attackData.target_dead
                         ) {
 
+
                             attackText +=
                                 ` · ${attackData.target_name} è sconfitto!`;
 
+
                         }
+
+
 
 
                         addCombatLog(
                             attackText
                         );
 
+
                     } else {
+
 
                         addCombatLog(
                             `${attackData.attacker_name} attacca ${attackData.target_name}: `
@@ -1876,53 +2271,75 @@ async function runEnemyAI(
                             `contro DIF ${attackData.defense}. MANCATO.`
                         );
 
+
                     }
 
+
                 }
+
 
             }
 
 
+
+
             await loadCombatEntities();
+
+
 
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
 
+
+
             renderCombat();
+
 
         } else {
                         // ====================================================
             // GOBLIN BASE / GOBLIN SPUTAFUOCO
             // ====================================================
 
+
             const isFireGoblin =
                 monsterType ===
                 "goblin_sputafuoco";
+
+
 
 
             if (
                 isFireGoblin
             ) {
 
+
                 console.log(
                     "IA: GOBLIN SPUTAFUOCO"
                 );
 
+
             }
+
+
 
 
             // ====================================================
             // MOVIMENTO
             // ====================================================
 
+
             const movementRpc =
                 isFireGoblin
 
+
                     ? "run_goblin_sputafuoco_movement_turn"
 
+
                     : "run_goblin_movement_turn";
+
+
 
 
             const {
@@ -1938,13 +2355,19 @@ async function runEnemyAI(
                 );
 
 
+
+
             if (
                 moveError
             ) {
 
+
                 throw moveError;
 
+
             }
+
+
 
 
             console.log(
@@ -1953,20 +2376,25 @@ async function runEnemyAI(
             );
 
 
+
+
             // ====================================================
             // LOG MOVIMENTO
             // ====================================================
+
 
             if (
                 moveData?.executed ===
                 true
             ) {
 
+
                 if (
                     Number(
                         moveData.steps
                     ) > 0
                 ) {
+
 
                     addCombatLog(
                         `${moveData.enemy_name} si muove di ${moveData.steps} ${
@@ -1976,25 +2404,34 @@ async function runEnemyAI(
                         } verso ${moveData.target_name}.`
                     );
 
+
                 } else if (
                     moveData.target_name
                 ) {
+
 
                     addCombatLog(
                         `${moveData.enemy_name} prende di mira ${moveData.target_name}.`
                     );
 
+
                 }
 
+
             }
+
+
 
 
             // ====================================================
             // ATTACCO
             // ====================================================
 
+
             let attackData =
                 null;
+
+
 
 
             const fireGoblinHasMana =
@@ -2005,8 +2442,11 @@ async function runEnemyAI(
                 ) > 0;
 
 
+
+
             const canAttack =
                 isFireGoblin
+
 
                     ? (
                         fireGoblinHasMana
@@ -2016,20 +2456,28 @@ async function runEnemyAI(
                                 true
                     )
 
+
                     : moveData?.adjacent ===
                         true;
+
+
 
 
             if (
                 canAttack
             ) {
 
+
                 const attackRpc =
                     isFireGoblin
 
+
                         ? "run_goblin_sputafuoco_attack_turn"
 
+
                         : "run_goblin_attack_turn";
+
+
 
 
                 const {
@@ -2045,17 +2493,25 @@ async function runEnemyAI(
                     );
 
 
+
+
                 if (
                     attackError
                 ) {
 
+
                     throw attackError;
+
 
                 }
 
 
+
+
                 attackData =
                     attackResult;
+
+
 
 
                 console.log(
@@ -2063,49 +2519,68 @@ async function runEnemyAI(
                     attackData
                 );
 
+
             }
+
+
 
 
             // ====================================================
             // AGGIORNA STATO VISIVO
             // ====================================================
 
+
             await loadCombatEntities();
+
+
 
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
 
+
+
             renderCombat();
+
+
 
 
             // ====================================================
             // LOG ATTACCO
             // ====================================================
 
+
             if (
                 attackData?.executed ===
                 true
             ) {
+
 
                 const isFireBolt =
                     attackData.ability ===
                     "dardo_di_fuoco";
 
 
+
+
                 const actionText =
                     isFireBolt
 
+
                         ? `${attackData.attacker_name} usa Dardo di Fuoco contro ${attackData.target_name}: `
 
+
                         : `${attackData.attacker_name} attacca ${attackData.target_name}: `;
+
+
 
 
                 if (
                     attackData.hit ===
                     true
                 ) {
+
 
                     let attackText =
                         actionText
@@ -2119,6 +2594,8 @@ async function runEnemyAI(
                         ` · PF ${attackData.target_hp}/${attackData.target_max_hp}`;
 
 
+
+
                     if (
                         isFireBolt
                         &&
@@ -2126,27 +2603,37 @@ async function runEnemyAI(
                         undefined
                     ) {
 
+
                         attackText +=
                             ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
 
+
                     }
+
+
 
 
                     if (
                         attackData.target_dead
                     ) {
 
+
                         attackText +=
                             ` · ${attackData.target_name} è sconfitto!`;
 
+
                     }
+
+
 
 
                     addCombatLog(
                         attackText
                     );
 
+
                 } else {
+
 
                     let missText =
                         actionText
@@ -2156,6 +2643,8 @@ async function runEnemyAI(
                         `contro DIF ${attackData.defense}. MANCATO.`;
 
 
+
+
                     if (
                         isFireBolt
                         &&
@@ -2163,24 +2652,32 @@ async function runEnemyAI(
                         undefined
                     ) {
 
+
                         missText +=
                             ` · PM ${attackData.current_pm}/${attackData.max_pm}`;
 
+
                     }
+
+
 
 
                     addCombatLog(
                         missText
                     );
 
+
                 }
 
+
             }
+
 
         }
                 // ====================================================
         // FINE TURNO AUTOMATICA IA
         // ====================================================
+
 
         const {
             data: turnAdvanced,
@@ -2192,8 +2689,10 @@ async function runEnemyAI(
                     p_combat_id:
                         combatId,
 
+
                     p_enemy_entity_id:
                         currentEntity.id,
+
 
                     p_round_number:
                         Number(
@@ -2203,13 +2702,19 @@ async function runEnemyAI(
             );
 
 
+
+
         if (
             turnError
         ) {
 
+
             throw turnError;
 
+
         }
+
+
 
 
         console.log(
@@ -2218,29 +2723,42 @@ async function runEnemyAI(
         );
 
 
+
+
         if (
             turnAdvanced ===
             true
         ) {
 
+
             await loadCombatSession();
 
 
+
+
             await loadCombatEntities();
+
+
 
 
             lastCombatEntitiesSnapshot =
                 createCombatSnapshot();
 
 
+
+
             renderCombat();
 
+
         }
+
+
 
 
     } catch (
         error
     ) {
+
 
         console.error(
             "Errore IA nemico:",
@@ -2248,11 +2766,16 @@ async function runEnemyAI(
         );
 
 
+
+
     } finally {
+
 
         enemyAIInProgress =
             false;
 
+
     }
+
 
 }

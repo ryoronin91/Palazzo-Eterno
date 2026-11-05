@@ -1,31 +1,44 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // COMBAT-UI.JS
 // TOKEN, MAPPA, PANNELLI, DRAWER, TURN ORDER, SCHEDA PG
 // ============================================================
 
 
+
+
 // ============================================================
 // RENDER COMPLETO
 // ============================================================
 
+
 function renderCombat() {
+
 
     renderCombatTokens();
 
+
     renderCombatEntityList();
+
 
     renderPlayerCombatSheet();
 
+
     renderActiveCombatBuffs();
+
 
     updateActionButtons();
 
+
     updateTargetSelectionVisuals();
+
 
     renderCombatVictory();
 
+
 }
+
+
 
 
 // Icone ed etichette per gli effetti realmente presenti in combat_effects.
@@ -38,6 +51,7 @@ const COMBAT_STATUS_VISUALS = Object.freeze({
     movement_bonus: { name: 'Rapidità', symbol: '👢', tone: 'speed' },
     tiki_rebirth: { name: 'Rinascita', symbol: '♻', tone: 'armor' }
 });
+
 
 function renderCombatTokenStatusIcons(token, entityId) {
     let holder = token.querySelector('.combat-token-statuses');
@@ -64,11 +78,14 @@ function renderCombatTokenStatusIcons(token, entityId) {
     holder.hidden = holder.childElementCount === 0;
 }
 
+
 // ============================================================
 // TOKEN SULLA MAPPA
 // ============================================================
 
+
 function renderCombatTokens() {
+
 
     const map =
         document.getElementById(
@@ -76,22 +93,34 @@ function renderCombatTokens() {
         );
 
 
+
+
     if (!map) {
+
 
         return;
 
+
     }
+
+
 
 
     const metrics =
         getCombatMapGridMetrics();
 
 
+
+
     if (!metrics) {
+
 
         return;
 
+
     }
+
+
 
 
     const {
@@ -100,21 +129,29 @@ function renderCombatTokens() {
     } = metrics;
 
 
+
+
     const activeEntityIds =
         new Set();
 
 
+
+
     combatEntities.forEach(
         entity => {
+
 
             activeEntityIds.add(
                 entity.id
             );
 
 
+
+
             // =================================================
             // ENTITÀ MORTA
             // =================================================
+
 
             const tikiRebirth = entity.enemy_id === 'tiki_legno' || entity.enemy_id === 'tiki_pietra';
             const isRebirthing = tikiRebirth && Number(entity.current_hp) <= 0 &&
@@ -124,32 +161,45 @@ function renderCombatTokens() {
                 !isRebirthing && (entity.status !== "alive" || Number(entity.current_hp) <= 0)
             ) {
 
+
                 const oldToken =
                     combatTokens.get(
                         entity.id
                     );
 
 
+
+
                 if (oldToken) {
 
+
                     oldToken.remove();
+
+
 
 
                     combatTokens.delete(
                         entity.id
                     );
 
+
                 }
+
+
 
 
                 return;
 
+
             }
+
+
 
 
             // =================================================
             // CREA TOKEN
             // =================================================
+
 
             let token =
                 combatTokens.get(
@@ -157,7 +207,10 @@ function renderCombatTokens() {
                 );
 
 
+
+
             if (!token) {
+
 
                 token =
                     document.createElement(
@@ -165,8 +218,12 @@ function renderCombatTokens() {
                     );
 
 
+
+
                 token.className =
                     "combat-token";
+
+
 
 
                 if (
@@ -174,9 +231,12 @@ function renderCombatTokens() {
                     "player"
                 ) {
 
+
                     token.classList.add(
                         "player"
                     );
+
+
 
 
                     renderPlayerTokenContent(
@@ -184,11 +244,15 @@ function renderCombatTokens() {
                         entity
                     );
 
+
                 } else {
+
 
                     token.classList.add(
                         "enemy"
                     );
+
+
 
 
                     renderEnemyTokenContent(
@@ -196,7 +260,10 @@ function renderCombatTokens() {
                         entity
                     );
 
+
                 }
+
+
 
 
                 token.title =
@@ -204,19 +271,27 @@ function renderCombatTokens() {
                     "";
 
 
+
+
                 token.addEventListener(
                     "click",
                     event => {
 
+
                         event.stopPropagation();
+
+
 
 
                         handleCombatTokenClick(
                             entity.id
                         );
 
+
                     }
                 );
+
+
 
 
                 map.appendChild(
@@ -224,12 +299,17 @@ function renderCombatTokens() {
                 );
 
 
+
+
                 combatTokens.set(
                     entity.id,
                     token
                 );
 
+
             }
+
+
 
 
             // Icone temporanee su qualsiasi token, nemico o giocatore.
@@ -238,25 +318,34 @@ function renderCombatTokens() {
             token.style.opacity = isRebirthing ? '0.75' : '';
             token.style.pointerEvents = isRebirthing ? 'none' : '';
 
+
             // =================================================
             // DIMENSIONE
             // =================================================
 
+
             const size = Math.min(cellWidth,cellHeight) *
-                (entity.enemy_id==='tiki_pietra' ? 1.82 : 0.82);
+                (entity.entity_type === 'enemy' && ['anchilosauro', 'allosauro_dominante', 'miconide_grande', 'trex', 'tiki_pietra', 'boss_tiki'].includes(entity.enemy_id) ? 1.82 : 0.82);
+
+
 
 
             token.style.width =
                 `${size}px`;
 
 
+
+
             token.style.height =
                 `${size}px`;
+
+
 
 
             // =================================================
             // POSIZIONE
             // =================================================
+
 
             const pixelPosition =
                 getCombatGridPixelPosition(
@@ -267,27 +356,39 @@ function renderCombatTokens() {
                 );
 
 
+
+
             if (!pixelPosition) {
+
 
                 return;
 
+
             }
+
+
 
 
             token.style.left =
                 `${pixelPosition.left}px`;
 
 
+
+
             token.style.top =
                 `${pixelPosition.top}px`;
+
 
         }
     );
 
 
+
+
     // ========================================================
     // RIMUOVE TOKEN NON PIÙ PRESENTI
     // ========================================================
+
 
     for (
         const [
@@ -297,34 +398,45 @@ function renderCombatTokens() {
         of combatTokens
     ) {
 
+
         if (
             !activeEntityIds.has(
                 entityId
             )
         ) {
 
+
             token.remove();
+
+
 
 
             combatTokens.delete(
                 entityId
             );
 
+
         }
+
 
     }
 
+
 }
+
+
 
 
 // ============================================================
 // TOKEN PG
 // ============================================================
 
+
 function renderPlayerTokenContent(
     token,
     entity
 ) {
+
 
     const image =
         document.createElement(
@@ -332,20 +444,30 @@ function renderPlayerTokenContent(
         );
 
 
+
+
     image.style.width =
         "100%";
+
+
 
 
     image.style.height =
         "100%";
 
 
+
+
     image.style.objectFit =
         "contain";
 
 
+
+
     image.style.display =
         "block";
+
+
 
 
     image.alt =
@@ -353,14 +475,20 @@ function renderPlayerTokenContent(
         "Personaggio";
 
 
+
+
     const tokenFile =
         entity.character_id
+
 
             ? combatPlayerTokens.get(
                 entity.character_id
             )
 
+
             : null;
+
+
 
 
     image.src =
@@ -370,21 +498,28 @@ function renderPlayerTokenContent(
         }`;
 
 
+
+
     token.appendChild(
         image
     );
 
+
 }
+
+
 
 
 // ============================================================
 // TOKEN NEMICO
 // ============================================================
 
+
 function renderEnemyTokenContent(
     token,
     entity
 ) {
+
 
     const image =
         document.createElement(
@@ -392,20 +527,30 @@ function renderEnemyTokenContent(
         );
 
 
+
+
     image.style.width =
         "100%";
+
+
 
 
     image.style.height =
         "100%";
 
 
+
+
     image.style.objectFit =
         "contain";
 
 
+
+
     image.style.display =
         "block";
+
+
 
 
     image.alt =
@@ -413,14 +558,7 @@ function renderEnemyTokenContent(
         "Nemico";
 
 
-    if (entity.enemy_id === 'allosauro_dominante') {
-        // Placeholder senza dipendere da un PNG ancora da realizzare.
-        image.remove();
-        token.textContent = '🦖';
-        token.style.fontSize = '26px';
-        token.style.textAlign = 'center';
-        return;
-    }
+
 
     image.src =
         entity.enemy_id === "goblin_berserk"
@@ -430,20 +568,29 @@ function renderEnemyTokenContent(
                 : "immagini/nemici/goblin.png";
 
 
+
+
     token.appendChild(
         image
     );
 
+
 }
+
+
 
 
 // ============================================================
 // VISUALI TARGET
 // ============================================================
 
+
 function updateTargetSelectionVisuals() {
 
+
     renderCombatRangeCells();
+
+
 
 
     combatTokens.forEach(
@@ -452,32 +599,45 @@ function updateTargetSelectionVisuals() {
             entityId
         ) => {
 
+
             // Reset.
             token.style.outline =
                 "";
+
+
 
 
             token.style.outlineOffset =
                 "";
 
 
+
+
             token.style.cursor =
                 "default";
+
+
 
 
             if (
                 !combatTargetMode
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             const entity =
                 combatEntities.get(
                     entityId
                 );
+
+
 
 
             if (
@@ -491,28 +651,38 @@ function updateTargetSelectionVisuals() {
                 ) <= 0
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             // =================================================
             // CURA
             // =================================================
 
+
             if (
                 combatTargetMode ===
                 "heal"
             ) {
+
 
                 if (
                     entity.entity_type !==
                     "player"
                 ) {
 
+
                     return;
 
+
                 }
+
+
 
 
                 if (
@@ -521,28 +691,40 @@ function updateTargetSelectionVisuals() {
                     )
                 ) {
 
+
                     token.style.outline =
                         "3px solid #70d98b";
+
+
 
 
                     token.style.outlineOffset =
                         "2px";
 
 
+
+
                     token.style.cursor =
                         "pointer";
+
 
                 }
 
 
+
+
                 return;
 
+
             }
+
+
 
 
             // =================================================
             // BUFF
             // =================================================
+
 
             if (
                 combatTargetMode.startsWith(
@@ -550,45 +732,64 @@ function updateTargetSelectionVisuals() {
                 )
             ) {
 
+
                 if (
                     entity.entity_type !==
                     "player"
                 ) {
 
+
                     return;
 
+
                 }
+
+
 
 
                 token.style.outline =
                     "3px solid #7aa7ff";
 
 
+
+
                 token.style.outlineOffset =
                     "2px";
+
+
 
 
                 token.style.cursor =
                     "pointer";
 
 
+
+
                 return;
 
+
             }
+
+
 
 
             // =================================================
             // ATTACCHI / ATTRAZIONE / REPULSIONE
             // =================================================
 
+
             if (
                 entity.entity_type !==
                 "enemy"
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             if (
@@ -597,41 +798,60 @@ function updateTargetSelectionVisuals() {
                 )
             ) {
 
+
                 token.style.outline =
                     "3px solid #d7b05d";
+
+
 
 
                 token.style.outlineOffset =
                     "2px";
 
 
+
+
                 token.style.cursor =
                     "pointer";
 
+
             }
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // ANNULLA TARGETING
 // ============================================================
 
+
 function cancelCombatTargeting() {
+
 
     combatTargetMode =
         null;
 
 
+
+
     clearCombatRangeCells();
+
+
 
 
     updateTargetSelectionVisuals();
 
+
 }
+
+
 
 
 // ============================================================
@@ -649,31 +869,42 @@ function cancelCombatTargeting() {
 // ============================================================
 
 
+
+
 let lastTurnOrderSignature =
     "";
+
+
 
 
 // ============================================================
 // ENTITÀ VIVE ORDINATE COME IL BACKEND
 // ============================================================
 
+
 function getCombatTurnOrderEntities() {
+
 
     return Array.from(
         combatEntities.values()
     )
 
+
         // =====================================================
         // SOLO ENTITÀ VIVE
         // =====================================================
 
+
         .filter(
             entity =>
+
 
                 entity.status ===
                     "alive"
 
+
                 &&
+
 
                 Number(
                     entity.current_hp
@@ -681,9 +912,12 @@ function getCombatTurnOrderEntities() {
         )
 
 
+
+
         // =====================================================
         // ORDINE REALE DI TURNAZIONE
         // =====================================================
+
 
         .sort(
             (
@@ -691,14 +925,18 @@ function getCombatTurnOrderEntities() {
                 b
             ) => {
 
+
                 // =============================================
                 // 1. INIZIATIVA PIÙ ALTA
                 // =============================================
+
 
                 const initiativeA =
                     Number(
                         a.initiative
                     ) || 0;
+
+
 
 
                 const initiativeB =
@@ -707,39 +945,54 @@ function getCombatTurnOrderEntities() {
                     ) || 0;
 
 
+
+
                 if (
                     initiativeA !==
                     initiativeB
                 ) {
+
 
                     return (
                         initiativeB -
                         initiativeA
                     );
 
+
                 }
+
+
 
 
                 // =============================================
                 // 2. PLAYER PRIMA DI ENEMY
                 // =============================================
 
+
                 const priorityA =
                     a.entity_type ===
                     "player"
 
+
                         ? 0
 
+
                         : 1;
+
+
 
 
                 const priorityB =
                     b.entity_type ===
                     "player"
 
+
                         ? 0
 
+
                         : 1;
+
+
 
 
                 if (
@@ -747,17 +1000,22 @@ function getCombatTurnOrderEntities() {
                     priorityB
                 ) {
 
+
                     return (
                         priorityA -
                         priorityB
                     );
 
+
                 }
+
+
 
 
                 // =============================================
                 // 3. ID ASC
                 // =============================================
+
 
                 return String(
                     a.id
@@ -767,19 +1025,25 @@ function getCombatTurnOrderEntities() {
                     )
                 );
 
+
             }
         );
 
+
 }
+
+
 
 
 // ============================================================
 // RUOTA LA LISTA SUL TURNO CORRENTE
 // ============================================================
 
+
 function rotateCombatTurnOrder(
     entities
 ) {
+
 
     if (
         !Array.isArray(
@@ -789,9 +1053,13 @@ function rotateCombatTurnOrder(
         entities.length === 0
     ) {
 
+
         return [];
 
+
     }
+
+
 
 
     const currentTurnId =
@@ -799,13 +1067,19 @@ function rotateCombatTurnOrder(
             ?.current_turn_entity_id;
 
 
+
+
     if (
         !currentTurnId
     ) {
 
+
         return entities;
 
+
     }
+
+
 
 
     const currentIndex =
@@ -816,30 +1090,42 @@ function rotateCombatTurnOrder(
         );
 
 
+
+
     // Se non lo troviamo oppure è già il primo.
     if (
         currentIndex <= 0
     ) {
 
+
         return entities;
+
 
     }
 
 
+
+
     return [
+
 
         ...entities.slice(
             currentIndex
         ),
+
 
         ...entities.slice(
             0,
             currentIndex
         )
 
+
     ];
 
+
 }
+
+
 
 
 // ============================================================
@@ -849,11 +1135,14 @@ function rotateCombatTurnOrder(
 // se non è cambiato nulla.
 // ============================================================
 
+
 function createCombatTurnOrderSignature(
     entities
 ) {
 
+
     return JSON.stringify({
+
 
         current:
             combatSession
@@ -861,59 +1150,76 @@ function createCombatTurnOrderSignature(
                 ||
                 null,
 
+
         entities:
             entities.map(
                 entity => ({
 
+
                     id:
                         entity.id,
+
 
                     initiative:
                         Number(
                             entity.initiative
                         ) || 0,
 
+
                     hp:
                         Number(
                             entity.current_hp
                         ) || 0,
+
 
                     maxHp:
                         Number(
                             entity.max_hp
                         ) || 0,
 
+
                     pm:
                         Number(
                             entity.current_pm
                         ) || 0,
+
 
                     maxPm:
                         Number(
                             entity.max_pm
                         ) || 0,
 
+
                     movement:
                         Number(
                             entity.movement_remaining
                         ) || 0
 
+
                 })
             )
 
+
     });
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA TURN ORDER SOLO SE NECESSARIO
 // ============================================================
 
+
 function refreshCombatTurnOrder() {
+
 
     const orderedEntities =
         getCombatTurnOrderEntities();
+
+
 
 
     const rotatedEntities =
@@ -922,10 +1228,14 @@ function refreshCombatTurnOrder() {
         );
 
 
+
+
     const signature =
         createCombatTurnOrderSignature(
             rotatedEntities
         );
+
+
 
 
     if (
@@ -933,29 +1243,40 @@ function refreshCombatTurnOrder() {
         lastTurnOrderSignature
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     lastTurnOrderSignature =
         signature;
 
 
+
+
     renderCombatEntityList(
         rotatedEntities
     );
 
+
 }
+
+
 
 
 // ============================================================
 // RENDER TURN ORDER
 // ============================================================
 
+
 function renderCombatEntityList(
     suppliedEntities = null
 ) {
+
 
     const container =
         document.getElementById(
@@ -963,24 +1284,35 @@ function renderCombatEntityList(
         );
 
 
+
+
     if (
         !container
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     container.replaceChildren();
+
+
 
 
     // ========================================================
     // CALCOLA ORDINE SE NON È STATO FORNITO
     // ========================================================
 
+
     let entities =
         suppliedEntities;
+
+
 
 
     if (
@@ -989,16 +1321,21 @@ function renderCombatEntityList(
         )
     ) {
 
+
         entities =
             rotateCombatTurnOrder(
                 getCombatTurnOrderEntities()
             );
 
+
     }
+
+
 
 
     // Aggiorna la firma anche quando questa funzione
     // viene richiamata da renderCombat().
+
 
     lastTurnOrderSignature =
         createCombatTurnOrderSignature(
@@ -1006,14 +1343,20 @@ function renderCombatEntityList(
         );
 
 
+
+
     if (
         entities.length ===
         0
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const currentTurnId =
@@ -1021,9 +1364,12 @@ function renderCombatEntityList(
             ?.current_turn_entity_id;
 
 
+
+
     // ========================================================
     // CREA RIGHE
     // ========================================================
+
 
     entities.forEach(
         (
@@ -1031,39 +1377,52 @@ function renderCombatEntityList(
             index
         ) => {
 
+
             const item =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             item.className =
                 "combat-entity-item";
+
+
 
 
             // =================================================
             // TURNO ATTUALE
             // =================================================
 
+
             const isCurrentTurn =
                 entity.id ===
                 currentTurnId;
+
+
 
 
             if (
                 isCurrentTurn
             ) {
 
+
                 item.classList.add(
                     "current-turn"
                 );
 
+
             }
+
+
 
 
             // =================================================
             // POSIZIONE VISIVA
             // =================================================
+
 
             item.dataset.turnPosition =
                 String(
@@ -1071,13 +1430,17 @@ function renderCombatEntityList(
                 );
 
 
+
+
             // =================================================
             // HOVER → EVIDENZIA TOKEN
             // =================================================
 
+
             item.addEventListener(
                 "mouseenter",
                 () => {
+
 
                     const token =
                         combatTokens.get(
@@ -1085,47 +1448,63 @@ function renderCombatEntityList(
                         );
 
 
+
+
                     if (
                         token
                     ) {
+
 
                         token.classList.add(
                             "turn-order-hover"
                         );
 
+
                     }
+
 
                 }
             );
+
+
 
 
             item.addEventListener(
                 "mouseleave",
                 () => {
 
+
                     const token =
                         combatTokens.get(
                             entity.id
                         );
 
 
+
+
                     if (
                         token
                     ) {
+
 
                         token.classList.remove(
                             "turn-order-hover"
                         );
 
+
                     }
+
 
                 }
             );
 
 
+
+
             // =================================================
             // NOME
             // =================================================
+
 
             const name =
                 document.createElement(
@@ -1133,13 +1512,18 @@ function renderCombatEntityList(
                 );
 
 
+
+
             name.textContent =
                 entity.display_name;
+
+
 
 
             // =================================================
             // INFORMAZIONI
             // =================================================
+
 
             const meta =
                 document.createElement(
@@ -1147,8 +1531,12 @@ function renderCombatEntityList(
                 );
 
 
+
+
             meta.className =
                 "combat-entity-meta";
+
+
 
 
             meta.textContent =
@@ -1156,7 +1544,9 @@ function renderCombatEntityList(
                     entity.entity_type ===
                     "enemy"
 
+
                         ? "Nemico"
+
 
                         : "Giocatore"
                 } · PF ${
@@ -1171,7 +1561,9 @@ function renderCombatEntityList(
                     entity.entity_type ===
                     "enemy"
 
+
                         ? ""
+
 
                         : ` · MOV ${
                             entity.movement_remaining ?? 0
@@ -1179,9 +1571,12 @@ function renderCombatEntityList(
                 }`;
 
 
+
+
             // =================================================
             // ASSEMBLA
             // =================================================
+
 
             item.append(
                 name,
@@ -1189,29 +1584,41 @@ function renderCombatEntityList(
             );
 
 
+
+
             container.appendChild(
                 item
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // ENTITÀ DEL MIO PG
 // ============================================================
 
+
 function getMyPlayerEntity() {
+
 
     if (
         !currentCharacter
     ) {
 
+
         return null;
 
+
     }
+
+
 
 
     return Array.from(
@@ -1225,46 +1632,64 @@ function getMyPlayerEntity() {
                 currentCharacter.id
     ) || null;
 
+
 }
+
+
 
 
 // ============================================================
 // SCHEDA PG
 // ============================================================
 
+
 function renderPlayerCombatSheet() {
+
 
     if (
         masterObserverMode ||
         !currentCharacter
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const playerEntity =
         getMyPlayerEntity();
 
 
+
+
     if (
         !playerEntity
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // ATTRIBUTI EFFETTIVI
     // ========================================================
 
+
     const forza =
         getCombatEffectiveAttribute(
             "forza"
         );
+
+
 
 
     const resistenza =
@@ -1273,10 +1698,14 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     const costituzione =
         getCombatEffectiveAttribute(
             "costituzione"
         );
+
+
 
 
     const intelligenza =
@@ -1285,10 +1714,14 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     const destrezza =
         getCombatEffectiveAttribute(
             "destrezza"
         );
+
+
 
 
     const fortuna =
@@ -1297,15 +1730,20 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     // ========================================================
     // BUFF
     // ========================================================
+
 
     const attackBuff =
         getCombatEffectBonus(
             playerEntity.id,
             "attack_bonus"
         );
+
+
 
 
     const defenseBuff =
@@ -1315,6 +1753,8 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     const criticalBuff =
         getCombatEffectBonus(
             playerEntity.id,
@@ -1322,9 +1762,12 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     // ========================================================
     // ATTACCO
     // ========================================================
+
 
     const attack =
         Math.ceil(
@@ -1341,9 +1784,12 @@ function renderPlayerCombatSheet() {
         attackBuff;
 
 
+
+
     // ========================================================
     // DIFESA
     // ========================================================
+
 
     const defense =
         Math.ceil(
@@ -1361,9 +1807,12 @@ function renderPlayerCombatSheet() {
         defenseBuff;
 
 
+
+
     // ========================================================
     // PF MASSIMI
     // ========================================================
+
 
     const fallbackMaxPF =
         Math.ceil(
@@ -1375,9 +1824,12 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     // ========================================================
     // PM MASSIMI
     // ========================================================
+
 
     const fallbackMaxPM =
         Math.ceil(
@@ -1389,9 +1841,12 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     // ========================================================
     // MOVIMENTO
     // ========================================================
+
 
     const fallbackMovement =
         Math.ceil(
@@ -1406,9 +1861,12 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     // ========================================================
     // CRITICO
     // ========================================================
+
 
     const critical =
         (
@@ -1425,9 +1883,12 @@ function renderPlayerCombatSheet() {
             );
 
 
+
+
     // ========================================================
     // RISORSE ATTUALI
     // ========================================================
+
 
     const currentPF =
         Math.max(
@@ -1438,12 +1899,16 @@ function renderPlayerCombatSheet() {
         );
 
 
+
+
     const maxPF =
         Number(
             playerEntity.max_hp
         )
         ||
         fallbackMaxPF;
+
+
 
 
     const currentPM =
@@ -1453,7 +1918,9 @@ function renderPlayerCombatSheet() {
         playerEntity.current_pm ===
             undefined
 
+
             ? fallbackMaxPM
+
 
             : Math.max(
                 0,
@@ -1461,6 +1928,8 @@ function renderPlayerCombatSheet() {
                     playerEntity.current_pm
                 )
             );
+
+
 
 
     const maxPM =
@@ -1471,6 +1940,8 @@ function renderPlayerCombatSheet() {
         fallbackMaxPM;
 
 
+
+
     const currentMovement =
         Number(
             playerEntity
@@ -1478,14 +1949,19 @@ function renderPlayerCombatSheet() {
         ) || 0;
 
 
+
+
     // ========================================================
     // TESTI
     // ========================================================
+
 
     setText(
         "combat-character-name",
         currentCharacter.nome
     );
+
+
 
 
     setText(
@@ -1494,38 +1970,52 @@ function renderPlayerCombatSheet() {
     );
 
 
+
+
     setText(
         "combat-pm-value",
         `${currentPM} / ${maxPM}`
     );
 
 
+
+
     setText(
         "combat-attack-value",
 
+
         attackBuff > 0
+
 
             ? `${
                 attack -
                 attackBuff
             } +${attackBuff}`
 
+
             : attack
     );
+
+
 
 
     setText(
         "combat-defense-value",
 
+
         defenseBuff > 0
+
 
             ? `${
                 defense -
                 defenseBuff
             } +${defenseBuff}`
 
+
             : defense
     );
+
+
 
 
     setText(
@@ -1534,10 +2024,14 @@ function renderPlayerCombatSheet() {
     );
 
 
+
+
     setText(
         "combat-critical-value",
 
+
         criticalBuff > 0
+
 
             ? `${
                 (
@@ -1551,19 +2045,25 @@ function renderPlayerCombatSheet() {
                 )
             }% +${criticalBuff}%`
 
+
             : `${critical}%`
     );
+
+
 
 
     // ========================================================
     // BARRE
     // ========================================================
 
+
     updateBar(
         "combat-pf-bar",
         currentPF,
         maxPF
     );
+
+
 
 
     updateBar(
@@ -1573,16 +2073,23 @@ function renderPlayerCombatSheet() {
     );
 
 
+
+
     updateTurnResourceIndicators();
 
+
 }
+
+
 
 
 // ============================================================
 // BUFF ATTIVI
 // ============================================================
 
+
 function renderActiveCombatBuffs() {
+
 
     const container =
         document.getElementById(
@@ -1590,30 +2097,45 @@ function renderActiveCombatBuffs() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     container.replaceChildren();
+
+
 
 
     const player =
         getMyPlayerEntity();
 
 
+
+
     if (!player) {
+
 
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // BUFF TEMPORANEI COMBAT
     // ========================================================
+
 
     const playerBuffs =
         combatEffects.filter(
@@ -1627,9 +2149,12 @@ function renderActiveCombatBuffs() {
         );
 
 
+
+
     // ========================================================
     // BUFF PERSISTENTI
     // ========================================================
+
 
     const pendingBuffs =
         characterPendingEffects.filter(
@@ -1637,6 +2162,8 @@ function renderActiveCombatBuffs() {
                 effect.effect_type ===
                     "giorno_paga"
         );
+
+
 
 
     if (
@@ -1647,18 +2174,25 @@ function renderActiveCombatBuffs() {
             0
     ) {
 
+
         const empty =
             document.createElement(
                 "div"
             );
 
 
+
+
         empty.className =
             "combat-buff-empty";
 
 
+
+
         empty.textContent =
             "Nessun buff attivo.";
+
+
 
 
         container.appendChild(
@@ -1666,69 +2200,94 @@ function renderActiveCombatBuffs() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // NOMI BUFF
     // ========================================================
 
+
     const buffNames = {
+
 
         attack_bonus:
             "Arma Potenziata",
 
+
         defense_bonus:
             "Armatura Potenziata",
+
 
         critical_bonus:
             "Affilatura",
 
+
         movement_bonus:
             "Rapidità",
+
 
         dot_sanguinamento:
             "Sanguinamento",
 
+
         dot_veleno:
             "Avvelenamento"
 
+
     };
+
+
 
 
     // ========================================================
     // TESTO VALORE BUFF
     // ========================================================
 
+
     const buffValues = {
+
 
         attack_bonus:
             value =>
                 `+${value} ATT`,
 
+
         defense_bonus:
             value =>
                 `+${value} DIF`,
+
 
         critical_bonus:
             value =>
                 `+${value}% CRIT`,
 
+
         movement_bonus:
             value =>
                 `+${value} MOV`
 
+
     };
+
+
 
 
     // ========================================================
     // RENDER BUFF COMBAT
     // ========================================================
 
+
     playerBuffs.forEach(
         effect => {
+
 
             const row =
                 document.createElement(
@@ -1736,8 +2295,12 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             row.className =
                 "combat-buff-item";
+
+
 
 
             const left =
@@ -1746,14 +2309,20 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             const name =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             name.className =
                 "combat-buff-name";
+
+
 
 
             const dotEffect = effect.effect_type === 'dot_sanguinamento' || effect.effect_type === 'dot_veleno';
@@ -1764,22 +2333,32 @@ function renderActiveCombatBuffs() {
                 : readableName;
 
 
+
+
             const value =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             value.style.marginTop =
                 "2px";
+
+
 
 
             value.style.color =
                 "#a99a82";
 
 
+
+
             value.style.fontSize =
                 "9px";
+
+
 
 
             const formatter =
@@ -1788,8 +2367,11 @@ function renderActiveCombatBuffs() {
                 ];
 
 
+
+
             value.textContent =
                 formatter
+
 
                     ? formatter(
                         Number(
@@ -1797,11 +2379,16 @@ function renderActiveCombatBuffs() {
                         ) || 0
                     )
 
+
                     : "";
+
+
 
 
             left.append(name);
             if (!dotEffect) left.append(value);
+
+
 
 
             const duration =
@@ -1810,8 +2397,12 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             duration.className =
                 "combat-buff-duration";
+
+
 
 
             const rounds =
@@ -1820,12 +2411,18 @@ function renderActiveCombatBuffs() {
                 ) || 0;
 
 
+
+
             duration.textContent =
                 rounds === 1
 
+
                     ? "1 round"
 
+
                     : `${rounds} round`;
+
+
 
 
             row.append(
@@ -1834,20 +2431,27 @@ function renderActiveCombatBuffs() {
             );
 
 
+
+
             container.appendChild(
                 row
             );
 
+
         }
     );
+
+
 
 
     // ========================================================
     // GIORNO PAGA
     // ========================================================
 
+
     pendingBuffs.forEach(
         effect => {
+
 
             const row =
                 document.createElement(
@@ -1855,8 +2459,12 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             row.className =
                 "combat-buff-item";
+
+
 
 
             const left =
@@ -1865,18 +2473,26 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             const name =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             name.className =
                 "combat-buff-name";
 
 
+
+
             name.textContent =
                 "Giorno Paga";
+
+
 
 
             const value =
@@ -1885,16 +2501,24 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             value.style.marginTop =
                 "2px";
+
+
 
 
             value.style.color =
                 "#a99a82";
 
 
+
+
             value.style.fontSize =
                 "9px";
+
+
 
 
             value.textContent =
@@ -1905,10 +2529,14 @@ function renderActiveCombatBuffs() {
                 }`;
 
 
+
+
             left.append(
                 name,
                 value
             );
+
+
 
 
             const duration =
@@ -1917,12 +2545,18 @@ function renderActiveCombatBuffs() {
                 );
 
 
+
+
             duration.className =
                 "combat-buff-duration";
 
 
+
+
             duration.textContent =
                 "incontro corrente";
+
+
 
 
             row.append(
@@ -1931,19 +2565,26 @@ function renderActiveCombatBuffs() {
             );
 
 
+
+
             container.appendChild(
                 row
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // BARRE PF / PM
 // ============================================================
+
 
 function updateBar(
     id,
@@ -1951,21 +2592,29 @@ function updateBar(
     max
 ) {
 
+
     const element =
         document.getElementById(
             id
         );
 
 
+
+
     if (!element) {
 
+
         return;
+
 
     }
 
 
+
+
     const percentage =
         max > 0
+
 
             ? Math.max(
                 0,
@@ -1980,23 +2629,31 @@ function updateBar(
                 )
             )
 
+
             : 0;
+
+
 
 
     element.style.width =
         `${percentage}%`;
 
+
 }
+
+
 
 
 // ============================================================
 // TESTO ELEMENTO
 // ============================================================
 
+
 function setText(
     id,
     value
 ) {
+
 
     const element =
         document.getElementById(
@@ -2004,24 +2661,35 @@ function setText(
         );
 
 
+
+
     if (element) {
+
 
         element.textContent =
             value;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // RISORSE TURNO
 // ============================================================
 
+
 function updateTurnResourceIndicators() {
+
 
     const player =
         getMyPlayerEntity();
+
+
 
 
     const movement =
@@ -2030,10 +2698,14 @@ function updateTurnResourceIndicators() {
         );
 
 
+
+
     const action =
         document.getElementById(
             "turn-resource-action"
         );
+
+
 
 
     const item =
@@ -2042,11 +2714,17 @@ function updateTurnResourceIndicators() {
         );
 
 
+
+
     if (!player) {
+
 
         return;
 
+
     }
+
+
 
 
     setResourceIndicator(
@@ -2057,11 +2735,15 @@ function updateTurnResourceIndicators() {
     );
 
 
+
+
     setResourceIndicator(
         action,
         player.action_used !==
             true
     );
+
+
 
 
     setResourceIndicator(
@@ -2070,23 +2752,32 @@ function updateTurnResourceIndicators() {
             true
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SINGOLO INDICATORE RISORSA
 // ============================================================
 
+
 function setResourceIndicator(
     element,
     available
 ) {
 
+
     if (!element) {
+
 
         return;
 
+
     }
+
+
 
 
     element.classList.toggle(
@@ -2095,24 +2786,33 @@ function setResourceIndicator(
     );
 
 
+
+
     element.classList.toggle(
         "used",
         !available
     );
 
+
 }
+
+
 
 
 // ============================================================
 // BOTTONI PRINCIPALI
 // ============================================================
 
+
 function setupCombatActions() {
+
 
     const attack =
         document.getElementById(
             "combat-action-attack"
         );
+
+
 
 
     const abilities =
@@ -2121,10 +2821,14 @@ function setupCombatActions() {
         );
 
 
+
+
     const backpack =
         document.getElementById(
             "combat-action-backpack"
         );
+
+
 
 
     const pass =
@@ -2133,34 +2837,48 @@ function setupCombatActions() {
         );
 
 
+
+
     const close =
         document.getElementById(
             "combat-drawer-close"
         );
 
 
+
+
     // ========================================================
     // ATTACCO BASE
     // ========================================================
+
 
     attack?.addEventListener(
         "click",
         () => {
 
+
             if (
                 !canUseMainAction()
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             closeCombatDrawer();
 
 
+
+
             combatTargetMode =
                 "basic_attack";
+
+
 
 
             addCombatLog(
@@ -2168,44 +2886,63 @@ function setupCombatActions() {
             );
 
 
+
+
             updateTargetSelectionVisuals();
+
 
         }
     );
+
+
 
 
     // ========================================================
     // ABILITÀ
     // ========================================================
 
+
     abilities?.addEventListener(
         "click",
         () => {
 
+
             cancelCombatTargeting();
+
+
 
 
             openAbilityPanel();
 
+
         }
     );
+
+
 
 
     // ========================================================
     // ZAINO
     // ========================================================
 
+
     backpack?.addEventListener(
         "click",
         () => {
 
+
             cancelCombatTargeting();
+
+
 
 
             openBackpackPanel();
 
+
         }
     );
+
+
 
 
     const equipmentButton = document.getElementById("combat-action-equipment");
@@ -2214,49 +2951,68 @@ function setupCombatActions() {
     });
 
 
+
+
     // ========================================================
     // PASSA TURNO
     // ========================================================
+
 
     pass?.addEventListener(
         "click",
         async () => {
 
+
             await passTurn();
+
 
         }
     );
+
+
 
 
     // ========================================================
     // CHIUDI DRAWER
     // ========================================================
 
+
     close?.addEventListener(
         "click",
         () => {
 
+
             closeCombatDrawer();
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PANNELLO ABILITÀ
 // ============================================================
 
+
 function openAbilityPanel() {
+
 
     activeDrawer =
         "abilities";
 
 
+
+
     document.body.classList.add(
         "combat-drawer-open"
     );
+
+
 
 
     setText(
@@ -2265,25 +3021,36 @@ function openAbilityPanel() {
     );
 
 
+
+
     renderAbilityPanel();
 
+
 }
+
+
 
 
 // ============================================================
 // RENDER ABILITÀ
 // ============================================================
 
+
 function renderAbilityPanel() {
+
 
     if (
         activeDrawer !==
         "abilities"
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const container =
@@ -2292,14 +3059,22 @@ function renderAbilityPanel() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     container.replaceChildren();
+
+
 
 
     if (
@@ -2307,35 +3082,50 @@ function renderAbilityPanel() {
         0
     ) {
 
+
         renderDrawerMessage(
             container,
             "Il personaggio non conosce abilità."
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const player =
         getMyPlayerEntity();
 
 
+
+
     characterAbilities.forEach(
         entry => {
+
 
             if (
                 !entry.ability
             ) {
 
+
                 return;
+
 
             }
 
 
+
+
             const ability =
                 entry.ability;
+
+
 
 
             const pmCost =
@@ -2344,29 +3134,40 @@ function renderAbilityPanel() {
                 ) || 0;
 
 
+
+
             const currentPM =
                 Number(
                     player?.current_pm
                 ) || 0;
 
 
+
+
             const unavailable =
                 !isMyTurn()
 
+
                 ||
+
 
                 player?.action_used ===
                     true
 
+
                 ||
+
 
                 currentPM <
                     pmCost;
 
 
+
+
             // =================================================
             // CARD
             // =================================================
+
 
             const card =
                 document.createElement(
@@ -2374,24 +3175,33 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             card.className =
                 "combat-ability-card";
+
+
 
 
             if (
                 unavailable
             ) {
 
+
                 card.classList.add(
                     "disabled"
                 );
 
+
             }
+
+
 
 
             // =================================================
             // HEADER
             // =================================================
+
 
             const header =
                 document.createElement(
@@ -2399,8 +3209,12 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             header.className =
                 "combat-ability-header";
+
+
 
 
             const name =
@@ -2409,12 +3223,18 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             name.className =
                 "combat-ability-name";
 
 
+
+
             name.textContent =
                 ability.name;
+
+
 
 
             const level =
@@ -2423,8 +3243,12 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             level.className =
                 "combat-ability-level";
+
+
 
 
             level.textContent =
@@ -2434,15 +3258,20 @@ function renderAbilityPanel() {
                 }`;
 
 
+
+
             header.append(
                 name,
                 level
             );
 
 
+
+
             // =================================================
             // DESCRIZIONE
             // =================================================
+
 
             const description =
                 document.createElement(
@@ -2450,8 +3279,12 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             description.className =
                 "combat-ability-description";
+
+
 
 
             description.textContent =
@@ -2459,9 +3292,12 @@ function renderAbilityPanel() {
                 "";
 
 
+
+
             // =================================================
             // FOOTER
             // =================================================
+
 
             const footer =
                 document.createElement(
@@ -2469,8 +3305,12 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             footer.className =
                 "combat-ability-footer";
+
+
 
 
             const cost =
@@ -2479,12 +3319,18 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             cost.className =
                 "combat-ability-cost";
 
 
+
+
             cost.textContent =
                 `${pmCost} PM`;
+
+
 
 
             const button =
@@ -2493,38 +3339,54 @@ function renderAbilityPanel() {
                 );
 
 
+
+
             button.type =
                 "button";
+
+
 
 
             button.className =
                 "combat-button";
 
 
+
+
             button.textContent =
                 "USA";
+
+
 
 
             button.disabled =
                 unavailable;
 
 
+
+
             button.addEventListener(
                 "click",
                 () => {
+
 
                     handleAbilityButton(
                         entry
                     );
 
+
                 }
             );
+
+
 
 
             footer.append(
                 cost,
                 button
             );
+
+
 
 
             card.append(
@@ -2534,29 +3396,41 @@ function renderAbilityPanel() {
             );
 
 
+
+
             container.appendChild(
                 card
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PANNELLO ZAINO
 // ============================================================
 
+
 function openBackpackPanel() {
+
 
     activeDrawer =
         "backpack";
 
 
+
+
     document.body.classList.add(
         "combat-drawer-open"
     );
+
+
 
 
     setText(
@@ -2565,25 +3439,36 @@ function openBackpackPanel() {
     );
 
 
+
+
     renderBackpackPanel();
 
+
 }
+
+
 
 
 // ============================================================
 // RENDER ZAINO
 // ============================================================
 
+
 function renderBackpackPanel() {
+
 
     if (
         activeDrawer !==
         "backpack"
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const container =
@@ -2592,14 +3477,22 @@ function renderBackpackPanel() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     container.replaceChildren();
+
+
 
 
     const usableItems =
@@ -2612,10 +3505,13 @@ function renderBackpackPanel() {
         );
 
 
+
+
     if (
         usableItems.length ===
         0
     ) {
+
 
         renderDrawerMessage(
             container,
@@ -2623,34 +3519,49 @@ function renderBackpackPanel() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const player =
         getMyPlayerEntity();
 
 
+
+
     usableItems.forEach(
         entry => {
+
 
             const item =
                 entry.item;
 
 
+
+
             const unavailable =
                 !isMyTurn()
 
+
                 ||
+
 
                 player?.item_used ===
                     true;
 
 
+
+
             // =================================================
             // CARD
             // =================================================
+
 
             const card =
                 document.createElement(
@@ -2658,24 +3569,33 @@ function renderBackpackPanel() {
                 );
 
 
+
+
             card.className =
                 "combat-backpack-item";
+
+
 
 
             if (
                 unavailable
             ) {
 
+
                 card.classList.add(
                     "disabled"
                 );
 
+
             }
+
+
 
 
             // =================================================
             // NOME
             // =================================================
+
 
             const name =
                 document.createElement(
@@ -2683,17 +3603,24 @@ function renderBackpackPanel() {
                 );
 
 
+
+
             name.className =
                 "combat-backpack-name";
+
+
 
 
             name.textContent =
                 item.name;
 
 
+
+
             // =================================================
             // DESCRIZIONE
             // =================================================
+
 
             const description =
                 document.createElement(
@@ -2701,8 +3628,12 @@ function renderBackpackPanel() {
                 );
 
 
+
+
             description.className =
                 "combat-backpack-description";
+
+
 
 
             description.textContent =
@@ -2710,9 +3641,12 @@ function renderBackpackPanel() {
                 "";
 
 
+
+
             // =================================================
             // FOOTER
             // =================================================
+
 
             const footer =
                 document.createElement(
@@ -2720,8 +3654,12 @@ function renderBackpackPanel() {
                 );
 
 
+
+
             footer.className =
                 "combat-backpack-footer";
+
+
 
 
             const quantity =
@@ -2730,8 +3668,12 @@ function renderBackpackPanel() {
                 );
 
 
+
+
             quantity.className =
                 "combat-backpack-quantity";
+
+
 
 
             quantity.textContent =
@@ -2742,44 +3684,62 @@ function renderBackpackPanel() {
                 }`;
 
 
+
+
             const button =
                 document.createElement(
                     "button"
                 );
 
 
+
+
             button.type =
                 "button";
+
+
 
 
             button.className =
                 "combat-button";
 
 
+
+
             button.textContent =
                 "USA";
+
+
 
 
             button.disabled =
                 unavailable;
 
 
+
+
             button.addEventListener(
                 "click",
                 async () => {
+
 
                     await useCombatInventoryItem(
                         entry.id
                     );
 
+
                 }
             );
+
+
 
 
             footer.append(
                 quantity,
                 button
             );
+
+
 
 
             card.append(
@@ -2789,29 +3749,41 @@ function renderBackpackPanel() {
             );
 
 
+
+
             container.appendChild(
                 card
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CHIUDI DRAWER
 // ============================================================
 
+
 function closeCombatDrawer() {
+
 
     activeDrawer =
         null;
 
 
+
+
     document.body.classList.remove(
         "combat-drawer-open"
     );
+
+
 
 
     setText(
@@ -2820,15 +3792,20 @@ function closeCombatDrawer() {
     );
 
 
+
+
     const container =
         document.getElementById(
             "combat-drawer-body"
         );
 
 
+
+
     if (
         container
     ) {
+
 
         container.innerHTML =
             `
@@ -2837,34 +3814,46 @@ function closeCombatDrawer() {
                 </div>
             `;
 
+
     }
+
+
 
 
     // Aspettiamo la fine della transizione
     // prima di ricalcolare token e range.
 
+
     setTimeout(
         () => {
 
+
             renderCombatTokens();
 
+
             updateTargetSelectionVisuals();
+
 
         },
         200
     );
 
+
 }
+
+
 
 
 // ============================================================
 // MESSAGGIO GENERICO DRAWER
 // ============================================================
 
+
 function renderDrawerMessage(
     container,
     text
 ) {
+
 
     const message =
         document.createElement(
@@ -2872,78 +3861,114 @@ function renderDrawerMessage(
         );
 
 
+
+
     message.className =
         "combat-drawer-placeholder";
+
+
 
 
     message.textContent =
         text;
 
 
+
+
     container.appendChild(
         message
     );
 
+
 }
+
+
 
 
 // ============================================================
 // AZIONE PRINCIPALE DISPONIBILE?
 // ============================================================
 
+
 function canUseMainAction() {
+
 
     const player =
         getMyPlayerEntity();
 
 
+
+
     return !!(
+
 
         player
 
+
         &&
+
 
         isMyTurn()
 
+
         &&
+
 
         player.action_used !==
             true
 
+
     );
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA BOTTONI
 // ============================================================
 
+
 function updateActionButtons() {
+
 
     const player =
         getMyPlayerEntity();
+
+
 
 
     const myTurn =
         isMyTurn();
 
 
+
+
     const actionAvailable =
         !!(
 
+
             player
 
+
             &&
+
 
             myTurn
 
+
             &&
+
 
             player.action_used !==
                 true
 
+
         );
+
+
 
 
     const attack =
@@ -2952,10 +3977,14 @@ function updateActionButtons() {
         );
 
 
+
+
     const abilities =
         document.getElementById(
             "combat-action-abilities"
         );
+
+
 
 
     const backpack =
@@ -2964,84 +3993,115 @@ function updateActionButtons() {
         );
 
 
+
+
     const pass =
         document.getElementById(
             "combat-action-pass"
         );
 
 
+
+
     // ========================================================
     // ATTACCO
     // ========================================================
+
 
     if (
         attack
     ) {
 
+
         attack.disabled =
             !actionAvailable;
 
+
     }
+
+
 
 
     // ========================================================
     // ABILITÀ
     // ========================================================
 
+
     if (
         abilities
     ) {
 
+
         abilities.disabled =
             !myTurn;
 
+
     }
+
+
 
 
     // ========================================================
     // ZAINO
     // ========================================================
 
+
     if (
         backpack
     ) {
 
+
         backpack.disabled =
             !myTurn;
 
+
     }
+
+
 
 
     const equipmentButton = document.getElementById("combat-action-equipment");
     if (equipmentButton) equipmentButton.disabled = !actionAvailable;
 
 
+
+
     // ========================================================
     // PASSA
     // ========================================================
+
 
     if (
         pass
     ) {
 
+
         pass.disabled =
             !myTurn;
 
+
     }
+
+
 
 
     // ========================================================
     // AGGIORNA DRAWER APERTO
     // ========================================================
 
+
     if (
         activeDrawer ===
         "abilities"
     ) {
 
+
         renderAbilityPanel();
 
+
     }
+
+
 
 
     if (
@@ -3049,13 +4109,19 @@ function updateActionButtons() {
         "backpack"
     ) {
 
+
         renderBackpackPanel();
+
 
     }
 
 
+
+
     if (activeDrawer === "equipment") updateCombatEquipmentPanelAvailability();
 
+
     updateTurnResourceIndicators();
+
 
 }
