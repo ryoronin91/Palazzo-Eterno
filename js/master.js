@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // MASTER.JS
 // ============================================================
@@ -18,180 +18,254 @@
 // ============================================================
 
 
+
+
 console.log(
     "MASTER.JS CARICATO"
 );
+
+
 
 
 // ============================================================
 // SUPABASE
 // ============================================================
 
+
 const db =
     supabaseClient;
+
+
 
 
 // ============================================================
 // MAPPA
 // ============================================================
 
+
 const MAP_COLUMNS =
     23;
+
 
 const MAP_ROWS =
     23;
 
 
+
+
 // Stesso canale di dungeon.js
+
 
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
+
 
 // ============================================================
 // EVENTI DEL DUNGEON
 // ============================================================
 
+
 const MASTER_DUNGEON_EVENTS = {
 
+
     "11,17": {
+
 
         id:
             "stairs_down",
 
+
         type:
             "communication",
+
 
         message:
             "Queste scale scendono ad un piano inferiore."
 
+
     },
+
+
 
 
     "15,22": {
 
+
         id:
             "dead_end",
+
 
         type:
             "communication",
 
+
         message:
             "Possibile che quelle scale ti abbiano portato ad un vicolo cieco? Sì"
 
+
     },
+
+
 
 
     "11,11": {
 
+
         id:
             "blade_corridor",
 
+
         type:
             "trap",
+
 
         message:
             "Una lama affilata attraversa il corridoio da muro a muro."
 
+
     },
+
+
 
 
     "9,15": {
 
+
         id:
             "acid_vapor",
+
 
         type:
             "trap",
 
+
         message:
             "Dal pavimento una nube di vapore acido ti investe."
 
+
     }
+
 
 };
 
 
+
+
 // trap_id -> stato Supabase
+
 
 const masterTrapStates =
     new Map();
+
+
 
 
 let trapStateRefreshTimer =
     null;
 
 
+
+
 let trapCountdownTimer =
     null;
+
+
 
 
 // ============================================================
 // VARIABILI
 // ============================================================
 
+
 let currentUser =
     null;
+
 
 let dungeonChannel =
     null;
 
+
 let realtimeReady =
     false;
+
+
 
 
 // ============================================================
 // CHAT PERSISTENTE
 // ============================================================
 
+
 const MASTER_CHAT_FLOOR_ID =
     "floor_1";
 
+
 const MASTER_CHAT_HISTORY_LIMIT =
     100;
+
 
 const renderedMasterChatMessageIds =
     new Set();
 
 
+
+
 // character_id -> dati giocatore
+
 
 const onlinePlayers =
     new Map();
 
 
+
+
 // character_id -> token
+
 
 const playerTokens =
     new Map();
+
+
 
 
 // ============================================================
 // AVVIO
 // ============================================================
 
+
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
+
         try {
+
 
             await checkMasterAccess();
 
+
             setupModal();
+
 
             setupLogout();
 
+
             setupMasterFloorSelector();
+
 
             setupMasterChat();
 
+
             await loadMasterChatHistory();
 
+
             setupMap();
+
 
             // Prima leggiamo le sessioni attive: servono anche
             // per capire a quale piano appartiene un PG in combat.
             await loadActiveMasterCombats();
+
 
             await Promise.all([
                 loadMasterTrapStates(),
@@ -200,23 +274,32 @@ document.addEventListener(
                 loadMasterCooldownStates()
             ]);
 
+
             renderMasterEvents();
+
 
             startMasterTrapTimers();
 
+
             await setupRealtime();
+
 
             // Prima visualizzazione dei sei pannelli del nuovo Master.
             await loadMasterControlCenter();
 
+
             startMasterDashboardRefresh();
 
+
         } catch (error) {
+
 
             console.error(
                 "Errore modalità Master:",
                 error
             );
+
+
 
 
             showMessage(
@@ -227,17 +310,23 @@ document.addEventListener(
                 )
             );
 
+
         }
+
 
     }
 );
+
+
 
 
 // ============================================================
 // CONTROLLO ACCESSO MASTER
 // ============================================================
 
+
 async function checkMasterAccess() {
+
 
     const {
         data: {
@@ -250,25 +339,38 @@ async function checkMasterAccess() {
             .getUser();
 
 
+
+
     if (authError) {
+
 
         throw authError;
 
+
     }
+
+
 
 
     if (!user) {
 
+
         window.location.href =
             "login.html";
 
+
         return;
+
 
     }
 
 
+
+
     currentUser =
         user;
+
+
 
 
     const {
@@ -289,11 +391,17 @@ async function checkMasterAccess() {
             .maybeSingle();
 
 
+
+
     if (error) {
+
 
         throw error;
 
+
     }
+
+
 
 
     if (
@@ -301,26 +409,36 @@ async function checkMasterAccess() {
         "master"
     ) {
 
+
         window.location.href =
             "scheda.html";
 
+
         return;
 
+
     }
+
+
 
 
     console.log(
         "Accesso Master autorizzato."
     );
 
+
 }
+
+
 
 
 // ============================================================
 // MAPPA
 // ============================================================
 
+
 function setupMap() {
+
 
     const image =
         document.getElementById(
@@ -328,45 +446,64 @@ function setupMap() {
         );
 
 
+
+
     if (!image) {
+
 
         return;
 
+
     }
+
+
 
 
     const renderMapElements =
         () => {
 
+
             renderAllTokens();
+
 
             renderMasterEvents();
 
+
         };
+
+
 
 
     if (
         image.complete
     ) {
 
+
         renderMapElements();
 
+
     } else {
+
 
         image.addEventListener(
             "load",
             renderMapElements
         );
 
+
     }
 
+
 }
+
 
 // ============================================================
 // CARICA STATO TRAPPOLE
 // ============================================================
 
+
 async function loadMasterTrapStates() {
+
 
     const {
         data,
@@ -381,19 +518,28 @@ async function loadMasterTrapStates() {
             );
 
 
+
+
     if (error) {
+
 
         console.error(
             "Errore caricamento stato trappole:",
             error
         );
 
+
         return;
+
 
     }
 
 
+
+
     masterTrapStates.clear();
+
+
 
 
     (
@@ -402,89 +548,121 @@ async function loadMasterTrapStates() {
     ).forEach(
         trapState => {
 
+
             masterTrapStates.set(
                 trapState.trap_id,
                 trapState
             );
 
+
         }
     );
 
 
+
+
     renderMasterEvents();
 
+
 }
+
+
 
 
 // ============================================================
 // TIMER MASTER TRAPPOLE
 // ============================================================
 
+
 function startMasterTrapTimers() {
+
 
     if (
         trapStateRefreshTimer
     ) {
 
+
         clearInterval(
             trapStateRefreshTimer
         );
 
+
     }
+
+
 
 
     if (
         trapCountdownTimer
     ) {
 
+
         clearInterval(
             trapCountdownTimer
         );
 
+
     }
+
+
 
 
     // Rilegge Supabase periodicamente,
     // così il Master vede le trappole
     // attivate dai giocatori.
 
+
     trapStateRefreshTimer =
         setInterval(
             async () => {
 
+
                 await loadMasterTrapStates();
+
 
             },
             5000
         );
 
 
+
+
     // Aggiorna invece il countdown visivo
     // ogni secondo senza interrogare Supabase.
+
 
     trapCountdownTimer =
         setInterval(
             () => {
 
+
                 updateMasterTrapCountdowns();
+
 
             },
             1000
         );
 
+
 }
+
+
 
 
 // ============================================================
 // RENDER EVENTI MASTER
 // ============================================================
 
+
 function renderMasterEvents() {
+
 
     const image =
         document.getElementById(
             "master-map-image"
         );
+
+
 
 
     const container =
@@ -493,14 +671,20 @@ function renderMasterEvents() {
         );
 
 
+
+
     if (
         !image ||
         !container
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const oldMarkers =
@@ -509,21 +693,31 @@ function renderMasterEvents() {
         );
 
 
+
+
     oldMarkers.forEach(
         marker => {
 
+
             marker.remove();
+
 
         }
     );
+
+
 
 
     const mapRect =
         image.getBoundingClientRect();
 
 
+
+
     const containerRect =
         container.getBoundingClientRect();
+
+
 
 
     if (
@@ -531,9 +725,13 @@ function renderMasterEvents() {
         mapRect.height <= 0
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const cellWidth =
@@ -541,9 +739,13 @@ function renderMasterEvents() {
         MAP_COLUMNS;
 
 
+
+
     const cellHeight =
         mapRect.height /
         MAP_ROWS;
+
+
 
 
     Object.entries(
@@ -554,6 +756,7 @@ function renderMasterEvents() {
             dungeonEvent
         ]) => {
 
+
             const [
                 x,
                 y
@@ -563,27 +766,38 @@ function renderMasterEvents() {
                     .map(Number);
 
 
+
+
             const marker =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             marker.className =
                 "master-event-marker";
+
+
 
 
             marker.dataset.eventId =
                 dungeonEvent.id;
 
 
+
+
             marker.dataset.eventType =
                 dungeonEvent.type;
+
+
 
 
             // ------------------------------------------------
             // POSIZIONE
             // ------------------------------------------------
+
 
             const markerSize =
                 Math.min(
@@ -591,6 +805,8 @@ function renderMasterEvents() {
                     cellHeight
                 ) *
                 0.72;
+
+
 
 
             const centerX =
@@ -601,6 +817,8 @@ function renderMasterEvents() {
                 cellWidth;
 
 
+
+
             const centerY =
                 (
                     y +
@@ -609,9 +827,13 @@ function renderMasterEvents() {
                 cellHeight;
 
 
+
+
             const offsetX =
                 mapRect.left -
                 containerRect.left;
+
+
 
 
             const offsetY =
@@ -619,12 +841,18 @@ function renderMasterEvents() {
                 containerRect.top;
 
 
+
+
             marker.style.width =
                 `${markerSize}px`;
 
 
+
+
             marker.style.height =
                 `${markerSize}px`;
+
+
 
 
             marker.style.left =
@@ -635,6 +863,8 @@ function renderMasterEvents() {
                 }px`;
 
 
+
+
             marker.style.top =
                 `${
                     offsetY +
@@ -643,28 +873,39 @@ function renderMasterEvents() {
                 }px`;
 
 
+
+
             // ------------------------------------------------
             // TIPO EVENTO
             // ------------------------------------------------
+
 
             if (
                 dungeonEvent.type ===
                 "communication"
             ) {
 
+
                 marker.classList.add(
                     "is-communication"
                 );
+
+
 
 
                 marker.textContent =
                     "◆";
 
 
+
+
                 marker.title =
                     `EVENTO\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
 
+
             }
+
+
 
 
             if (
@@ -672,10 +913,13 @@ function renderMasterEvents() {
                 "trap"
             ) {
 
+
                 const state =
                     masterTrapStates.get(
                         dungeonEvent.id
                     );
+
+
 
 
                 const cooldownActive =
@@ -684,26 +928,36 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 marker.classList.add(
                     "is-trap"
                 );
+
+
 
 
                 if (
                     cooldownActive
                 ) {
 
+
                     marker.classList.add(
                         "is-cooldown"
                     );
 
+
                 } else {
+
 
                     marker.classList.add(
                         "is-active"
                     );
 
+
                 }
+
+
 
 
                 const icon =
@@ -712,17 +966,25 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 icon.className =
                     "master-event-icon";
+
+
 
 
                 icon.textContent =
                     "⚠";
 
 
+
+
                 marker.appendChild(
                     icon
                 );
+
+
 
 
                 const countdown =
@@ -731,13 +993,19 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 countdown.className =
                     "master-event-countdown";
+
+
 
 
                 marker.appendChild(
                     countdown
                 );
+
+
 
 
                 updateSingleMasterTrapMarker(
@@ -747,35 +1015,48 @@ function renderMasterEvents() {
                     y
                 );
 
+
             }
+
+
 
 
             container.appendChild(
                 marker
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // TRAPPOLA IN COOLDOWN?
 // ============================================================
 
+
 function isMasterTrapCooldownActive(
     state
 ) {
+
 
     if (
         !state ||
         !state.disabled_until
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     const disabledUntil =
@@ -785,15 +1066,21 @@ function isMasterTrapCooldownActive(
             .getTime();
 
 
+
+
     if (
         !Number.isFinite(
             disabledUntil
         )
     ) {
 
+
         return false;
 
+
     }
+
+
 
 
     return (
@@ -801,14 +1088,19 @@ function isMasterTrapCooldownActive(
         Date.now()
     );
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA COUNTDOWN
 // ============================================================
 
+
 function updateMasterTrapCountdowns() {
+
 
     document
         .querySelectorAll(
@@ -817,8 +1109,11 @@ function updateMasterTrapCountdowns() {
         .forEach(
             marker => {
 
+
                 const eventId =
                     marker.dataset.eventId;
+
+
 
 
                 const dungeonEvent =
@@ -832,13 +1127,19 @@ function updateMasterTrapCountdowns() {
                         );
 
 
+
+
                 if (
                     !dungeonEvent
                 ) {
 
+
                     return;
 
+
                 }
+
+
 
 
                 const entry =
@@ -855,19 +1156,27 @@ function updateMasterTrapCountdowns() {
                         );
 
 
+
+
                 if (
                     !entry
                 ) {
 
+
                     return;
 
+
                 }
+
+
 
 
                 const [
                     coordinateKey
                 ] =
                     entry;
+
+
 
 
                 const [
@@ -879,6 +1188,8 @@ function updateMasterTrapCountdowns() {
                         .map(Number);
 
 
+
+
                 updateSingleMasterTrapMarker(
                     marker,
                     dungeonEvent,
@@ -886,15 +1197,20 @@ function updateMasterTrapCountdowns() {
                     y
                 );
 
+
             }
         );
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA SINGOLA TRAPPOLA
 // ============================================================
+
 
 function updateSingleMasterTrapMarker(
     marker,
@@ -903,10 +1219,13 @@ function updateSingleMasterTrapMarker(
     y
 ) {
 
+
     const state =
         masterTrapStates.get(
             dungeonEvent.id
         );
+
+
 
 
     const countdownElement =
@@ -915,10 +1234,14 @@ function updateSingleMasterTrapMarker(
         );
 
 
+
+
     const cooldownActive =
         isMasterTrapCooldownActive(
             state
         );
+
+
 
 
     marker.classList.toggle(
@@ -927,33 +1250,47 @@ function updateSingleMasterTrapMarker(
     );
 
 
+
+
     marker.classList.toggle(
         "is-active",
         !cooldownActive
     );
 
 
+
+
     if (
         !cooldownActive
     ) {
+
 
         if (
             countdownElement
         ) {
 
+
             countdownElement.textContent =
                 "";
 
+
         }
+
+
 
 
         marker.title =
             `TRAPPOLA ATTIVA\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const disabledUntil =
@@ -961,6 +1298,8 @@ function updateSingleMasterTrapMarker(
             state.disabled_until
         )
             .getTime();
+
+
 
 
     const remainingMs =
@@ -971,11 +1310,15 @@ function updateSingleMasterTrapMarker(
         );
 
 
+
+
     const remainingSeconds =
         Math.ceil(
             remainingMs /
             1000
         );
+
+
 
 
     const minutes =
@@ -985,9 +1328,13 @@ function updateSingleMasterTrapMarker(
         );
 
 
+
+
     const seconds =
         remainingSeconds %
         60;
+
+
 
 
     const countdownText =
@@ -999,30 +1346,42 @@ function updateSingleMasterTrapMarker(
         )}`;
 
 
+
+
     if (
         countdownElement
     ) {
 
+
         countdownElement.textContent =
             countdownText;
 
+
     }
+
+
 
 
     marker.title =
         `TRAPPOLA IN COOLDOWN\nX ${x} • Y ${y}\n${dungeonEvent.message}\nTempo residuo: ${countdownText}`;
 
+
 }
+
 
 // ============================================================
 // REALTIME
 // ============================================================
 
+
 async function setupRealtime() {
+
 
     showMessage(
         "Connessione al dungeon..."
     );
+
+
 
 
     dungeonChannel =
@@ -1031,9 +1390,12 @@ async function setupRealtime() {
         );
 
 
+
+
     // ========================================================
     // PRESENCE
     // ========================================================
+
 
     dungeonChannel.on(
         "presence",
@@ -1043,15 +1405,20 @@ async function setupRealtime() {
         },
         () => {
 
+
             syncPresencePlayers();
+
 
         }
     );
 
 
+
+
     // ========================================================
     // MOVIMENTO
     // ========================================================
+
 
     dungeonChannel.on(
         "broadcast",
@@ -1061,8 +1428,11 @@ async function setupRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
+
+
 
 
             if (
@@ -1070,22 +1440,30 @@ async function setupRealtime() {
                 !data.character_id
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             updatePlayer(
                 data
             );
 
+
         }
     );
+
+
 
 
     // ========================================================
     // STATO COMPLETO
     // ========================================================
+
 
     dungeonChannel.on(
         "broadcast",
@@ -1095,8 +1473,11 @@ async function setupRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
+
+
 
 
             if (
@@ -1104,22 +1485,30 @@ async function setupRealtime() {
                 !data.character_id
             ) {
 
+
                 return;
 
+
             }
+
+
 
 
             updatePlayer(
                 data
             );
 
+
         }
     );
+
+
 
 
     // ========================================================
     // CHAT DEL PIANO
     // ========================================================
+
 
     dungeonChannel.on(
         "broadcast",
@@ -1129,15 +1518,22 @@ async function setupRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
 
 
+
+
             if (!data) {
+
 
                 return;
 
+
             }
+
+
 
 
             appendMasterChatMessage(
@@ -1147,16 +1543,21 @@ async function setupRealtime() {
                 data.sender_name === "MASTER"
             );
 
+
         }
     );
+
+
 
 
     // ========================================================
     // SUBSCRIBE
     // ========================================================
 
+
     dungeonChannel.subscribe(
         status => {
+
 
             console.log(
                 "Realtime Master:",
@@ -1164,13 +1565,18 @@ async function setupRealtime() {
             );
 
 
+
+
             if (
                 status ===
                 "SUBSCRIBED"
             ) {
 
+
                 realtimeReady =
                     true;
+
+
 
 
                 showMessage(
@@ -1178,14 +1584,21 @@ async function setupRealtime() {
                 );
 
 
+
+
                 setMasterChatConnected(
                     true
                 );
 
 
+
+
                 updateOnlineCounter();
 
+
             }
+
+
 
 
             if (
@@ -1197,8 +1610,11 @@ async function setupRealtime() {
                 "CLOSED"
             ) {
 
+
                 realtimeReady =
                     false;
+
+
 
 
                 setMasterChatConnected(
@@ -1206,29 +1622,42 @@ async function setupRealtime() {
                 );
 
 
+
+
                 showMessage(
                     "Errore connessione Realtime."
                 );
 
+
             }
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SINCRONIZZA PRESENCE
 // ============================================================
 
+
 function syncPresencePlayers() {
+
 
     if (!dungeonChannel) {
 
+
         return;
 
+
     }
+
+
 
 
     const state =
@@ -1236,8 +1665,12 @@ function syncPresencePlayers() {
             .presenceState();
 
 
+
+
     const currentIds =
         new Set();
+
+
 
 
     Object.values(
@@ -1245,16 +1678,22 @@ function syncPresencePlayers() {
     ).forEach(
         presences => {
 
+
             presences.forEach(
                 presence => {
+
 
                     if (
                         !presence.character_id
                     ) {
 
+
                         return;
 
+
                     }
+
+
 
 
                     currentIds.add(
@@ -1262,15 +1701,21 @@ function syncPresencePlayers() {
                     );
 
 
+
+
                     updatePlayer(
                         presence
                     );
 
+
                 }
             );
 
+
         }
     );
+
+
 
 
     for (
@@ -1278,44 +1723,60 @@ function syncPresencePlayers() {
         of onlinePlayers.keys()
     ) {
 
+
         if (
             !currentIds.has(
                 characterId
             )
         ) {
 
+
             removePlayer(
                 characterId
             );
 
+
         }
+
 
     }
 
 
+
+
     updatePlayerList();
+
 
     updateOnlineCounter();
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA GIOCATORE
 // ============================================================
 
+
 function updatePlayer(
     data
 ) {
+
 
     if (
         !data ||
         !data.character_id
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const x =
@@ -1324,10 +1785,14 @@ function updatePlayer(
         );
 
 
+
+
     const y =
         Number(
             data.y
         );
+
+
 
 
     if (
@@ -1335,35 +1800,47 @@ function updatePlayer(
         !Number.isFinite(y)
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     onlinePlayers.set(
         data.character_id,
         {
 
+
             character_id:
                 data.character_id,
+
 
             user_id:
                 data.user_id ||
                 null,
 
+
             nome:
                 data.nome ||
                 "Avventuriero",
+
 
             token:
                 data.token ||
                 "token_1.png",
 
+
             x,
             y
 
+
         }
     );
+
+
 
 
     renderPlayerToken(
@@ -1371,24 +1848,34 @@ function updatePlayer(
     );
 
 
+
+
     updatePlayerList();
+
 
     updateOnlineCounter();
 
+
 }
+
+
 
 
 // ============================================================
 // RIMUOVI GIOCATORE
 // ============================================================
 
+
 function removePlayer(
     characterId
 ) {
 
+
     onlinePlayers.delete(
         characterId
     );
+
+
 
 
     const token =
@@ -1397,27 +1884,38 @@ function removePlayer(
         );
 
 
+
+
     if (token) {
 
+
         token.remove();
+
+
 
 
         playerTokens.delete(
             characterId
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // MOSTRA TOKEN
 // ============================================================
 
+
 function renderPlayerToken(
     characterId
 ) {
+
 
     const player =
         onlinePlayers.get(
@@ -1425,11 +1923,17 @@ function renderPlayerToken(
         );
 
 
+
+
     if (!player) {
+
 
         return;
 
+
     }
+
+
 
 
     const image =
@@ -1438,10 +1942,14 @@ function renderPlayerToken(
         );
 
 
+
+
     const container =
         document.getElementById(
             "master-map"
         );
+
+
 
 
     if (
@@ -1449,17 +1957,25 @@ function renderPlayerToken(
         !container
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const mapRect =
         image.getBoundingClientRect();
 
 
+
+
     const containerRect =
         container.getBoundingClientRect();
+
+
 
 
     if (
@@ -1467,9 +1983,13 @@ function renderPlayerToken(
         mapRect.height <= 0
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const cellWidth =
@@ -1477,9 +1997,13 @@ function renderPlayerToken(
         MAP_COLUMNS;
 
 
+
+
     const cellHeight =
         mapRect.height /
         MAP_ROWS;
+
+
 
 
     let token =
@@ -1488,7 +2012,10 @@ function renderPlayerToken(
         );
 
 
+
+
     if (!token) {
+
 
         token =
             document.createElement(
@@ -1496,23 +2023,33 @@ function renderPlayerToken(
             );
 
 
+
+
         token.className =
             "master-player-token";
+
+
 
 
         token.addEventListener(
             "click",
             event => {
 
+
                 event.stopPropagation();
+
+
 
 
                 openCharacterSheet(
                     characterId
                 );
 
+
             }
         );
+
+
 
 
         container.appendChild(
@@ -1520,12 +2057,17 @@ function renderPlayerToken(
         );
 
 
+
+
         playerTokens.set(
             characterId,
             token
         );
 
+
     }
+
+
 
 
     token.src =
@@ -1533,13 +2075,19 @@ function renderPlayerToken(
         player.token;
 
 
+
+
     token.alt =
         "Token di " +
         player.nome;
 
 
+
+
     token.title =
         player.nome;
+
+
 
 
     const tokenSize =
@@ -1550,12 +2098,18 @@ function renderPlayerToken(
         0.92;
 
 
+
+
     token.style.width =
         `${tokenSize}px`;
 
 
+
+
     token.style.height =
         `${tokenSize}px`;
+
+
 
 
     const centerX =
@@ -1566,6 +2120,8 @@ function renderPlayerToken(
         cellWidth;
 
 
+
+
     const centerY =
         (
             player.y +
@@ -1574,14 +2130,20 @@ function renderPlayerToken(
         cellHeight;
 
 
+
+
     const offsetX =
         mapRect.left -
         containerRect.left;
 
 
+
+
     const offsetY =
         mapRect.top -
         containerRect.top;
+
+
 
 
     token.style.left =
@@ -1592,6 +2154,8 @@ function renderPlayerToken(
         }px`;
 
 
+
+
     token.style.top =
         `${
             offsetY +
@@ -1599,34 +2163,46 @@ function renderPlayerToken(
             tokenSize / 2
         }px`;
 
+
 }
+
+
 
 
 // ============================================================
 // RIDISEGNA TOKEN
 // ============================================================
 
+
 function renderAllTokens() {
+
 
     for (
         const characterId
         of onlinePlayers.keys()
     ) {
 
+
         renderPlayerToken(
             characterId
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // LISTA GIOCATORI
 // ============================================================
 
+
 function updatePlayerList() {
+
 
     const list =
         document.getElementById(
@@ -1634,15 +2210,23 @@ function updatePlayerList() {
         );
 
 
+
+
     if (!list) {
 
+
         return;
+
 
     }
 
 
+
+
     list.innerHTML =
         "";
+
+
 
 
     if (
@@ -1650,18 +2234,25 @@ function updatePlayerList() {
         0
     ) {
 
+
         const empty =
             document.createElement(
                 "div"
             );
 
 
+
+
         empty.className =
             "master-player-empty";
 
 
+
+
         empty.textContent =
             "Nessun giocatore collegato.";
+
+
 
 
         list.appendChild(
@@ -1669,9 +2260,14 @@ function updatePlayerList() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const players =
@@ -1687,8 +2283,11 @@ function updatePlayerList() {
             );
 
 
+
+
     players.forEach(
         player => {
+
 
             const button =
                 document.createElement(
@@ -1696,12 +2295,18 @@ function updatePlayerList() {
                 );
 
 
+
+
             button.type =
                 "button";
 
 
+
+
             button.className =
                 "master-player-item";
+
+
 
 
             const token =
@@ -1710,13 +2315,19 @@ function updatePlayerList() {
                 );
 
 
+
+
             token.src =
                 "immagini/token/" +
                 player.token;
 
 
+
+
             token.alt =
                 "";
+
+
 
 
             const info =
@@ -1725,8 +2336,12 @@ function updatePlayerList() {
                 );
 
 
+
+
             info.className =
                 "master-player-info";
+
+
 
 
             const name =
@@ -1735,12 +2350,18 @@ function updatePlayerList() {
                 );
 
 
+
+
             name.className =
                 "master-player-name";
 
 
+
+
             name.textContent =
                 player.nome;
+
+
 
 
             const position =
@@ -1749,12 +2370,18 @@ function updatePlayerList() {
                 );
 
 
+
+
             position.className =
                 "master-player-position";
 
 
+
+
             position.textContent =
                 `X ${player.x} • Y ${player.y}`;
+
+
 
 
             info.appendChild(
@@ -1762,9 +2389,13 @@ function updatePlayerList() {
             );
 
 
+
+
             info.appendChild(
                 position
             );
+
+
 
 
             button.appendChild(
@@ -1772,38 +2403,52 @@ function updatePlayerList() {
             );
 
 
+
+
             button.appendChild(
                 info
             );
+
+
 
 
             button.addEventListener(
                 "click",
                 () => {
 
+
                     openCharacterSheet(
                         player.character_id
                     );
 
+
                 }
             );
+
+
 
 
             list.appendChild(
                 button
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CONTATORE ONLINE
 // ============================================================
 
+
 function updateOnlineCounter() {
+
 
     const element =
         document.getElementById(
@@ -1811,27 +2456,40 @@ function updateOnlineCounter() {
         );
 
 
+
+
     if (!element) {
+
 
         return;
 
+
     }
+
+
 
 
     const count =
         onlinePlayers.size;
 
 
+
+
     if (
         !realtimeReady
     ) {
 
+
         element.textContent =
             "Connessione...";
 
+
         return;
 
+
     }
+
+
 
 
     if (
@@ -1839,42 +2497,55 @@ function updateOnlineCounter() {
         0
     ) {
 
+
         element.textContent =
             "Nessun giocatore online";
+
 
     } else if (
         count ===
         1
     ) {
 
+
         element.textContent =
             "1 giocatore online";
 
+
     } else {
+
 
         element.textContent =
             `${count} giocatori online`;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // CHAT MASTER - SETUP
 // ============================================================
 
+
 function setupMasterChat() {
+
 
     const form =
         document.getElementById(
             "master-chat-form"
         );
 
+
     const input =
         document.getElementById(
             "master-chat-input"
         );
+
 
     if (
         !form ||
@@ -1883,20 +2554,26 @@ function setupMasterChat() {
         return;
     }
 
+
     form.addEventListener(
         "submit",
         async event => {
 
+
             event.preventDefault();
 
+
             await sendMasterChatMessage();
+
 
         }
     );
 
+
     input.addEventListener(
         "keydown",
         event => {
+
 
             if (
                 event.key ===
@@ -1904,34 +2581,46 @@ function setupMasterChat() {
                 !event.shiftKey
             ) {
 
+
                 event.preventDefault();
+
 
                 form.requestSubmit();
 
+
             }
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CARICA STORICO CHAT MASTER
 // ============================================================
 
+
 async function loadMasterChatHistory() {
+
 
     const container =
         document.getElementById(
             "master-chat-messages"
         );
 
+
     if (!container) {
         return;
     }
 
+
     try {
+
 
         const {
             data,
@@ -1964,23 +2653,29 @@ async function loadMasterChatHistory() {
                     MASTER_CHAT_HISTORY_LIMIT
                 );
 
+
         if (error) {
             throw error;
         }
 
+
         renderedMasterChatMessageIds.clear();
+
 
         container.innerHTML =
             "";
+
 
         const rows =
             Array.isArray(data)
                 ? [...data]
                 : [];
 
+
         if (
             rows.length === 0
         ) {
+
 
             container.innerHTML =
                 `
@@ -1989,33 +2684,42 @@ async function loadMasterChatHistory() {
                     </div>
                 `;
 
+
             return;
         }
 
+
         rows.forEach(
             row => {
+
 
                 appendMasterChatMessage(
                     {
                         id:
                             row.id,
 
+
                         character_id:
                             row.character_id,
+
 
                         master_user_id:
                             row.character_id === null
                                 ? row.user_id
                                 : null,
 
+
                         name:
                             row.sender_name,
+
 
                         text:
                             row.message_text,
 
+
                         timestamp:
                             row.created_at,
+
 
                         sent_at:
                             row.created_at
@@ -2024,86 +2728,110 @@ async function loadMasterChatHistory() {
                         "MASTER"
                 );
 
+
             }
         );
 
+
     } catch (error) {
+
 
         console.error(
             "Errore caricamento storico chat Master:",
             error
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // STATO CHAT
 // ============================================================
 
+
 function setMasterChatConnected(
     connected
 ) {
+
 
     const input =
         document.getElementById(
             "master-chat-input"
         );
+
 
     const button =
         document.getElementById(
             "master-chat-send"
         );
 
+
     const status =
         document.getElementById(
             "master-chat-status"
         );
+
 
     if (input) {
         input.disabled =
             !connected;
     }
 
+
     if (button) {
         button.disabled =
             !connected;
     }
 
+
     if (status) {
+
 
         status.textContent =
             connected
                 ? "Online"
                 : "Disconnessa";
 
+
         status.classList.toggle(
             "is-online",
             connected
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // INVIA MESSAGGIO MASTER
 // ============================================================
 
+
 async function sendMasterChatMessage() {
+
 
     const input =
         document.getElementById(
             "master-chat-input"
         );
 
+
     const feedback =
         document.getElementById(
             "master-chat-feedback"
         );
+
 
     if (
         !input ||
@@ -2112,39 +2840,49 @@ async function sendMasterChatMessage() {
         return;
     }
 
+
     const text =
         input.value
             .trim();
 
+
     if (!text) {
         return;
     }
+
 
     if (
         !dungeonChannel ||
         !realtimeReady
     ) {
 
+
         if (feedback) {
             feedback.textContent =
                 "Chat non connessa.";
         }
 
+
         return;
     }
+
 
     const originalValue =
         input.value;
 
+
     input.value =
         "";
+
 
     if (feedback) {
         feedback.textContent =
             "";
     }
 
+
     try {
+
 
         const {
             data: savedMessage,
@@ -2156,20 +2894,26 @@ async function sendMasterChatMessage() {
                 )
                 .insert({
 
+
                     floor_id:
                         MASTER_CHAT_FLOOR_ID,
+
 
                     character_id:
                         null,
 
+
                     user_id:
                         currentUser.id,
+
 
                     sender_name:
                         "MASTER",
 
+
                     message_text:
                         text
+
 
                 })
                 .select(`
@@ -2182,103 +2926,134 @@ async function sendMasterChatMessage() {
                 `)
                 .single();
 
+
         if (error) {
             throw error;
         }
 
+
         const payload = {
+
 
             id:
                 savedMessage.id,
 
+
             character_id:
                 null,
+
 
             master_user_id:
                 savedMessage.user_id ||
                 currentUser.id,
 
+
             name:
                 "MASTER",
 
+
             nome:
                 "MASTER",
+
 
             text:
                 savedMessage.message_text ||
                 text,
 
+
             timestamp:
                 savedMessage.created_at,
+
 
             sent_at:
                 savedMessage.created_at
 
+
         };
+
 
         appendMasterChatMessage(
             payload,
             true
         );
 
+
         const result =
             await dungeonChannel.send({
+
 
                 type:
                     "broadcast",
 
+
                 event:
                     "floor-chat",
 
+
                 payload
 
+
             });
+
 
         if (
             result !== "ok" &&
             result !== undefined
         ) {
 
+
             console.warn(
                 "Invio chat Master:",
                 result
             );
 
+
         }
 
+
     } catch (error) {
+
 
         console.error(
             "Errore salvataggio chat Master:",
             error
         );
 
+
         input.value =
             originalValue;
+
 
         if (feedback) {
             feedback.textContent =
                 "Messaggio non inviato.";
         }
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // MOSTRA MESSAGGIO CHAT
 // ============================================================
 
+
 function appendMasterChatMessage(
     data,
     isMaster = false
 ) {
 
+
     const container =
         document.getElementById(
             "master-chat-messages"
         );
+
 
     if (
         !container ||
@@ -2287,10 +3062,12 @@ function appendMasterChatMessage(
         return;
     }
 
+
     const messageId =
         data.id ||
         data.message_id ||
         null;
+
 
     if (
         messageId &&
@@ -2301,31 +3078,37 @@ function appendMasterChatMessage(
         return;
     }
 
+
     if (messageId) {
         renderedMasterChatMessageIds.add(
             String(messageId)
         );
     }
 
+
     const empty =
         container.querySelector(
             ".master-chat-empty"
         );
 
+
     if (empty) {
         empty.remove();
     }
+
 
     const message =
         document.createElement(
             "div"
         );
 
+
     const authorName =
         data.name ||
         data.nome ||
         data.sender_name ||
         "Giocatore";
+
 
     message.className =
         "master-chat-message" +
@@ -2337,31 +3120,38 @@ function appendMasterChatMessage(
                 : ""
         );
 
+
     if (messageId) {
         message.dataset.messageId =
             String(messageId);
     }
+
 
     const meta =
         document.createElement(
             "div"
         );
 
+
     meta.className =
         "master-chat-meta";
+
 
     const author =
         document.createElement(
             "strong"
         );
 
+
     author.textContent =
         authorName;
+
 
     const time =
         document.createElement(
             "span"
         );
+
 
     time.textContent =
         formatChatTime(
@@ -2370,21 +3160,26 @@ function appendMasterChatMessage(
             data.created_at
         );
 
+
     meta.appendChild(
         author
     );
 
+
     meta.appendChild(
         time
     );
+
 
     const body =
         document.createElement(
             "div"
         );
 
+
     body.className =
         "master-chat-body";
+
 
     body.textContent =
         String(
@@ -2393,67 +3188,87 @@ function appendMasterChatMessage(
             ""
         );
 
+
     message.appendChild(
         meta
     );
+
 
     message.appendChild(
         body
     );
 
+
     container.prepend(
         message
     );
+
 
     const messages =
         container.querySelectorAll(
             ".master-chat-message"
         );
 
+
     if (
         messages.length >
         MASTER_CHAT_HISTORY_LIMIT
     ) {
+
 
         const last =
             messages[
                 messages.length - 1
             ];
 
+
         const lastId =
             last?.dataset
                 ?.messageId;
 
+
         if (lastId) {
+
 
             renderedMasterChatMessageIds.delete(
                 lastId
             );
 
+
         }
+
 
         last?.remove();
 
+
     }
+
 
     container.scrollTop =
         0;
 
+
 }
+
+
 
 
 // ============================================================
 // ORARIO CHAT
 // ============================================================
 
+
 function formatChatTime(
     value
 ) {
+
 
     const date =
         value
             ? new Date(value)
             : new Date();
+
+
 
 
     if (
@@ -2462,9 +3277,13 @@ function formatChatTime(
         )
     ) {
 
+
         return "";
 
+
     }
+
+
 
 
     return date.toLocaleTimeString(
@@ -2473,21 +3292,27 @@ function formatChatTime(
             hour:
                 "2-digit",
 
+
             minute:
                 "2-digit"
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // APRI SCHEDA PERSONAGGIO
 // ============================================================
 
+
 async function openCharacterSheet(
     characterId
 ) {
+
 
     const modal =
         document.getElementById(
@@ -2495,16 +3320,24 @@ async function openCharacterSheet(
         );
 
 
+
+
     if (!modal) {
+
 
         return;
 
+
     }
+
+
 
 
     showMessage(
         "Caricamento scheda..."
     );
+
+
 
 
     const {
@@ -2538,7 +3371,10 @@ async function openCharacterSheet(
             .single();
 
 
+
+
     if (error) {
+
 
         console.error(
             "Errore caricamento scheda:",
@@ -2546,14 +3382,21 @@ async function openCharacterSheet(
         );
 
 
+
+
         showMessage(
             "Impossibile caricare la scheda."
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     fillCharacterSheet(
@@ -2561,33 +3404,46 @@ async function openCharacterSheet(
     );
 
 
+
+
     modal.hidden =
         false;
+
+
 
 
     document.body.style.overflow =
         "hidden";
 
 
+
+
     showMessage(
         ""
     );
 
+
 }
+
+
 
 
 // ============================================================
 // RIEMPI SCHEDA
 // ============================================================
 
+
 function fillCharacterSheet(
     character
 ) {
+
 
     const forza =
         getStat(
             character.forza
         );
+
+
 
 
     const resistenza =
@@ -2596,10 +3452,14 @@ function fillCharacterSheet(
         );
 
 
+
+
     const costituzione =
         getStat(
             character.costituzione
         );
+
+
 
 
     const intelligenza =
@@ -2608,10 +3468,14 @@ function fillCharacterSheet(
         );
 
 
+
+
     const destrezza =
         getStat(
             character.destrezza
         );
+
+
 
 
     const fortuna =
@@ -2620,11 +3484,15 @@ function fillCharacterSheet(
         );
 
 
+
+
     setText(
         "master-character-name",
         character.nome ||
         "Avventuriero"
     );
+
+
 
 
     setText(
@@ -2639,13 +3507,18 @@ function fillCharacterSheet(
     );
 
 
+
+
     const token =
         document.getElementById(
             "master-character-token"
         );
 
 
+
+
     if (token) {
+
 
         token.src =
             "immagini/token/" +
@@ -2655,6 +3528,8 @@ function fillCharacterSheet(
             );
 
 
+
+
         token.alt =
             "Token di " +
             (
@@ -2662,7 +3537,10 @@ function fillCharacterSheet(
                 "personaggio"
             );
 
+
     }
+
+
 
 
     setText(
@@ -2671,10 +3549,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-resistenza",
         resistenza
     );
+
+
 
 
     setText(
@@ -2683,10 +3565,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-intelligenza",
         intelligenza
     );
+
+
 
 
     setText(
@@ -2695,10 +3581,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-fortuna",
         fortuna
     );
+
+
 
 
     const attack =
@@ -2706,6 +3596,8 @@ function fillCharacterSheet(
             forza /
             2
         );
+
+
 
 
     const defense =
@@ -2718,6 +3610,8 @@ function fillCharacterSheet(
         );
 
 
+
+
     const life =
         Math.ceil(
             5 *
@@ -2726,6 +3620,8 @@ function fillCharacterSheet(
                 2
             )
         );
+
+
 
 
     const mana =
@@ -2738,6 +3634,8 @@ function fillCharacterSheet(
         );
 
 
+
+
     const movement =
         Math.ceil(
             4 +
@@ -2746,6 +3644,8 @@ function fillCharacterSheet(
                 2
             )
         );
+
+
 
 
     const critical =
@@ -2761,10 +3661,14 @@ function fillCharacterSheet(
         );
 
 
+
+
     setText(
         "master-attack",
         attack
     );
+
+
 
 
     setText(
@@ -2773,10 +3677,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-life",
         life
     );
+
+
 
 
     setText(
@@ -2785,16 +3693,22 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-movement",
         movement
     );
 
 
+
+
     setText(
         "master-critical",
         `${critical}%`
     );
+
+
 
 
     setText(
@@ -2810,21 +3724,28 @@ function fillCharacterSheet(
         }`
     );
 
+
 }
+
+
 
 
 // ============================================================
 // VALORE STAT
 // ============================================================
 
+
 function getStat(
     value
 ) {
+
 
     const number =
         Number(
             value
         );
+
+
 
 
     if (
@@ -2833,9 +3754,13 @@ function getStat(
         )
     ) {
 
+
         return 1;
 
+
     }
+
+
 
 
     return Math.max(
@@ -2846,17 +3771,22 @@ function getStat(
         )
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SET TEXT
 // ============================================================
 
+
 function setText(
     id,
     value
 ) {
+
 
     const element =
         document.getElementById(
@@ -2864,26 +3794,37 @@ function setText(
         );
 
 
+
+
     if (element) {
+
 
         element.textContent =
             value;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // MODALE
 // ============================================================
 
+
 function setupModal() {
+
 
     const modal =
         document.getElementById(
             "master-character-modal"
         );
+
+
 
 
     const closeButton =
@@ -2892,20 +3833,28 @@ function setupModal() {
         );
 
 
+
+
     if (
         !modal ||
         !closeButton
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     closeButton.addEventListener(
         "click",
         closeCharacterSheet
     );
+
+
 
 
     modal
@@ -2915,18 +3864,23 @@ function setupModal() {
         .forEach(
             element => {
 
+
                 element.addEventListener(
                     "click",
                     closeCharacterSheet
                 );
 
+
             }
         );
+
+
 
 
     document.addEventListener(
         "keydown",
         event => {
+
 
             if (
                 event.key ===
@@ -2934,21 +3888,29 @@ function setupModal() {
                 !modal.hidden
             ) {
 
+
                 closeCharacterSheet();
 
+
             }
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // CHIUDI SCHEDA
 // ============================================================
 
+
 function closeCharacterSheet() {
+
 
     const modal =
         document.getElementById(
@@ -2956,28 +3918,41 @@ function closeCharacterSheet() {
         );
 
 
+
+
     if (!modal) {
+
 
         return;
 
+
     }
+
+
 
 
     modal.hidden =
         true;
 
 
+
+
     document.body.style.overflow =
         "";
 
+
 }
+
+
 
 
 // ============================================================
 // LOGOUT
 // ============================================================
 
+
 function setupLogout() {
+
 
     const button =
         document.getElementById(
@@ -2985,27 +3960,38 @@ function setupLogout() {
         );
 
 
+
+
     if (!button) {
+
 
         return;
 
+
     }
+
+
 
 
     button.addEventListener(
         "click",
         async () => {
 
+
             if (
                 dungeonChannel
             ) {
+
 
                 await db
                     .removeChannel(
                         dungeonChannel
                     );
 
+
             }
+
+
 
 
             await db
@@ -3013,22 +3999,30 @@ function setupLogout() {
                 .signOut();
 
 
+
+
             window.location.href =
                 "index.html";
+
 
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // MESSAGGIO
 // ============================================================
 
+
 function showMessage(
     text
 ) {
+
 
     const element =
         document.getElementById(
@@ -3036,58 +4030,79 @@ function showMessage(
         );
 
 
+
+
     if (element) {
+
 
         element.textContent =
             text;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // RIDIMENSIONAMENTO
 // ============================================================
 
+
 window.addEventListener(
     "resize",
     () => {
 
+
         renderAllTokens();
+
 
         renderMasterEvents();
 
+
     }
 );
+
+
 
 
 // ============================================================
 // USCITA
 // ============================================================
 
+
 window.addEventListener(
     "beforeunload",
     () => {
+
 
         if (
             dungeonChannel
         ) {
 
+
             db.removeChannel(
                 dungeonChannel
             );
 
+
         }
+
 
     }
 );
+
+
 
 
 // ============================================================
 // DASHBOARD MASTER v3
 // Tutti i PG dal database + Presence online + combat spettatore
 // ============================================================
+
 
 const MASTER_COMBAT_EVENTS = [
     { id: "C1", x: 12, y: 4, encounter_id: "combat_1" },
@@ -3098,10 +4113,12 @@ const MASTER_COMBAT_EVENTS = [
     { id: "BOSS1", x: 19, y: 20, encounter_id: "combat_boss", type: "boss" }
 ];
 
+
 const MASTER_SPECIAL_EVENTS = [
     { id: "PVP1", x: 1, y: 14, type: "pvp", label: "PVP" },
     { id: "VENDOR1", x: 2, y: 11, type: "vendor", label: "VENDOR" }
 ];
+
 
 const allMasterPlayers = new Map();
 const activeMasterCombats = new Map();
@@ -3109,16 +4126,19 @@ const masterPlayerScores = new Map();
 const masterMonkeyFingerOwners = new Set();
 let masterDashboardRefreshTimer = null;
 
+
 async function loadMasterCharacterExtras(characterIds) {
     const ids = Array.isArray(characterIds)
         ? characterIds.filter(Boolean)
         : [];
+
 
     if (ids.length === 0) {
         masterPlayerScores.clear();
         masterMonkeyFingerOwners.clear();
         return;
     }
+
 
     const [scoreResults, inventoryResult] = await Promise.all([
         Promise.all(
@@ -3131,9 +4151,11 @@ async function loadMasterCharacterExtras(characterIds) {
                         }
                     );
 
+
                     if (error) {
                         throw error;
                     }
+
 
                     return {
                         characterId,
@@ -3146,6 +4168,7 @@ async function loadMasterCharacterExtras(characterIds) {
                         error
                     );
 
+
                     return {
                         characterId,
                         score: masterPlayerScores.get(characterId) ?? 0
@@ -3154,6 +4177,7 @@ async function loadMasterCharacterExtras(characterIds) {
             })
         ),
 
+
         db
             .from("character_inventory")
             .select("character_id, item_id, quantity")
@@ -3161,12 +4185,14 @@ async function loadMasterCharacterExtras(characterIds) {
             .eq("item_id", "dito_scimmia")
     ]);
 
+
     scoreResults.forEach(entry => {
         masterPlayerScores.set(
             entry.characterId,
             entry.score
         );
     });
+
 
     if (inventoryResult.error) {
         console.error(
@@ -3176,7 +4202,9 @@ async function loadMasterCharacterExtras(characterIds) {
         return;
     }
 
+
     masterMonkeyFingerOwners.clear();
+
 
     (inventoryResult.data || []).forEach(entry => {
         if (
@@ -3189,6 +4217,8 @@ async function loadMasterCharacterExtras(characterIds) {
         }
     });
 }
+
+
 
 
 async function loadAllMasterCharacters() {
@@ -3213,29 +4243,38 @@ async function loadAllMasterCharacters() {
             active_combat_id
         `);
 
+
     if (error) {
         console.error("Errore caricamento PG Master:", error);
         return;
     }
 
+
     const characterIds = (data || []).map(characterData => characterData.id);
+
 
     await loadMasterCharacterExtras(characterIds);
 
+
     const currentIds = new Set();
+
 
     (data || []).forEach(characterData => {
         currentIds.add(characterData.id);
 
+
         const presence = onlinePlayers.get(characterData.id);
+
 
         const x = presence && Number.isFinite(Number(presence.x))
             ? Number(presence.x)
             : Number(characterData.dungeon_x);
 
+
         const y = presence && Number.isFinite(Number(presence.y))
             ? Number(presence.y)
             : Number(characterData.dungeon_y);
+
 
         allMasterPlayers.set(characterData.id, {
             ...characterData,
@@ -3254,6 +4293,7 @@ async function loadAllMasterCharacters() {
         });
     });
 
+
     for (const characterId of Array.from(allMasterPlayers.keys())) {
         if (!currentIds.has(characterId)) {
             allMasterPlayers.delete(characterId);
@@ -3263,6 +4303,7 @@ async function loadAllMasterCharacters() {
         }
     }
 
+
     renderAllTokens();
     updatePlayerList();
     updateOnlineCounter();
@@ -3270,20 +4311,26 @@ async function loadAllMasterCharacters() {
 }
 
 
+
+
 // ============================================================
 // BOX PASSWORD BOSS
 // ============================================================
+
 
 async function loadMasterBossPassword() {
     const passwordElement =
         document.getElementById("master-boss-password");
 
+
     const expiryElement =
         document.getElementById("master-boss-password-expiry");
+
 
     if (!passwordElement) {
         return;
     }
+
 
     try {
         const { data, error } = await db
@@ -3292,29 +4339,36 @@ async function loadMasterBossPassword() {
             .eq("id", "boss_room_1")
             .maybeSingle();
 
+
         if (error) {
             throw error;
         }
 
+
         if (!data?.password_text) {
             passwordElement.textContent = "NON DISPONIBILE";
+
 
             if (expiryElement) {
                 expiryElement.textContent =
                     "Nessuna password attiva trovata.";
             }
 
+
             return;
         }
 
+
         passwordElement.textContent =
             String(data.password_text);
+
 
         if (expiryElement) {
             const expiresAt =
                 data.cycle_expires_at
                     ? new Date(data.cycle_expires_at)
                     : null;
+
 
             expiryElement.textContent =
                 expiresAt &&
@@ -3330,13 +4384,16 @@ async function loadMasterBossPassword() {
                     : "Password del ciclo attuale";
         }
 
+
     } catch (error) {
         console.error(
             "Errore caricamento password Boss Master:",
             error
         );
 
+
         passwordElement.textContent = "ERRORE";
+
 
         if (expiryElement) {
             expiryElement.textContent =
@@ -3346,9 +4403,12 @@ async function loadMasterBossPassword() {
 }
 
 
+
+
 // ============================================================
 // BOX DITO DI SCIMMIA
 // ============================================================
+
 
 function renderMasterMonkeyFingerStatus() {
     const statusElement =
@@ -3356,19 +4416,23 @@ function renderMasterMonkeyFingerStatus() {
             "master-monkey-finger-status"
         );
 
+
     const ownerElement =
         document.getElementById(
             "master-monkey-finger-owner"
         );
+
 
     const panel =
         document.querySelector(
             ".master-monkey-finger-panel"
         );
 
+
     if (!statusElement) {
         return;
     }
+
 
     const owners =
         Array.from(masterMonkeyFingerOwners)
@@ -3376,17 +4440,21 @@ function renderMasterMonkeyFingerStatus() {
                 const player =
                     allMasterPlayers.get(characterId);
 
+
                 return player?.nome || null;
             })
             .filter(Boolean);
 
+
     const available =
         owners.length === 0;
+
 
     statusElement.textContent =
         available
             ? "DISPONIBILE"
             : "IN POSSESSO";
+
 
     if (ownerElement) {
         ownerElement.textContent =
@@ -3397,11 +4465,13 @@ function renderMasterMonkeyFingerStatus() {
                     : `In mano a: ${owners.join(", ")}`;
     }
 
+
     if (panel) {
         panel.classList.toggle(
             "is-available",
             available
         );
+
 
         panel.classList.toggle(
             "is-owned",
@@ -3409,6 +4479,8 @@ function renderMasterMonkeyFingerStatus() {
         );
     }
 }
+
+
 
 
 async function loadActiveMasterCombats() {
@@ -3423,25 +4495,31 @@ async function loadActiveMasterCombats() {
         `)
         .in("status", ["waiting", "active"]);
 
+
     if (error) {
         console.error("Errore caricamento combat Master:", error);
         return;
     }
 
+
     activeMasterCombats.clear();
+
 
     (data || []).forEach(combat => {
         activeMasterCombats.set(combat.id, combat);
     });
 
+
     renderActiveMasterCombats();
     renderMasterEvents();
 }
+
 
 function startMasterDashboardRefresh() {
     if (masterDashboardRefreshTimer) {
         clearInterval(masterDashboardRefreshTimer);
     }
+
 
     masterDashboardRefreshTimer = setInterval(async () => {
         await Promise.all([
@@ -3452,29 +4530,37 @@ function startMasterDashboardRefresh() {
     }, 4000);
 }
 
+
 function getActiveCombatForEncounter(encounterId) {
     return Array.from(activeMasterCombats.values()).find(
         combat => combat.encounter_id === encounterId
     ) || null;
 }
 
+
 function openMasterCombat(combatId) {
     if (!combatId) return;
+
 
     window.location.href =
         `combat.html?combat_id=${encodeURIComponent(combatId)}&mode=master`;
 }
 
+
 function renderActiveMasterCombats() {
     const list = document.getElementById("master-combat-list");
     const countElement = document.getElementById("master-combat-count");
 
+
     if (!list) return;
+
 
     const combats = Array.from(activeMasterCombats.values())
         .sort((a, b) => String(a.encounter_id || "").localeCompare(String(b.encounter_id || "")));
 
+
     list.innerHTML = "";
+
 
     if (countElement) {
         countElement.textContent = combats.length === 0
@@ -3484,6 +4570,7 @@ function renderActiveMasterCombats() {
                 : `${combats.length} combattimenti attivi`;
     }
 
+
     if (combats.length === 0) {
         const empty = document.createElement("div");
         empty.className = "master-player-empty";
@@ -3492,30 +4579,38 @@ function renderActiveMasterCombats() {
         return;
     }
 
+
     combats.forEach(combat => {
         const row = document.createElement("div");
         row.className = "master-combat-item";
+
 
         const info = document.createElement("div");
         const title = document.createElement("div");
         title.className = "master-combat-title";
         title.textContent = String(combat.encounter_id || "COMBATTIMENTO").toUpperCase();
 
+
         const meta = document.createElement("div");
         meta.className = "master-combat-meta";
+
 
         const participants = Array.from(allMasterPlayers.values())
             .filter(player => player.active_combat_id === combat.id)
             .map(player => player.nome);
 
+
         const participantText = participants.length
             ? ` · ${participants.join(", ")}`
             : "";
 
+
         meta.textContent =
             `${combat.status === "active" ? "IN CORSO" : "IN ATTESA"} · Round ${Number(combat.round_number) || 1}${participantText}`;
 
+
         info.append(title, meta);
+
 
         const watch = document.createElement("button");
         watch.type = "button";
@@ -3523,33 +4618,42 @@ function renderActiveMasterCombats() {
         watch.textContent = "OSSERVA";
         watch.addEventListener("click", () => openMasterCombat(combat.id));
 
+
         row.append(info, watch);
         list.appendChild(row);
     });
 }
 
+
 // ============================================================
 // PRESENCE: non rimuove più i PG offline dal Master
 // ============================================================
 
+
 function syncPresencePlayers() {
     if (!dungeonChannel) return;
 
+
     const state = dungeonChannel.presenceState();
     const currentIds = new Set();
+
 
     Object.values(state).forEach(presences => {
         presences.forEach(presence => {
             if (!presence.character_id) return;
 
+
             currentIds.add(presence.character_id);
+
 
             onlinePlayers.set(presence.character_id, {
                 ...presence,
                 nome: presence.nome || presence.name || "Avventuriero"
             });
 
+
             const existing = allMasterPlayers.get(presence.character_id);
+
 
             if (existing) {
                 allMasterPlayers.set(presence.character_id, {
@@ -3566,6 +4670,7 @@ function syncPresencePlayers() {
         });
     });
 
+
     for (const characterId of Array.from(onlinePlayers.keys())) {
         if (!currentIds.has(characterId)) {
             onlinePlayers.delete(characterId);
@@ -3576,17 +4681,21 @@ function syncPresencePlayers() {
         }
     }
 
+
     renderAllTokens();
     updatePlayerList();
     updateOnlineCounter();
     renderActiveMasterCombats();
 }
 
+
 function updatePlayer(data) {
     if (!data || !data.character_id) return;
 
+
     const x = Number(data.x);
     const y = Number(data.y);
+
 
     onlinePlayers.set(data.character_id, {
         ...onlinePlayers.get(data.character_id),
@@ -3594,12 +4703,14 @@ function updatePlayer(data) {
         nome: data.nome || data.name || onlinePlayers.get(data.character_id)?.nome || "Avventuriero"
     });
 
+
     const existing = allMasterPlayers.get(data.character_id) || {
         id: data.character_id,
         character_id: data.character_id,
         nome: data.nome || data.name || "Avventuriero",
         token: data.token || "token_1.png"
     };
+
 
     allMasterPlayers.set(data.character_id, {
         ...existing,
@@ -3615,45 +4726,56 @@ function updatePlayer(data) {
         online: true
     });
 
+
     renderPlayerToken(data.character_id);
     updatePlayerList();
     updateOnlineCounter();
     renderActiveMasterCombats();
 }
 
+
 function removePlayer(characterId) {
     onlinePlayers.delete(characterId);
+
 
     const existing = allMasterPlayers.get(characterId);
     if (existing) {
         allMasterPlayers.set(characterId, { ...existing, online: false });
     }
 
+
     renderPlayerToken(characterId);
     updatePlayerList();
     updateOnlineCounter();
 }
 
+
 // ============================================================
 // TOKEN: tutti i PG, online/offline/combat
 // ============================================================
+
 
 function renderPlayerToken(characterId) {
     const player = allMasterPlayers.get(characterId);
     if (!player) return;
 
+
     const image = document.getElementById("master-map-image");
     const container = document.getElementById("master-map");
     if (!image || !container) return;
+
 
     const mapRect = image.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     if (mapRect.width <= 0 || mapRect.height <= 0) return;
 
+
     const cellWidth = mapRect.width / MAP_COLUMNS;
     const cellHeight = mapRect.height / MAP_ROWS;
 
+
     let token = playerTokens.get(characterId);
+
 
     if (!token) {
         token = document.createElement("img");
@@ -3666,29 +4788,36 @@ function renderPlayerToken(characterId) {
         playerTokens.set(characterId, token);
     }
 
+
     token.src = "immagini/token/" + (player.token || "token_1.png");
     token.alt = "Token di " + (player.nome || "Avventuriero");
     token.title = `${player.nome || "Avventuriero"}${player.online ? " · ONLINE" : " · OFFLINE"}${player.active_combat_id ? " · IN COMBATTIMENTO" : ""}`;
+
 
     token.classList.toggle("is-online", !!player.online);
     token.classList.toggle("is-offline", !player.online);
     token.classList.toggle("is-in-combat", !!player.active_combat_id);
 
+
     const tokenSize = Math.min(cellWidth, cellHeight) * 0.92;
     token.style.width = `${tokenSize}px`;
     token.style.height = `${tokenSize}px`;
 
+
     const x = Number.isFinite(Number(player.x)) ? Number(player.x) : 0;
     const y = Number.isFinite(Number(player.y)) ? Number(player.y) : 0;
+
 
     const centerX = (x + 0.5) * cellWidth;
     const centerY = (y + 0.5) * cellHeight;
     const offsetX = mapRect.left - containerRect.left;
     const offsetY = mapRect.top - containerRect.top;
 
+
     token.style.left = `${offsetX + centerX - tokenSize / 2}px`;
     token.style.top = `${offsetY + centerY - tokenSize / 2}px`;
 }
+
 
 function renderAllTokens() {
     for (const characterId of allMasterPlayers.keys()) {
@@ -3696,15 +4825,19 @@ function renderAllTokens() {
     }
 }
 
+
 // ============================================================
 // LISTA PG COMPLETA
 // ============================================================
+
 
 function updatePlayerList() {
     const list = document.getElementById("master-player-list");
     if (!list) return;
 
+
     list.innerHTML = "";
+
 
     if (allMasterPlayers.size === 0) {
         const empty = document.createElement("div");
@@ -3714,6 +4847,7 @@ function updatePlayerList() {
         return;
     }
 
+
     const players = Array.from(allMasterPlayers.values())
         .sort((a, b) => {
             if (!!a.online !== !!b.online) return a.online ? -1 : 1;
@@ -3721,38 +4855,47 @@ function updatePlayerList() {
             return String(a.nome || "").localeCompare(String(b.nome || ""), "it");
         });
 
+
     players.forEach(player => {
         const row = document.createElement("div");
         row.className = "master-player-item";
         row.classList.toggle("is-offline", !player.online);
         row.classList.toggle("is-combat", !!player.active_combat_id);
 
+
         const token = document.createElement("img");
         token.src = "immagini/token/" + (player.token || "token_1.png");
         token.alt = "";
 
+
         const info = document.createElement("div");
         info.className = "master-player-info";
+
 
         const name = document.createElement("span");
         name.className = "master-player-name";
         name.textContent = player.nome || "Avventuriero";
 
+
         const position = document.createElement("span");
         position.className = "master-player-position";
         position.textContent = `X ${Number(player.x) || 0} • Y ${Number(player.y) || 0}`;
+
 
         const score = document.createElement("span");
         score.className = "master-player-score";
         score.textContent = `SCORE ${Number(player.score) || 0}`;
 
+
         const statusRow = document.createElement("div");
         statusRow.className = "master-player-status-row";
+
 
         const onlineBadge = document.createElement("span");
         onlineBadge.className = `master-status-badge ${player.online ? "online" : "offline"}`;
         onlineBadge.textContent = player.online ? "● ONLINE" : "○ OFFLINE";
         statusRow.appendChild(onlineBadge);
+
 
         if (player.active_combat_id) {
             const combatBadge = document.createElement("span");
@@ -3761,6 +4904,7 @@ function updatePlayerList() {
             statusRow.appendChild(combatBadge);
         }
 
+
         if (player.has_monkey_finger) {
             const fingerBadge = document.createElement("span");
             fingerBadge.className = "master-status-badge monkey-finger";
@@ -3768,9 +4912,12 @@ function updatePlayerList() {
             statusRow.appendChild(fingerBadge);
         }
 
+
         info.append(name, position, score, statusRow);
 
+
         row.append(token, info);
+
 
         if (player.active_combat_id) {
             const watch = document.createElement("button");
@@ -3784,45 +4931,56 @@ function updatePlayerList() {
             row.appendChild(watch);
         }
 
+
         row.addEventListener("click", () => openCharacterSheet(player.character_id));
         list.appendChild(row);
     });
 }
 
+
 function updateOnlineCounter() {
     const element = document.getElementById("master-online-count");
     if (!element) return;
 
+
     const onlineCount = Array.from(allMasterPlayers.values()).filter(player => player.online).length;
     const total = allMasterPlayers.size;
+
 
     if (!realtimeReady) {
         element.textContent = `${total} PG totali · connessione realtime...`;
         return;
     }
 
+
     element.textContent = `${onlineCount} online · ${total} PG totali`;
 }
+
 
 // ============================================================
 // EVENTI MASTER: comunicazioni + trappole + combat
 // ============================================================
+
 
 function renderMasterEvents() {
     const image = document.getElementById("master-map-image");
     const container = document.getElementById("master-map");
     if (!image || !container) return;
 
+
     container.querySelectorAll(".master-event-marker").forEach(marker => marker.remove());
+
 
     const mapRect = image.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     if (mapRect.width <= 0 || mapRect.height <= 0) return;
 
+
     const cellWidth = mapRect.width / MAP_COLUMNS;
     const cellHeight = mapRect.height / MAP_ROWS;
     const offsetX = mapRect.left - containerRect.left;
     const offsetY = mapRect.top - containerRect.top;
+
 
     const placeMarker = (x, y, marker) => {
         const markerSize = Math.min(cellWidth, cellHeight) * 0.72;
@@ -3833,6 +4991,7 @@ function renderMasterEvents() {
         container.appendChild(marker);
     };
 
+
     Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coordinateKey, dungeonEvent]) => {
         const [x, y] = coordinateKey.split(",").map(Number);
         const marker = document.createElement("div");
@@ -3840,11 +4999,13 @@ function renderMasterEvents() {
         marker.dataset.eventId = dungeonEvent.id;
         marker.dataset.eventType = dungeonEvent.type;
 
+
         if (dungeonEvent.type === "communication") {
             marker.classList.add("is-communication");
             marker.textContent = "◆";
             marker.title = `EVENTO\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
         }
+
 
         if (dungeonEvent.type === "trap") {
             marker.classList.add("is-trap");
@@ -3857,22 +5018,28 @@ function renderMasterEvents() {
             updateSingleMasterTrapMarker(marker, dungeonEvent, x, y);
         }
 
+
         placeMarker(x, y, marker);
     });
+
 
     MASTER_COMBAT_EVENTS.forEach(combatEvent => {
         const marker = document.createElement("div");
         const isBoss = combatEvent.type === "boss";
 
+
         marker.className =
             "master-event-marker is-combat" +
             (isBoss ? " is-boss" : "");
+
 
         marker.dataset.eventId = combatEvent.id;
         marker.dataset.eventType = isBoss ? "boss" : "combat";
         marker.textContent = isBoss ? "👹" : "⚔";
 
+
         const liveCombat = getActiveCombatForEncounter(combatEvent.encounter_id);
+
 
         if (liveCombat) {
             marker.classList.add("has-live-combat");
@@ -3881,6 +5048,7 @@ function renderMasterEvents() {
                 `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
                 `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
                 "Clicca per osservare";
+
 
             marker.addEventListener("click", event => {
                 event.stopPropagation();
@@ -3893,26 +5061,33 @@ function renderMasterEvents() {
                 `X ${combatEvent.x} • Y ${combatEvent.y}`;
         }
 
+
         placeMarker(combatEvent.x, combatEvent.y, marker);
     });
+
 
     MASTER_SPECIAL_EVENTS.forEach(specialEvent => {
         const marker = document.createElement("div");
 
+
         marker.className =
             `master-event-marker is-special is-${specialEvent.type}`;
 
+
         marker.dataset.eventId = specialEvent.id;
         marker.dataset.eventType = specialEvent.type;
+
 
         marker.textContent =
             specialEvent.type === "pvp"
                 ? "⚔"
                 : "🐒";
 
+
         marker.title =
             `${specialEvent.label}\n` +
             `X ${specialEvent.x} • Y ${specialEvent.y}`;
+
 
         placeMarker(
             specialEvent.x,
@@ -3922,14 +5097,17 @@ function renderMasterEvents() {
     });
 }
 
+
 // Countdown hh:mm:ss quando supera un'ora
 function updateSingleMasterTrapMarker(marker, dungeonEvent, x, y) {
     const state = masterTrapStates.get(dungeonEvent.id);
     const countdownElement = marker.querySelector(".master-event-countdown");
     const cooldownActive = isMasterTrapCooldownActive(state);
 
+
     marker.classList.toggle("is-cooldown", cooldownActive);
     marker.classList.toggle("is-active", !cooldownActive);
+
 
     if (!cooldownActive) {
         if (countdownElement) countdownElement.textContent = "";
@@ -3937,30 +5115,38 @@ function updateSingleMasterTrapMarker(marker, dungeonEvent, x, y) {
         return;
     }
 
+
     const disabledUntil = new Date(state.disabled_until).getTime();
     const remainingSeconds = Math.ceil(Math.max(0, disabledUntil - Date.now()) / 1000);
     const hours = Math.floor(remainingSeconds / 3600);
     const minutes = Math.floor((remainingSeconds % 3600) / 60);
     const seconds = remainingSeconds % 60;
 
+
     const countdownText = hours > 0
         ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
         : `${minutes}:${String(seconds).padStart(2, "0")}`;
 
+
     if (countdownElement) countdownElement.textContent = countdownText;
+
 
     marker.title = `TRAPPOLA IN COOLDOWN\nX ${x} • Y ${y}\n${dungeonEvent.message}\nTempo residuo: ${countdownText}`;
 }
+
 
 // ============================================================
 // SCHEDA PG MASTER ESTESA
 // ============================================================
 
+
 async function openCharacterSheet(characterId) {
     const modal = document.getElementById("master-character-modal");
     if (!modal) return;
 
+
     showMessage("Caricamento scheda...");
+
 
     const { data, error } = await db
         .from("characters")
@@ -3984,11 +5170,13 @@ async function openCharacterSheet(characterId) {
         .eq("id", characterId)
         .single();
 
+
     if (error) {
         console.error("Errore caricamento scheda:", error);
         showMessage("Impossibile caricare la scheda.");
         return;
     }
+
 
     const cached = allMasterPlayers.get(characterId);
     fillCharacterSheet({
@@ -4001,10 +5189,12 @@ async function openCharacterSheet(characterId) {
             masterMonkeyFingerOwners.has(characterId)
     });
 
+
     modal.hidden = false;
     document.body.style.overflow = "hidden";
     showMessage("");
 }
+
 
 function fillCharacterSheet(characterData) {
     const forza = getStat(characterData.forza);
@@ -4014,14 +5204,17 @@ function fillCharacterSheet(characterData) {
     const destrezza = getStat(characterData.destrezza);
     const fortuna = getStat(characterData.fortuna);
 
+
     setText("master-character-name", characterData.nome || "Avventuriero");
     setText("master-character-level", "Livello " + (Number(characterData.livello) || 1));
+
 
     const token = document.getElementById("master-character-token");
     if (token) {
         token.src = "immagini/token/" + (characterData.token || "token_1.png");
         token.alt = "Token di " + (characterData.nome || "personaggio");
     }
+
 
     setText("master-forza", forza);
     setText("master-resistenza", resistenza);
@@ -4030,12 +5223,14 @@ function fillCharacterSheet(characterData) {
     setText("master-destrezza", destrezza);
     setText("master-fortuna", fortuna);
 
+
     const attack = Math.ceil(forza / 2);
     const defense = Math.ceil(7 + resistenza / 2);
     const life = Math.ceil(5 * costituzione / 2);
     const mana = Math.ceil(5 * intelligenza / 2);
     const movement = Math.ceil(4 + destrezza / 2);
     const critical = Math.min(50, Math.ceil(fortuna * (50 / 30)));
+
 
     setText("master-attack", attack);
     setText("master-defense", defense);
@@ -4044,12 +5239,14 @@ function fillCharacterSheet(characterData) {
     setText("master-movement", movement);
     setText("master-critical", `${critical}%`);
 
+
     const currentHp = characterData.current_hp === null || characterData.current_hp === undefined
         ? life
         : Number(characterData.current_hp);
     const currentPm = characterData.current_pm === null || characterData.current_pm === undefined
         ? mana
         : Number(characterData.current_pm);
+
 
     setText("master-character-current-hp", `${currentHp} / ${life}`);
     setText("master-character-current-pm", `${currentPm} / ${mana}`);
@@ -4060,9 +5257,11 @@ function fillCharacterSheet(characterData) {
     );
     setText("master-character-online-status", characterData.online ? "● ONLINE" : "○ OFFLINE");
 
+
     const fingerBox = document
         .getElementById("master-character-monkey-finger")
         ?.closest(".master-runtime-box");
+
 
     if (fingerBox) {
         fingerBox.classList.toggle(
@@ -4071,13 +5270,16 @@ function fillCharacterSheet(characterData) {
         );
     }
 
+
     setText(
         "master-character-position",
         `X ${Number(characterData.dungeon_x) || 0} • Y ${Number(characterData.dungeon_y) || 0}`
     );
 
+
     const combatBox = document.getElementById("master-character-combat-box");
     const observeButton = document.getElementById("master-character-observe-combat");
+
 
     if (characterData.active_combat_id) {
         const session = activeMasterCombats.get(characterData.active_combat_id);
@@ -4088,7 +5290,9 @@ function fillCharacterSheet(characterData) {
                 : characterData.active_combat_id
         );
 
+
         if (combatBox) combatBox.hidden = false;
+
 
         if (observeButton) {
             observeButton.onclick = () => openMasterCombat(characterData.active_combat_id);
@@ -4099,6 +5303,7 @@ function fillCharacterSheet(characterData) {
     }
 }
 
+
 window.addEventListener("beforeunload", () => {
     if (masterDashboardRefreshTimer) {
         clearInterval(masterDashboardRefreshTimer);
@@ -4107,28 +5312,37 @@ window.addEventListener("beforeunload", () => {
 });
 
 
+
+
 // ============================================================
 // DASHBOARD MASTER v9
 // PIANO 1 / LIVELLO BASE + COOLDOWN BOSS / COMBAT BASE
 // ============================================================
 
+
 let masterViewFloor = "dungeon";
 let masterFloorSwitchInProgress = false;
+
 
 const MASTER_BASE_CHANNEL_NAME =
     "palazzo-eterno-base";
 
+
 const MASTER_BASE_CHAT_FLOOR_ID =
     "base";
+
 
 const MASTER_DUNGEON_CHAT_FLOOR_ID =
     "floor_1";
 
+
 const MASTER_BASE_MAP_COLUMNS =
     27;
 
+
 const MASTER_BASE_MAP_ROWS =
     36;
+
 
 const MASTER_BASE_COMBAT_EVENTS = [
     {
@@ -4149,10 +5363,12 @@ const MASTER_BASE_COMBAT_EVENTS = [
     }
 ];
 
+
 let masterBossState = {
     available: true,
     cooldown_until: null
 };
+
 
 let masterBaseCombatStates = {
     left: {
@@ -4167,16 +5383,22 @@ let masterBaseCombatStates = {
     }
 };
 
+
 let masterCooldownCountdownTimer = null;
+
+
 
 
 // ============================================================
 // CONFIGURAZIONE PIANO
 // ============================================================
 
+
 function getMasterFloorConfig() {
 
+
     if (masterViewFloor === "base") {
+
 
         return {
             key: "base",
@@ -4191,7 +5413,10 @@ function getMasterFloorConfig() {
             message: "Modalità Master connessa al Livello Base."
         };
 
+
     }
+
+
 
 
     return {
@@ -4207,42 +5432,63 @@ function getMasterFloorConfig() {
         message: "Modalità Master connessa al Piano 1."
     };
 
+
 }
+
+
 
 
 function getMasterMapColumns() {
 
+
     return getMasterFloorConfig().columns;
 
+
 }
+
+
 
 
 function getMasterMapRows() {
 
+
     return getMasterFloorConfig().rows;
 
+
 }
+
+
 
 
 function getMasterChatFloorId() {
 
+
     return getMasterFloorConfig().chatFloorId;
 
+
 }
+
+
 
 
 function getMasterChatBroadcastEvent() {
 
+
     return getMasterFloorConfig().chatEvent;
 
+
 }
+
+
 
 
 // ============================================================
 // SELETTORE PIANO
 // ============================================================
 
+
 function setupMasterFloorSelector() {
+
 
     document
         .querySelectorAll(
@@ -4251,12 +5497,16 @@ function setupMasterFloorSelector() {
         .forEach(
             button => {
 
+
                 button.addEventListener(
                     "click",
                     async () => {
 
+
                         const floor =
                             button.dataset.masterFloor;
+
+
 
 
                         if (
@@ -4265,30 +5515,42 @@ function setupMasterFloorSelector() {
                             masterFloorSwitchInProgress
                         ) {
 
+
                             return;
 
+
                         }
+
+
 
 
                         await switchMasterFloor(
                             floor
                         );
 
+
                     }
                 );
+
 
             }
         );
 
 
+
+
     updateMasterFloorInterface();
 
+
 }
+
+
 
 
 async function switchMasterFloor(
     floor
 ) {
+
 
     if (
         ![
@@ -4297,58 +5559,85 @@ async function switchMasterFloor(
         ].includes(floor)
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     masterFloorSwitchInProgress =
         true;
 
 
+
+
     try {
+
 
         setMasterChatConnected(
             false
         );
 
 
+
+
         realtimeReady =
             false;
 
 
+
+
         if (dungeonChannel) {
 
+
             try {
+
 
                 await db.removeChannel(
                     dungeonChannel
                 );
 
+
             } catch (error) {
+
 
                 console.warn(
                     "Errore chiusura canale Master:",
                     error
                 );
 
+
             }
+
+
 
 
             dungeonChannel =
                 null;
 
+
         }
+
+
 
 
         masterViewFloor =
             floor;
 
 
+
+
         onlinePlayers.clear();
 
 
+
+
         allMasterPlayers.clear();
+
+
 
 
         playerTokens.forEach(
@@ -4356,10 +5645,16 @@ async function switchMasterFloor(
         );
 
 
+
+
         playerTokens.clear();
 
 
+
+
         renderedMasterChatMessageIds.clear();
+
+
 
 
         const chat =
@@ -4368,7 +5663,10 @@ async function switchMasterFloor(
             );
 
 
+
+
         if (chat) {
+
 
             chat.innerHTML =
                 `
@@ -4377,13 +5675,20 @@ async function switchMasterFloor(
                     </div>
                 `;
 
+
         }
+
+
 
 
         updateMasterFloorInterface();
 
 
+
+
         await loadActiveMasterCombats();
+
+
 
 
         await Promise.all([
@@ -4393,13 +5698,20 @@ async function switchMasterFloor(
         ]);
 
 
+
+
         renderMasterEvents();
+
+
 
 
         await setupRealtime();
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore cambio piano Master:",
@@ -4407,25 +5719,37 @@ async function switchMasterFloor(
         );
 
 
+
+
         showMessage(
             "Impossibile cambiare piano."
         );
 
 
+
+
     } finally {
+
 
         masterFloorSwitchInProgress =
             false;
 
+
     }
+
 
 }
 
 
+
+
 function updateMasterFloorInterface() {
+
 
     const config =
         getMasterFloorConfig();
+
+
 
 
     const title =
@@ -4434,12 +5758,18 @@ function updateMasterFloorInterface() {
         );
 
 
+
+
     if (title) {
+
 
         title.textContent =
             config.title;
 
+
     }
+
+
 
 
     document
@@ -4449,15 +5779,20 @@ function updateMasterFloorInterface() {
         .forEach(
             button => {
 
+
                 const active =
                     button.dataset.masterFloor ===
                     masterViewFloor;
+
+
 
 
                 button.classList.toggle(
                     "is-active",
                     active
                 );
+
+
 
 
                 button.setAttribute(
@@ -4467,8 +5802,11 @@ function updateMasterFloorInterface() {
                         : "false"
                 );
 
+
             }
         );
+
+
 
 
     const image =
@@ -4477,15 +5815,22 @@ function updateMasterFloorInterface() {
         );
 
 
+
+
     if (image) {
+
 
         image.src =
             config.image;
 
+
         image.alt =
             config.imageAlt;
 
+
     }
+
+
 
 
     const map =
@@ -4494,11 +5839,15 @@ function updateMasterFloorInterface() {
         );
 
 
+
+
     map?.classList.toggle(
         "is-base-view",
         masterViewFloor ===
             "base"
     );
+
+
 
 
     const dungeonOnlyLegendIds = [
@@ -4510,8 +5859,11 @@ function updateMasterFloorInterface() {
     ];
 
 
+
+
     dungeonOnlyLegendIds.forEach(
         id => {
+
 
             const element =
                 document.getElementById(
@@ -4519,16 +5871,23 @@ function updateMasterFloorInterface() {
                 );
 
 
+
+
             if (element) {
+
 
                 element.hidden =
                     masterViewFloor ===
                     "base";
 
+
             }
+
 
         }
     );
+
+
 
 
     showMessage(
@@ -4537,23 +5896,32 @@ function updateMasterFloorInterface() {
             : "Visualizzazione Piano 1."
     );
 
+
 }
+
+
 
 
 // ============================================================
 // COOLDOWN
 // ============================================================
 
+
 async function loadMasterCooldownStates() {
 
+
     const jobs = [];
+
+
 
 
     jobs.push(
         (
             async () => {
 
+
                 try {
+
 
                     const {
                         data,
@@ -4564,11 +5932,17 @@ async function loadMasterCooldownStates() {
                         );
 
 
+
+
                     if (error) {
+
 
                         throw error;
 
+
                     }
+
+
 
 
                     masterBossState = {
@@ -4576,31 +5950,41 @@ async function loadMasterCooldownStates() {
                             data?.available !==
                             false,
 
+
                         cooldown_until:
                             data?.cooldown_until ||
                             null
                     };
 
 
+
+
                 } catch (error) {
+
 
                     console.error(
                         "Errore cooldown Boss Master:",
                         error
                     );
 
+
                 }
+
 
             }
         )()
     );
 
 
+
+
     jobs.push(
         (
             async () => {
 
+
                 try {
+
 
                     const {
                         data,
@@ -4611,11 +5995,17 @@ async function loadMasterCooldownStates() {
                         );
 
 
+
+
                     if (error) {
+
 
                         throw error;
 
+
                     }
+
+
 
 
                     masterBaseCombatStates = {
@@ -4624,9 +6014,11 @@ async function loadMasterCooldownStates() {
                                 data?.left?.available !==
                                 false,
 
+
                             cooldown_until:
                                 data?.left?.cooldown_until ||
                                 null,
+
 
                             remaining_seconds:
                                 Number(
@@ -4634,14 +6026,17 @@ async function loadMasterCooldownStates() {
                                 ) || 0
                         },
 
+
                         right: {
                             available:
                                 data?.right?.available !==
                                 false,
 
+
                             cooldown_until:
                                 data?.right?.cooldown_until ||
                                 null,
+
 
                             remaining_seconds:
                                 Number(
@@ -4651,18 +6046,25 @@ async function loadMasterCooldownStates() {
                     };
 
 
+
+
                 } catch (error) {
+
 
                     console.error(
                         "Errore cooldown combat Base Master:",
                         error
                     );
 
+
                 }
+
 
             }
         )()
     );
+
+
 
 
     await Promise.all(
@@ -4670,49 +6072,71 @@ async function loadMasterCooldownStates() {
     );
 
 
+
+
     renderMasterEvents();
+
+
 
 
     startMasterCooldownCountdown();
 
+
 }
 
 
+
+
 function startMasterCooldownCountdown() {
+
 
     if (
         masterCooldownCountdownTimer
     ) {
 
+
         clearInterval(
             masterCooldownCountdownTimer
         );
 
+
     }
+
+
 
 
     masterCooldownCountdownTimer =
         setInterval(
             () => {
 
+
                 updateMasterCombatCooldownCountdowns();
+
 
             },
             1000
         );
 
+
 }
+
+
 
 
 function formatMasterCooldown(
     cooldownUntil
 ) {
 
+
     if (!cooldownUntil) {
+
 
         return "";
 
+
     }
+
+
 
 
     const end =
@@ -4721,15 +6145,21 @@ function formatMasterCooldown(
         ).getTime();
 
 
+
+
     if (
         !Number.isFinite(
             end
         )
     ) {
 
+
         return "";
 
+
     }
+
+
 
 
     const seconds =
@@ -4743,14 +6173,20 @@ function formatMasterCooldown(
         );
 
 
+
+
     if (
         seconds <=
         0
     ) {
 
+
         return "";
 
+
     }
+
+
 
 
     const hours =
@@ -4758,6 +6194,8 @@ function formatMasterCooldown(
             seconds /
             3600
         );
+
+
 
 
     const minutes =
@@ -4770,13 +6208,18 @@ function formatMasterCooldown(
         );
 
 
+
+
     const remainingSeconds =
         seconds %
         60;
 
 
+
+
     return hours >
         0
+
 
         ? `${hours}:${String(
             minutes
@@ -4790,6 +6233,7 @@ function formatMasterCooldown(
             "0"
         )}`
 
+
         : `${minutes}:${String(
             remainingSeconds
         ).padStart(
@@ -4797,10 +6241,14 @@ function formatMasterCooldown(
             "0"
         )}`;
 
+
 }
 
 
+
+
 function updateMasterCombatCooldownCountdowns() {
+
 
     document
         .querySelectorAll(
@@ -4809,10 +6257,13 @@ function updateMasterCombatCooldownCountdowns() {
         .forEach(
             marker => {
 
+
                 const countdown =
                     marker.querySelector(
                         ".master-event-countdown"
                     );
+
+
 
 
                 const value =
@@ -4821,38 +6272,54 @@ function updateMasterCombatCooldownCountdowns() {
                     );
 
 
+
+
                 if (countdown) {
+
 
                     countdown.textContent =
                         value;
 
+
                 }
 
 
+
+
                 if (!value) {
+
 
                     marker.classList.remove(
                         "is-cooldown"
                     );
 
 
+
+
                     marker.classList.add(
                         "is-available"
                     );
 
+
                 }
+
 
             }
         );
 
+
 }
+
+
 
 
 // ============================================================
 // CHAT DINAMICA
 // ============================================================
 
+
 async function loadMasterChatHistory() {
+
 
     const container =
         document.getElementById(
@@ -4860,14 +6327,21 @@ async function loadMasterChatHistory() {
         );
 
 
+
+
     if (!container) {
 
+
         return;
+
 
     }
 
 
+
+
     try {
+
 
         const {
             data,
@@ -4901,18 +6375,28 @@ async function loadMasterChatHistory() {
                 );
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
+
+
 
 
         renderedMasterChatMessageIds.clear();
 
 
+
+
         container.innerHTML =
             "";
+
+
 
 
         const rows =
@@ -4921,10 +6405,13 @@ async function loadMasterChatHistory() {
                 : [];
 
 
+
+
         if (
             rows.length ===
             0
         ) {
+
 
             container.innerHTML =
                 `
@@ -4934,35 +6421,47 @@ async function loadMasterChatHistory() {
                 `;
 
 
+
+
             return;
+
 
         }
 
 
+
+
         rows.forEach(
             row => {
+
 
                 appendMasterChatMessage(
                     {
                         id:
                             row.id,
 
+
                         character_id:
                             row.character_id,
+
 
                         master_user_id:
                             row.character_id === null
                                 ? row.user_id
                                 : null,
 
+
                         name:
                             row.sender_name,
+
 
                         text:
                             row.message_text,
 
+
                         timestamp:
                             row.created_at,
+
 
                         sent_at:
                             row.created_at
@@ -4971,28 +6470,39 @@ async function loadMasterChatHistory() {
                         "MASTER"
                 );
 
+
             }
         );
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore storico chat Master:",
             error
         );
 
+
     }
+
 
 }
 
 
+
+
 async function sendMasterChatMessage() {
+
 
     const input =
         document.getElementById(
             "master-chat-input"
         );
+
+
 
 
     const feedback =
@@ -5001,14 +6511,20 @@ async function sendMasterChatMessage() {
         );
 
 
+
+
     if (
         !input ||
         !currentUser
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const text =
@@ -5016,11 +6532,17 @@ async function sendMasterChatMessage() {
             .trim();
 
 
+
+
     if (!text) {
+
 
         return;
 
+
     }
+
+
 
 
     if (
@@ -5028,36 +6550,53 @@ async function sendMasterChatMessage() {
         !realtimeReady
     ) {
 
+
         if (feedback) {
+
 
             feedback.textContent =
                 "Chat non connessa.";
 
+
         }
+
+
 
 
         return;
 
+
     }
+
+
 
 
     const originalValue =
         input.value;
 
 
+
+
     input.value =
         "";
 
 
+
+
     if (feedback) {
+
 
         feedback.textContent =
             "";
 
+
     }
 
 
+
+
     try {
+
 
         const {
             data: savedMessage,
@@ -5071,14 +6610,18 @@ async function sendMasterChatMessage() {
                     floor_id:
                         getMasterChatFloorId(),
 
+
                     character_id:
                         null,
+
 
                     user_id:
                         currentUser.id,
 
+
                     sender_name:
                         "MASTER",
+
 
                     message_text:
                         text
@@ -5094,40 +6637,55 @@ async function sendMasterChatMessage() {
                 .single();
 
 
+
+
         if (error) {
+
 
             throw error;
 
+
         }
+
+
 
 
         const payload = {
             id:
                 savedMessage.id,
 
+
             character_id:
                 null,
+
 
             master_user_id:
                 savedMessage.user_id ||
                 currentUser.id,
 
+
             name:
                 "MASTER",
 
+
             nome:
                 "MASTER",
+
 
             text:
                 savedMessage.message_text ||
                 text,
 
+
             timestamp:
                 savedMessage.created_at,
+
 
             sent_at:
                 savedMessage.created_at
         };
+
+
 
 
         appendMasterChatMessage(
@@ -5136,18 +6694,25 @@ async function sendMasterChatMessage() {
         );
 
 
+
+
         await dungeonChannel.send({
             type:
                 "broadcast",
 
+
             event:
                 getMasterChatBroadcastEvent(),
+
 
             payload
         });
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore invio chat Master:",
@@ -5155,30 +6720,44 @@ async function sendMasterChatMessage() {
         );
 
 
+
+
         input.value =
             originalValue;
 
 
+
+
         if (feedback) {
+
 
             feedback.textContent =
                 "Messaggio non inviato.";
 
+
         }
+
 
     }
 
+
 }
+
+
 
 
 // ============================================================
 // REALTIME DINAMICO
 // ============================================================
 
+
 async function setupRealtime() {
+
 
     const config =
         getMasterFloorConfig();
+
+
 
 
     showMessage(
@@ -5188,10 +6767,14 @@ async function setupRealtime() {
     );
 
 
+
+
     dungeonChannel =
         db.channel(
             config.channel
         );
+
+
 
 
     dungeonChannel.on(
@@ -5202,10 +6785,14 @@ async function setupRealtime() {
         },
         () => {
 
+
             syncPresencePlayers();
+
 
         }
     );
+
+
 
 
     dungeonChannel.on(
@@ -5216,15 +6803,22 @@ async function setupRealtime() {
         },
         message => {
 
+
             const data =
                 message.payload;
 
 
+
+
             if (!data) {
+
 
                 return;
 
+
             }
+
+
 
 
             appendMasterChatMessage(
@@ -5234,8 +6828,11 @@ async function setupRealtime() {
                 data.sender_name === "MASTER"
             );
 
+
         }
     );
+
+
 
 
     // Il Piano 1 invia player-move/player-state.
@@ -5245,11 +6842,13 @@ async function setupRealtime() {
         "dungeon"
     ) {
 
+
         [
             "player-move",
             "player-state"
         ].forEach(
             eventName => {
+
 
                 dungeonChannel.on(
                     "broadcast",
@@ -5259,8 +6858,11 @@ async function setupRealtime() {
                     },
                     message => {
 
+
                         const data =
                             message.payload;
+
+
 
 
                         if (
@@ -5268,29 +6870,40 @@ async function setupRealtime() {
                             !data.character_id
                         ) {
 
+
                             return;
 
+
                         }
+
+
 
 
                         updatePlayer(
                             data
                         );
 
+
                     }
                 );
+
 
             }
         );
 
+
     }
+
+
 
 
     await new Promise(
         resolve => {
 
+
             dungeonChannel.subscribe(
                 status => {
+
 
                     console.log(
                         `Realtime Master ${masterViewFloor}:`,
@@ -5298,13 +6911,18 @@ async function setupRealtime() {
                     );
 
 
+
+
                     if (
                         status ===
                         "SUBSCRIBED"
                     ) {
 
+
                         realtimeReady =
                             true;
+
+
 
 
                         setMasterChatConnected(
@@ -5312,7 +6930,11 @@ async function setupRealtime() {
                         );
 
 
+
+
                         syncPresencePlayers();
+
+
 
 
                         showMessage(
@@ -5320,9 +6942,14 @@ async function setupRealtime() {
                         );
 
 
+
+
                         resolve();
 
+
                     }
+
+
 
 
                     if (
@@ -5331,8 +6958,11 @@ async function setupRealtime() {
                         status === "CLOSED"
                     ) {
 
+
                         realtimeReady =
                             false;
+
+
 
 
                         setMasterChatConnected(
@@ -5340,30 +6970,44 @@ async function setupRealtime() {
                         );
 
 
+
+
                         resolve();
 
+
                     }
+
 
                 }
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // PRESENCE DINAMICA
 // ============================================================
 
+
 function syncPresencePlayers() {
+
 
     if (!dungeonChannel) {
 
+
         return;
 
+
     }
+
+
 
 
     const state =
@@ -5371,8 +7015,12 @@ function syncPresencePlayers() {
             .presenceState();
 
 
+
+
     const currentIds =
         new Set();
+
+
 
 
     Object.values(
@@ -5380,16 +7028,22 @@ function syncPresencePlayers() {
     ).forEach(
         presences => {
 
+
             presences.forEach(
                 presence => {
+
 
                     if (
                         !presence?.character_id
                     ) {
 
+
                         return;
 
+
                     }
+
+
 
 
                     currentIds.add(
@@ -5397,10 +7051,13 @@ function syncPresencePlayers() {
                     );
 
 
+
+
                     onlinePlayers.set(
                         presence.character_id,
                         {
                             ...presence,
+
 
                             nome:
                                 presence.nome ||
@@ -5410,27 +7067,35 @@ function syncPresencePlayers() {
                     );
 
 
+
+
                     const existing =
                         allMasterPlayers.get(
                             presence.character_id
                         );
 
 
+
+
                     if (existing) {
+
 
                         allMasterPlayers.set(
                             presence.character_id,
                             {
                                 ...existing,
 
+
                                 nome:
                                     presence.nome ||
                                     presence.name ||
                                     existing.nome,
 
+
                                 token:
                                     presence.token ||
                                     existing.token,
+
 
                                 x:
                                     Number.isFinite(
@@ -5443,6 +7108,7 @@ function syncPresencePlayers() {
                                         )
                                         : existing.x,
 
+
                                 y:
                                     Number.isFinite(
                                         Number(
@@ -5454,11 +7120,13 @@ function syncPresencePlayers() {
                                         )
                                         : existing.y,
 
+
                                 current_hp:
                                     presence.current_hp !==
                                     undefined
                                         ? presence.current_hp
                                         : existing.current_hp,
+
 
                                 active_combat_id:
                                     presence.active_combat_id !==
@@ -5466,18 +7134,24 @@ function syncPresencePlayers() {
                                         ? presence.active_combat_id
                                         : existing.active_combat_id,
 
+
                                 online:
                                     true
                             }
                         );
 
+
                     }
+
 
                 }
             );
 
+
         }
     );
+
+
 
 
     for (
@@ -5487,15 +7161,19 @@ function syncPresencePlayers() {
         )
     ) {
 
+
         if (
             !currentIds.has(
                 characterId
             )
         ) {
 
+
             onlinePlayers.delete(
                 characterId
             );
+
+
 
 
             const existing =
@@ -5504,7 +7182,10 @@ function syncPresencePlayers() {
                 );
 
 
+
+
             if (existing) {
+
 
                 allMasterPlayers.set(
                     characterId,
@@ -5515,35 +7196,50 @@ function syncPresencePlayers() {
                     }
                 );
 
+
             }
 
+
         }
+
 
     }
 
 
+
+
     renderAllTokens();
+
 
     updatePlayerList();
 
+
     updateOnlineCounter();
+
 
     renderActiveMasterCombats();
 
+
 }
+
+
 
 
 // ============================================================
 // PG DEL PIANO SELEZIONATO
 // ============================================================
 
+
 function isMasterCharacterOnSelectedFloor(
     characterData
 ) {
 
+
     const location =
         characterData?.current_location ||
         "dungeon";
+
+
 
 
     if (
@@ -5551,10 +7247,14 @@ function isMasterCharacterOnSelectedFloor(
         "base"
     ) {
 
+
         return masterViewFloor ===
             "base";
 
+
     }
+
+
 
 
     if (
@@ -5563,10 +7263,13 @@ function isMasterCharacterOnSelectedFloor(
         characterData?.active_combat_id
     ) {
 
+
         const session =
             activeMasterCombats.get(
                 characterData.active_combat_id
             );
+
+
 
 
         const isBaseCombat =
@@ -5578,6 +7281,8 @@ function isMasterCharacterOnSelectedFloor(
             );
 
 
+
+
         return masterViewFloor ===
             (
                 isBaseCombat
@@ -5585,17 +7290,24 @@ function isMasterCharacterOnSelectedFloor(
                     : "dungeon"
             );
 
+
     }
+
+
 
 
     // vendor/PvP/dungeon appartengono al Piano 1.
     return masterViewFloor ===
         "dungeon";
 
+
 }
 
 
+
+
 async function loadAllMasterCharacters() {
+
 
     const {
         data,
@@ -5628,7 +7340,10 @@ async function loadAllMasterCharacters() {
             `);
 
 
+
+
     if (error) {
+
 
         console.error(
             "Errore caricamento PG Master:",
@@ -5636,9 +7351,14 @@ async function loadAllMasterCharacters() {
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const rows =
@@ -5650,6 +7370,8 @@ async function loadAllMasterCharacters() {
         );
 
 
+
+
     const characterIds =
         rows.map(
             characterData =>
@@ -5657,30 +7379,43 @@ async function loadAllMasterCharacters() {
         );
 
 
+
+
     await loadMasterCharacterExtras(
         characterIds
     );
+
+
 
 
     const currentIds =
         new Set();
 
 
+
+
     allMasterPlayers.clear();
+
+
 
 
     rows.forEach(
         characterData => {
+
 
             currentIds.add(
                 characterData.id
             );
 
 
+
+
             const presence =
                 onlinePlayers.get(
                     characterData.id
                 );
+
+
 
 
             const storedX =
@@ -5693,6 +7428,8 @@ async function loadAllMasterCharacters() {
                     );
 
 
+
+
             const storedY =
                 masterViewFloor === "base"
                     ? Number(
@@ -5703,6 +7440,8 @@ async function loadAllMasterCharacters() {
                     );
 
 
+
+
             const x =
                 presence &&
                 Number.isFinite(
@@ -5711,11 +7450,15 @@ async function loadAllMasterCharacters() {
                     )
                 )
 
+
                     ? Number(
                         presence.x
                     )
 
+
                     : storedX;
+
+
 
 
             const y =
@@ -5726,11 +7469,15 @@ async function loadAllMasterCharacters() {
                     )
                 )
 
+
                     ? Number(
                         presence.y
                     )
 
+
                     : storedY;
+
+
 
 
             allMasterPlayers.set(
@@ -5738,8 +7485,10 @@ async function loadAllMasterCharacters() {
                 {
                     ...characterData,
 
+
                     character_id:
                         characterData.id,
+
 
                     nome:
                         presence?.nome ||
@@ -5747,10 +7496,12 @@ async function loadAllMasterCharacters() {
                         characterData.nome ||
                         "Avventuriero",
 
+
                     token:
                         presence?.token ||
                         characterData.token ||
                         "token_1.png",
+
 
                     x:
                         Number.isFinite(
@@ -5759,6 +7510,7 @@ async function loadAllMasterCharacters() {
                             ? x
                             : 0,
 
+
                     y:
                         Number.isFinite(
                             y
@@ -5766,11 +7518,13 @@ async function loadAllMasterCharacters() {
                             ? y
                             : 0,
 
+
                     current_hp:
                         presence?.current_hp !==
                         undefined
                             ? presence.current_hp
                             : characterData.current_hp,
+
 
                     active_combat_id:
                         presence?.active_combat_id !==
@@ -5779,16 +7533,19 @@ async function loadAllMasterCharacters() {
                             : characterData.active_combat_id ||
                               null,
 
+
                     score:
                         masterPlayerScores.get(
                             characterData.id
                         ) ??
                         0,
 
+
                     has_monkey_finger:
                         masterMonkeyFingerOwners.has(
                             characterData.id
                         ),
+
 
                     online:
                         onlinePlayers.has(
@@ -5797,8 +7554,11 @@ async function loadAllMasterCharacters() {
                 }
             );
 
+
         }
     );
+
+
 
 
     for (
@@ -5811,41 +7571,56 @@ async function loadAllMasterCharacters() {
         )
     ) {
 
+
         if (
             !currentIds.has(
                 characterId
             )
         ) {
 
+
             token?.remove();
+
 
             playerTokens.delete(
                 characterId
             );
 
+
         }
+
 
     }
 
 
+
+
     renderAllTokens();
+
 
     updatePlayerList();
 
+
     updateOnlineCounter();
+
 
     renderMasterMonkeyFingerStatus();
 
+
 }
+
+
 
 
 // ============================================================
 // TOKEN CON GRIGLIA DINAMICA
 // ============================================================
 
+
 function renderPlayerToken(
     characterId
 ) {
+
 
     const player =
         allMasterPlayers.get(
@@ -5853,7 +7628,10 @@ function renderPlayerToken(
         );
 
 
+
+
     if (!player) {
+
 
         const old =
             playerTokens.get(
@@ -5861,16 +7639,24 @@ function renderPlayerToken(
             );
 
 
+
+
         old?.remove();
+
 
         playerTokens.delete(
             characterId
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const image =
@@ -5879,10 +7665,14 @@ function renderPlayerToken(
         );
 
 
+
+
     const container =
         document.getElementById(
             "master-map"
         );
+
+
 
 
     if (
@@ -5890,17 +7680,25 @@ function renderPlayerToken(
         !container
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const mapRect =
         image.getBoundingClientRect();
 
 
+
+
     const containerRect =
         container.getBoundingClientRect();
+
+
 
 
     if (
@@ -5910,9 +7708,13 @@ function renderPlayerToken(
             0
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const cellWidth =
@@ -5920,9 +7722,13 @@ function renderPlayerToken(
         getMasterMapColumns();
 
 
+
+
     const cellHeight =
         mapRect.height /
         getMasterMapRows();
+
+
 
 
     let token =
@@ -5931,7 +7737,10 @@ function renderPlayerToken(
         );
 
 
+
+
     if (!token) {
+
 
         token =
             document.createElement(
@@ -5939,23 +7748,33 @@ function renderPlayerToken(
             );
 
 
+
+
         token.className =
             "master-player-token";
+
+
 
 
         token.addEventListener(
             "click",
             event => {
 
+
                 event.stopPropagation();
+
+
 
 
                 openCharacterSheet(
                     characterId
                 );
 
+
             }
         );
+
+
 
 
         container.appendChild(
@@ -5963,12 +7782,17 @@ function renderPlayerToken(
         );
 
 
+
+
         playerTokens.set(
             characterId,
             token
         );
 
+
     }
+
+
 
 
     token.src =
@@ -5979,6 +7803,8 @@ function renderPlayerToken(
         );
 
 
+
+
     token.alt =
         "Token di " +
         (
@@ -5987,10 +7813,14 @@ function renderPlayerToken(
         );
 
 
+
+
     token.title =
         `${player.nome || "Avventuriero"}` +
         `${player.online ? " · ONLINE" : " · OFFLINE"}` +
         `${player.active_combat_id ? " · IN COMBATTIMENTO" : ""}`;
+
+
 
 
     token.classList.toggle(
@@ -5999,16 +7829,22 @@ function renderPlayerToken(
     );
 
 
+
+
     token.classList.toggle(
         "is-offline",
         !player.online
     );
 
 
+
+
     token.classList.toggle(
         "is-in-combat",
         !!player.active_combat_id
     );
+
+
 
 
     const tokenSize =
@@ -6019,12 +7855,18 @@ function renderPlayerToken(
         0.92;
 
 
+
+
     token.style.width =
         `${tokenSize}px`;
 
 
+
+
     token.style.height =
         `${tokenSize}px`;
+
+
 
 
     const x =
@@ -6039,6 +7881,8 @@ function renderPlayerToken(
             : 0;
 
 
+
+
     const y =
         Number.isFinite(
             Number(
@@ -6051,12 +7895,16 @@ function renderPlayerToken(
             : 0;
 
 
+
+
     const centerX =
         (
             x +
             0.5
         ) *
         cellWidth;
+
+
 
 
     const centerY =
@@ -6067,9 +7915,13 @@ function renderPlayerToken(
         cellHeight;
 
 
+
+
     const offsetX =
         mapRect.left -
         containerRect.left;
+
+
 
 
     const offsetY =
@@ -6077,26 +7929,37 @@ function renderPlayerToken(
         containerRect.top;
 
 
+
+
     token.style.left =
         `${offsetX + centerX - tokenSize / 2}px`;
+
+
 
 
     token.style.top =
         `${offsetY + centerY - tokenSize / 2}px`;
 
+
 }
+
+
 
 
 // ============================================================
 // EVENTI MAPPA DINAMICI
 // ============================================================
 
+
 function renderMasterEvents() {
+
 
     const image =
         document.getElementById(
             "master-map-image"
         );
+
+
 
 
     const container =
@@ -6105,14 +7968,20 @@ function renderMasterEvents() {
         );
 
 
+
+
     if (
         !image ||
         !container
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     container
@@ -6125,12 +7994,18 @@ function renderMasterEvents() {
         );
 
 
+
+
     const mapRect =
         image.getBoundingClientRect();
 
 
+
+
     const containerRect =
         container.getBoundingClientRect();
+
+
 
 
     if (
@@ -6140,9 +8015,13 @@ function renderMasterEvents() {
             0
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     const cellWidth =
@@ -6150,9 +8029,13 @@ function renderMasterEvents() {
         getMasterMapColumns();
 
 
+
+
     const cellHeight =
         mapRect.height /
         getMasterMapRows();
+
+
 
 
     const offsetX =
@@ -6160,9 +8043,13 @@ function renderMasterEvents() {
         containerRect.left;
 
 
+
+
     const offsetY =
         mapRect.top -
         containerRect.top;
+
+
 
 
     const placeMarker =
@@ -6172,6 +8059,7 @@ function renderMasterEvents() {
             marker
         ) => {
 
+
             const markerSize =
                 Math.min(
                     cellWidth,
@@ -6180,12 +8068,18 @@ function renderMasterEvents() {
                 0.72;
 
 
+
+
             marker.style.width =
                 `${markerSize}px`;
 
 
+
+
             marker.style.height =
                 `${markerSize}px`;
+
+
 
 
             marker.style.left =
@@ -6201,6 +8095,8 @@ function renderMasterEvents() {
                 }px`;
 
 
+
+
             marker.style.top =
                 `${
                     offsetY +
@@ -6214,11 +8110,16 @@ function renderMasterEvents() {
                 }px`;
 
 
+
+
             container.appendChild(
                 marker
             );
 
+
         };
+
+
 
 
     if (
@@ -6226,8 +8127,10 @@ function renderMasterEvents() {
         "base"
     ) {
 
+
         MASTER_BASE_COMBAT_EVENTS.forEach(
             combatEvent => {
+
 
                 const state =
                     masterBaseCombatStates[
@@ -6241,22 +8144,32 @@ function renderMasterEvents() {
                     };
 
 
+
+
                 const marker =
                     document.createElement(
                         "div"
                     );
 
 
+
+
                 marker.className =
                     "master-event-marker is-base-combat";
+
+
 
 
                 marker.dataset.eventId =
                     combatEvent.id;
 
 
+
+
                 marker.textContent =
                     "⚔";
+
+
 
 
                 const activeCombat =
@@ -6265,11 +8178,16 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 if (activeCombat) {
+
 
                     marker.classList.add(
                         "has-live-combat"
                     );
+
+
 
 
                     marker.title =
@@ -6278,18 +8196,25 @@ function renderMasterEvents() {
                         "COMBATTIMENTO IN CORSO\nClicca per osservare";
 
 
+
+
                     marker.addEventListener(
                         "click",
                         event => {
 
+
                             event.stopPropagation();
+
 
                             openMasterCombat(
                                 activeCombat.id
                             );
 
+
                         }
                     );
+
+
 
 
                 } else if (
@@ -6297,9 +8222,12 @@ function renderMasterEvents() {
                     false
                 ) {
 
+
                     marker.classList.add(
                         "is-available"
                     );
+
+
 
 
                     marker.title =
@@ -6308,16 +8236,23 @@ function renderMasterEvents() {
                         "DISPONIBILE";
 
 
+
+
                 } else {
+
 
                     marker.classList.add(
                         "is-cooldown"
                     );
 
 
+
+
                     marker.dataset.cooldownUntil =
                         state.cooldown_until ||
                         "";
+
+
 
 
                     const countdown =
@@ -6326,8 +8261,12 @@ function renderMasterEvents() {
                         );
 
 
+
+
                     countdown.className =
                         "master-event-countdown";
+
+
 
 
                     countdown.textContent =
@@ -6336,9 +8275,13 @@ function renderMasterEvents() {
                         );
 
 
+
+
                     marker.appendChild(
                         countdown
                     );
+
+
 
 
                     marker.title =
@@ -6346,7 +8289,10 @@ function renderMasterEvents() {
                         `X ${combatEvent.x} • Y ${combatEvent.y}\n` +
                         "IN COOLDOWN";
 
+
                 }
+
+
 
 
                 placeMarker(
@@ -6355,18 +8301,25 @@ function renderMasterEvents() {
                     marker
                 );
 
+
             }
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // --------------------------------------------------------
     // EVENTI PIANO 1
     // --------------------------------------------------------
+
 
     Object.entries(
         MASTER_DUNGEON_EVENTS
@@ -6375,6 +8328,7 @@ function renderMasterEvents() {
             coordinateKey,
             dungeonEvent
         ]) => {
+
 
             const [
                 x,
@@ -6385,22 +8339,32 @@ function renderMasterEvents() {
                     .map(Number);
 
 
+
+
             const marker =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             marker.className =
                 "master-event-marker";
+
+
 
 
             marker.dataset.eventId =
                 dungeonEvent.id;
 
 
+
+
             marker.dataset.eventType =
                 dungeonEvent.type;
+
+
 
 
             if (
@@ -6408,19 +8372,27 @@ function renderMasterEvents() {
                 "communication"
             ) {
 
+
                 marker.classList.add(
                     "is-communication"
                 );
+
+
 
 
                 marker.textContent =
                     "◆";
 
 
+
+
                 marker.title =
                     `EVENTO\nX ${x} • Y ${y}\n${dungeonEvent.message}`;
 
+
             }
+
+
 
 
             if (
@@ -6428,9 +8400,12 @@ function renderMasterEvents() {
                 "trap"
             ) {
 
+
                 marker.classList.add(
                     "is-trap"
                 );
+
+
 
 
                 const icon =
@@ -6439,12 +8414,18 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 icon.className =
                     "master-event-icon";
 
 
+
+
                 icon.textContent =
                     "⚠";
+
+
 
 
                 const countdown =
@@ -6453,14 +8434,20 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 countdown.className =
                     "master-event-countdown";
+
+
 
 
                 marker.append(
                     icon,
                     countdown
                 );
+
+
 
 
                 updateSingleMasterTrapMarker(
@@ -6470,7 +8457,10 @@ function renderMasterEvents() {
                     y
                 );
 
+
             }
+
+
 
 
             placeMarker(
@@ -6479,12 +8469,16 @@ function renderMasterEvents() {
                 marker
             );
 
+
         }
     );
 
 
+
+
     MASTER_COMBAT_EVENTS.forEach(
         combatEvent => {
+
 
             const marker =
                 document.createElement(
@@ -6492,9 +8486,13 @@ function renderMasterEvents() {
                 );
 
 
+
+
             const isBoss =
                 combatEvent.type ===
                 "boss";
+
+
 
 
             marker.className =
@@ -6506,8 +8504,12 @@ function renderMasterEvents() {
                 );
 
 
+
+
             marker.dataset.eventId =
                 combatEvent.id;
+
+
 
 
             marker.dataset.eventType =
@@ -6516,10 +8518,14 @@ function renderMasterEvents() {
                     : "combat";
 
 
+
+
             marker.textContent =
                 isBoss
                     ? "👹"
                     : "⚔";
+
+
 
 
             const liveCombat =
@@ -6528,11 +8534,16 @@ function renderMasterEvents() {
                 );
 
 
+
+
             if (liveCombat) {
+
 
                 marker.classList.add(
                     "has-live-combat"
                 );
+
+
 
 
                 marker.title =
@@ -6546,19 +8557,27 @@ function renderMasterEvents() {
                     "Clicca per osservare";
 
 
+
+
                 marker.addEventListener(
                     "click",
                     event => {
 
+
                         event.stopPropagation();
+
+
 
 
                         openMasterCombat(
                             liveCombat.id
                         );
 
+
                     }
                 );
+
+
 
 
             } else if (
@@ -6567,14 +8586,19 @@ function renderMasterEvents() {
                 false
             ) {
 
+
                 marker.classList.add(
                     "is-cooldown"
                 );
 
 
+
+
                 marker.dataset.cooldownUntil =
                     masterBossState.cooldown_until ||
                     "";
+
+
 
 
                 const countdown =
@@ -6583,8 +8607,12 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 countdown.className =
                     "master-event-countdown";
+
+
 
 
                 countdown.textContent =
@@ -6593,9 +8621,13 @@ function renderMasterEvents() {
                     );
 
 
+
+
                 marker.appendChild(
                     countdown
                 );
+
+
 
 
                 marker.title =
@@ -6603,11 +8635,16 @@ function renderMasterEvents() {
                     `X ${combatEvent.x} • Y ${combatEvent.y}`;
 
 
+
+
             } else {
+
 
                 marker.classList.add(
                     "is-available"
                 );
+
+
 
 
                 marker.title =
@@ -6619,7 +8656,10 @@ function renderMasterEvents() {
                     `${combatEvent.id} · ${combatEvent.encounter_id}\n` +
                     `X ${combatEvent.x} • Y ${combatEvent.y}`;
 
+
             }
+
+
 
 
             placeMarker(
@@ -6628,12 +8668,16 @@ function renderMasterEvents() {
                 marker
             );
 
+
         }
     );
 
 
+
+
     MASTER_SPECIAL_EVENTS.forEach(
         specialEvent => {
+
 
             const marker =
                 document.createElement(
@@ -6641,16 +8685,24 @@ function renderMasterEvents() {
                 );
 
 
+
+
             marker.className =
                 `master-event-marker is-special is-${specialEvent.type}`;
+
+
 
 
             marker.dataset.eventId =
                 specialEvent.id;
 
 
+
+
             marker.dataset.eventType =
                 specialEvent.type;
+
+
 
 
             marker.textContent =
@@ -6660,9 +8712,13 @@ function renderMasterEvents() {
                     : "🐒";
 
 
+
+
             marker.title =
                 `${specialEvent.label}\n` +
                 `X ${specialEvent.x} • Y ${specialEvent.y}`;
+
+
 
 
             placeMarker(
@@ -6671,19 +8727,25 @@ function renderMasterEvents() {
                 marker
             );
 
+
         }
     );
 
+
 }
+
+
 
 
 // ============================================================
 // SCHEDA PG: COORDINATE DEL PIANO SELEZIONATO
 // ============================================================
 
+
 async function openCharacterSheet(
     characterId
 ) {
+
 
     const modal =
         document.getElementById(
@@ -6691,16 +8753,24 @@ async function openCharacterSheet(
         );
 
 
+
+
     if (!modal) {
+
 
         return;
 
+
     }
+
+
 
 
     showMessage(
         "Caricamento scheda..."
     );
+
+
 
 
     const {
@@ -6738,7 +8808,10 @@ async function openCharacterSheet(
             .single();
 
 
+
+
     if (error) {
+
 
         console.error(
             "Errore caricamento scheda:",
@@ -6746,14 +8819,21 @@ async function openCharacterSheet(
         );
 
 
+
+
         showMessage(
             "Impossibile caricare la scheda."
         );
 
 
+
+
         return;
 
+
     }
+
+
 
 
     const cached =
@@ -6762,16 +8842,21 @@ async function openCharacterSheet(
         );
 
 
+
+
     fillCharacterSheet({
         ...data,
 
+
         online:
             !!cached?.online,
+
 
         active_combat_id:
             cached?.active_combat_id ||
             data.active_combat_id ||
             null,
+
 
         score:
             cached?.score ??
@@ -6780,11 +8865,13 @@ async function openCharacterSheet(
             ) ??
             0,
 
+
         has_monkey_finger:
             cached?.has_monkey_finger ??
             masterMonkeyFingerOwners.has(
                 characterId
             ),
+
 
         master_display_x:
             cached?.x ??
@@ -6793,6 +8880,7 @@ async function openCharacterSheet(
                     ? data.base_x
                     : data.dungeon_x
             ),
+
 
         master_display_y:
             cached?.y ??
@@ -6804,29 +8892,41 @@ async function openCharacterSheet(
     });
 
 
+
+
     modal.hidden =
         false;
+
+
 
 
     document.body.style.overflow =
         "hidden";
 
 
+
+
     showMessage(
         ""
     );
 
+
 }
+
+
 
 
 function fillCharacterSheet(
     characterData
 ) {
 
+
     const forza =
         getStat(
             characterData.forza
         );
+
+
 
 
     const resistenza =
@@ -6835,10 +8935,14 @@ function fillCharacterSheet(
         );
 
 
+
+
     const costituzione =
         getStat(
             characterData.costituzione
         );
+
+
 
 
     const intelligenza =
@@ -6847,10 +8951,14 @@ function fillCharacterSheet(
         );
 
 
+
+
     const destrezza =
         getStat(
             characterData.destrezza
         );
+
+
 
 
     const fortuna =
@@ -6859,11 +8967,15 @@ function fillCharacterSheet(
         );
 
 
+
+
     setText(
         "master-character-name",
         characterData.nome ||
         "Avventuriero"
     );
+
+
 
 
     setText(
@@ -6878,13 +8990,18 @@ function fillCharacterSheet(
     );
 
 
+
+
     const token =
         document.getElementById(
             "master-character-token"
         );
 
 
+
+
     if (token) {
+
 
         token.src =
             "immagini/token/" +
@@ -6894,6 +9011,8 @@ function fillCharacterSheet(
             );
 
 
+
+
         token.alt =
             "Token di " +
             (
@@ -6901,7 +9020,10 @@ function fillCharacterSheet(
                 "personaggio"
             );
 
+
     }
+
+
 
 
     setText(
@@ -6909,25 +9031,30 @@ function fillCharacterSheet(
         forza
     );
 
+
     setText(
         "master-resistenza",
         resistenza
     );
+
 
     setText(
         "master-costituzione",
         costituzione
     );
 
+
     setText(
         "master-intelligenza",
         intelligenza
     );
 
+
     setText(
         "master-destrezza",
         destrezza
     );
+
 
     setText(
         "master-fortuna",
@@ -6935,11 +9062,15 @@ function fillCharacterSheet(
     );
 
 
+
+
     const attack =
         Math.ceil(
             forza /
             2
         );
+
+
 
 
     const defense =
@@ -6950,12 +9081,16 @@ function fillCharacterSheet(
         );
 
 
+
+
     const life =
         Math.ceil(
             5 *
             costituzione /
             2
         );
+
+
 
 
     const mana =
@@ -6966,12 +9101,16 @@ function fillCharacterSheet(
         );
 
 
+
+
     const movement =
         Math.ceil(
             4 +
             destrezza /
             2
         );
+
+
 
 
     const critical =
@@ -6987,30 +9126,37 @@ function fillCharacterSheet(
         );
 
 
+
+
     setText(
         "master-attack",
         attack
     );
+
 
     setText(
         "master-defense",
         defense
     );
 
+
     setText(
         "master-life",
         life
     );
+
 
     setText(
         "master-mana",
         mana
     );
 
+
     setText(
         "master-movement",
         movement
     );
+
 
     setText(
         "master-critical",
@@ -7018,26 +9164,36 @@ function fillCharacterSheet(
     );
 
 
+
+
     const currentHp =
         characterData.current_hp === null ||
         characterData.current_hp === undefined
 
+
             ? life
+
 
             : Number(
                 characterData.current_hp
             );
 
 
+
+
     const currentPm =
         characterData.current_pm === null ||
         characterData.current_pm === undefined
 
+
             ? mana
+
 
             : Number(
                 characterData.current_pm
             );
+
+
 
 
     setText(
@@ -7046,10 +9202,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-character-current-pm",
         `${currentPm} / ${mana}`
     );
+
+
 
 
     setText(
@@ -7061,6 +9221,8 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-character-monkey-finger",
         characterData.has_monkey_finger
@@ -7069,12 +9231,16 @@ function fillCharacterSheet(
     );
 
 
+
+
     setText(
         "master-character-online-status",
         characterData.online
             ? "● ONLINE"
             : "○ OFFLINE"
     );
+
+
 
 
     const fingerBox =
@@ -7087,14 +9253,20 @@ function fillCharacterSheet(
             );
 
 
+
+
     if (fingerBox) {
+
 
         fingerBox.classList.toggle(
             "has-monkey-finger",
             !!characterData.has_monkey_finger
         );
 
+
     }
+
+
 
 
     setText(
@@ -7113,10 +9285,14 @@ function fillCharacterSheet(
     );
 
 
+
+
     const combatBox =
         document.getElementById(
             "master-character-combat-box"
         );
+
+
 
 
     const observeButton =
@@ -7125,14 +9301,19 @@ function fillCharacterSheet(
         );
 
 
+
+
     if (
         characterData.active_combat_id
     ) {
+
 
         const session =
             activeMasterCombats.get(
                 characterData.active_combat_id
             );
+
+
 
 
         setText(
@@ -7143,15 +9324,22 @@ function fillCharacterSheet(
         );
 
 
+
+
         if (combatBox) {
+
 
             combatBox.hidden =
                 false;
 
+
         }
 
 
+
+
         if (observeButton) {
+
 
             observeButton.onclick =
                 () =>
@@ -7159,53 +9347,76 @@ function fillCharacterSheet(
                         characterData.active_combat_id
                     );
 
+
         }
+
+
 
 
     } else {
 
+
         if (combatBox) {
+
 
             combatBox.hidden =
                 true;
 
+
         }
+
+
 
 
         if (observeButton) {
 
+
             observeButton.onclick =
                 null;
 
+
         }
+
 
     }
 
+
 }
+
+
 
 
 // ============================================================
 // REFRESH DASHBOARD DINAMICO
 // ============================================================
 
+
 function startMasterDashboardRefresh() {
+
 
     if (
         masterDashboardRefreshTimer
     ) {
 
+
         clearInterval(
             masterDashboardRefreshTimer
         );
 
+
     }
+
+
 
 
     masterDashboardRefreshTimer =
         setInterval(
             async () => {
 
+
                 await loadActiveMasterCombats();
+
+
 
 
                 await Promise.all([
@@ -7214,53 +9425,72 @@ function startMasterDashboardRefresh() {
                     loadMasterCooldownStates()
                 ]);
 
+
             },
             4000
         );
 
+
 }
+
+
 
 
 // ============================================================
 // RIDIMENSIONAMENTO v9
 // ============================================================
 
+
 window.addEventListener(
     "resize",
     () => {
 
+
         renderAllTokens();
+
 
         renderMasterEvents();
 
+
     }
 );
+
+
 
 
 // ============================================================
 // CLEANUP v9
 // ============================================================
 
+
 window.addEventListener(
     "beforeunload",
     () => {
 
+
         if (
             masterCooldownCountdownTimer
         ) {
+
 
             clearInterval(
                 masterCooldownCountdownTimer
             );
 
 
+
+
             masterCooldownCountdownTimer =
                 null;
 
+
         }
+
 
     }
 );
+
+
 
 
 // ============================================================
@@ -7268,17 +9498,21 @@ window.addEventListener(
 // Bacheca + riepilogo operativo + servizi/vendor
 // ============================================================
 
+
 const MASTER_NOTICEBOARD_SECTIONS = ["novita", "upgrade", "avvisi"];
 const MASTER_UNIQUE_ITEMS = [
     { item_id: "dito_scimmia", label: "Dito di Scimmia" }
 ];
 
+
 let masterControlServices = [];
 let masterControlUniqueState = [];
+
 
 window.addEventListener("DOMContentLoaded", () => {
     setupMasterControlCenter();
 });
+
 
 function setupMasterControlCenter() {
     const modal = document.getElementById("master-control-center");
@@ -7287,12 +9521,15 @@ function setupMasterControlCenter() {
     const refresh = document.getElementById("master-control-refresh");
     const saveNoticeboard = document.getElementById("master-noticeboard-save");
 
+
     if (!modal || !open) return;
+
 
     const closeModal = () => {
         modal.hidden = true;
         document.body.style.overflow = "";
     };
+
 
     open.addEventListener("click", async () => {
         modal.hidden = false;
@@ -7300,19 +9537,23 @@ function setupMasterControlCenter() {
         await loadMasterControlCenter();
     });
 
+
     close?.addEventListener("click", closeModal);
     modal.querySelectorAll("[data-close-control-center]").forEach(el => el.addEventListener("click", closeModal));
     refresh?.addEventListener("click", loadMasterControlCenter);
     saveNoticeboard?.addEventListener("click", saveMasterNoticeboard);
 
+
     document.querySelectorAll("[data-master-control-tab]").forEach(button => {
         button.addEventListener("click", () => setMasterControlTab(button.dataset.masterControlTab));
     });
+
 
     document.addEventListener("keydown", event => {
         if (event.key === "Escape" && !modal.hidden) closeModal();
     });
 }
+
 
 function setMasterControlTab(tab) {
     document.querySelectorAll("[data-master-control-tab]").forEach(button => {
@@ -7323,9 +9564,11 @@ function setMasterControlTab(tab) {
     });
 }
 
+
 async function loadMasterControlCenter() {
     const button = document.getElementById("master-control-refresh");
     if (button) button.disabled = true;
+
 
     try {
         // Prima aggiorna le sorgenti già usate dalla dashboard.
@@ -7353,11 +9596,13 @@ async function loadMasterControlCenter() {
     }
 }
 
+
 async function loadMasterControlServices() {
     const { data, error } = await db
         .from("base_services")
         .select("*")
         .order("display_name", { ascending: true });
+
 
     if (error) {
         console.error("Errore servizi Master:", error);
@@ -7367,6 +9612,7 @@ async function loadMasterControlServices() {
     masterControlServices = Array.isArray(data) ? data : [];
 }
 
+
 async function loadMasterUniqueItems() {
     const ids = MASTER_UNIQUE_ITEMS.map(item => item.item_id);
     const { data, error } = await db
@@ -7374,11 +9620,13 @@ async function loadMasterUniqueItems() {
         .select("character_id, item_id, quantity")
         .in("item_id", ids);
 
+
     if (error) {
         console.error("Errore oggetti unici Master:", error);
         masterControlUniqueState = [];
         return;
     }
+
 
     masterControlUniqueState = MASTER_UNIQUE_ITEMS.map(definition => {
         const holdings = (data || []).filter(row =>
@@ -7393,24 +9641,29 @@ async function loadMasterUniqueItems() {
     });
 }
 
+
 function renderMasterControlOverview() {
     const players = Array.from(allMasterPlayers.values());
     const online = players.filter(p => p.online).length;
     const combats = Array.from(activeMasterCombats.values());
     const uniqueOwned = masterControlUniqueState.filter(item => !item.available).length;
 
+
     setText("master-control-player-count", String(players.length));
     setText("master-control-player-detail", `${online} online · ${players.length - online} offline`);
     setText("master-control-combat-count", String(combats.length));
     setText("master-control-combat-detail", combats.length ? "Sessioni waiting / active" : "Nessun combattimento in corso");
 
+
     const bossCooldown = masterBossState.available === false;
     setText("master-control-boss-state", bossCooldown ? "COOLDOWN" : "DISPONIBILE");
     setText("master-control-boss-detail", bossCooldown ? (formatMasterCooldown(masterBossState.cooldown_until) || "Cooldown attivo") : "Goblin Boss affrontabile");
 
+
     setText("master-control-unique-count", `${uniqueOwned}/${MASTER_UNIQUE_ITEMS.length}`);
     setText("master-control-unique-detail", uniqueOwned ? "Oggetti attualmente posseduti" : "Tutti disponibili");
 }
+
 
 function renderMasterControlPlayers() {
     const container = document.getElementById("master-control-players");
@@ -7440,6 +9693,7 @@ function renderMasterControlPlayers() {
     });
 }
 
+
 function renderMasterControlServices() {
     const container = document.getElementById("master-control-services");
     if (!container) return;
@@ -7466,6 +9720,7 @@ function renderMasterControlServices() {
     });
 }
 
+
 function renderMasterControlUniqueItems() {
     const container = document.getElementById("master-control-unique-items");
     if (!container) return;
@@ -7481,6 +9736,7 @@ function renderMasterControlUniqueItems() {
         info.append(title, meta); row.append(info, state); container.appendChild(row);
     });
 }
+
 
 function renderMasterControlCombats() {
     const container = document.getElementById("master-control-combats");
@@ -7498,6 +9754,7 @@ function renderMasterControlCombats() {
         info.append(title,meta); row.append(info,watch); container.appendChild(row);
     });
 }
+
 
 function renderMasterControlCooldowns() {
     const container = document.getElementById("master-control-cooldowns");
@@ -7525,6 +9782,7 @@ function renderMasterControlCooldowns() {
     });
 }
 
+
 function syncMasterControlBossPassword() {
     const password = document.getElementById("master-boss-password")?.textContent || "-";
     const expiry = document.getElementById("master-boss-password-expiry")?.textContent || "";
@@ -7532,12 +9790,14 @@ function syncMasterControlBossPassword() {
     setText("master-control-boss-password-expiry", expiry);
 }
 
+
 function formatMasterDateTime(value) {
     if (!value) return "-";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "-";
     return date.toLocaleString("it-IT", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
 }
+
 
 async function loadMasterNoticeboardEditor() {
     const feedback = document.getElementById("master-noticeboard-feedback");
@@ -7547,11 +9807,13 @@ async function loadMasterNoticeboardEditor() {
         .eq("active", true)
         .order("sort_order", { ascending: true });
 
+
     if (error) {
         console.error("Errore caricamento bacheca Master:", error);
         if (feedback) feedback.textContent = "Bacheca non disponibile: esegui prima lo SQL incluso nel pacchetto.";
         return;
     }
+
 
     MASTER_NOTICEBOARD_SECTIONS.forEach(section => {
         const textarea = document.getElementById(`master-noticeboard-${section}`);
@@ -7561,11 +9823,13 @@ async function loadMasterNoticeboardEditor() {
     if (feedback) feedback.textContent = "";
 }
 
+
 async function saveMasterNoticeboard() {
     const button = document.getElementById("master-noticeboard-save");
     const feedback = document.getElementById("master-noticeboard-feedback");
     if (button) button.disabled = true;
     if (feedback) feedback.textContent = "Salvataggio...";
+
 
     try {
         const rows = [];
@@ -7576,12 +9840,14 @@ async function saveMasterNoticeboard() {
             });
         });
 
+
         const { error: deleteError } = await db.from("noticeboard_entries").delete().in("section", MASTER_NOTICEBOARD_SECTIONS);
         if (deleteError) throw deleteError;
         if (rows.length) {
             const { error: insertError } = await db.from("noticeboard_entries").insert(rows);
             if (insertError) throw insertError;
         }
+
 
         if (feedback) feedback.textContent = "Bacheca aggiornata. Le tre pagine leggeranno questi contenuti al prossimo caricamento.";
     } catch (error) {
@@ -7593,6 +9859,8 @@ async function saveMasterNoticeboard() {
 }
 
 
+
+
 // ============================================================
 // CENTRO DI CONTROLLO MASTER v13 - FIX OPERATIVI
 // - roster globale indipendente dal piano visualizzato
@@ -7601,9 +9869,11 @@ async function saveMasterNoticeboard() {
 // - diagnostica base_services / RLS
 // ============================================================
 
+
 // Ultimo accesso all'account (Supabase Auth), accessibile solo al Master.
 const masterPlayerLastSignIns = new Map();
 let masterPlayerLastSignInsAvailable = false;
+
 
 async function loadMasterPlayerLastSignIns() {
     try {
@@ -7620,6 +9890,7 @@ async function loadMasterPlayerLastSignIns() {
     }
 }
 
+
 function masterFormatLastSignIn(characterId) {
     if (!masterPlayerLastSignInsAvailable) return "Ultimo accesso: non disponibile";
     const value = masterPlayerLastSignIns.get(characterId);
@@ -7632,9 +9903,11 @@ function masterFormatLastSignIn(characterId) {
     });
 }
 
+
 let masterControlAllPlayers = [];
 let masterControlServicesError = null;
 let masterControlRegularCombatStates = new Map();
+
 
 function setMasterControlRefreshStatus(text, type = "") {
     const element = document.getElementById("master-control-refresh-status");
@@ -7643,6 +9916,7 @@ function setMasterControlRefreshStatus(text, type = "") {
     element.classList.toggle("is-ok", type === "ok");
     element.classList.toggle("is-error", type === "error");
 }
+
 
 async function loadMasterControlAllPlayers() {
     const { data, error } = await db
@@ -7670,14 +9944,17 @@ async function loadMasterControlAllPlayers() {
         `)
         .order("nome", { ascending: true });
 
+
     if (error) {
         console.error("Errore roster globale Master:", error);
         masterControlAllPlayers = [];
         throw error;
     }
 
+
     const rows = Array.isArray(data) ? data : [];
     const ids = rows.map(row => row.id).filter(Boolean);
+
 
     const scoreMap = new Map();
     await Promise.all(ids.map(async characterId => {
@@ -7693,6 +9970,7 @@ async function loadMasterControlAllPlayers() {
             scoreMap.set(characterId, 0);
         }
     }));
+
 
     masterControlAllPlayers = rows.map(character => {
         const presence = onlinePlayers.get(character.id);
@@ -7715,13 +9993,16 @@ async function loadMasterControlAllPlayers() {
     });
 }
 
+
 async function loadMasterControlServices() {
     masterControlServicesError = null;
+
 
     const { data, error } = await db
         .from("base_services")
         .select("*")
         .order("service_key", { ascending: true });
+
 
     if (error) {
         console.error("Errore servizi Master:", error);
@@ -7730,15 +10011,19 @@ async function loadMasterControlServices() {
         return;
     }
 
+
     masterControlServices = Array.isArray(data) ? data : [];
 }
+
 
 async function loadMasterControlRegularCombatCooldowns() {
     const encounterIds = MASTER_COMBAT_EVENTS
         .filter(event => event.type !== "boss")
         .map(event => event.encounter_id);
 
+
     masterControlRegularCombatStates.clear();
+
 
     try {
         const { data, error } = await db
@@ -7746,16 +10031,20 @@ async function loadMasterControlRegularCombatCooldowns() {
             .select("*")
             .in("encounter_id", encounterIds);
 
+
         if (error) throw error;
+
 
         const rows = Array.isArray(data) ? data : [];
         const now = Date.now();
         const fiveMinutes = 5 * 60 * 1000;
 
+
         for (const encounterId of encounterIds) {
             const sessions = rows
                 .filter(row => row.encounter_id === encounterId)
                 .sort((a, b) => getMasterCombatSessionTimestamp(b) - getMasterCombatSessionTimestamp(a));
+
 
             const active = sessions.find(row => ["waiting", "active"].includes(String(row.status || "").toLowerCase()));
             if (active) {
@@ -7769,6 +10058,7 @@ async function loadMasterControlRegularCombatCooldowns() {
                 continue;
             }
 
+
             const latest = sessions[0] || null;
             if (!latest) {
                 masterControlRegularCombatStates.set(encounterId, {
@@ -7780,14 +10070,17 @@ async function loadMasterControlRegularCombatCooldowns() {
                 continue;
             }
 
+
             let until = latest.cooldown_until || latest.disabled_until || null;
             if (!until) {
                 const finishedAt = getMasterCombatSessionTimestamp(latest);
                 if (finishedAt > 0) until = new Date(finishedAt + fiveMinutes).toISOString();
             }
 
+
             const untilMs = until ? new Date(until).getTime() : 0;
             const cooldown = Number.isFinite(untilMs) && untilMs > now;
+
 
             masterControlRegularCombatStates.set(encounterId, {
                 state: cooldown ? "cooldown" : "ready",
@@ -7811,6 +10104,7 @@ async function loadMasterControlRegularCombatCooldowns() {
     }
 }
 
+
 function getMasterCombatSessionTimestamp(row) {
     if (!row) return 0;
     const candidates = [
@@ -7829,13 +10123,16 @@ function getMasterCombatSessionTimestamp(row) {
     return 0;
 }
 
+
 async function loadMasterControlCenter() {
     const button = document.getElementById("master-control-refresh");
     if (button) button.disabled = true;
     setMasterControlRefreshStatus("Aggiornamento in corso…");
 
+
     try {
         await loadActiveMasterCombats();
+
 
         await Promise.all([
             loadAllMasterCharacters(),
@@ -7850,9 +10147,11 @@ async function loadMasterControlCenter() {
             loadMasterNoticeboardEditor()
         ]);
 
+
         // Ricarica gli oggetti unici dopo il roster globale, così i nomi dei possessori
         // possono essere risolti anche se il PG è su un altro piano.
         await loadMasterUniqueItems();
+
 
         renderMasterControlOverview();
         renderMasterControlPlayers();
@@ -7861,6 +10160,7 @@ async function loadMasterControlCenter() {
         renderMasterControlCombats();
         renderMasterControlCooldowns();
         syncMasterControlBossPassword();
+
 
         setMasterControlRefreshStatus(
             `Aggiornato alle ${new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`,
@@ -7877,6 +10177,7 @@ async function loadMasterControlCenter() {
     }
 }
 
+
 async function loadMasterUniqueItems() {
     const ids = MASTER_UNIQUE_ITEMS.map(item => item.item_id);
     const { data, error } = await db
@@ -7884,13 +10185,16 @@ async function loadMasterUniqueItems() {
         .select("character_id, item_id, quantity")
         .in("item_id", ids);
 
+
     if (error) {
         console.error("Errore oggetti unici Master:", error);
         masterControlUniqueState = [];
         return;
     }
 
+
     const globalPlayers = new Map(masterControlAllPlayers.map(player => [player.character_id, player]));
+
 
     masterControlUniqueState = MASTER_UNIQUE_ITEMS.map(definition => {
         const holdings = (data || []).filter(row =>
@@ -7905,55 +10209,68 @@ async function loadMasterUniqueItems() {
     });
 }
 
+
 function renderMasterControlOverview() {
     const players = masterControlAllPlayers;
     const online = players.filter(p => p.online).length;
     const combats = Array.from(activeMasterCombats.values());
     const uniqueOwned = masterControlUniqueState.filter(item => !item.available).length;
 
+
     setText("master-control-player-count", String(players.length));
     setText("master-control-player-detail", `${online} online · ${players.length - online} offline`);
     setText("master-control-combat-count", String(combats.length));
     setText("master-control-combat-detail", combats.length ? "Sessioni waiting / active" : "Nessun combattimento in corso");
 
+
     const bossCooldown = masterBossState.available === false;
     setText("master-control-boss-state", bossCooldown ? "COOLDOWN" : "DISPONIBILE");
     setText("master-control-boss-detail", bossCooldown ? (formatMasterCooldown(masterBossState.cooldown_until) || "Cooldown attivo") : "Goblin Boss affrontabile");
+
 
     setText("master-control-unique-count", `${uniqueOwned}/${MASTER_UNIQUE_ITEMS.length}`);
     setText("master-control-unique-detail", uniqueOwned ? "Oggetti attualmente posseduti" : "Tutti disponibili");
 }
 
+
 function renderMasterControlPlayers() {
     const container = document.getElementById("master-control-players");
     if (!container) return;
 
+
     const players = [...masterControlAllPlayers].sort((a,b) => String(a.nome||"").localeCompare(String(b.nome||""), "it"));
     container.innerHTML = "";
+
 
     if (!players.length) {
         container.innerHTML = '<div class="master-control-empty">Nessun personaggio trovato nel database.</div>';
         return;
     }
 
+
     players.forEach(player => {
         const row = document.createElement("button");
         row.type = "button";
         row.className = "master-control-row";
 
+
         const info = document.createElement("div");
         info.className = "master-control-row-main";
 
+
         const title = document.createElement("strong");
         title.textContent = player.nome || "Avventuriero";
+
 
         const meta = document.createElement("small");
         const location = String(player.current_location || "dungeon").toUpperCase();
         meta.textContent = `LV ${Number(player.livello)||1} · SCORE ${Number(player.score)||0} · ${location} · X ${Number(player.x)||0} Y ${Number(player.y)||0}${player.active_combat_id ? " · COMBAT" : ""}`;
 
+
         const state = document.createElement("span");
         state.className = `master-control-state ${player.online ? "master-control-good" : ""}`;
         state.textContent = player.online ? "ONLINE" : "OFFLINE";
+
 
         info.append(title, meta);
         row.append(info, state);
@@ -7962,20 +10279,24 @@ function renderMasterControlPlayers() {
     });
 }
 
+
 function renderMasterControlServices() {
     const container = document.getElementById("master-control-services");
     if (!container) return;
     container.innerHTML = "";
+
 
     if (masterControlServicesError) {
         container.innerHTML = `<div class="master-control-empty is-error">Impossibile leggere base_services: ${String(masterControlServicesError.message || masterControlServicesError)}. Esegui la patch SQL inclusa nello ZIP per consentire la lettura al ruolo Master.</div>`;
         return;
     }
 
+
     if (!masterControlServices.length) {
         container.innerHTML = '<div class="master-control-empty">base_services è leggibile ma non restituisce righe. Se i servizi esistono nel DB, controlla le policy RLS con la patch SQL inclusa.</div>';
         return;
     }
+
 
     masterControlServices.forEach(service => {
         const row = document.createElement("div");
@@ -8004,11 +10325,14 @@ function renderMasterControlServices() {
     });
 }
 
+
 function renderMasterControlCooldowns() {
     const container = document.getElementById("master-control-cooldowns");
     if (!container) return;
 
+
     const items = [];
+
 
     // Tutti i combattimenti standard del Piano 1.
     for (const event of MASTER_COMBAT_EVENTS.filter(entry => entry.type !== "boss")) {
@@ -8022,6 +10346,7 @@ function renderMasterControlCooldowns() {
         });
     }
 
+
     // Boss con RPC dedicata.
     items.push({
         label: "Goblin Boss",
@@ -8029,6 +10354,7 @@ function renderMasterControlCooldowns() {
         active: !!getActiveCombatForEncounter("combat_boss"),
         until: masterBossState.cooldown_until
     });
+
 
     // Combat della Base.
     for (const event of MASTER_BASE_COMBAT_EVENTS) {
@@ -8040,6 +10366,7 @@ function renderMasterControlCooldowns() {
             until: state.cooldown_until
         });
     }
+
 
     // Trappole, tenute nello stesso pannello perché sono cooldown operativi.
     Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coords,event]) => {
@@ -8053,23 +10380,29 @@ function renderMasterControlCooldowns() {
         });
     });
 
+
     container.innerHTML = "";
+
 
     items.forEach(item => {
         const row = document.createElement("div");
         row.className = "master-control-row";
 
+
         const info = document.createElement("div");
         info.className = "master-control-row-main";
 
+
         const title = document.createElement("strong");
         title.textContent = item.label;
+
 
         const meta = document.createElement("small");
         if (item.active) meta.textContent = "Combattimento attualmente in corso";
         else if (item.unknown) meta.textContent = "Stato cooldown non leggibile da combat_sessions";
         else if (item.available) meta.textContent = "Pronto / disponibile";
         else meta.textContent = `Fine: ${formatMasterDateTime(item.until)}`;
+
 
         const state = document.createElement("span");
         if (item.active) {
@@ -8083,11 +10416,13 @@ function renderMasterControlCooldowns() {
             state.textContent = item.available ? "PRONTO" : (formatMasterCooldown(item.until) || "COOLDOWN");
         }
 
+
         info.append(title, meta);
         row.append(info, state);
         container.appendChild(row);
     });
 }
+
 
 // ============================================================
 // MASTER v14 — LAYOUT A TRE COLONNE, PRESENZE GLOBALI,
@@ -8096,10 +10431,12 @@ function renderMasterControlCooldowns() {
 // nessuna RPC amministrativa esistente viene rimossa.
 // ============================================================
 
+
 const masterFloorChannels = new Map();
 const masterFloorConnected = new Map();
 let masterRosterExtrasLastLoaded = 0;
 let masterGlobalLoadBusy = false;
+
 
 const MASTER_PAGE_SECTIONS = {
     overview: ["PANORAMICA", "Stato operativo generale del gioco."],
@@ -8110,11 +10447,13 @@ const MASTER_PAGE_SECTIONS = {
     bacheca: ["BACHECA", "Gestione delle comunicazioni pubbliche ai giocatori."]
 };
 
+
 function setupMasterControlCenter() {
     const refresh = document.getElementById("master-control-refresh");
     const save = document.getElementById("master-noticeboard-save");
     refresh?.addEventListener("click", loadMasterControlCenter);
     save?.addEventListener("click", saveMasterNoticeboard);
+
 
     document.querySelectorAll("[data-master-control-tab]").forEach(button => {
         button.addEventListener("click", () => setMasterControlTab(button.dataset.masterControlTab));
@@ -8127,6 +10466,7 @@ function setupMasterControlCenter() {
     });
     setMasterControlTab("overview");
 }
+
 
 function setMasterControlTab(tab) {
     if (!MASTER_PAGE_SECTIONS[tab]) return;
@@ -8153,6 +10493,7 @@ function setMasterControlTab(tab) {
     }
 }
 
+
 function getMasterCharacterFloor(character) {
     const location = String(character?.current_location || "dungeon").toLowerCase();
     if (location === "base") return "base";
@@ -8163,13 +10504,16 @@ function getMasterCharacterFloor(character) {
     return "dungeon";
 }
 
+
 function masterFloorDisplayName(floor) {
     return floor === "base" ? "Base" : "Piano 1";
 }
 
+
 function masterGetPresence(characterId) {
     return onlinePlayers.get(characterId) || null;
 }
+
 
 function updateMasterSelectedFloorPlayers() {
     const selected = new Set();
@@ -8187,6 +10531,7 @@ function updateMasterSelectedFloorPlayers() {
     }
     renderAllTokens();
 }
+
 
 function masterBuildCharacter(row) {
     const presence = masterGetPresence(row.id);
@@ -8213,6 +10558,7 @@ function masterBuildCharacter(row) {
         active_combat_id: row.active_combat_id || presence?.active_combat_id || null
     };
 }
+
 
 async function loadAllMasterCharacters() {
     if (masterGlobalLoadBusy) return;
@@ -8248,6 +10594,7 @@ async function loadAllMasterCharacters() {
     }
 }
 
+
 // Il roster completo ora è alimentato direttamente dalla lettura globale
 // precedente, quindi evita una seconda query e N RPC score duplicate.
 async function loadMasterControlAllPlayers() {
@@ -8255,6 +10602,7 @@ async function loadMasterControlAllPlayers() {
         await loadAllMasterCharacters();
     }
 }
+
 
 function updatePlayerList() {
     const list = document.getElementById("master-player-list");
@@ -8276,6 +10624,7 @@ function updatePlayerList() {
         row.className = "master-player-item";
         row.classList.toggle("is-offline", !player.online);
         row.classList.toggle("is-combat", !!player.active_combat_id);
+
 
         const image = document.createElement("img");
         image.src = "immagini/token/" + (player.token || "token_1.png");
@@ -8331,11 +10680,13 @@ function updatePlayerList() {
     }
 }
 
+
 function updateOnlineCounter() {
     const total = masterControlAllPlayers.length;
     const connected = masterControlAllPlayers.filter(player => player.online).length;
     setText("master-online-count", `${connected} online · ${total - connected} offline · ${total} totali`);
 }
+
 
 function syncPresencePlayers() {
     onlinePlayers.clear();
@@ -8361,6 +10712,7 @@ function syncPresencePlayers() {
     updateMasterChatPresenceLabels();
 }
 
+
 function updatePlayer(data) {
     if (!data?.character_id) return;
     const previous = onlinePlayers.get(data.character_id) || {};
@@ -8375,6 +10727,7 @@ function updatePlayer(data) {
     updatePlayerList();
     updateOnlineCounter();
 }
+
 
 async function setupRealtime() {
     const jobs = ["base", "dungeon"].map(async floor => {
@@ -8420,6 +10773,7 @@ async function setupRealtime() {
     showMessage(realtimeReady ? "Monitoraggio Base e Piano 1 attivo." : "Connessione realtime non disponibile.");
 }
 
+
 async function switchMasterFloor(floor) {
     if (!["base", "dungeon"].includes(floor) || masterFloorSwitchInProgress) return;
     masterFloorSwitchInProgress = true;
@@ -8436,6 +10790,7 @@ async function switchMasterFloor(floor) {
         masterFloorSwitchInProgress = false;
     }
 }
+
 
 function setMasterChatConnected(connected) {
     const status = document.getElementById("master-chat-status");
@@ -8454,6 +10809,7 @@ function setMasterChatConnected(connected) {
         status.classList.toggle("is-online", usable);
     }
 }
+
 
 async function loadMasterChatHistory() {
     const container = document.getElementById("master-chat-messages");
@@ -8488,6 +10844,7 @@ async function loadMasterChatHistory() {
         container.textContent = "Impossibile caricare i messaggi dei due piani.";
     }
 }
+
 
 async function sendMasterChatMessage() {
     const input = document.getElementById("master-chat-input");
@@ -8535,6 +10892,7 @@ async function sendMasterChatMessage() {
         : `Inviato a ${sent.join(" e ")}.`;
     if (button) button.disabled = ![...masterFloorConnected.values()].some(Boolean);
 }
+
 
 function appendMasterChatMessage(data, isMaster = false) {
     const container = document.getElementById("master-chat-messages");
@@ -8592,6 +10950,7 @@ function appendMasterChatMessage(data, isMaster = false) {
     container.scrollTop = 0;
 }
 
+
 function updateMasterChatPresenceLabels() {
     const map = new Map(masterControlAllPlayers.map(player => [player.character_id, player]));
     document.querySelectorAll(".master-chat-message[data-character-id]").forEach(el => {
@@ -8603,6 +10962,7 @@ function updateMasterChatPresenceLabels() {
         presence.classList.toggle("is-online", active);
     });
 }
+
 
 async function openCharacterSheet(characterId) {
     const modal = document.getElementById("master-character-modal");
@@ -8639,6 +10999,7 @@ async function openCharacterSheet(characterId) {
     showMessage("");
 }
 
+
 // Il roster centrale e le statistiche dell'overview usano il roster globale.
 function renderMasterControlPlayers() {
     const container = document.getElementById("master-control-players");
@@ -8670,6 +11031,7 @@ function renderMasterControlPlayers() {
         container.appendChild(row);
     }
 }
+
 
 function renderMasterControlCombats() {
     const container = document.getElementById("master-control-combats");
@@ -8704,10 +11066,12 @@ function renderMasterControlCombats() {
     }
 }
 
+
 window.addEventListener("beforeunload", () => {
     for (const channel of masterFloorChannels.values()) db.removeChannel(channel);
     masterFloorChannels.clear();
 });
+
 
 // Gli indicatori di inventario e le sessioni combat devono prendere i
 // nominativi dal roster globale, non solo dal piano attualmente mostrato.
@@ -8724,6 +11088,7 @@ function renderMasterMonkeyFingerStatus() {
     panel?.classList.toggle("is-available", available);
     panel?.classList.toggle("is-owned", !available);
 }
+
 
 function renderActiveMasterCombats() {
     const list = document.getElementById("master-combat-list");
@@ -8762,13 +11127,17 @@ function renderActiveMasterCombats() {
     }
 }
 
+
 // ============================================================
 // MASTER v15 — PANORAMICA A MAPPA CON SLIDER
 // ============================================================
 
+
 let masterOverviewFloor = "dungeon";
 
+
 const MASTER_OVERVIEW_FLOORS = ["dungeon", "base", "orologio", "dungeon_Ia", "dungeon_Ib", "dungeon_Ic", "dungeon_Id"];
+
 
 const MASTER_OVERVIEW_BASE_SERVICE_POSITIONS = [
     { x: 5, y: 33 },
@@ -8781,6 +11150,7 @@ const MASTER_OVERVIEW_BASE_SERVICE_POSITIONS = [
     { x: 15, y: 29 },
     { x: 19, y: 29 }
 ];
+
 
 function getMasterOverviewFloorConfig() {
     if (masterOverviewFloor === "base") {
@@ -8807,6 +11177,7 @@ function getMasterOverviewFloorConfig() {
     };
 }
 
+
 function setupMasterOverviewSlider() {
     document.getElementById("master-overview-prev")?.addEventListener("click", () => {
         changeMasterOverviewFloor(-1);
@@ -8822,11 +11193,13 @@ function setupMasterOverviewSlider() {
     });
 }
 
+
 function changeMasterOverviewFloor(delta) {
     const index = MASTER_OVERVIEW_FLOORS.indexOf(masterOverviewFloor);
     const next = (index + delta + MASTER_OVERVIEW_FLOORS.length) % MASTER_OVERVIEW_FLOORS.length;
     setMasterOverviewFloor(MASTER_OVERVIEW_FLOORS[next]);
 }
+
 
 function setMasterOverviewFloor(floor) {
     if (!MASTER_OVERVIEW_FLOORS.includes(floor)) return;
@@ -8834,15 +11207,18 @@ function setMasterOverviewFloor(floor) {
     renderMasterControlOverview();
 }
 
+
 function setupMasterControlCenter() {
     const refresh = document.getElementById("master-control-refresh");
     const save = document.getElementById("master-noticeboard-save");
     refresh?.addEventListener("click", loadMasterControlCenter);
     save?.addEventListener("click", saveMasterNoticeboard);
 
+
     document.querySelectorAll("[data-master-control-tab]").forEach(button => {
         button.addEventListener("click", () => setMasterControlTab(button.dataset.masterControlTab));
     });
+
 
     const image = document.getElementById("master-map-image");
     image?.addEventListener("load", () => {
@@ -8851,9 +11227,11 @@ function setupMasterControlCenter() {
         }
     });
 
+
     setupMasterOverviewSlider();
     setMasterControlTab("overview");
 }
+
 
 function setMasterControlTab(tab) {
     if (!MASTER_PAGE_SECTIONS[tab]) return;
@@ -8884,6 +11262,7 @@ function setMasterControlTab(tab) {
     }
 }
 
+
 function startMasterDashboardRefresh() {
     if (masterDashboardRefreshTimer) {
         clearInterval(masterDashboardRefreshTimer);
@@ -8912,29 +11291,35 @@ function startMasterDashboardRefresh() {
     }, 4000);
 }
 
+
 function renderMasterControlOverview() {
     const players = masterControlAllPlayers || [];
     const online = players.filter(p => p.online).length;
     const combats = Array.from(activeMasterCombats.values());
     const uniqueOwned = masterControlUniqueState.filter(item => !item.available).length;
 
+
     setText("master-control-player-count", String(players.length));
     setText("master-control-player-detail", `${online} online · ${players.length - online} offline`);
     setText("master-control-combat-count", String(combats.length));
     setText("master-control-combat-detail", combats.length ? "Monitoraggio in tempo reale" : "Nessun combattimento in corso");
 
+
     const bossCooldown = masterBossState.available === false;
     setText("master-control-boss-state", bossCooldown ? "COOLDOWN" : "DISPONIBILE");
     setText("master-control-boss-detail", bossCooldown ? (formatMasterCooldown(masterBossState.cooldown_until) || "Cooldown attivo") : "Goblin Boss affrontabile");
 
+
     setText("master-control-unique-count", `${uniqueOwned}/${MASTER_UNIQUE_ITEMS.length}`);
     setText("master-control-unique-detail", uniqueOwned ? "Oggetti attualmente posseduti" : "Tutti disponibili");
+
 
     syncMasterControlBossPassword();
     renderMasterMonkeyFingerStatus();
     renderMasterOverviewLists();
     renderMasterOverviewMap();
 }
+
 
 function renderMasterOverviewLists() {
     renderMasterOverviewCombatList();
@@ -8943,15 +11328,18 @@ function renderMasterOverviewLists() {
     renderMasterOverviewVendorList();
 }
 
+
 function clearMasterOverviewMarkers() {
     document.querySelectorAll("#master-overview-map .master-overview-token, #master-overview-map .master-overview-marker").forEach(node => node.remove());
 }
+
 
 function renderMasterOverviewMap() {
     const config = getMasterOverviewFloorConfig();
     const image = document.getElementById("master-overview-map-image");
     const container = document.getElementById("master-overview-map");
     if (!image || !container) return;
+
 
     setText("master-overview-floor-name", config.title);
     setText("master-overview-slide-count", `${config.index} / ${config.total}`);
@@ -8960,11 +11348,14 @@ function renderMasterOverviewMap() {
         image.src = config.image;
     }
 
+
     clearMasterOverviewMarkers();
+
 
     const mapRect = image.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     if (!image.complete || mapRect.width <= 0 || mapRect.height <= 0) return;
+
 
     const cellWidth = mapRect.width / config.columns;
     const cellHeight = mapRect.height / config.rows;
@@ -8972,6 +11363,7 @@ function renderMasterOverviewMap() {
     const offsetY = mapRect.top - containerRect.top;
     const iconSize = Math.max(18, Math.min(cellWidth, cellHeight) * 0.76);
     const tokenSize = Math.max(18, Math.min(cellWidth, cellHeight) * 0.96);
+
 
     const placeNode = (x, y, node, size = iconSize) => {
         node.style.width = `${size}px`;
@@ -8982,6 +11374,7 @@ function renderMasterOverviewMap() {
         container.appendChild(node);
     };
 
+
     const floorPlayers = masterControlAllPlayers.filter(player => player.floor === config.key);
     floorPlayers.forEach(player => {
         const token = document.createElement("img");
@@ -8991,6 +11384,7 @@ function renderMasterOverviewMap() {
         token.title = `${player.nome || "Giocatore"} · ${player.online ? "online" : "offline"} · X ${Number(player.x) || 0} Y ${Number(player.y) || 0}`;
         placeNode(Number(player.x) || 0, Number(player.y) || 0, token, tokenSize);
     });
+
 
     const addMarker = (x, y, icon, stateClass, title, timerText = "") => {
         const marker = document.createElement("div");
@@ -9009,11 +11403,13 @@ function renderMasterOverviewMap() {
         placeNode(Number(x) || 0, Number(y) || 0, marker, iconSize);
     };
 
+
     if (config.key === "dungeon") {
         MASTER_COMBAT_EVENTS.forEach(event => {
             const state = getMasterOverviewCombatState(event, "dungeon");
             addMarker(event.x, event.y, event.type === "boss" ? "👹" : "⚔", state.markerClass, state.title, state.timerText);
         });
+
 
         Object.entries(MASTER_DUNGEON_EVENTS).forEach(([coords, event]) => {
             const [x, y] = coords.split(",").map(Number);
@@ -9026,6 +11422,7 @@ function renderMasterOverviewMap() {
             }
         });
 
+
         MASTER_SPECIAL_EVENTS.filter(event => event.type === "vendor").forEach(event => {
             const state = getMasterOverviewDungeonVendorState(event);
             addMarker(event.x, event.y, "🛠", state.markerClass, state.title, state.timerText);
@@ -9036,11 +11433,13 @@ function renderMasterOverviewMap() {
             addMarker(event.x, event.y, "⚔", state.markerClass, state.title, state.timerText);
         });
 
+
         getMasterOverviewBaseServiceMarkers().forEach(marker => {
             addMarker(marker.x, marker.y, "🛠", marker.markerClass, marker.title, marker.timerText);
         });
     }
 }
+
 
 function getMasterOverviewCombatState(event, floor) {
     if (floor === "base") {
@@ -9067,6 +11466,7 @@ function getMasterOverviewCombatState(event, floor) {
         };
     }
 
+
     if (event.type === "boss") {
         const active = !!getActiveCombatForEncounter(event.encounter_id);
         if (active) {
@@ -9089,6 +11489,7 @@ function getMasterOverviewCombatState(event, floor) {
             title: "Goblin Boss · attivo"
         };
     }
+
 
     const state = masterControlRegularCombatStates.get(event.encounter_id) || {};
     const active = !!getActiveCombatForEncounter(event.encounter_id);
@@ -9113,6 +11514,7 @@ function getMasterOverviewCombatState(event, floor) {
     };
 }
 
+
 function getMasterOverviewTrapState(event, coords) {
     const state = masterTrapStates.get(event.id);
     if (isMasterTrapCooldownActive(state)) {
@@ -9129,6 +11531,7 @@ function getMasterOverviewTrapState(event, coords) {
     };
 }
 
+
 function getMasterOverviewEventState(event, coords) {
     const activeUntil = event?.active_until || null;
     const isActive = !!activeUntil || event?.is_active !== false;
@@ -9139,6 +11542,7 @@ function getMasterOverviewEventState(event, coords) {
     };
 }
 
+
 function getMasterOverviewDungeonVendorState(event) {
     return {
         markerClass: "state-active",
@@ -9146,6 +11550,7 @@ function getMasterOverviewDungeonVendorState(event) {
         title: `${event.label || "Vendor"} · attivo`
     };
 }
+
 
 function getMasterOverviewBaseServiceMarkers() {
     if (!Array.isArray(masterControlServices) || !masterControlServices.length) return [];
@@ -9161,11 +11566,13 @@ function getMasterOverviewBaseServiceMarkers() {
     });
 }
 
+
 function describeMasterServiceState(service) {
     const name = service?.display_name || service?.service_key || service?.id || "Servizio";
     const statusRaw = String(service?.status || "").toLowerCase();
     const constructionEnd = getMasterServiceEndTime(service?.build_started_at, service?.construction_seconds);
     const maintenanceEnd = getMasterServiceEndTime(service?.maintenance_started_at, service?.maintenance_seconds);
+
 
     if (["construction", "building", "in_construction"].includes(statusRaw) || (constructionEnd && Date.parse(constructionEnd) > Date.now())) {
         return {
@@ -9207,12 +11614,14 @@ function describeMasterServiceState(service) {
     };
 }
 
+
 function getMasterServiceEndTime(startedAt, seconds) {
     if (!startedAt || !Number.isFinite(Number(seconds)) || Number(seconds) <= 0) return null;
     const start = Date.parse(startedAt);
     if (!Number.isFinite(start)) return null;
     return new Date(start + Number(seconds) * 1000).toISOString();
 }
+
 
 function renderMasterOverviewRow(container, { icon, iconClass, label, description, timerText }) {
     const row = document.createElement("div");
@@ -9233,6 +11642,7 @@ function renderMasterOverviewRow(container, { icon, iconClass, label, descriptio
     row.append(iconEl, info, time);
     container.appendChild(row);
 }
+
 
 function renderMasterOverviewCombatList() {
     const container = document.getElementById("master-overview-combats");
@@ -9269,6 +11679,7 @@ function renderMasterOverviewCombatList() {
     rows.forEach(row => renderMasterOverviewRow(container, row));
 }
 
+
 function renderMasterOverviewTrapList() {
     const container = document.getElementById("master-overview-traps");
     if (!container) return;
@@ -9295,6 +11706,7 @@ function renderMasterOverviewTrapList() {
     }
     rows.forEach(row => renderMasterOverviewRow(container, row));
 }
+
 
 function renderMasterOverviewEventList() {
     const container = document.getElementById("master-overview-events");
@@ -9323,10 +11735,12 @@ function renderMasterOverviewEventList() {
     rows.forEach(row => renderMasterOverviewRow(container, row));
 }
 
+
 function renderMasterOverviewVendorList() {
     const container = document.getElementById("master-overview-vendors");
     if (!container) return;
     container.innerHTML = "";
+
 
     const rows = [];
     if (masterOverviewFloor === "dungeon") {
@@ -9356,6 +11770,7 @@ function renderMasterOverviewVendorList() {
         });
     }
 
+
     if (!rows.length) {
         container.innerHTML = '<div class="master-control-empty">Nessun vendor / servizio disponibile.</div>';
         return;
@@ -9363,11 +11778,13 @@ function renderMasterOverviewVendorList() {
     rows.forEach(row => renderMasterOverviewRow(container, row));
 }
 
+
 window.addEventListener("resize", () => {
     if (document.querySelector('[data-master-control-pane="overview"]')?.classList.contains("is-active")) {
         requestAnimationFrame(renderMasterOverviewMap);
     }
 });
+
 
 // ============================================================
 // MASTER v16 — ROSTER E SCHEDA AMMINISTRATIVA
@@ -9379,11 +11796,13 @@ let masterPgInventory = [];
 let masterPgItemCatalog = new Map();
 let masterPgLoading = false;
 
+
 window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("master-pg-search")?.addEventListener("input", renderMasterControlPlayers);
     document.getElementById("master-pg-back")?.addEventListener("click", masterPgCloseSheet);
     renderMasterControlPlayers();
 });
+
 
 function masterPgCloseSheet() {
     masterPgSelectedId = null;
@@ -9393,6 +11812,7 @@ function masterPgCloseSheet() {
     setText("master-pg-title", "TUTTI I GIOCATORI");
     renderMasterControlPlayers();
 }
+
 
 function renderMasterControlPlayers() {
     const container = document.getElementById("master-pg-list");
@@ -9430,12 +11850,14 @@ function renderMasterControlPlayers() {
     }
 }
 
+
 function masterPgEl(tag, className="", value="") {
     const el=document.createElement(tag);
     if(className) el.className=className;
     if(value!==null && value!==undefined) el.textContent=String(value);
     return el;
 }
+
 
 async function masterPgOpenSheet(id) {
     if(masterPgLoading) return;
@@ -9448,6 +11870,7 @@ async function masterPgOpenSheet(id) {
     sheet.replaceChildren(masterPgEl("div","master-pg-loading","Caricamento scheda del personaggio..."));
     await masterPgLoadSheet(id);
 }
+
 
 async function masterPgLoadSheet(id) {
     const sheet=document.getElementById("master-pg-sheet");
@@ -9483,11 +11906,13 @@ async function masterPgLoadSheet(id) {
     }finally {masterPgLoading=false;}
 }
 
+
 function masterPgValue(value) {
     if(value===null||value===undefined) return "N/D";
     if(typeof value==='object') return String(value.resonance ?? value.risonanza ?? value.total ?? value.value ?? JSON.stringify(value));
     return String(value);
 }
+
 
 function masterPgRenderSheet(c, resonance) {
     const sheet=document.getElementById("master-pg-sheet");
@@ -9504,6 +11929,7 @@ function masterPgRenderSheet(c, resonance) {
     identityInfo.append(masterPgEl("p","",`${cached?.online?"● Online":"○ Offline"} · ${masterFloorDisplayName(floor)} · X ${cached?.x ?? (floor==="base"?c.base_x:c.dungeon_x)} Y ${cached?.y ?? (floor==="base"?c.base_y:c.dungeon_y)}`));
     identity.append(token,identityInfo);sheet.append(identity);
 
+
     const main=masterPgCreateSection(sheet,"RISORSE, RISONANZA E PROGRESSIONE");
     const currentGold=c.current_gold ?? 0;
     masterPgStats(main,[
@@ -9512,11 +11938,13 @@ function masterPgRenderSheet(c, resonance) {
         ["PUNTI ABILITÀ",c.punti_abilita??0]
     ]);
 
+
     const attributes=masterPgCreateSection(sheet,"ATTRIBUTI");
     masterPgStats(attributes,[
         ["FORZA",c.forza],["RESISTENZA",c.resistenza],["COSTITUZIONE",c.costituzione],
         ["INTELLIGENZA",c.intelligenza],["DESTREZZA",c.destrezza],["FORTUNA",c.fortuna]
     ]);
+
 
     const equipped=masterPgInventory.filter(row=>row.equipped_slot);
     const gear=masterPgCreateSection(sheet,"EQUIPAGGIAMENTO");
@@ -9525,6 +11953,7 @@ function masterPgRenderSheet(c, resonance) {
     const inventory=masterPgCreateSection(sheet,"INVENTARIO");
     if(!masterPgInventory.length)inventory.append(masterPgEl("p","master-pg-empty","Inventario vuoto."));
     else masterPgRenderInventoryRows(inventory,masterPgInventory);
+
 
     const editor=masterPgCreateSection(sheet,"MODIFICA PERSONAGGIO · SOLO MASTER");
     editor.append(masterPgEl("p","master-pg-empty","Le modifiche vengono salvate solo dopo la conferma e sono convalidate dal server."));
@@ -9571,6 +12000,7 @@ function masterPgRenderSheet(c, resonance) {
         finally{save.disabled=false;}
     });
 }
+
 
 function masterPgCreateSection(parent,title){
     const section=masterPgEl("section","master-pg-section",null);
@@ -9621,12 +12051,14 @@ async function masterPgChangeItem(row,kind,value){
     }catch(err){window.alert(`Impossibile modificare l'oggetto: ${err.message||err}`);}
 }
 
+
 // ============================================================
 // MASTER v17 — PANORAMICA PULITA
 // Nessun riepilogo dentro il tab: solo mappa, PG e simboli.
 // I tempi sono mostrati esclusivamente sotto le icone.
 // Le coordinate dei servizi seguono base/services.json.
 // ============================================================
+
 
 const MASTER_OVERVIEW_SERVICE_COORDS_FALLBACK = [
     { id:"runografo",    name:"Runografo",    npc:{x:18,y:21} },
@@ -9635,7 +12067,9 @@ const MASTER_OVERVIEW_SERVICE_COORDS_FALLBACK = [
     { id:"quest_giver",  name:"Missioni",     npc:{x:13,y:21} }
 ];
 
+
 let masterOverviewServiceLocations = MASTER_OVERVIEW_SERVICE_COORDS_FALLBACK;
+
 
 async function loadMasterOverviewServiceLocations() {
     try {
@@ -9656,9 +12090,11 @@ async function loadMasterOverviewServiceLocations() {
     }
 }
 
+
 window.addEventListener("DOMContentLoaded", () => {
     loadMasterOverviewServiceLocations();
 });
+
 
 function describeMasterServiceState(service) {
     const label = service?.display_name || service?.service_key || "Servizio";
@@ -9666,6 +12102,7 @@ function describeMasterServiceState(service) {
     // Questi due campi provengono realmente da base_services.
     const constructionReady = service?.construction_ready_at || null;
     const maintenanceUntil = service?.maintenance_until || null;
+
 
     if (["building", "construction", "constructing"].includes(status)) {
         return {
@@ -9700,6 +12137,7 @@ function describeMasterServiceState(service) {
     };
 }
 
+
 function getMasterOverviewBaseServiceMarkers() {
     const serviceByKey = new Map((masterControlServices || []).map(service =>
         [String(service.service_key || "").toLowerCase(), service]
@@ -9723,6 +12161,7 @@ function getMasterOverviewBaseServiceMarkers() {
     return markers;
 }
 
+
 function getMasterOverviewEventState(event, coords) {
     // Gli eventi statici del dungeon non hanno un cooldown nel database.
     // Non inventiamo un conto alla rovescia: compare soltanto se fornito.
@@ -9735,10 +12174,12 @@ function getMasterOverviewEventState(event, coords) {
     };
 }
 
+
 function renderMasterOverviewMap() {
     const image = document.getElementById("master-overview-map-image");
     const container = document.getElementById("master-overview-map");
     if (!image || !container) return;
+
 
     const config = getMasterOverviewFloorConfig();
     setText("master-overview-floor-name", config.title);
@@ -9747,6 +12188,7 @@ function renderMasterOverviewMap() {
     if (image.getAttribute("src") !== config.image) image.setAttribute("src", config.image);
     clearMasterOverviewMarkers();
 
+
     // Aspetta che l'immagine abbia completato il caricamento prima di
     // proiettare le coordinate del gioco sulla sua superficie reale.
     if (!image.complete || !image.naturalWidth) return;
@@ -9754,12 +12196,14 @@ function renderMasterOverviewMap() {
     const stageRect = container.getBoundingClientRect();
     if (!imageRect.width || !imageRect.height || !stageRect.width || !stageRect.height) return;
 
+
     const stepX = imageRect.width / config.columns;
     const stepY = imageRect.height / config.rows;
     const offsetX = imageRect.left - stageRect.left;
     const offsetY = imageRect.top - stageRect.top;
     const iconSize = Math.max(12, Math.min(stepX,stepY) * .68);
     const tokenSize = Math.max(12, Math.min(stepX,stepY) * .93);
+
 
     function place(node,x,y,size) {
         const X = Number(x), Y = Number(y);
@@ -9771,6 +12215,7 @@ function renderMasterOverviewMap() {
         node.style.top = `${offsetY + (Y+.5)*stepY}px`;
         container.appendChild(node);
     }
+
 
     function addMarker(x,y,glyph,state,title,remaining = "",onClick=null) {
         const marker = document.createElement("div");
@@ -9796,6 +12241,7 @@ function renderMasterOverviewMap() {
         }
         place(marker,x,y,iconSize);
     }
+
 
     if (config.key === "dungeon") {
         MASTER_COMBAT_EVENTS.forEach(event => {
@@ -9831,6 +12277,7 @@ function renderMasterOverviewMap() {
         });
     }
 
+
     // I token vengono aggiunti dopo gli altri simboli: rimangono leggibili.
     (masterControlAllPlayers || []).filter(player=>player.floor===config.key).forEach(player=>{
         const token=document.createElement("img");
@@ -9844,6 +12291,7 @@ function renderMasterOverviewMap() {
         place(token,player.x,player.y,tokenSize);
     });
 }
+
 
 // Countdown visivi aggiornati al secondo senza interrogare Supabase.
 // Il refresh dei dati rimane quello condiviso con la pagina Master.
@@ -9861,6 +12309,8 @@ window.addEventListener("beforeunload", () => {
 });
 
 
+
+
 // ============================================================
 // MASTER v18 — FIX PANORAMICA PIANO 1
 // - rimuove scale/dead_end dalla mappa overview
@@ -9868,6 +12318,7 @@ window.addEventListener("beforeunload", () => {
 // - aggiunge Puzzacinta con stato/cooldown
 // - corregge i cooldown dei combat sulla mappa
 // ============================================================
+
 
 let masterPuzzacintaState = {
     event_id: "puzzacinta_p1",
@@ -9885,11 +12336,13 @@ let masterPuzzacintaState = {
     source: "fallback"
 };
 
+
 function computeMasterRareEventNextStart(startHours) {
     const hours = Array.isArray(startHours)
         ? startHours.map(Number).filter(v => Number.isFinite(v) && v >= 0 && v <= 23).sort((a,b) => a-b)
         : [];
     if (!hours.length) return null;
+
 
     const now = new Date();
     for (let dayOffset = 0; dayOffset <= 2; dayOffset += 1) {
@@ -9905,6 +12358,7 @@ function computeMasterRareEventNextStart(startHours) {
     }
     return null;
 }
+
 
 async function loadMasterPuzzacintaState() {
     const next = {
@@ -9923,6 +12377,7 @@ async function loadMasterPuzzacintaState() {
         source: "fallback"
     };
 
+
     try {
         const { data: controls, error } = await db.rpc('master_get_event_controls');
         const data = controls?.puzzacinta || null;
@@ -9939,6 +12394,7 @@ async function loadMasterPuzzacintaState() {
         console.warn('Master: impossibile leggere dungeon_rare_events per Puzzacinta:', error);
     }
 
+
     try {
         const { data, error } = await db.rpc('get_puzzacinta_state');
         if (!error && data) {
@@ -9954,18 +12410,22 @@ async function loadMasterPuzzacintaState() {
         console.warn('Master: get_puzzacinta_state non disponibile:', error);
     }
 
+
     if (!next.visible && next.enabled !== false) {
         next.next_start_at = computeMasterRareEventNextStart(next.start_hours);
     }
+
 
     masterPuzzacintaState = next;
     return next;
 }
 
+
 function getMasterOverviewPuzzacintaState() {
     const state = masterPuzzacintaState || {};
     const phase = String(state.phase || 'hidden').toLowerCase();
     const visible = state.visible === true || ['dialogue', 'berserk_ready', 'combat_active'].includes(phase);
+
 
     if (visible) {
         if (phase === 'combat_active' || phase === 'berserk_ready') {
@@ -9982,6 +12442,7 @@ function getMasterOverviewPuzzacintaState() {
         };
     }
 
+
     const nextAt = state.next_start_at || null;
     return {
         markerClass: nextAt ? 'state-cooldown' : 'state-inactive',
@@ -9991,6 +12452,7 @@ function getMasterOverviewPuzzacintaState() {
             : 'Puzzacinta · evento raro non attivo'
     };
 }
+
 
 function getMasterOverviewCombatState(event, floor) {
     if (floor === 'base') {
@@ -10018,6 +12480,7 @@ function getMasterOverviewCombatState(event, floor) {
         };
     }
 
+
     if (event.type === 'boss') {
         const active = !!getActiveCombatForEncounter(event.encounter_id);
         if (active) {
@@ -10041,6 +12504,7 @@ function getMasterOverviewCombatState(event, floor) {
             title: 'Goblin Boss · attivo'
         };
     }
+
 
     const state = masterControlRegularCombatStates.get(event.encounter_id) || {};
     const active = !!getActiveCombatForEncounter(event.encounter_id);
@@ -10066,10 +12530,12 @@ function getMasterOverviewCombatState(event, floor) {
     };
 }
 
+
 function renderMasterOverviewMap() {
     const image = document.getElementById('master-overview-map-image');
     const container = document.getElementById('master-overview-map');
     if (!image || !container) return;
+
 
     const config = getMasterOverviewFloorConfig();
     setText('master-overview-floor-name', config.title);
@@ -10078,10 +12544,12 @@ function renderMasterOverviewMap() {
     if (image.getAttribute('src') !== config.image) image.setAttribute('src', config.image);
     clearMasterOverviewMarkers();
 
+
     if (!image.complete || !image.naturalWidth) return;
     const imageRect = image.getBoundingClientRect();
     const stageRect = container.getBoundingClientRect();
     if (!imageRect.width || !imageRect.height || !stageRect.width || !stageRect.height) return;
+
 
     const stepX = imageRect.width / config.columns;
     const stepY = imageRect.height / config.rows;
@@ -10089,6 +12557,7 @@ function renderMasterOverviewMap() {
     const offsetY = imageRect.top - stageRect.top;
     const iconSize = Math.max(12, Math.min(stepX, stepY) * 0.68);
     const tokenSize = Math.max(12, Math.min(stepX, stepY) * 0.93);
+
 
     function place(node, x, y, size) {
         const X = Number(x), Y = Number(y);
@@ -10100,6 +12569,7 @@ function renderMasterOverviewMap() {
         node.style.top = `${offsetY + (Y + 0.5) * stepY}px`;
         container.appendChild(node);
     }
+
 
     function addMarker(x, y, glyph, state, title, remaining = '', onClick = null) {
         const marker = document.createElement('div');
@@ -10130,6 +12600,7 @@ function renderMasterOverviewMap() {
         place(marker, x, y, iconSize);
     }
 
+
     if (config.key === 'dungeon') {
         MASTER_COMBAT_EVENTS.forEach(event => {
             const state = getMasterOverviewCombatState(event, 'dungeon');
@@ -10145,6 +12616,7 @@ function renderMasterOverviewMap() {
             );
         });
 
+
         Object.entries(MASTER_DUNGEON_EVENTS)
             .filter(([, event]) => event.type === 'trap')
             .forEach(([coords, event]) => {
@@ -10152,6 +12624,7 @@ function renderMasterOverviewMap() {
                 const state = getMasterOverviewTrapState(event, coords);
                 addMarker(x, y, '⚠', state.markerClass, state.title, state.timerText);
             });
+
 
         const puzzState = getMasterOverviewPuzzacintaState();
         addMarker(
@@ -10181,6 +12654,7 @@ function renderMasterOverviewMap() {
         });
     }
 
+
     (masterControlAllPlayers || [])
         .filter(player => player.floor === config.key)
         .forEach(player => {
@@ -10196,6 +12670,7 @@ function renderMasterOverviewMap() {
         });
 }
 
+
 const _masterOriginalLoadMasterControlCenterV18 = loadMasterControlCenter;
 loadMasterControlCenter = async function () {
     await _masterOriginalLoadMasterControlCenterV18();
@@ -10208,6 +12683,7 @@ loadMasterControlCenter = async function () {
         renderMasterOverviewMap();
     }
 };
+
 
 let masterPuzzacintaRefreshTimer = null;
 window.addEventListener('DOMContentLoaded', () => {
@@ -10229,10 +12705,12 @@ window.addEventListener('beforeunload', () => {
     if (masterPuzzacintaRefreshTimer) clearInterval(masterPuzzacintaRefreshTimer);
 });
 
+
 // ============================================================
 // MASTER V20 — VENDOR / SERVIZI
 // Tutte le scritture avvengono tramite RPC controllata dal Master.
 // ============================================================
+
 
 let masterServicesAdminRows = [];
 let masterServicesLastRenderSignature = "";
@@ -10240,9 +12718,11 @@ let masterServicesLoading = false;
 let masterServicesActionBusy = false;
 let masterServicesLastFetch = 0;
 
+
 function masterServicesIsVisible() {
     return !!document.querySelector('[data-master-control-pane="services"].is-active');
 }
+
 
 function masterServicesNotify(message, error = false) {
     const node = document.getElementById("master-services-feedback");
@@ -10252,10 +12732,12 @@ function masterServicesNotify(message, error = false) {
     node.classList.toggle("is-success", !!message && !error);
 }
 
+
 async function loadMasterServicesAdminPanel(force = false) {
     if (masterServicesLoading || masterServicesActionBusy) return;
     if (!force && Date.now() - masterServicesLastFetch < 12000) return;
     if (!force && !masterServicesIsVisible()) return;
+
 
     masterServicesLoading = true;
     const refreshButton = document.getElementById("master-services-refresh");
@@ -10278,6 +12760,7 @@ async function loadMasterServicesAdminPanel(force = false) {
     }
 }
 
+
 function masterServiceElement(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -10285,9 +12768,11 @@ function masterServiceElement(tag, className, text) {
     return node;
 }
 
+
 function masterServiceTimeUntil(deadline) {
     return deadline ? (formatMasterCooldown(deadline) || "00:00") : "N/D";
 }
+
 
 function masterServiceProgressList(requirements, type, service, enabled, subtitle) {
     const wrapper = masterServiceElement("div", "master-service-requirements");
@@ -10311,6 +12796,7 @@ function masterServiceProgressList(requirements, type, service, enabled, subtitl
         progress.max = Math.max(required, 1);
         progress.value = Math.min(contributed, Math.max(required, 1));
         line.appendChild(progress);
+
 
         if (enabled) {
             const controls = masterServiceElement("div", "master-service-resource-controls");
@@ -10358,6 +12844,7 @@ function masterServiceProgressList(requirements, type, service, enabled, subtitl
     return wrapper;
 }
 
+
 function masterServiceCard(entry) {
     const service = entry.service || {};
     const status = String(service.status || "unbuilt");
@@ -10365,6 +12852,7 @@ function masterServiceCard(entry) {
     const statusIndex = Math.max(0, statusLevels.indexOf(status));
     const level = Number(service.current_level) || 1;
     const name = service.display_name || service.service_key || "Servizio";
+
 
     const card = masterServiceElement("article", `master-service-card is-${status}`);
     const top = masterServiceElement("div", "master-service-card-head");
@@ -10376,6 +12864,7 @@ function masterServiceCard(entry) {
     identity.appendChild(masterServiceElement("span", `master-service-state-label is-${status}`,
         status === "building" ? "IN COSTRUZIONE" : status === "active" ? "ATTIVO" : "DA COSTRUIRE"));
     top.appendChild(identity);
+
 
     const statusControls = masterServiceElement("div", "master-service-state-controls");
     const sliderLabel = masterServiceElement("label", "master-service-slider-caption", "Stato servizio");
@@ -10406,6 +12895,7 @@ function masterServiceCard(entry) {
     top.appendChild(statusControls);
     card.appendChild(top);
 
+
     const body = masterServiceElement("div", "master-service-card-body");
     const timeBox = masterServiceElement("div", `master-service-time-box is-${status}`);
     const caption = status === "building" ? "COSTRUZIONE TERMINA TRA" : status === "active" ? "RESTERÀ ATTIVO PER" : "STATO DEL SERVIZIO";
@@ -10421,8 +12911,10 @@ function masterServiceCard(entry) {
     timeBox.appendChild(timeValue);
     body.appendChild(timeBox);
 
+
     const constructionRequirements = entry.construction_requirements || [];
     body.appendChild(masterServiceProgressList(constructionRequirements, "construction", service, status === "unbuilt", "REQUISITI DI COSTRUZIONE"));
+
 
     if (status === "active") {
         const maintenance = masterServiceElement("div", "master-service-gold-box");
@@ -10460,6 +12952,7 @@ function masterServiceCard(entry) {
         body.appendChild(maintenance);
     }
 
+
     const upgrade = entry.upgrade || {};
     const targetLevel = Number(upgrade.target_level) || 0;
     if (level >= Number(upgrade.max_level || 6)) {
@@ -10471,9 +12964,11 @@ function masterServiceCard(entry) {
         body.appendChild(masterServiceElement("div", "master-service-note", `Upgrade al livello ${level + 1} non ancora abilitato nel gioco.`));
     }
 
+
     card.appendChild(body);
     return card;
 }
+
 
 function renderMasterControlServices(force = false) {
     const container = document.getElementById("master-control-services");
@@ -10495,11 +12990,13 @@ function renderMasterControlServices(force = false) {
     updateMasterServiceCountdowns();
 }
 
+
 function updateMasterServiceCountdowns() {
     document.querySelectorAll("[data-master-service-deadline]").forEach(node => {
         node.textContent = masterServiceTimeUntil(node.dataset.masterServiceDeadline);
     });
 }
+
 
 async function masterServicesSubmit(payload) {
     if (masterServicesActionBusy) return;
@@ -10527,17 +13024,20 @@ async function masterServicesSubmit(payload) {
     await loadMasterControlServices();
 }
 
+
 const masterServicesOldSetTabV20 = setMasterControlTab;
 setMasterControlTab = function (tab) {
     masterServicesOldSetTabV20(tab);
     if (tab === "services") loadMasterServicesAdminPanel(true);
 };
 
+
 const masterServicesOldControlLoadV20 = loadMasterControlCenter;
 loadMasterControlCenter = async function () {
     await masterServicesOldControlLoadV20();
     if (masterServicesIsVisible()) await loadMasterServicesAdminPanel(true);
 };
+
 
 window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("master-services-refresh")?.addEventListener("click", async () => {
@@ -10552,11 +13052,13 @@ window.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("beforeunload", () => window.clearInterval(timer), {once:true});
 });
 
+
 // ============================================================
 // MASTER v21 — TAB COMBATTIMENTI
 // Disponibile / Cooldown con RPC protetta, osservazione delle
 // sessioni in corso e lista dei partecipanti reali.
 // ============================================================
+
 
 let masterCombatPanelRows = [];
 let masterCombatPanelByEncounter = new Map();
@@ -10566,9 +13068,11 @@ let masterCombatPanelLastFetch = 0;
 let masterCombatPanelSignature = '';
 const MASTER_COMBAT_PANEL_REFRESH_MS = 8000;
 
+
 function masterCombatPanelVisible() {
     return !!document.querySelector('[data-master-control-pane="combats"]')?.classList.contains('is-active');
 }
+
 
 function masterCombatPanelNotify(message, error = false) {
     const node = document.getElementById('master-combats-feedback');
@@ -10578,12 +13082,14 @@ function masterCombatPanelNotify(message, error = false) {
     }
 }
 
+
 function masterCombatPanelNode(tag, className = '', content) {
     const node = document.createElement(tag);
     if (className) node.className = className;
     if (content != null) node.textContent = String(content);
     return node;
 }
+
 
 function masterCombatPanelTimeLeft(until) {
     const millis = Date.parse(until || '') - Date.now();
@@ -10595,6 +13101,7 @@ function masterCombatPanelTimeLeft(until) {
     return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
              : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
+
 
 async function loadMasterCombatPanel(force = false) {
     if (masterCombatPanelBusy || masterCombatPanelActionBusy) return;
@@ -10627,6 +13134,7 @@ async function loadMasterCombatPanel(force = false) {
     }
 }
 
+
 function masterCombatPanelState(row) {
     const sessions = Array.isArray(row.sessions) ? row.sessions : [];
     if (sessions.length) return 'in_progress';
@@ -10634,6 +13142,7 @@ function masterCombatPanelState(row) {
     if (row.cooldown_until && Date.parse(row.cooldown_until) > Date.now()) return 'cooldown';
     return 'available';
 }
+
 
 function masterCombatPanelCard(row) {
     const state = masterCombatPanelState(row);
@@ -10653,6 +13162,7 @@ function masterCombatPanelCard(row) {
     );
     header.append(identity,pill);
     card.appendChild(header);
+
 
     const body = masterCombatPanelNode('div','master-combat-card-body');
     if (state === 'in_progress') {
@@ -10705,6 +13215,7 @@ function masterCombatPanelCard(row) {
         stateLine.appendChild(remaining);
         body.appendChild(stateLine);
 
+
         const controls = masterCombatPanelNode('div','master-combat-state-controls');
         const sliderLine = masterCombatPanelNode('div','master-combat-slider-row');
         sliderLine.appendChild(masterCombatPanelNode('span','master-combat-slider-label','ATTIVO'));
@@ -10715,6 +13226,7 @@ function masterCombatPanelCard(row) {
         sliderLine.appendChild(slider);
         sliderLine.appendChild(masterCombatPanelNode('span','master-combat-slider-label','COOLDOWN'));
         controls.appendChild(sliderLine);
+
 
         const editor = masterCombatPanelNode('div','master-combat-editor');
         const minutesLabel = masterCombatPanelNode('label','master-combat-minutes-label','Durata del cooldown (minuti)');
@@ -10730,9 +13242,11 @@ function masterCombatPanelCard(row) {
         editor.append(minutesLabel,apply);
         controls.appendChild(editor);
 
+
         const hint = masterCombatPanelNode('div','master-combat-help',
             'Spostare lo slider e confermare per aggiornare il cooldown del gioco.');
         controls.appendChild(hint);
+
 
         const updateControls = (dirty=false) => {
             const targetCooldown = slider.value === '1';
@@ -10750,6 +13264,7 @@ function masterCombatPanelCard(row) {
         slider.addEventListener('input',()=>updateControls(true));
         minutes.addEventListener('input',()=>updateControls(true));
         updateControls(false);
+
 
         apply.addEventListener('click',async()=>{
             const selectedCooldown = slider.value === '1';
@@ -10769,6 +13284,7 @@ function masterCombatPanelCard(row) {
     card.appendChild(body);
     return card;
 }
+
 
 function renderMasterCombatPanel() {
     const container = document.getElementById('master-combats-overview');
@@ -10798,11 +13314,13 @@ function renderMasterCombatPanel() {
     masterCombatPanelUpdateCountdowns();
 }
 
+
 function masterCombatPanelUpdateCountdowns() {
     document.querySelectorAll('[data-master-combat-deadline]').forEach(node=>{
         node.textContent=masterCombatPanelTimeLeft(node.dataset.masterCombatDeadline);
     });
 }
+
 
 async function masterCombatPanelSubmit(encounterId,minutes) {
     if (masterCombatPanelActionBusy) return;
@@ -10833,6 +13351,7 @@ async function masterCombatPanelSubmit(encounterId,minutes) {
     renderMasterOverviewMap();
 }
 
+
 // Il pannello e la mappa consumano la stessa origine dei cooldown,
 // evitando countdown stimati da combattimenti storici.
 const masterCombatPanelOldOverviewState = getMasterOverviewCombatState;
@@ -10856,17 +13375,20 @@ getMasterOverviewCombatState = function(event,floor) {
     return masterCombatPanelOldOverviewState(event,floor);
 };
 
+
 const masterCombatPanelOldSetTab = setMasterControlTab;
 setMasterControlTab = function(tab) {
     masterCombatPanelOldSetTab(tab);
     if (tab==='combats') loadMasterCombatPanel(true);
 };
 
+
 const masterCombatPanelOldLoadCenter = loadMasterControlCenter;
 loadMasterControlCenter = async function () {
     await masterCombatPanelOldLoadCenter();
     if (masterCombatPanelVisible()) await loadMasterCombatPanel(true);
 };
+
 
 window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('master-combats-refresh')?.addEventListener('click',()=>{
@@ -10883,11 +13405,13 @@ window.addEventListener('DOMContentLoaded',()=>{
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 });
 
+
 // ============================================================
 // MASTER v22 — EVENTI / SEGRETI
 // Le scritture vengono verificate dalle RPC SECURITY DEFINER Master.
 // La scheda Dito di Scimmia è in sola lettura.
 // ============================================================
+
 
 const MASTER_EVENT_DEFINITIONS = [
     { id:'blade_corridor', title:'Trappola 1', subtitle:'Corridoio delle lame · Piano 1', icon:'⚠', kind:'trap' },
@@ -10899,6 +13423,7 @@ let masterEventAdminState = null;
 let masterEventAdminBusy = false;
 let masterEventAdminLastLoad = 0;
 let masterEventAdminLoading = false;
+
 
 function masterEventsPaneVisible() {
     return !!document.querySelector('[data-master-control-pane="events"]')?.classList.contains('is-active');
@@ -10960,6 +13485,7 @@ function masterEventsRow(def) {
     };
 }
 
+
 function masterEventsRender() {
     const list = document.getElementById('master-events-management-list');
     if (!list) return;
@@ -10971,6 +13497,7 @@ function masterEventsRender() {
         list.appendChild(placeholder);
         return;
     }
+
 
     for (const def of MASTER_EVENT_DEFINITIONS) {
         const state = masterEventsRow(def);
@@ -11098,6 +13625,7 @@ getMasterOverviewPuzzacintaState=function() {
     return masterEventsOldOverviewRareState();
 };
 
+
 const masterEventsOldSetTab=setMasterControlTab;
 setMasterControlTab=function(tab) {
     masterEventsOldSetTab(tab);
@@ -11117,6 +13645,9 @@ window.addEventListener('DOMContentLoaded',()=>{
     },1000);
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 });
+
+
+
 
 
 
@@ -11148,12 +13679,14 @@ getMasterOverviewFloorConfig = function() {
         total:MASTER_OVERVIEW_FLOORS.length};
 };
 
+
 const masterPianoIPositions = new Map();
 const masterPianoICombatRooms = new Map();
 const masterPianoICombatSlots = new Map();
 const masterPianoIExtraStates = new Map();
 let masterPianoILoading = false;
 let masterPianoILastLoaded = 0;
+
 
 async function loadMasterPianoIOverviewData(force=false) {
     if (masterPianoILoading || (!force && Date.now()-masterPianoILastLoaded<5000)) return;
@@ -11180,6 +13713,7 @@ async function loadMasterPianoIOverviewData(force=false) {
            document.querySelector('[data-master-control-pane="overview"].is-active'))renderMasterOverviewMap();
     }
 }
+
 
 let masterPianoIZoom=1;
 const MASTER_PIANO_I_ZOOM_LEVELS=[1,1.5,2,3,4];
@@ -11232,6 +13766,7 @@ function getMasterPianoIVisualStage(config,image,container) {
     return tiles;
 }
 
+
 function getMasterPianoICombatMarkerState(slot) {
     if (!slot) return {css:'state-inactive',label:'Nessun incontro assegnato',time:''};
     const live=getActiveCombatForEncounter(slot.encounter_id);
@@ -11241,6 +13776,7 @@ function getMasterPianoICombatMarkerState(slot) {
     if(slot.status==='cooldown') return {css:'state-cooldown',label:'Incontro in cooldown',time:formatMasterCooldown(slot.respawn_at)||''};
     return {css:'state-inactive',label:'Incontro non disponibile',time:''};
 }
+
 
 function renderMasterPianoIOverviewMap() {
     const config=getMasterOverviewFloorConfig();
@@ -11489,6 +14025,7 @@ function renderMasterPianoIOverviewMap() {
     });
 }
 
+
 const masterOriginalOverviewRendererV23=renderMasterOverviewMap;
 renderMasterOverviewMap=function(){
     // Evita icone della Stanza dell'Orologio rimaste quando si cambia piano.
@@ -11522,6 +14059,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     },4000);
 });
 
+
 // Master v24 — controlli di zoom della panoramica Piano I.
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('master-piano-i-zoom-in')?.addEventListener('click',()=>masterPianoISetZoom(masterPianoIZoom<4?masterPianoIZoom+.5:4));
@@ -11535,6 +14073,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   window.addEventListener('resize',()=>{if(MASTER_PIANO_I_FLOORS[masterOverviewFloor])renderMasterOverviewMap();});
   masterPianoIZoomUpdate();
 });
+
+
 
 
 // ============================================================
@@ -11635,6 +14175,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 
+
+
 // ============================================================
 // MASTER v35 — ACCAMPAMENTO Ia, PANNELLO VENDOR / SERVIZI
 // Letture e scritture solo tramite RPC con autorizzazione Master.
@@ -11645,6 +14187,7 @@ let masterCampAdminLoading=false;
 let masterCampAdminActionBusy=false;
 let masterCampAdminLastFetch=0;
 let masterCampAdminLastSignature='';
+
 
 function masterCampPanelNode(tag,cl='',value){
     const e=masterServiceElement(tag,cl,value);
@@ -11748,6 +14291,7 @@ function renderMasterCampAdminPanel(force=false){
     sliderBox.append(sliderCaption,slider,sliderLabels);
     header.append(identity,sliderBox);card.appendChild(header);
 
+
     const body=masterCampPanelNode('div','master-service-card-body');
     const timeBox=masterCampPanelNode('div',`master-service-time-box is-${active?'active':'unbuilt'}`);
     timeBox.append(masterCampPanelNode('span','master-service-time-caption','RESTERÀ ATTIVO PER'),
@@ -11757,6 +14301,7 @@ function renderMasterCampAdminPanel(force=false){
     body.appendChild(masterCampPanelNode('div','master-service-note',
        active?`Combustibile residuo: ${state.fuel} unità di Legname · ogni unità dura 3 minuti.`
              :'Costruzione: 20 Legname, 5 Pelle di Dinosauro, 5 Piroblasti. Al completamento parte automaticamente per 60 minuti.'));
+
 
     const requirements=masterCampPanelNode('div','master-service-requirements');
     requirements.appendChild(masterCampPanelNode('div','master-service-requirements-title','REQUISITI DI COSTRUZIONE'));
@@ -11795,6 +14340,7 @@ function renderMasterCampAdminPanel(force=false){
     }
     body.appendChild(requirements);
 
+
     if(active){
         const extension=masterCampPanelNode('div','master-service-gold-box');
         extension.append(masterCampPanelNode('strong','master-service-gold-heading','ESTENDI LA DURATA CON LEGNAME'),
@@ -11816,6 +14362,7 @@ function renderMasterCampAdminPanel(force=false){
     card.appendChild(body);root.appendChild(card);masterCampTick();
 }
 
+
 // L'integrazione usa il refresh già presente nella scheda Vendor / Servizi,
 // senza modificare le RPC della Base o i servizi esistenti.
 const masterCampPreviousServicesLoader=loadMasterServicesAdminPanel;
@@ -11828,6 +14375,8 @@ loadMasterServicesAdminPanel=async function(force=false){
 window.addEventListener('DOMContentLoaded',()=>{
     window.setInterval(()=>{if(masterServicesIsVisible())masterCampTick();},1000);
 });
+
+
 
 
 // ============================================================
@@ -12047,6 +14596,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     },1000);
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
 });
+
+
 
 
 // ============================================================
@@ -12301,3 +14852,143 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(masterIIsPaneActive('combats'))void masterMietitoreLoad();
  },1000);
 });
+
+
+// ============================================================
+// PALAZZO ETERNO - PATCH PRESENZE MASTER (05/11/2026)
+// Aggiungere QUESTO BLOCCO alla fine di js/master.js.
+// Conserva la lista esistente, aggiornando posizione e area.
+// ============================================================
+
+
+(() => {
+    "use strict";
+
+
+    const previousUpdatePlayerList = updatePlayerList;
+    const refreshIntervalMs = 30000;
+    let lastPositionRequest = 0;
+    let positionRequestRunning = false;
+
+
+    const labels = Object.freeze({
+        base: "Livello Base",
+        dungeon: "Piano I - Dungeon",
+        dungeon_Ia: "Piano I-A - Giungla Bassa",
+        dungeon_Ib: "Piano I-B - Villaggio Scagliagrigia",
+        dungeon_Ic: "Piano I-C - Giungla Alta",
+        dungeon_Id: "Piano I-D - Tempio di Scintilla",
+        orologio: "Stanza dell'Orologio",
+        vendor: "Mercante del Dungeon",
+        combat: "Combattimento"
+    });
+
+
+    function actualFloor(player) {
+        const location = String(player?.current_location || "").trim();
+        if (location !== "combat") return location || player?.floor || "dungeon";
+
+
+        const combat = player?.active_combat_id
+            ? activeMasterCombats.get(player.active_combat_id)
+            : null;
+        const source = String(combat?.floor_id || combat?.floor || "");
+        if (labels[source] && source !== "combat") return source;
+        if (String(combat?.encounter_id || "").startsWith("base_")) return "base";
+        return "combat";
+    }
+
+
+    function actualLocationLabel(player) {
+        const floor = actualFloor(player);
+        return labels[floor] || (floor.startsWith("dungeon_I")
+            ? `Piano ${floor.replace("dungeon_", "")}`
+            : "Posizione non disponibile");
+    }
+
+
+    function actualCoordinates(player) {
+        const location = actualFloor(player);
+        if (["dungeon_Ia", "dungeon_Ib", "dungeon_Ic", "dungeon_Id"].includes(location)) {
+            // Fonte esatta: RPC master_get_piano_i_overview, già usata
+            // dalla panoramica dei quattro sottopiani.
+            const saved = masterPianoIPositions.get(location)?.get(player.character_id);
+            if (!saved || saved.is_active === false) return null;
+            const x = Number(saved.x);
+            const y = Number(saved.y);
+            return Number.isFinite(x) && Number.isFinite(y) ? `X ${x} · Y ${y}` : null;
+        }
+        if (location === "base" && String(player.current_location) === "base") {
+            if (player.base_x == null || player.base_y == null) return null;
+            const x = Number(player.base_x);
+            const y = Number(player.base_y);
+            return Number.isFinite(x) && Number.isFinite(y) ? `X ${x} · Y ${y}` : null;
+        }
+        if (["dungeon", "vendor"].includes(location)) {
+            if (player.dungeon_x == null || player.dungeon_y == null) return null;
+            const x = Number(player.dungeon_x);
+            const y = Number(player.dungeon_y);
+            return Number.isFinite(x) && Number.isFinite(y) ? `X ${x} · Y ${y}` : null;
+        }
+        if (location === "orologio") {
+            if (player.orologio_x == null || player.orologio_y == null) return null;
+            const x = Number(player.orologio_x);
+            const y = Number(player.orologio_y);
+            return Number.isFinite(x) && Number.isFinite(y) ? `X ${x} · Y ${y}` : null;
+        }
+        // Durante il combattimento non mostrare coordinate di altre mappe.
+        return null;
+    }
+
+
+    function updateLocationLabels() {
+        const list = document.getElementById("master-player-list");
+        if (!list) return;
+        const players = [...masterControlAllPlayers].sort((a, b) =>
+            Number(b.online) - Number(a.online) ||
+            String(a.nome || "").localeCompare(String(b.nome || ""), "it")
+        );
+        const rows = list.querySelectorAll(".master-player-item");
+        if (rows.length !== players.length) return;
+
+
+        players.forEach((player, index) => {
+            const row = rows[index];
+            const label = actualLocationLabel(player);
+            const coordinates = actualCoordinates(player);
+            const position = row.querySelector(".master-player-position");
+            if (position) {
+                position.textContent = coordinates
+                    ? `${label} · ${coordinates}`
+                    : `${label} · Coordinate non disponibili`;
+            }
+            const floorBadge = row.querySelector(".master-status-badge.floor");
+            if (floorBadge) floorBadge.textContent = label;
+            row.setAttribute("aria-label", `Scheda ${player.nome || "Avventuriero"}, ${label}`);
+        });
+    }
+
+
+    function refreshExactPositionsIfNeeded() {
+        if (positionRequestRunning || Date.now() - lastPositionRequest < refreshIntervalMs) return;
+        if (!masterControlAllPlayers.some(player =>
+            ["dungeon_Ia", "dungeon_Ib", "dungeon_Ic", "dungeon_Id"].includes(actualFloor(player))
+        )) return;
+        lastPositionRequest = Date.now();
+        positionRequestRunning = true;
+        Promise.resolve()
+            .then(() => loadMasterPianoIOverviewData(true))
+            .then(() => updateLocationLabels())
+            .catch(error => console.warn("Presenze Master: coordinate Piano I non disponibili", error))
+            .finally(() => { positionRequestRunning = false; });
+    }
+
+
+    // Viene richiamato dal normale aggiornamento periodico del roster Master.
+    updatePlayerList = function (...args) {
+        const result = previousUpdatePlayerList.apply(this, args);
+        updateLocationLabels();
+        refreshExactPositionsIfNeeded();
+        return result;
+    };
+})();

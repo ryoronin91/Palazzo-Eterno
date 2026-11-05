@@ -1,15 +1,19 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // COMBAT-LOG.JS
 // REGISTRO DEL COMBATTIMENTO
 // SINCRONIZZAZIONE MULTIPLAYER VIA SUPABASE REALTIME
 // ============================================================
 
+
 let combatLogChannel = null;
+
 
 const COMBAT_LOG_MAX_ENTRIES = 15;
 
+
 const renderedCombatLogIds = new Set();
+
 
 function createCombatLogId() {
     if (
@@ -19,15 +23,19 @@ function createCombatLogId() {
         return globalThis.crypto.randomUUID();
     }
 
+
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
+
 
 function renderCombatLogEntry(text, entryId = null) {
     const container = document.getElementById("combat-log");
 
+
     if (!container || !text) {
         return;
     }
+
 
     if (
         entryId &&
@@ -36,8 +44,10 @@ function renderCombatLogEntry(text, entryId = null) {
         return;
     }
 
+
     if (entryId) {
         renderedCombatLogIds.add(entryId);
+
 
         if (renderedCombatLogIds.size > 500) {
             const oldestId = renderedCombatLogIds.values().next().value;
@@ -45,18 +55,30 @@ function renderCombatLogEntry(text, entryId = null) {
         }
     }
 
+
     const placeholder = container.querySelector(".combat-log-placeholder");
     placeholder?.remove();
 
+
     const row = document.createElement("div");
     row.className = "combat-log-entry";
-    row.textContent = text;
+    // Mostra le regole dei dadi naturali; non altera il calcolo del combattimento.
+    const naturalRoll = String(text).match(/\b1d10\s*\(\s*(1|10)\s*\)/i);
+    const naturalLabel = naturalRoll
+        ? (naturalRoll[1] === "1"
+            ? " · 1 NATURALE: FALLIMENTO AUTOMATICO!"
+            : " · 10 NATURALE: COLPO AUTOMATICO!")
+        : "";
+    row.textContent = String(text) + naturalLabel;
+
 
     container.prepend(row);
+
 
     // Mantiene nel DOM soltanto le 15 azioni più recenti.
     // Le voci più vecchie vengono eliminate automaticamente.
     const entries = container.querySelectorAll(".combat-log-entry");
+
 
     for (
         let i = COMBAT_LOG_MAX_ENTRIES;
@@ -66,8 +88,11 @@ function renderCombatLogEntry(text, entryId = null) {
         entries[i].remove();
     }
 
+
     container.scrollTop = 0;
 }
+
+
 
 
 // ============================================================
@@ -75,9 +100,12 @@ function renderCombatLogEntry(text, entryId = null) {
 // Istruzioni, errori, targeting e messaggi personali.
 // ============================================================
 
+
 function addCombatLog(text) {
     renderCombatLogEntry(text);
 }
+
+
 
 
 // ============================================================
@@ -85,17 +113,21 @@ function addCombatLog(text) {
 // Azioni effettivamente eseguite nel combattimento.
 // ============================================================
 
+
 async function addSharedCombatLog(text) {
     if (!text) {
         return;
     }
 
+
     const entryId = createCombatLogId();
+
 
     renderCombatLogEntry(
         text,
         entryId
     );
+
 
     if (
         !combatLogChannel ||
@@ -106,8 +138,10 @@ async function addSharedCombatLog(text) {
             text
         );
 
+
         return;
     }
+
 
     try {
         await combatLogChannel.send({
@@ -121,6 +155,7 @@ async function addSharedCombatLog(text) {
             }
         });
 
+
     } catch (error) {
         console.error(
             "Errore invio registro condiviso:",
@@ -130,9 +165,12 @@ async function addSharedCombatLog(text) {
 }
 
 
+
+
 // ============================================================
 // AVVIO SINCRONIZZAZIONE REGISTRO
 // ============================================================
+
 
 async function setupCombatLogSync() {
     if (
@@ -144,7 +182,9 @@ async function setupCombatLogSync() {
         return;
     }
 
+
     await cleanupCombatLogSync();
+
 
     combatLogChannel = db.channel(
         `palazzo-eterno-combat-log-${combatId}`,
@@ -157,6 +197,7 @@ async function setupCombatLogSync() {
         }
     );
 
+
     combatLogChannel.on(
         "broadcast",
         {
@@ -164,6 +205,7 @@ async function setupCombatLogSync() {
         },
         message => {
             const payload = message?.payload;
+
 
             if (
                 !payload ||
@@ -173,6 +215,7 @@ async function setupCombatLogSync() {
                 return;
             }
 
+
             renderCombatLogEntry(
                 payload.text,
                 payload.id || null
@@ -180,8 +223,10 @@ async function setupCombatLogSync() {
         }
     );
 
+
     await new Promise((resolve, reject) => {
         let settled = false;
+
 
         combatLogChannel.subscribe(status => {
             if (status === "SUBSCRIBED") {
@@ -190,8 +235,10 @@ async function setupCombatLogSync() {
                     resolve();
                 }
 
+
                 return;
             }
+
 
             if (
                 status === "CHANNEL_ERROR" ||
@@ -211,19 +258,24 @@ async function setupCombatLogSync() {
 }
 
 
+
+
 // ============================================================
 // CHIUSURA SINCRONIZZAZIONE REGISTRO
 // ============================================================
+
 
 async function cleanupCombatLogSync() {
     if (!combatLogChannel) {
         return;
     }
 
+
     try {
         await db.removeChannel(
             combatLogChannel
         );
+
 
     } catch (error) {
         console.warn(
@@ -231,6 +283,7 @@ async function cleanupCombatLogSync() {
             error
         );
     }
+
 
     combatLogChannel = null;
 }
