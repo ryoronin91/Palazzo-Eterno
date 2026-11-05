@@ -1,15 +1,19 @@
-// ============================================================
+﻿// ============================================================
 // PALAZZO ETERNO
 // COMBAT-LOOT.JS
 // VITTORIA, ORO E DRAFT BOTTINO
 // ============================================================
 
 
+
+
 // ============================================================
 // SCHERMATA VITTORIA
 // ============================================================
 
+
 function renderCombatVictory() {
+
 
     const overlay =
         document.getElementById(
@@ -17,11 +21,17 @@ function renderCombatVictory() {
         );
 
 
+
+
     if (!overlay) {
+
 
         return;
 
+
     }
+
+
 
 
     const victory =
@@ -29,10 +39,14 @@ function renderCombatVictory() {
         "victory";
 
 
+
+
     overlay.classList.toggle(
         "visible",
         victory
     );
+
+
 
 
     overlay.setAttribute(
@@ -43,20 +57,30 @@ function renderCombatVictory() {
     );
 
 
+
+
     if (!victory) {
+
 
         return;
 
+
     }
+
+
 
 
     if (
         combatTargetMode
     ) {
 
+
         cancelCombatTargeting();
 
+
     }
+
+
 
 
     if (
@@ -64,18 +88,25 @@ function renderCombatVictory() {
         !victoryLootLoading
     ) {
 
+
         loadVictoryLoot();
+
 
     }
 
+
 }
+
+
 
 
 // ============================================================
 // CARICA LOOT VITTORIA
 // ============================================================
 
+
 async function loadVictoryLoot() {
+
 
     if (
         victoryLootLoaded ||
@@ -83,13 +114,19 @@ async function loadVictoryLoot() {
         !combatId
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     victoryLootLoading =
         true;
+
+
 
 
     const container =
@@ -98,17 +135,24 @@ async function loadVictoryLoot() {
         );
 
 
+
+
     if (
         container
     ) {
 
+
         container.textContent =
             "Generazione del bottino...";
+
 
     }
 
 
+
+
     try {
+
 
         // ====================================================
         // 1. GENERA IL LOOT
@@ -117,6 +161,7 @@ async function loadVictoryLoot() {
         // la RPC non lo rigenera.
         // ====================================================
 
+
         const {
             error: generateError
         } =
@@ -124,20 +169,28 @@ async function loadVictoryLoot() {
                 "generate_combat_loot",
                 {
 
+
                     p_combat_id:
                         combatId
 
+
                 }
             );
+
+
 
 
         if (
             generateError
         ) {
 
+
             throw generateError;
 
+
         }
+
+
 
 
         // ====================================================
@@ -150,10 +203,12 @@ async function loadVictoryLoot() {
         // distribuzione.
         // ====================================================
 
+
         if (
             !masterObserverMode &&
             currentCharacter
         ) {
+
 
             const {
                 error: distributeError
@@ -162,36 +217,49 @@ async function loadVictoryLoot() {
                     "distribute_combat_gold",
                     {
 
+
                         p_combat_id:
                             combatId
 
+
                     }
                 );
+
+
 
 
             if (
                 distributeError
             ) {
 
+
                 throw distributeError;
+
 
             }
 
+
         }
+
+
 
 
         // ====================================================
         // 3. RECUPERA LA QUOTA PERSONALE DI ORO
         // ====================================================
 
+
         let myGold =
             null;
+
+
 
 
         if (
             !masterObserverMode &&
             currentCharacter
         ) {
+
 
             const {
                 data: goldData,
@@ -201,20 +269,28 @@ async function loadVictoryLoot() {
                     "get_my_combat_gold",
                     {
 
+
                         p_combat_id:
                             combatId
 
+
                     }
                 );
+
+
 
 
             if (
                 goldError
             ) {
 
+
                 throw goldError;
 
+
             }
+
+
 
 
             myGold =
@@ -222,12 +298,16 @@ async function loadVictoryLoot() {
                     goldData
                 ) || 0;
 
+
         }
+
+
 
 
         // ====================================================
         // 4. RECUPERA IL LOOT COMPLETO
         // ====================================================
+
 
         const {
             data,
@@ -237,38 +317,52 @@ async function loadVictoryLoot() {
                 "get_combat_loot",
                 {
 
+
                     p_combat_id:
                         combatId
 
+
                 }
             );
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         // ====================================================
         // 5. SALVA DATI LOCALI
         // ====================================================
 
+
         victoryLootData =
             data ||
             [];
+
+
 
 
         victoryGoldReceived =
             myGold;
 
 
+
+
         // ====================================================
         // 6. INIZIALIZZA IL DRAFT
         // ====================================================
+
 
         const {
             error: draftInitError
@@ -277,41 +371,58 @@ async function loadVictoryLoot() {
                 "initialize_combat_loot_draft",
                 {
 
+
                     p_combat_id:
                         combatId
 
+
                 }
             );
+
+
 
 
         if (
             draftInitError
         ) {
 
+
             throw draftInitError;
 
+
         }
+
+
 
 
         // ====================================================
         // 7. CARICA STATO DRAFT
         // ====================================================
 
+
         await refreshVictoryLootDraft();
+
+
 
 
         // ====================================================
         // 8. AVVIA TIMER DRAFT
         // ====================================================
 
+
         startVictoryLootDraftLoop();
+
+
 
 
         victoryLootLoaded =
             true;
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore caricamento loot:",
@@ -319,87 +430,123 @@ async function loadVictoryLoot() {
         );
 
 
+
+
         if (
             container
         ) {
 
+
             container.textContent =
                 "Errore durante il caricamento del bottino.";
+
 
         }
 
 
+
+
     } finally {
+
 
         victoryLootLoading =
             false;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // LOOP DRAFT LOOT
 // ============================================================
 
+
 function startVictoryLootDraftLoop() {
 
+
     stopVictoryLootDraftLoop();
+
+
 
 
     victoryLootDraftInterval =
         setInterval(
             async () => {
 
+
                 await refreshVictoryLootDraft();
+
 
             },
             1000
         );
 
+
 }
+
+
 
 
 // ============================================================
 // STOP LOOP DRAFT
 // ============================================================
 
+
 function stopVictoryLootDraftLoop() {
+
 
     if (
         victoryLootDraftInterval
     ) {
+
 
         clearInterval(
             victoryLootDraftInterval
         );
 
 
+
+
         victoryLootDraftInterval =
             null;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // AGGIORNA STATO DRAFT
 // ============================================================
 
+
 async function refreshVictoryLootDraft() {
+
 
     if (
         !combatId
     ) {
 
+
         return;
+
 
     }
 
 
+
+
     try {
+
 
         const {
             data,
@@ -409,24 +556,34 @@ async function refreshVictoryLootDraft() {
                 "get_combat_loot_draft_state",
                 {
 
+
                     p_combat_id:
                         combatId
 
+
                 }
             );
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
+
 
         }
 
 
+
+
         victoryLootDraftState =
             data;
+
+
 
 
         renderVictoryLoot(
@@ -436,35 +593,48 @@ async function refreshVictoryLootDraft() {
         );
 
 
+
+
         if (
             data?.status ===
             "complete"
         ) {
 
+
             stopVictoryLootDraftLoop();
+
 
         }
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore aggiornamento draft loot:",
             error
         );
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // PRENDI OGGETTO
 // ============================================================
 
+
 async function pickVictoryLootItem(
     itemId
 ) {
+
 
     if (
         victoryLootPickInProgress ||
@@ -472,16 +642,23 @@ async function pickVictoryLootItem(
         !victoryLootDraftState?.is_my_turn
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     victoryLootPickInProgress =
         true;
 
 
+
+
     try {
+
 
         const {
             error
@@ -490,39 +667,55 @@ async function pickVictoryLootItem(
                 "pick_combat_loot_item",
                 {
 
+
                     p_combat_id:
                         combatId,
+
 
                     p_item_id:
                         itemId
 
+
                 }
             );
+
+
 
 
         if (
             error
         ) {
 
+
             throw error;
 
+
         }
+
+
 
 
         // Aggiorna subito inventario.
         await loadCharacterInventory();
 
 
+
+
         // Aggiorna subito stato draft.
         await refreshVictoryLootDraft();
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Errore scelta oggetto:",
             error
         );
+
+
 
 
         alert(
@@ -532,22 +725,32 @@ async function pickVictoryLootItem(
         );
 
 
+
+
         await refreshVictoryLootDraft();
+
+
 
 
     } finally {
 
+
         victoryLootPickInProgress =
             false;
 
+
     }
 
+
 }
+
+
 
 
 // ============================================================
 // MOSTRA LOOT VITTORIA
 // ============================================================
+
 
 function renderVictoryLoot(
     loot,
@@ -555,59 +758,80 @@ function renderVictoryLoot(
     draft = null
 ) {
 
+
     const container =
         document.getElementById(
             "combat-victory-loot"
         );
 
 
+
+
     if (
         !container
     ) {
 
+
         return;
 
+
     }
+
+
 
 
     let html =
         "";
 
 
+
+
     // ========================================================
     // ORO PERSONALE
     // ========================================================
 
+
     html += `
         <div class="victory-loot-gold">
+
 
             <div class="victory-loot-gold-label">
                 HAI RICEVUTO
             </div>
 
+
             <div class="victory-loot-gold-value">
 
+
                 <span class="victory-gold-coin"></span>
+
 
                 <strong>
                     ${Number(myGold) || 0}
                 </strong>
 
+
                 monete d'oro
+
 
             </div>
 
+
         </div>
     `;
+
+
 
 
     // ========================================================
     // DRAFT NON ANCORA DISPONIBILE
     // ========================================================
 
+
     if (
         !draft
     ) {
+
 
         html += `
             <div class="victory-loot-empty">
@@ -616,23 +840,32 @@ function renderVictoryLoot(
         `;
 
 
+
+
         container.innerHTML =
             html;
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // DRAFT COMPLETATO
     // ========================================================
 
+
     if (
         draft.status ===
         "complete"
     ) {
+
 
         html += `
             <div class="victory-loot-draft-complete">
@@ -641,14 +874,20 @@ function renderVictoryLoot(
         `;
 
 
+
+
         const myItems =
             Array.isArray(
                 draft.my_items
             )
 
+
                 ? draft.my_items
 
+
                 : [];
+
+
 
 
         if (
@@ -656,8 +895,10 @@ function renderVictoryLoot(
             0
         ) {
 
+
             html += `
                 <div class="victory-loot-items">
+
 
                     <div class="victory-loot-gold-label">
                         HAI OTTENUTO
@@ -665,13 +906,17 @@ function renderVictoryLoot(
             `;
 
 
+
+
             for (
                 const item
                 of myItems
             ) {
 
+
                 html += `
                     <div class="victory-loot-item">
+
 
                         <span>
                             ${
@@ -682,6 +927,7 @@ function renderVictoryLoot(
                             }
                         </span>
 
+
                         <strong>
                             ×${
                                 Number(
@@ -690,10 +936,14 @@ function renderVictoryLoot(
                             }
                         </strong>
 
+
                     </div>
                 `;
 
+
             }
+
+
 
 
             html += `
@@ -701,7 +951,10 @@ function renderVictoryLoot(
             `;
 
 
+
+
         } else {
+
 
             html += `
                 <div class="victory-loot-empty">
@@ -709,21 +962,30 @@ function renderVictoryLoot(
                 </div>
             `;
 
+
         }
+
+
 
 
         container.innerHTML =
             html;
 
 
+
+
         return;
 
+
     }
+
+
 
 
     // ========================================================
     // TURNO ATTUALE DEL DRAFT
     // ========================================================
+
 
     const seconds =
         Math.max(
@@ -734,12 +996,16 @@ function renderVictoryLoot(
         );
 
 
+
+
     html += `
         <div class="victory-loot-turn">
+
 
             <div class="victory-loot-turn-label">
                 TURNO DI
             </div>
+
 
             <div class="victory-loot-turn-player">
                 ${
@@ -750,21 +1016,27 @@ function renderVictoryLoot(
                 }
             </div>
 
+
             <div class="victory-loot-timer">
                 ${seconds}s
             </div>
 
+
         </div>
     `;
+
+
 
 
     // ========================================================
     // TURNO DEL GIOCATORE
     // ========================================================
 
+
     if (
         draft.is_my_turn
     ) {
+
 
         html += `
             <div class="victory-loot-your-turn">
@@ -772,7 +1044,9 @@ function renderVictoryLoot(
             </div>
         `;
 
+
     } else {
+
 
         html += `
             <div class="victory-loot-waiting">
@@ -780,27 +1054,36 @@ function renderVictoryLoot(
             </div>
         `;
 
+
     }
+
+
 
 
     // ========================================================
     // OGGETTI DISPONIBILI
     // ========================================================
 
+
     const items =
         Array.isArray(
             draft.items
         )
 
+
             ? draft.items
 
+
             : [];
+
+
 
 
     if (
         items.length ===
         0
     ) {
+
 
         html += `
             <div class="victory-loot-empty">
@@ -809,11 +1092,16 @@ function renderVictoryLoot(
         `;
 
 
+
+
     } else {
+
 
         html += `
             <div class="victory-loot-items">
         `;
+
+
 
 
         for (
@@ -821,10 +1109,13 @@ function renderVictoryLoot(
             of items
         ) {
 
+
             html += `
                 <div class="victory-loot-item">
 
+
                     <div class="victory-loot-item-info">
+
 
                         <span>
                             ${
@@ -835,6 +1126,7 @@ function renderVictoryLoot(
                             }
                         </span>
 
+
                         <strong>
                             ×${
                                 Number(
@@ -843,7 +1135,10 @@ function renderVictoryLoot(
                             }
                         </strong>
 
+
                     </div>
+
+
 
 
                     <button
@@ -863,26 +1158,36 @@ function renderVictoryLoot(
                         PRENDI
                     </button>
 
+
                 </div>
             `;
 
+
         }
+
+
 
 
         html += `
             </div>
         `;
 
+
     }
+
+
 
 
     container.innerHTML =
         html;
 
 
+
+
     // ========================================================
     // EVENTI PULSANTI
     // ========================================================
+
 
     container
         .querySelectorAll(
@@ -891,82 +1196,107 @@ function renderVictoryLoot(
         .forEach(
             button => {
 
+
                 button.addEventListener(
                     "click",
                     async () => {
+
 
                         if (
                             button.disabled
                         ) {
 
+
                             return;
 
+
                         }
+
+
 
 
                         button.disabled =
                             true;
 
 
+
+
                         await pickVictoryLootItem(
                             button.dataset.itemId
                         );
 
+
                     }
                 );
+
 
             }
         );
 
+
 }
+
+
 
 
 // ============================================================
 // ESCAPE HTML
 // ============================================================
 
+
 function escapeCombatHtml(
     value
 ) {
+
 
     return String(
         value ??
         ""
     )
 
+
         .replaceAll(
             "&",
             "&amp;"
         )
+
 
         .replaceAll(
             "<",
             "&lt;"
         )
 
+
         .replaceAll(
             ">",
             "&gt;"
         )
+
 
         .replaceAll(
             '"',
             "&quot;"
         )
 
+
         .replaceAll(
             "'",
             "&#039;"
         );
 
+
 }
+
+
 
 
 // ============================================================
 // PULSANTE USCITA VITTORIA
 // ============================================================
 
+
 function setupVictoryExitButton() {
+
 
     const button =
         document.getElementById(
@@ -974,26 +1304,36 @@ function setupVictoryExitButton() {
         );
 
 
+
+
     if (!button) {
+
 
         return;
 
+
     }
+
+
 
 
     button.addEventListener(
         "click",
         async () => {
 
+
             try {
+
 
                 // ====================================================
                 // AZZERA STATO COMBATTIMENTO DEL PERSONAGGIO
                 // ====================================================
 
+
                 if (
                     currentCharacter?.id
                 ) {
+
 
                     const {
                         error
@@ -1004,8 +1344,10 @@ function setupVictoryExitButton() {
                             )
                             .update({
 
+
                                 active_combat_id:
                                     null
+
 
                             })
                             .eq(
@@ -1014,24 +1356,34 @@ function setupVictoryExitButton() {
                             );
 
 
+
+
                     if (
                         error
                     ) {
 
+
                         throw error;
 
+
                     }
+
+
 
 
                     currentCharacter.active_combat_id =
                         null;
 
+
                 }
+
+
 
 
                 // ====================================================
                 // AGGIORNA PRESENCE NEL DUNGEON
                 // ====================================================
+
 
                 if (
                     combatDungeonChannel &&
@@ -1039,60 +1391,79 @@ function setupVictoryExitButton() {
                     currentUser
                 ) {
 
+
                     await combatDungeonChannel.track({
+
 
                         character_id:
                             currentCharacter.id,
 
+
                         user_id:
                             currentUser.id,
+
 
                         name:
                             currentCharacter.nome ||
                             "Avventuriero",
 
+
                         token:
                             currentCharacter.token ||
                             "token_1.png",
+
 
                         x:
                             Number(
                                 currentCharacter.dungeon_x
                             ),
 
+
                         y:
                             Number(
                                 currentCharacter.dungeon_y
                             ),
 
+
                         current_hp:
                             currentCharacter.current_hp,
+
 
                         active_combat_id:
                             null,
 
+
                         in_combat:
                             false,
+
 
                         online_at:
                             new Date()
                                 .toISOString()
 
+
                     });
 
+
                 }
+
+
 
 
             } catch (
                 error
             ) {
 
+
                 console.error(
                     "Errore uscita dal combattimento:",
                     error
                 );
 
+
             }
+
+
 
 
             // ====================================================
@@ -1107,22 +1478,28 @@ function setupVictoryExitButton() {
             // precedente e tornano al Piano 1 del dungeon.
             // ====================================================
 
+
             const baseCombatEncounterIds =
                 new Set([
                     "base_combat_left",
                     "base_combat_right"
                 ]);
 
+
             const isPianoICCombat =
                 String(combatSession?.encounter_id || "").startsWith("ic_");
             const isPianoIACombat =
                 String(combatSession?.encounter_id || "").startsWith("p1_");
 
+
             const isGuardCombat =
                 String(combatSession?.encounter_id || "").startsWith("ia2ib_guard_");
 
+
             const returnPage =
-                isGuardCombat
+                masterObserverMode
+                    ? "master.html"
+                    : isGuardCombat
                     ? (combatSession?.status === "victory"
                         ? "dungeon/piano-I/piano-Ib.html"
                         : "dungeon/piano-I/piano-Ia.html")
@@ -1134,10 +1511,13 @@ function setupVictoryExitButton() {
                             ? "dungeon/piano-I/piano-Ia.html"
                             : "dungeon/piano-1/dungeon.html";
 
+
             window.location.href =
                 returnPage;
 
+
         }
     );
+
 
 }
