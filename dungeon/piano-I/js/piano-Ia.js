@@ -5,7 +5,15 @@
 // ============================================================
 
 
+
+
 console.log("DUNGEON.JS - NUOVA INTERFACCIA CARICATA");
+
+
+
+
+
+
 
 
 
@@ -17,20 +25,30 @@ console.log("DUNGEON.JS - NUOVA INTERFACCIA CARICATA");
 // ============================================================
 
 
+
+
 let pageBackgroundMusic = null;
+
+
 
 
 const DUNGEON_MUSIC_VOLUME_KEY =
     "palazzo-eterno-dungeon-volume";
 
 
+
+
 let dungeonMusicVolume =
     loadDungeonMusicVolume();
+
+
 
 
 function startBackgroundMusic(
     source
 ) {
+
+
 
 
     if (
@@ -39,10 +57,18 @@ function startBackgroundMusic(
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -55,12 +81,20 @@ function startBackgroundMusic(
 
 
 
+
+
+
+
     pageBackgroundMusic.loop =
         true;
 
 
+
+
     pageBackgroundMusic.volume =
         dungeonMusicVolume;
+
+
 
 
     pageBackgroundMusic.preload =
@@ -69,8 +103,14 @@ function startBackgroundMusic(
 
 
 
+
+
+
+
     const tryPlay =
         async () => {
+
+
 
 
             if (
@@ -78,10 +118,18 @@ function startBackgroundMusic(
             ) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -89,7 +137,11 @@ function startBackgroundMusic(
             try {
 
 
+
+
                 await pageBackgroundMusic.play();
+
+
 
 
             } catch (
@@ -97,14 +149,24 @@ function startBackgroundMusic(
             ) {
 
 
+
+
                 // I browser possono bloccare l'autoplay finché
                 // il giocatore non interagisce con la pagina.
+
+
 
 
             }
 
 
+
+
         };
+
+
+
+
 
 
 
@@ -114,14 +176,26 @@ function startBackgroundMusic(
 
 
 
+
+
+
+
     const unlockAudio =
         () => {
+
+
 
 
             tryPlay();
 
 
+
+
         };
+
+
+
+
 
 
 
@@ -137,6 +211,10 @@ function startBackgroundMusic(
 
 
 
+
+
+
+
     document.addEventListener(
         "keydown",
         unlockAudio,
@@ -146,7 +224,13 @@ function startBackgroundMusic(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -156,10 +240,16 @@ function startBackgroundMusic(
 // ============================================================
 
 
+
+
 function loadDungeonMusicVolume() {
 
 
+
+
     try {
+
+
 
 
         const saved =
@@ -168,18 +258,26 @@ function loadDungeonMusicVolume() {
             );
 
 
+
+
         if (
             saved === null ||
             saved === ""
         ) {
 
 
+
+
             return 0.35;
         }
 
 
+
+
         const value =
             Number(saved);
+
+
 
 
         if (
@@ -187,8 +285,12 @@ function loadDungeonMusicVolume() {
         ) {
 
 
+
+
             return 0.35;
         }
+
+
 
 
         return Math.max(
@@ -200,7 +302,11 @@ function loadDungeonMusicVolume() {
         );
 
 
+
+
     } catch (error) {
+
+
 
 
         return 0.35;
@@ -210,18 +316,28 @@ function loadDungeonMusicVolume() {
 
 
 
+
+
+
+
 function saveDungeonMusicVolume(
     value
 ) {
 
 
+
+
     try {
+
+
 
 
         localStorage.setItem(
             DUNGEON_MUSIC_VOLUME_KEY,
             String(value)
         );
+
+
 
 
     } catch (error) {
@@ -232,9 +348,15 @@ function saveDungeonMusicVolume(
 
 
 
+
+
+
+
 function getDungeonVolumeIcon(
     volume
 ) {
+
+
 
 
     if (volume <= 0) {
@@ -242,9 +364,13 @@ function getDungeonVolumeIcon(
     }
 
 
+
+
     if (volume < 0.5) {
         return "🔉";
     }
+
+
 
 
     return "🔊";
@@ -253,7 +379,13 @@ function getDungeonVolumeIcon(
 
 
 
+
+
+
+
 function updateDungeonVolumeUI() {
+
+
 
 
     const button =
@@ -262,16 +394,22 @@ function updateDungeonVolumeUI() {
         );
 
 
+
+
     const slider =
         document.getElementById(
             "dungeon-volume-slider"
         );
 
 
+
+
     const value =
         document.getElementById(
             "dungeon-volume-value"
         );
+
+
 
 
     const percentage =
@@ -281,7 +419,11 @@ function updateDungeonVolumeUI() {
         );
 
 
+
+
     if (button) {
+
+
 
 
         button.textContent =
@@ -290,12 +432,18 @@ function updateDungeonVolumeUI() {
             );
 
 
+
+
         button.title =
             `Volume musica: ${percentage}%`;
     }
 
 
+
+
     if (slider) {
+
+
 
 
         slider.value =
@@ -303,7 +451,11 @@ function updateDungeonVolumeUI() {
     }
 
 
+
+
     if (value) {
+
+
 
 
         value.textContent =
@@ -314,7 +466,13 @@ function updateDungeonVolumeUI() {
 
 
 
+
+
+
+
 function setupDungeonVolumeControl() {
+
+
 
 
     const control =
@@ -323,10 +481,14 @@ function setupDungeonVolumeControl() {
         );
 
 
+
+
     const button =
         document.getElementById(
             "dungeon-volume-button"
         );
+
+
 
 
     const popover =
@@ -335,10 +497,14 @@ function setupDungeonVolumeControl() {
         );
 
 
+
+
     const slider =
         document.getElementById(
             "dungeon-volume-slider"
         );
+
+
 
 
     if (
@@ -349,11 +515,17 @@ function setupDungeonVolumeControl() {
     ) {
 
 
+
+
         return;
     }
 
 
+
+
     updateDungeonVolumeUI();
+
+
 
 
     button.addEventListener(
@@ -361,16 +533,24 @@ function setupDungeonVolumeControl() {
         event => {
 
 
+
+
             event.preventDefault();
             event.stopPropagation();
+
+
 
 
             const willOpen =
                 popover.hidden === true;
 
 
+
+
             popover.hidden =
                 !willOpen;
+
+
 
 
             button.setAttribute(
@@ -383,9 +563,13 @@ function setupDungeonVolumeControl() {
     );
 
 
+
+
     slider.addEventListener(
         "input",
         () => {
+
+
 
 
             dungeonMusicVolume =
@@ -398,7 +582,11 @@ function setupDungeonVolumeControl() {
                 );
 
 
+
+
             if (pageBackgroundMusic) {
+
+
 
 
                 pageBackgroundMusic.volume =
@@ -406,9 +594,13 @@ function setupDungeonVolumeControl() {
             }
 
 
+
+
             saveDungeonMusicVolume(
                 dungeonMusicVolume
             );
+
+
 
 
             updateDungeonVolumeUI();
@@ -416,9 +608,13 @@ function setupDungeonVolumeControl() {
     );
 
 
+
+
     document.addEventListener(
         "click",
         event => {
+
+
 
 
             if (
@@ -428,12 +624,18 @@ function setupDungeonVolumeControl() {
             ) {
 
 
+
+
                 return;
             }
 
 
+
+
             popover.hidden =
                 true;
+
+
 
 
             button.setAttribute(
@@ -447,12 +649,22 @@ function setupDungeonVolumeControl() {
 
 
 
+
+
+
+
 // ============================================================
 // SUPABASE
 // ============================================================
 
 
+
+
 const db = supabaseClient;
+
+
+
+
 
 
 
@@ -462,16 +674,26 @@ const db = supabaseClient;
 // ============================================================
 
 
+
+
 const MAP_COLUMNS = 63;
 const MAP_ROWS = 81;
+
+
 
 
 const GRID_OFFSET_X = 4;
 const GRID_OFFSET_Y = 4;
 
 
+
+
 const INITIAL_PLAYER_X = 9;
 const INITIAL_PLAYER_Y = 0;
+
+
+
+
 
 
 
@@ -489,14 +711,24 @@ const INITIAL_PLAYER_Y = 0;
 // ============================================================
 
 
+
+
 const CAMERA_RADIUS = 6;
+
+
 
 
 const CAMERA_VISIBLE_CELLS =
     CAMERA_RADIUS * 2 + 1;
 
 
+
+
 const CAMERA_TRANSITION_MS = 170;
+
+
+
+
 
 
 
@@ -506,8 +738,14 @@ const CAMERA_TRANSITION_MS = 170;
 // ============================================================
 
 
+
+
 const DUNGEON_CHANNEL_NAME =
     "palazzo-eterno-dungeon-1";
+
+
+
+
 
 
 
@@ -517,21 +755,33 @@ const DUNGEON_CHANNEL_NAME =
 // ============================================================
 
 
+
+
 let character = null;
 let currentUser = null;
+
+
 
 
 let characterInventory = [];
 
 
+
+
 let characterAbilities = [];
+
+
 
 
 let equipmentBonuses = {
 
 
+
+
     attack_bonus: 0,
     defense_bonus: 0,
+
+
 
 
     forza_bonus: 0,
@@ -542,7 +792,13 @@ let equipmentBonuses = {
     fortuna_bonus: 0
 
 
+
+
 };
+
+
+
+
 
 
 
@@ -552,14 +808,24 @@ let equipmentBonuses = {
 // ============================================================
 
 
+
+
 let dungeonData = null;
+
+
 
 
 let playerX = null;
 let playerY = null;
 
 
+
+
 let tokenElement = null;
+
+
+
+
 
 
 
@@ -578,22 +844,36 @@ let tokenElement = null;
 // ============================================================
 
 
+
+
 const MONKEY_SIGN_ENABLED = false;
+
+
 
 
 const MONKEY_SIGN_X = 2;
 const MONKEY_SIGN_Y = 11;
 
 
+
+
 const MONKEY_SIGN_TITLE =
     "Cartello di legno";
+
+
 
 
 const MONKEY_SIGN_MESSAGE =
     "Ciao campione! Qui era troppo pericoloso per me restare, mi trovi al piano successivo. Ah tranquillo, le scale ora sono sicure... quasi tutte..";
 
 
+
+
 let monkeySignElement = null;
+
+
+
+
 
 
 
@@ -621,22 +901,38 @@ let monkeySignElement = null;
 // ============================================================
 
 
+
+
 const movementQueue = [];
+
+
 
 
 let movementQueueRunning = false;
 
 
+
+
 let eventLocked = false;
+
+
 
 
 let positionSaveTimer = null;
 
 
+
+
 let positionSaveRunning = false;
 
 
+
+
 let positionSavePending = false;
+
+
+
+
 
 
 
@@ -646,8 +942,14 @@ let positionSavePending = false;
 // ============================================================
 
 
+
+
 let dungeonChannel = null;
 let realtimeReady = false;
+
+
+
+
 
 
 
@@ -657,16 +959,26 @@ let realtimeReady = false;
 // ============================================================
 
 
+
+
 const DUNGEON_CHAT_FLOOR_ID =
     "floor_1";
+
+
 
 
 const DUNGEON_CHAT_HISTORY_LIMIT =
     100;
 
 
+
+
 const renderedFloorChatMessageIds =
     new Set();
+
+
+
+
 
 
 
@@ -676,12 +988,18 @@ const renderedFloorChatMessageIds =
 // ============================================================
 
 
+
+
 const otherPlayerTokens =
     new Map();
 
 
+
+
 const otherPlayers =
     new Map();
+
+
 
 
 // ============================================================
@@ -689,19 +1007,29 @@ const otherPlayers =
 // ============================================================
 
 
+
+
 let fogCanvas = null;
+
+
 
 
 let exploredCells =
     new Set();
 
 
+
+
 let visibleCells =
     new Set();
 
 
+
+
 let fogSavePromise =
     Promise.resolve();
+
+
 
 
 // ============================================================
@@ -709,10 +1037,18 @@ let fogSavePromise =
 // ============================================================
 
 
+
+
 let healModeActive = false;
 
 
+
+
 let healRangeElements = [];
+
+
+
+
 
 
 
@@ -722,7 +1058,13 @@ let healRangeElements = [];
 // ============================================================
 
 
+
+
 let dungeonGiornoPagaInProgress = false;
+
+
+
+
 
 
 
@@ -732,7 +1074,13 @@ let dungeonGiornoPagaInProgress = false;
 // ============================================================
 
 
+
+
 let dungeonCharacterRefreshInterval = null;
+
+
+
+
 
 
 
@@ -742,9 +1090,13 @@ let dungeonCharacterRefreshInterval = null;
 // ============================================================
 
 
+
+
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
+
+
 
 
         startBackgroundMusic(
@@ -754,12 +1106,22 @@ document.addEventListener(
 
 
 
+
+
+
+
         setupDungeonVolumeControl();
 
 
 
 
+
+
+
+
         try {
+
+
 
 
             setMessage(
@@ -769,12 +1131,22 @@ document.addEventListener(
 
 
 
+
+
+
+
             // ------------------------------------------------
             // PERSONAGGIO
             // ------------------------------------------------
 
 
+
+
             await loadCharacter();
+
+
+
+
 
 
 
@@ -791,15 +1163,25 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             if (
                 await enforceDungeonPageState()
             ) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -809,7 +1191,13 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             await loadBossRoomAccess();
+
+
+
+
 
 
 
@@ -819,7 +1207,13 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             await Promise.allSettled([loadDungeonLeaderboard(), loadDungeonResonanceScore()]);
+
+
+
+
 
 
 
@@ -829,7 +1223,13 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             setupNotes();
+
+
+
+
 
 
 
@@ -839,10 +1239,16 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             setupFloorChat();
 
 
+
+
             await loadFloorChatHistory();
+
+
 
 
             requestAnimationFrame(
@@ -852,12 +1258,22 @@ document.addEventListener(
 
 
 
+
+
+
+
             // ------------------------------------------------
             // MAPPA
             // ------------------------------------------------
 
 
+
+
             await loadDungeon();
+
+
+
+
 
 
 
@@ -867,16 +1283,23 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             await initializePlayer();
+
+
 
 
             // Registra la casella realmente occupata dal token per
             // la missione di esplorazione del Piano 1.
             // Piano Ia: nessuna missione di esplorazione del Piano 1.
 
+
             // ------------------------------------------------
             // CAMERA
             // ------------------------------------------------
+
+
 
 
             setupDungeonCamera();
@@ -887,12 +1310,22 @@ document.addEventListener(
 
 
 
+
+
+
+
             // ------------------------------------------------
             // VENDOR
             // ------------------------------------------------
 
 
+
+
             // Nessun cartello del Piano 1 nel Piano Ia;
+
+
+
+
 
 
 
@@ -902,6 +1335,8 @@ document.addEventListener(
             // ------------------------------------------------------------
 
 
+
+
             // Nebbia del Piano 1 disabilitata: richiede adattamento 63x81;
             
             // ------------------------------------------------
@@ -909,7 +1344,13 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             setupMovement();
+
+
+
+
 
 
 
@@ -919,11 +1360,19 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             setupDungeonActions();
+
+
 
 
             // Giorno Paga è un'azione autonoma: non modifica Cura.
             setupDungeonGiornoPagaAction();
+
+
+
+
 
 
 
@@ -933,7 +1382,13 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             setupDungeonTradeUi();
+
+
+
+
 
 
 
@@ -943,8 +1398,14 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             await setupRealtimeMultiplayer();
             await recoverDungeonTradeState();
+
+
+
+
 
 
 
@@ -954,7 +1415,11 @@ document.addEventListener(
             // ------------------------------------------------
 
 
+
+
             startDungeonCharacterRefresh();
+
+
 
 
             // Ricarica la Top 5 anche se i giocatori restano online.
@@ -966,6 +1431,10 @@ document.addEventListener(
 
 
 
+
+
+
+
             setMessage(
                 "Usa WASD, le frecce o clicca una casella adiacente."
             );
@@ -973,7 +1442,13 @@ document.addEventListener(
 
 
 
+
+
+
+
         } catch (error) {
+
+
 
 
             console.error(
@@ -984,13 +1459,21 @@ document.addEventListener(
 
 
 
+
+
+
+
             showError(
                 error.message ||
                 "Errore durante il caricamento del dungeon."
             );
 
 
+
+
         }
+
+
 
 
     }
@@ -1001,9 +1484,17 @@ document.addEventListener(
 
 
 
+
+
+
+
+
+
 // ============================================================
 // RISONANZA · TOP 5
 // ============================================================
+
+
 
 
 // Risonanza personale: stesso calcolo della scheda e della Top 5.
@@ -1031,7 +1522,11 @@ async function loadDungeonResonanceScore() {
 }
 
 
+
+
 async function loadDungeonLeaderboard() {
+
+
 
 
     const container =
@@ -1042,10 +1537,18 @@ async function loadDungeonLeaderboard() {
 
 
 
+
+
+
+
     if (!container) {
 
 
+
+
         return;
+
+
 
 
     }
@@ -1053,7 +1556,13 @@ async function loadDungeonLeaderboard() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         const {
@@ -1071,13 +1580,25 @@ async function loadDungeonLeaderboard() {
 
 
 
+
+
+
+
         if (error) {
+
+
 
 
             throw error;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1089,13 +1610,23 @@ async function loadDungeonLeaderboard() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
             "Errore caricamento Top 5 Risonanza:",
             error
         );
+
+
+
+
 
 
 
@@ -1108,10 +1639,18 @@ async function loadDungeonLeaderboard() {
             `;
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1121,6 +1660,8 @@ async function loadDungeonLeaderboard() {
 // ============================================================
 
 
+
+
 function renderDungeonLeaderboard(rows) {
     const container = document.getElementById("dungeon-leaderboard-list");
     if (!container) return;
@@ -1128,6 +1669,8 @@ function renderDungeonLeaderboard(rows) {
         container.innerHTML = '<div class="dungeon-leaderboard-empty">Nessun personaggio vivo in classifica.</div>';
         return;
     }
+
+
 
 
     container.innerHTML = rows.map(row => {
@@ -1166,14 +1709,22 @@ function renderDungeonLeaderboard(rows) {
 
 
 
+
+
+
+
 // ============================================================
 // ESCAPE HTML LEADERBOARD
 // ============================================================
 
 
+
+
 function escapeDungeonLeaderboardHtml(
     value
 ) {
+
+
 
 
     return String(
@@ -1201,7 +1752,13 @@ function escapeDungeonLeaderboardHtml(
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1211,7 +1768,11 @@ function escapeDungeonLeaderboardHtml(
 // ============================================================
 
 
+
+
 async function loadDungeon() {
+
+
 
 
     const response =
@@ -1222,7 +1783,13 @@ async function loadDungeon() {
 
 
 
+
+
+
+
     if (!response.ok) {
+
+
 
 
         throw new Error(
@@ -1230,13 +1797,23 @@ async function loadDungeon() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
 
     dungeonData =
         await response.json();
+
+
+
+
 
 
 
@@ -1249,12 +1826,20 @@ async function loadDungeon() {
     ) {
 
 
+
+
         throw new Error(
             "dungeon.json non contiene una griglia valida."
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1265,7 +1850,13 @@ async function loadDungeon() {
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1287,14 +1878,20 @@ async function loadDungeon() {
 // ============================================================
 
 
+
+
 async function enforceDungeonPageState(
     refreshFromDatabase = false
 ) {
 
 
+
+
     if (
         refreshFromDatabase
     ) {
+
+
 
 
         const {
@@ -1308,9 +1905,15 @@ async function enforceDungeonPageState(
 
 
 
+
+
+
+
         if (
             authError
         ) {
+
+
 
 
             console.error(
@@ -1319,10 +1922,18 @@ async function enforceDungeonPageState(
             );
 
 
+
+
             return false;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1332,15 +1943,25 @@ async function enforceDungeonPageState(
         ) {
 
 
+
+
             window.location.replace(
                 "../../login.html"
             );
 
 
+
+
             return true;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1365,9 +1986,15 @@ async function enforceDungeonPageState(
 
 
 
+
+
+
+
         if (
             error
         ) {
+
+
 
 
             console.error(
@@ -1376,10 +2003,18 @@ async function enforceDungeonPageState(
             );
 
 
+
+
             return false;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1389,15 +2024,25 @@ async function enforceDungeonPageState(
         ) {
 
 
+
+
             window.location.replace(
                 "../../personaggio.html"
             );
 
 
+
+
             return true;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1407,25 +2052,41 @@ async function enforceDungeonPageState(
         ) {
 
 
+
+
             character.active_combat_id =
                 data.active_combat_id;
+
+
 
 
             character.current_location =
                 data.current_location;
 
 
+
+
         } else {
+
+
 
 
             character =
                 data;
 
 
+
+
         }
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1435,10 +2096,18 @@ async function enforceDungeonPageState(
     ) {
 
 
+
+
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1448,9 +2117,13 @@ async function enforceDungeonPageState(
     // --------------------------------------------------------
 
 
+
+
     if (
         character.active_combat_id
     ) {
+
+
 
 
         if (
@@ -1459,7 +2132,11 @@ async function enforceDungeonPageState(
         ) {
 
 
+
+
             try {
+
+
 
 
                 await db
@@ -1476,7 +2153,11 @@ async function enforceDungeonPageState(
                     );
 
 
+
+
             } catch (error) {
+
+
 
 
                 console.error(
@@ -1485,10 +2166,18 @@ async function enforceDungeonPageState(
                 );
 
 
+
+
             }
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -1498,10 +2187,18 @@ async function enforceDungeonPageState(
         );
 
 
+
+
         return true;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1511,10 +2208,14 @@ async function enforceDungeonPageState(
     // --------------------------------------------------------
 
 
+
+
     if (
         character.current_location ===
         "vendor"
     ) {
+
+
 
 
         window.location.replace(
@@ -1522,10 +2223,18 @@ async function enforceDungeonPageState(
         );
 
 
+
+
         return true;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1540,13 +2249,19 @@ async function enforceDungeonPageState(
     // --------------------------------------------------------
 
 
+
+
     if (
         character.current_location ===
         "combat"
     ) {
 
 
+
+
         try {
+
+
 
 
             const {
@@ -1568,15 +2283,27 @@ async function enforceDungeonPageState(
 
 
 
+
+
+
+
             if (
                 error
             ) {
 
 
+
+
                 throw error;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -1585,7 +2312,11 @@ async function enforceDungeonPageState(
                 "dungeon";
 
 
+
+
         } catch (error) {
+
+
 
 
             console.error(
@@ -1594,7 +2325,11 @@ async function enforceDungeonPageState(
             );
 
 
+
+
         }
+
+
 
 
     }
@@ -1602,10 +2337,20 @@ async function enforceDungeonPageState(
 
 
 
+
+
+
+
     return false;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1621,9 +2366,13 @@ async function enforceDungeonPageState(
 // ============================================================
 
 
+
+
 window.addEventListener(
     "pageshow",
     async event => {
+
+
 
 
         if (
@@ -1631,7 +2380,11 @@ window.addEventListener(
         ) {
 
 
+
+
             return;
+
+
 
 
         }
@@ -1639,7 +2392,13 @@ window.addEventListener(
 
 
 
+
+
+
+
         try {
+
+
 
 
             await enforceDungeonPageState(
@@ -1647,7 +2406,11 @@ window.addEventListener(
             );
 
 
+
+
         } catch (error) {
+
+
 
 
             console.error(
@@ -1656,11 +2419,19 @@ window.addEventListener(
             );
 
 
+
+
         }
+
+
 
 
     }
 );
+
+
+
+
 
 
 
@@ -1670,7 +2441,11 @@ window.addEventListener(
 // ============================================================
 
 
+
+
 async function loadCharacter() {
+
+
 
 
     const {
@@ -1684,13 +2459,25 @@ async function loadCharacter() {
 
 
 
+
+
+
+
     if (authError) {
+
+
 
 
         throw authError;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1698,11 +2485,17 @@ async function loadCharacter() {
     if (!user) {
 
 
+
+
         window.location.href =
             "../../login.html";
 
 
+
+
         return;
+
+
 
 
     }
@@ -1710,8 +2503,16 @@ async function loadCharacter() {
 
 
 
+
+
+
+
     currentUser =
         user;
+
+
+
+
 
 
 
@@ -1732,13 +2533,25 @@ async function loadCharacter() {
 
 
 
+
+
+
+
     if (error) {
+
+
 
 
         throw error;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1746,14 +2559,24 @@ async function loadCharacter() {
     if (!data) {
 
 
+
+
         window.location.href =
             "../../personaggio.html";
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1764,16 +2587,26 @@ async function loadCharacter() {
 
 
 
+
+
+
+
    await Promise.all([
     loadCharacterEquipment(),
     loadDungeonAbilities()
 ]);
 
 
+
+
 updateCharacterPanel();
 
 
+
+
 }
+
+
 
 
 // ============================================================
@@ -1781,19 +2614,33 @@ updateCharacterPanel();
 // ============================================================
 
 
+
+
 async function loadDungeonAbilities() {
+
+
 
 
     if (!character) {
 
 
+
+
         characterAbilities = [];
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1810,6 +2657,8 @@ async function loadDungeonAbilities() {
                 id,
                 ability_id,
                 level,
+
+
 
 
                 ability:abilities (
@@ -1829,13 +2678,25 @@ async function loadDungeonAbilities() {
 
 
 
+
+
+
+
     if (error) {
+
+
 
 
         throw error;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -1846,10 +2707,20 @@ async function loadDungeonAbilities() {
 
 
 
+
+
+
+
     updateDungeonAbilityVisibility();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1859,9 +2730,13 @@ async function loadDungeonAbilities() {
 // ============================================================
 
 
+
+
 function hasDungeonAbility(
     abilityId
 ) {
+
+
 
 
     return characterAbilities.some(
@@ -1871,7 +2746,13 @@ function hasDungeonAbility(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1888,7 +2769,11 @@ function hasDungeonAbility(
 // ============================================================
 
 
+
+
 function getDungeonGiornoPagaAbilityEntry() {
+
+
 
 
     return characterAbilities.find(
@@ -1898,12 +2783,20 @@ function getDungeonGiornoPagaAbilityEntry() {
     ) || null;
 
 
+
+
 }
 
 
 
 
+
+
+
+
 function getDungeonGiornoPagaPmCost() {
+
+
 
 
     return Math.max(
@@ -1914,12 +2807,20 @@ function getDungeonGiornoPagaPmCost() {
     );
 
 
+
+
 }
 
 
 
 
+
+
+
+
 function ensureDungeonGiornoPagaButton() {
+
+
 
 
     const existingButton =
@@ -1928,9 +2829,13 @@ function ensureDungeonGiornoPagaButton() {
         );
 
 
+
+
     if (existingButton) {
         return existingButton;
     }
+
+
 
 
     const healButton =
@@ -1939,9 +2844,13 @@ function ensureDungeonGiornoPagaButton() {
         );
 
 
+
+
     if (!healButton) {
         return null;
     }
+
+
 
 
     // cloneNode NON copia gli event listener: il comportamento di Cura
@@ -1950,21 +2859,31 @@ function ensureDungeonGiornoPagaButton() {
         healButton.cloneNode(true);
 
 
+
+
     button.id =
         "dungeon-giorno-paga-button";
+
+
 
 
     button.dataset.action =
         "giorno-paga";
 
 
+
+
     button.disabled =
         true;
+
+
 
 
     button.classList.remove(
         "active"
     );
+
+
 
 
     const icon =
@@ -1973,10 +2892,14 @@ function ensureDungeonGiornoPagaButton() {
         );
 
 
+
+
     const title =
         button.querySelector(
             "strong"
         );
+
+
 
 
     const cost =
@@ -1985,14 +2908,20 @@ function ensureDungeonGiornoPagaButton() {
         );
 
 
+
+
     if (icon) {
         icon.textContent = "¤";
     }
 
 
+
+
     if (title) {
         title.textContent = "GIORNO PAGA";
     }
+
+
 
 
     if (cost) {
@@ -2001,8 +2930,12 @@ function ensureDungeonGiornoPagaButton() {
     }
 
 
+
+
     button.style.display =
         "none";
+
+
 
 
     healButton.insertAdjacentElement(
@@ -2011,7 +2944,11 @@ function ensureDungeonGiornoPagaButton() {
     );
 
 
+
+
     return button;
+
+
 
 
 }
@@ -2019,16 +2956,26 @@ function ensureDungeonGiornoPagaButton() {
 
 
 
+
+
+
+
 function updateDungeonGiornoPagaVisibility() {
+
+
 
 
     const button =
         ensureDungeonGiornoPagaButton();
 
 
+
+
     if (!button) {
         return;
     }
+
+
 
 
     button.style.display =
@@ -2037,10 +2984,14 @@ function updateDungeonGiornoPagaVisibility() {
             : "none";
 
 
+
+
     const cost =
         button.querySelector(
             "small"
         );
+
+
 
 
     if (cost) {
@@ -2049,7 +3000,13 @@ function updateDungeonGiornoPagaVisibility() {
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2057,10 +3014,14 @@ function updateDungeonGiornoPagaVisibility() {
 function updateDungeonGiornoPagaAvailability() {
 
 
+
+
     const button =
         document.getElementById(
             "dungeon-giorno-paga-button"
         );
+
+
 
 
     if (
@@ -2071,8 +3032,12 @@ function updateDungeonGiornoPagaAvailability() {
     }
 
 
+
+
     const stats =
         getDungeonCalculatedStats();
+
+
 
 
     const currentPM =
@@ -2080,12 +3045,18 @@ function updateDungeonGiornoPagaAvailability() {
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
                 character.current_pm
             );
+
+
 
 
     button.disabled =
@@ -2094,7 +3065,13 @@ function updateDungeonGiornoPagaAvailability() {
         dungeonGiornoPagaInProgress;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2102,13 +3079,19 @@ function updateDungeonGiornoPagaAvailability() {
 function setupDungeonGiornoPagaAction() {
 
 
+
+
     const button =
         ensureDungeonGiornoPagaButton();
+
+
 
 
     if (!button) {
         return;
     }
+
+
 
 
     if (
@@ -2117,13 +3100,19 @@ function setupDungeonGiornoPagaAction() {
     ) {
 
 
+
+
         button.dataset.giornoPagaReady =
             "1";
+
+
 
 
         button.addEventListener(
             "click",
             async () => {
+
+
 
 
                 if (
@@ -2134,6 +3123,8 @@ function setupDungeonGiornoPagaAction() {
                 }
 
 
+
+
                 // Se il giocatore aveva aperto il targeting di Cura,
                 // lo chiudiamo usando la funzione già esistente.
                 // Non viene modificata alcuna logica di Cura.
@@ -2142,18 +3133,28 @@ function setupDungeonGiornoPagaAction() {
                 }
 
 
+
+
                 await castDungeonGiornoPaga();
+
+
 
 
             }
         );
 
 
+
+
     }
+
+
 
 
     updateDungeonGiornoPagaVisibility();
     updateDungeonGiornoPagaAvailability();
+
+
 
 
 }
@@ -2161,7 +3162,13 @@ function setupDungeonGiornoPagaAction() {
 
 
 
+
+
+
+
 async function castDungeonGiornoPaga() {
+
+
 
 
     if (
@@ -2173,8 +3180,12 @@ async function castDungeonGiornoPaga() {
     }
 
 
+
+
     const stats =
         getDungeonCalculatedStats();
+
+
 
 
     const currentPM =
@@ -2182,7 +3193,11 @@ async function castDungeonGiornoPaga() {
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
@@ -2190,11 +3205,17 @@ async function castDungeonGiornoPaga() {
             );
 
 
+
+
     const pmCost =
         getDungeonGiornoPagaPmCost();
 
 
+
+
     if (currentPM < pmCost) {
+
+
 
 
         setMessage(
@@ -2202,21 +3223,33 @@ async function castDungeonGiornoPaga() {
         );
 
 
+
+
         updateDungeonGiornoPagaAvailability();
+
+
 
 
         return;
     }
 
 
+
+
     dungeonGiornoPagaInProgress =
         true;
+
+
 
 
     updateDungeonGiornoPagaAvailability();
 
 
+
+
     try {
+
+
 
 
         const {
@@ -2232,9 +3265,13 @@ async function castDungeonGiornoPaga() {
             );
 
 
+
+
         if (error) {
             throw error;
         }
+
+
 
 
         if (
@@ -2248,7 +3285,11 @@ async function castDungeonGiornoPaga() {
         }
 
 
+
+
         updateCharacterPanel();
+
+
 
 
         setMessage(
@@ -2256,7 +3297,11 @@ async function castDungeonGiornoPaga() {
         );
 
 
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -2265,27 +3310,43 @@ async function castDungeonGiornoPaga() {
         );
 
 
+
+
         setMessage(
             error?.message ||
             "Non è stato possibile usare Giorno Paga."
         );
 
 
+
+
     } finally {
+
+
 
 
         dungeonGiornoPagaInProgress =
             false;
 
 
+
+
         updateDungeonGiornoPagaVisibility();
         updateDungeonGiornoPagaAvailability();
+
+
 
 
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2295,7 +3356,11 @@ async function castDungeonGiornoPaga() {
 // ============================================================
 
 
+
+
 function updateDungeonAbilityVisibility() {
+
+
 
 
     const healButton =
@@ -2306,7 +3371,13 @@ function updateDungeonAbilityVisibility() {
 
 
 
+
+
+
+
     if (healButton) {
+
+
 
 
         healButton.style.display =
@@ -2315,10 +3386,16 @@ function updateDungeonAbilityVisibility() {
                 : "none";
 
 
+
+
     }
 
 
+
+
 }
+
+
 
 
 // ============================================================
@@ -2326,16 +3403,28 @@ function updateDungeonAbilityVisibility() {
 // ============================================================
 
 
+
+
 async function loadCharacterEquipment() {
+
+
 
 
     if (!character) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -2350,6 +3439,8 @@ async function loadCharacterEquipment() {
                 id,
                 quantity,
                 equipped_slot,
+
+
 
 
                 item:items (
@@ -2377,13 +3468,25 @@ async function loadCharacterEquipment() {
 
 
 
+
+
+
+
     if (error) {
+
+
 
 
         throw error;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -2394,13 +3497,25 @@ async function loadCharacterEquipment() {
 
 
 
+
+
+
+
     calculateDungeonEquipmentBonuses();
+
+
 
 
     updateDungeonConsumables();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2410,14 +3525,22 @@ async function loadCharacterEquipment() {
 // ============================================================
 
 
+
+
 function calculateDungeonEquipmentBonuses() {
+
+
 
 
     equipmentBonuses = {
 
 
+
+
         attack_bonus: 0,
         defense_bonus: 0,
+
+
 
 
         forza_bonus: 0,
@@ -2428,7 +3551,13 @@ function calculateDungeonEquipmentBonuses() {
         fortuna_bonus: 0
 
 
+
+
     };
+
+
+
+
 
 
 
@@ -2443,8 +3572,14 @@ function calculateDungeonEquipmentBonuses() {
             entry => {
 
 
+
+
                 const item =
                     entry.item;
+
+
+
+
 
 
 
@@ -2457,10 +3592,18 @@ function calculateDungeonEquipmentBonuses() {
 
 
 
+
+
+
+
                 equipmentBonuses.defense_bonus +=
                     Number(
                         item.defense_bonus
                     ) || 0;
+
+
+
+
 
 
 
@@ -2473,10 +3616,18 @@ function calculateDungeonEquipmentBonuses() {
 
 
 
+
+
+
+
                 equipmentBonuses.resistenza_bonus +=
                     Number(
                         item.resistenza_bonus
                     ) || 0;
+
+
+
+
 
 
 
@@ -2489,10 +3640,18 @@ function calculateDungeonEquipmentBonuses() {
 
 
 
+
+
+
+
                 equipmentBonuses.intelligenza_bonus +=
                     Number(
                         item.intelligenza_bonus
                     ) || 0;
+
+
+
+
 
 
 
@@ -2505,17 +3664,29 @@ function calculateDungeonEquipmentBonuses() {
 
 
 
+
+
+
+
                 equipmentBonuses.fortuna_bonus +=
                     Number(
                         item.fortuna_bonus
                     ) || 0;
 
 
+
+
             }
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2525,15 +3696,23 @@ function calculateDungeonEquipmentBonuses() {
 // ============================================================
 
 
+
+
 function getDungeonEffectiveAttribute(
     attribute
 ) {
+
+
 
 
     const base =
         Number(
             character?.[attribute]
         ) || 1;
+
+
+
+
 
 
 
@@ -2548,6 +3727,10 @@ function getDungeonEffectiveAttribute(
 
 
 
+
+
+
+
     return Math.max(
         1,
         Math.min(
@@ -2557,7 +3740,13 @@ function getDungeonEffectiveAttribute(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2567,13 +3756,21 @@ function getDungeonEffectiveAttribute(
 // ============================================================
 
 
+
+
 function getDungeonCalculatedStats() {
+
+
 
 
     const forza =
         getDungeonEffectiveAttribute(
             "forza"
         );
+
+
+
+
 
 
 
@@ -2586,10 +3783,18 @@ function getDungeonCalculatedStats() {
 
 
 
+
+
+
+
     const costituzione =
         getDungeonEffectiveAttribute(
             "costituzione"
         );
+
+
+
+
 
 
 
@@ -2602,10 +3807,18 @@ function getDungeonCalculatedStats() {
 
 
 
+
+
+
+
     const destrezza =
         getDungeonEffectiveAttribute(
             "destrezza"
         );
+
+
+
+
 
 
 
@@ -2618,7 +3831,13 @@ function getDungeonCalculatedStats() {
 
 
 
+
+
+
+
     return {
+
+
 
 
         forza,
@@ -2627,6 +3846,8 @@ function getDungeonCalculatedStats() {
         intelligenza,
         destrezza,
         fortuna,
+
+
 
 
         attack:
@@ -2639,6 +3860,8 @@ function getDungeonCalculatedStats() {
                     equipmentBonuses.attack_bonus
                 ) || 0
             ),
+
+
 
 
         defense:
@@ -2654,11 +3877,15 @@ function getDungeonCalculatedStats() {
             ),
 
 
+
+
         maxHealth:
             Math.ceil(
                 5 *
                 costituzione / 2
             ),
+
+
 
 
         maxMana:
@@ -2668,11 +3895,15 @@ function getDungeonCalculatedStats() {
             ),
 
 
+
+
         movement:
             Math.ceil(
                 4 +
                 destrezza / 2
             ),
+
+
 
 
         critical:
@@ -2688,10 +3919,18 @@ function getDungeonCalculatedStats() {
             100
 
 
+
+
     };
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2701,16 +3940,28 @@ function getDungeonCalculatedStats() {
 // ============================================================
 
 
+
+
 function updateCharacterPanel() {
+
+
 
 
     if (!character) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -2721,9 +3972,17 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     const name =
         character.nome ||
         "Avventuriero";
+
+
+
+
 
 
 
@@ -2736,10 +3995,18 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     setText(
         "character-name-panel",
         name
     );
+
+
+
+
 
 
 
@@ -2754,9 +4021,15 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     // --------------------------------------------------------
     // RITRATTO LATERALE
     // --------------------------------------------------------
+
+
 
 
     const portrait =
@@ -2767,7 +4040,13 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     if (portrait) {
+
+
 
 
         portrait.src =
@@ -2780,11 +4059,21 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
         portrait.alt =
             `Token di ${name}`;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -2794,10 +4083,16 @@ function updateCharacterPanel() {
     // --------------------------------------------------------
 
 
+
+
     setText(
         "forza-display",
         stats.forza
     );
+
+
+
+
 
 
 
@@ -2810,10 +4105,18 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     setText(
         "costituzione-display",
         stats.costituzione
     );
+
+
+
+
 
 
 
@@ -2826,10 +4129,18 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     setText(
         "destrezza-display",
         stats.destrezza
     );
+
+
+
+
 
 
 
@@ -2842,9 +4153,15 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     // --------------------------------------------------------
     // PF / PM ATTUALI
     // --------------------------------------------------------
+
+
 
 
     const currentPF =
@@ -2852,7 +4169,11 @@ function updateCharacterPanel() {
         character.current_hp === undefined
 
 
+
+
             ? stats.maxHealth
+
+
 
 
             : Math.max(
@@ -2868,12 +4189,20 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Math.max(
@@ -2889,15 +4218,25 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     // --------------------------------------------------------
     // SECONDARIE
     // --------------------------------------------------------
+
+
 
 
     setText(
         "attack-display",
         stats.attack
     );
+
+
+
+
 
 
 
@@ -2910,10 +4249,18 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     setText(
         "health-display",
         `${currentPF}/${stats.maxHealth}`
     );
+
+
+
+
 
 
 
@@ -2926,10 +4273,18 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     setText(
         "movement-display",
         stats.movement
     );
+
+
+
+
 
 
 
@@ -2942,10 +4297,20 @@ function updateCharacterPanel() {
 
 
 
+
+
+
+
     updateDungeonActionAvailability();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2955,10 +4320,14 @@ function updateCharacterPanel() {
 // ============================================================
 
 
+
+
 function setText(
     id,
     value
 ) {
+
+
 
 
     const element =
@@ -2969,17 +4338,31 @@ function setText(
 
 
 
+
+
+
+
     if (element) {
+
+
 
 
         element.textContent =
             value;
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -2989,10 +4372,14 @@ function setText(
 // ============================================================
 
 
+
+
 function updatePlayerCoordinates(
     x = playerX,
     y = playerY
 ) {
+
+
 
 
     const element =
@@ -3001,9 +4388,13 @@ function updatePlayerCoordinates(
         );
 
 
+
+
     if (!element) {
         return;
     }
+
+
 
 
     if (
@@ -3014,19 +4405,31 @@ function updatePlayerCoordinates(
     ) {
 
 
+
+
         element.textContent =
             "Coordinate PG: X -- · Y --";
+
+
 
 
         return;
     }
 
 
+
+
     element.textContent =
         `Coordinate PG: X ${Number(x)} · Y ${Number(y)}`;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3036,7 +4439,11 @@ function updatePlayerCoordinates(
 // ============================================================
 
 
+
+
 async function recordCurrentFloorVisit() {
+
+
 
 
     if (
@@ -3047,6 +4454,8 @@ async function recordCurrentFloorVisit() {
     ) {
         return;
     }
+
+
 
 
     try {
@@ -3060,9 +4469,13 @@ async function recordCurrentFloorVisit() {
         );
 
 
+
+
         if (error) {
             throw error;
         }
+
+
 
 
     } catch (error) {
@@ -3077,9 +4490,15 @@ async function recordCurrentFloorVisit() {
 
 
 
+
+
+
+
 // ============================================================
 // POSIZIONE INIZIALE
 // ============================================================
+
+
 
 
 async function initializePlayer() {
@@ -3095,17 +4514,27 @@ async function initializePlayer() {
 
 
 
+
+
+
+
 // ============================================================
 // CARTELLO - MANO DI SCIMMIA
 // ============================================================
 
 
+
+
 function setupMonkeySignToken() {
+
+
 
 
     // Evento conservato nel codice ma temporaneamente disattivato.
     // Con false il cartello non viene creato e X2 Y11 resta libera.
     if (!MONKEY_SIGN_ENABLED) {
+
+
 
 
         if (monkeySignElement) {
@@ -3114,8 +4543,12 @@ function setupMonkeySignToken() {
         }
 
 
+
+
         return;
     }
+
+
 
 
     const map =
@@ -3126,10 +4559,18 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
     if (!map) {
 
 
+
+
         return;
+
+
 
 
     }
@@ -3137,7 +4578,13 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
     if (!monkeySignElement) {
+
+
 
 
         monkeySignElement =
@@ -3148,14 +4595,26 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
         monkeySignElement.className =
             "dungeon-player-token dungeon-monkey-sign-token";
 
 
 
 
+
+
+
+
         monkeySignElement.title =
             MONKEY_SIGN_TITLE;
+
+
+
+
 
 
 
@@ -3168,44 +4627,70 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
         monkeySignElement.style.cursor =
             "pointer";
+
+
 
 
         monkeySignElement.style.zIndex =
             "6";
 
 
+
+
         monkeySignElement.style.pointerEvents =
             "auto";
+
+
 
 
         monkeySignElement.style.display =
             "flex";
 
 
+
+
         monkeySignElement.style.alignItems =
             "center";
+
+
 
 
         monkeySignElement.style.justifyContent =
             "center";
 
 
+
+
         monkeySignElement.style.background =
             "transparent";
+
+
 
 
         monkeySignElement.style.border =
             "none";
 
 
+
+
         monkeySignElement.style.boxShadow =
             "none";
 
 
+
+
         monkeySignElement.style.overflow =
             "visible";
+
+
+
+
 
 
 
@@ -3216,16 +4701,26 @@ function setupMonkeySignToken() {
             );
 
 
+
+
         signWrapper.style.position =
             "relative";
+
+
 
 
         signWrapper.style.width =
             "100%";
 
 
+
+
         signWrapper.style.height =
             "100%";
+
+
+
+
 
 
 
@@ -3236,56 +4731,86 @@ function setupMonkeySignToken() {
             );
 
 
+
+
         signBoard.style.position =
             "absolute";
+
+
 
 
         signBoard.style.left =
             "8%";
 
 
+
+
         signBoard.style.right =
             "8%";
+
+
 
 
         signBoard.style.top =
             "10%";
 
 
+
+
         signBoard.style.height =
             "54%";
+
+
 
 
         signBoard.style.display =
             "flex";
 
 
+
+
         signBoard.style.alignItems =
             "center";
+
+
 
 
         signBoard.style.justifyContent =
             "center";
 
 
+
+
         signBoard.style.padding =
             "2px";
+
+
 
 
         signBoard.style.border =
             "2px solid #4d2c12";
 
 
+
+
         signBoard.style.borderRadius =
             "8px";
+
+
 
 
         signBoard.style.background =
             "linear-gradient(180deg, #b67a3c 0%, #8a5826 60%, #6c431d 100%)";
 
 
+
+
         signBoard.style.boxShadow =
             "0 1px 3px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 232, 187, 0.25)";
+
+
+
+
 
 
 
@@ -3296,32 +4821,50 @@ function setupMonkeySignToken() {
             );
 
 
+
+
         signText.textContent =
             "AVVISO";
+
+
 
 
         signText.style.color =
             "#f7e4b5";
 
 
+
+
         signText.style.fontSize =
             "8px";
+
+
 
 
         signText.style.fontWeight =
             "800";
 
 
+
+
         signText.style.letterSpacing =
             "0.06em";
+
+
 
 
         signText.style.textShadow =
             "0 1px 1px rgba(0, 0, 0, 0.6)";
 
 
+
+
         signText.style.lineHeight =
             "1";
+
+
+
+
 
 
 
@@ -3332,36 +4875,56 @@ function setupMonkeySignToken() {
             );
 
 
+
+
         signPost.style.position =
             "absolute";
+
+
 
 
         signPost.style.left =
             "45%";
 
 
+
+
         signPost.style.width =
             "10%";
+
+
 
 
         signPost.style.bottom =
             "3%";
 
 
+
+
         signPost.style.height =
             "34%";
+
+
 
 
         signPost.style.borderRadius =
             "3px";
 
 
+
+
         signPost.style.background =
             "linear-gradient(180deg, #6a4320 0%, #4a2d13 100%)";
 
 
+
+
         signPost.style.boxShadow =
             "0 1px 2px rgba(0, 0, 0, 0.35)";
+
+
+
+
 
 
 
@@ -3371,14 +4934,20 @@ function setupMonkeySignToken() {
         );
 
 
+
+
         signWrapper.appendChild(
             signBoard
         );
 
 
+
+
         signWrapper.appendChild(
             signPost
         );
+
+
 
 
         monkeySignElement.appendChild(
@@ -3388,13 +4957,23 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
         monkeySignElement.addEventListener(
             "click",
             event => {
 
 
+
+
                 event.preventDefault();
                 event.stopPropagation();
+
+
+
+
 
 
 
@@ -3404,12 +4983,18 @@ function setupMonkeySignToken() {
                 ) {
 
 
+
+
                     setMessage(
                         "Avvicinati al cartello per leggerlo."
                     );
 
 
+
+
                     return;
+
+
 
 
                 }
@@ -3417,11 +5002,21 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
                 openMonkeySignPrompt();
+
+
 
 
             }
         );
+
+
+
+
 
 
 
@@ -3431,7 +5026,13 @@ function setupMonkeySignToken() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3445,10 +5046,20 @@ function setupMonkeySignToken() {
 
 
 
+
+
+
+
     updateMonkeySignVisibility();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3457,6 +5068,8 @@ function isMonkeySignCell(
     x,
     y
 ) {
+
+
 
 
     return (
@@ -3468,12 +5081,20 @@ function isMonkeySignCell(
     );
 
 
+
+
 }
 
 
 
 
+
+
+
+
 function isMonkeySignAdjacentToPlayer() {
+
+
 
 
     if (
@@ -3482,10 +5103,18 @@ function isMonkeySignAdjacentToPlayer() {
     ) {
 
 
+
+
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3504,7 +5133,13 @@ function isMonkeySignAdjacentToPlayer() {
 
 
 
+
+
+
+
     return distance === 1;
+
+
 
 
 }
@@ -3512,27 +5147,47 @@ function isMonkeySignAdjacentToPlayer() {
 
 
 
+
+
+
+
 function updateMonkeySignVisibility() {
+
+
 
 
     if (!monkeySignElement) {
 
 
+
+
         return;
+
+
 
 
     }
 
 
+
+
     if (!MONKEY_SIGN_ENABLED) {
+
+
 
 
         monkeySignElement.style.display =
             "none";
 
 
+
+
         return;
     }
+
+
+
+
 
 
 
@@ -3546,7 +5201,13 @@ function updateMonkeySignVisibility() {
             : "none";
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3554,13 +5215,23 @@ function updateMonkeySignVisibility() {
 function openMonkeySignPrompt() {
 
 
+
+
     if (eventLocked) {
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3569,8 +5240,14 @@ function openMonkeySignPrompt() {
         true;
 
 
+
+
     movementQueue.length =
         0;
+
+
+
+
 
 
 
@@ -3582,10 +5259,16 @@ function openMonkeySignPrompt() {
 
 
 
+
+
+
+
     if (
         typeof openSimpleDungeonEventPrompt ===
         "function"
     ) {
+
+
 
 
         openSimpleDungeonEventPrompt(
@@ -3594,10 +5277,18 @@ function openMonkeySignPrompt() {
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3607,9 +5298,15 @@ function openMonkeySignPrompt() {
     );
 
 
+
+
     eventLocked =
         false;
 }
+
+
+
+
 
 
 
@@ -3619,7 +5316,11 @@ function openMonkeySignPrompt() {
 // ============================================================
 
 
+
+
 function setupDungeonCamera() {
+
+
 
 
     updateDungeonCamera(
@@ -3627,7 +5328,13 @@ function setupDungeonCamera() {
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3637,15 +5344,23 @@ function setupDungeonCamera() {
 // ============================================================
 
 
+
+
 function updateDungeonCamera(
     instant = false
 ) {
+
+
 
 
     const frame =
         document.querySelector(
             ".dungeon-map-frame"
         );
+
+
+
+
 
 
 
@@ -3658,6 +5373,10 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     if (
         !frame ||
         !map ||
@@ -3666,10 +5385,18 @@ function updateDungeonCamera(
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3680,8 +5407,16 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     const mapRect =
         map.getBoundingClientRect();
+
+
+
+
 
 
 
@@ -3694,10 +5429,18 @@ function updateDungeonCamera(
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3709,9 +5452,17 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     const cellHeight =
         mapRect.height /
         MAP_ROWS;
+
+
+
+
 
 
 
@@ -3727,6 +5478,10 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     const playerCenterY =
         (
             Number(playerY) +
@@ -3738,6 +5493,10 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     let cameraX =
         playerCenterX -
         frameRect.width / 2;
@@ -3745,9 +5504,17 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     let cameraY =
         playerCenterY -
         frameRect.height / 2;
+
+
+
+
 
 
 
@@ -3762,12 +5529,20 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     const maxCameraY =
         Math.max(
             0,
             mapRect.height -
             frameRect.height
         );
+
+
+
+
 
 
 
@@ -3784,6 +5559,10 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     cameraY =
         Math.max(
             0,
@@ -3796,10 +5575,18 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     map.style.transition =
         instant
             ? "none"
             : `transform ${CAMERA_TRANSITION_MS}ms ease-out`;
+
+
+
+
 
 
 
@@ -3811,25 +5598,43 @@ function updateDungeonCamera(
 
 
 
+
+
+
+
     if (instant) {
+
+
 
 
         requestAnimationFrame(
             () => {
 
 
+
+
                 map.style.transition =
                     `transform ${CAMERA_TRANSITION_MS}ms ease-out`;
+
+
 
 
             }
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3839,10 +5644,16 @@ function updateDungeonCamera(
 // ============================================================
 
 
+
+
 function getDungeonCameraBounds() {
 
 
+
+
     return {
+
+
 
 
         minX:
@@ -3853,12 +5664,16 @@ function getDungeonCameraBounds() {
             ),
 
 
+
+
         maxX:
             Math.min(
                 MAP_COLUMNS - 1,
                 Number(playerX) +
                 CAMERA_RADIUS
             ),
+
+
 
 
         minY:
@@ -3869,6 +5684,8 @@ function getDungeonCameraBounds() {
             ),
 
 
+
+
         maxY:
             Math.min(
                 MAP_ROWS - 1,
@@ -3877,10 +5694,18 @@ function getDungeonCameraBounds() {
             )
 
 
+
+
     };
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -3890,10 +5715,14 @@ function getDungeonCameraBounds() {
 // ============================================================
 
 
+
+
 function showToken(
     x,
     y
 ) {
+
+
 
 
     const map =
@@ -3904,10 +5733,18 @@ function showToken(
 
 
 
+
+
+
+
     if (!map) {
 
 
+
+
         return;
+
+
 
 
     }
@@ -3915,7 +5752,13 @@ function showToken(
 
 
 
+
+
+
+
     if (!tokenElement) {
+
+
 
 
         tokenElement =
@@ -3926,8 +5769,16 @@ function showToken(
 
 
 
+
+
+
+
         tokenElement.className =
             "dungeon-player-token";
+
+
+
+
 
 
 
@@ -3938,10 +5789,18 @@ function showToken(
 
 
 
+
+
+
+
         const image =
             document.createElement(
                 "img"
             );
+
+
+
+
 
 
 
@@ -3956,9 +5815,17 @@ function showToken(
 
 
 
+
+
+
+
         image.alt =
             character.nome ||
             "Personaggio";
+
+
+
+
 
 
 
@@ -3970,12 +5837,22 @@ function showToken(
 
 
 
+
+
+
+
         map.appendChild(
             tokenElement
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -3987,13 +5864,21 @@ function showToken(
     );
 
 
+
+
     updatePlayerCoordinates(
         x,
         y
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4003,11 +5888,15 @@ function showToken(
 // ============================================================
 
 
+
+
 function positionTokenElement(
     element,
     x,
     y
 ) {
+
+
 
 
     const map =
@@ -4018,16 +5907,28 @@ function positionTokenElement(
 
 
 
+
+
+
+
     if (
         !map ||
         !element
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4038,16 +5939,28 @@ function positionTokenElement(
 
 
 
+
+
+
+
     if (
         rect.width <= 0 ||
         rect.height <= 0
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4059,6 +5972,10 @@ function positionTokenElement(
 
 
 
+
+
+
+
     const cellHeight =
         rect.height /
         MAP_ROWS;
@@ -4066,8 +5983,14 @@ function positionTokenElement(
 
 
 
+
+
+
+
     // Il token occupa il 90% della casella.
     // È totalmente indipendente dal ritratto laterale.
+
+
 
 
     const tokenSize =
@@ -4080,14 +6003,26 @@ function positionTokenElement(
 
 
 
+
+
+
+
     element.style.width =
         `${tokenSize}px`;
 
 
 
 
+
+
+
+
     element.style.height =
         `${tokenSize}px`;
+
+
+
+
 
 
 
@@ -4107,6 +6042,10 @@ function positionTokenElement(
 
 
 
+
+
+
+
     element.style.top =
         `${
             (
@@ -4120,7 +6059,13 @@ function positionTokenElement(
         }px`;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4130,7 +6075,11 @@ function positionTokenElement(
 // ============================================================
 
 
+
+
 function repositionAllTokens() {
+
+
 
 
     if (
@@ -4140,6 +6089,8 @@ function repositionAllTokens() {
     ) {
 
 
+
+
         positionTokenElement(
             tokenElement,
             playerX,
@@ -4147,13 +6098,21 @@ function repositionAllTokens() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
 
     otherPlayers.forEach(
         player => {
+
+
 
 
             const token =
@@ -4164,7 +6123,13 @@ function repositionAllTokens() {
 
 
 
+
+
+
+
             if (token) {
+
+
 
 
                 positionTokenElement(
@@ -4174,7 +6139,11 @@ function repositionAllTokens() {
                 );
 
 
+
+
             }
+
+
 
 
         }
@@ -4183,7 +6152,13 @@ function repositionAllTokens() {
 
 
 
+
+
+
+
     if (monkeySignElement) {
+
+
 
 
         positionTokenElement(
@@ -4193,10 +6168,18 @@ function repositionAllTokens() {
         );
 
 
+
+
         updateMonkeySignVisibility();
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4204,13 +6187,23 @@ function repositionAllTokens() {
     if (healModeActive) {
 
 
+
+
         renderHealRange();
+
+
 
 
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4220,9 +6213,13 @@ function repositionAllTokens() {
 // ============================================================
 
 
+
+
 window.addEventListener(
     "resize",
     () => {
+
+
 
 
         updateDungeonCamera(
@@ -4230,17 +6227,29 @@ window.addEventListener(
         );
 
 
+
+
         repositionAllTokens();
+
+
 
 
         updateFogOfWar();
 
 
+
+
         syncDungeonChatHeightWithMap();
+
+
 
 
     }
 );
+
+
+
+
 
 
 
@@ -4250,7 +6259,11 @@ window.addEventListener(
 // ============================================================
 
 
+
+
 function setupMovement() {
+
+
 
 
     // --------------------------------------------------------
@@ -4258,13 +6271,21 @@ function setupMovement() {
     // --------------------------------------------------------
 
 
+
+
     document.addEventListener(
         "keydown",
         event => {
 
 
+
+
             const target =
                 event.target;
+
+
+
+
 
 
 
@@ -4277,10 +6298,18 @@ function setupMovement() {
             ) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -4291,19 +6320,33 @@ function setupMovement() {
 
 
 
+
+
+
+
             switch (
                 event.key.toLowerCase()
             ) {
+
+
 
 
                 case "w":
                 case "arrowup":
 
 
+
+
                     dy = -1;
 
 
+
+
                     break;
+
+
+
+
 
 
 
@@ -4312,10 +6355,18 @@ function setupMovement() {
                 case "arrowdown":
 
 
+
+
                     dy = 1;
 
 
+
+
                     break;
+
+
+
+
 
 
 
@@ -4324,10 +6375,18 @@ function setupMovement() {
                 case "arrowleft":
 
 
+
+
                     dx = -1;
 
 
+
+
                     break;
+
+
+
+
 
 
 
@@ -4336,7 +6395,11 @@ function setupMovement() {
                 case "arrowright":
 
 
+
+
                     dx = 1;
+
+
 
 
                     break;
@@ -4344,13 +6407,25 @@ function setupMovement() {
 
 
 
+
+
+
+
                 default:
+
+
 
 
                     return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -4360,18 +6435,32 @@ function setupMovement() {
 
 
 
+
+
+
+
             // Evitiamo l'autorepeat del sistema operativo.
             // Le pressioni reali successive vengono comunque
             // accodate normalmente.
 
 
+
+
             if (event.repeat) {
+
+
 
 
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -4382,8 +6471,14 @@ function setupMovement() {
             );
 
 
+
+
         }
     );
+
+
+
+
 
 
 
@@ -4391,6 +6486,8 @@ function setupMovement() {
     // --------------------------------------------------------
     // CLICK MAPPA
     // --------------------------------------------------------
+
+
 
 
     const map =
@@ -4401,13 +6498,25 @@ function setupMovement() {
 
 
 
+
+
+
+
     if (!map) {
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4417,17 +6526,29 @@ function setupMovement() {
         event => {
 
 
+
+
             // Se Cura è attiva, il click sulla mappa
             // non deve causare movimento.
+
+
 
 
             if (healModeActive) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -4438,7 +6559,11 @@ function setupMovement() {
             ) {
 
 
+
+
                 return;
+
+
 
 
             }
@@ -4446,8 +6571,16 @@ function setupMovement() {
 
 
 
+
+
+
+
             const rect =
                 map.getBoundingClientRect();
+
+
+
+
 
 
 
@@ -4459,9 +6592,17 @@ function setupMovement() {
 
 
 
+
+
+
+
             const cellHeight =
                 rect.height /
                 MAP_ROWS;
+
+
+
+
 
 
 
@@ -4479,6 +6620,10 @@ function setupMovement() {
 
 
 
+
+
+
+
             const clickedY =
                 Math.floor(
                     (
@@ -4492,9 +6637,17 @@ function setupMovement() {
 
 
 
+
+
+
+
             const dx =
                 clickedX -
                 playerX;
+
+
+
+
 
 
 
@@ -4506,7 +6659,13 @@ function setupMovement() {
 
 
 
+
+
+
+
             // Movimento normale solo ortogonale.
+
+
 
 
             if (
@@ -4517,10 +6676,18 @@ function setupMovement() {
             ) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -4531,11 +6698,19 @@ function setupMovement() {
             );
 
 
+
+
         }
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4545,10 +6720,14 @@ function setupMovement() {
 // ============================================================
 
 
+
+
 function queueMovement(
     dx,
     dy
 ) {
+
+
 
 
     if (
@@ -4558,10 +6737,18 @@ function queueMovement(
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4570,15 +6757,25 @@ function queueMovement(
     // una coda enorme.
 
 
+
+
     if (
         movementQueue.length >= 8
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4591,10 +6788,20 @@ function queueMovement(
 
 
 
+
+
+
+
     processMovementQueue();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4604,16 +6811,28 @@ function queueMovement(
 // ============================================================
 
 
+
+
 async function processMovementQueue() {
+
+
 
 
     if (movementQueueRunning) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4624,7 +6843,13 @@ async function processMovementQueue() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         while (
@@ -4632,10 +6857,16 @@ async function processMovementQueue() {
         ) {
 
 
+
+
             if (eventLocked) {
 
 
+
+
                 break;
+
+
 
 
             }
@@ -4643,8 +6874,16 @@ async function processMovementQueue() {
 
 
 
+
+
+
+
             const movement =
                 movementQueue.shift();
+
+
+
+
 
 
 
@@ -4657,8 +6896,14 @@ async function processMovementQueue() {
 
 
 
+
+
+
+
             // Piccolissima pausa grafica.
             // Non dipende dalla risposta di Supabase.
+
+
 
 
             await wait(
@@ -4666,7 +6911,13 @@ async function processMovementQueue() {
             );
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -4674,11 +6925,17 @@ async function processMovementQueue() {
     } finally {
 
 
+
+
         movementQueueRunning =
             false;
 
 
+
+
     }
+
+
 
 
 }
@@ -4686,9 +6943,15 @@ async function processMovementQueue() {
 
 
 
+
+
+
+
 // ============================================================
 // ESEGUE UN PASSO
 // ============================================================
+
+
 
 
 async function performMovement(dx,dy) {
@@ -4715,12 +6978,20 @@ async function performMovement(dx,dy) {
 
 
 
+
+
+
+
 // ============================================================
 // SALVATAGGIO POSIZIONE
 // ============================================================
 
 
+
+
 function schedulePositionSave() {
+
+
 
 
     positionSavePending =
@@ -4729,7 +7000,13 @@ function schedulePositionSave() {
 
 
 
+
+
+
+
     if (positionSaveTimer) {
+
+
 
 
         clearTimeout(
@@ -4737,7 +7014,13 @@ function schedulePositionSave() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4747,7 +7030,11 @@ function schedulePositionSave() {
             () => {
 
 
+
+
                 flushPositionSave();
+
+
 
 
             },
@@ -4755,7 +7042,13 @@ function schedulePositionSave() {
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4765,7 +7058,11 @@ function schedulePositionSave() {
 // ============================================================
 
 
+
+
 async function flushPositionSave() {
+
+
 
 
     if (
@@ -4775,10 +7072,18 @@ async function flushPositionSave() {
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4786,14 +7091,24 @@ async function flushPositionSave() {
     if (positionSaveRunning) {
 
 
+
+
         positionSavePending =
             true;
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -4804,8 +7119,16 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
     positionSavePending =
         false;
+
+
+
+
 
 
 
@@ -4816,13 +7139,23 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
     const saveY =
         playerY;
 
 
 
 
+
+
+
+
     try {
+
+
 
 
         const {
@@ -4833,12 +7166,18 @@ async function flushPositionSave() {
                 .update({
 
 
+
+
                     dungeon_x:
                         saveX,
 
 
+
+
                     dungeon_y:
                         saveY
+
+
 
 
                 })
@@ -4850,10 +7189,18 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
         if (error) {
 
 
+
+
             throw error;
+
+
 
 
         }
@@ -4861,13 +7208,23 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
             "Errore salvataggio posizione:",
             error
         );
+
+
+
+
 
 
 
@@ -4879,7 +7236,13 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
     } finally {
+
+
 
 
         positionSaveRunning =
@@ -4888,8 +7251,14 @@ async function flushPositionSave() {
 
 
 
+
+
+
+
         // Se mentre stavamo salvando il PG si è
         // mosso ancora, salviamo l'ultima posizione.
+
+
 
 
         if (
@@ -4899,16 +7268,28 @@ async function flushPositionSave() {
         ) {
 
 
+
+
             flushPositionSave();
+
+
 
 
         }
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -4918,9 +7299,13 @@ async function flushPositionSave() {
 // ============================================================
 
 
+
+
 function wait(
     milliseconds
 ) {
+
+
 
 
     return new Promise(
@@ -4932,7 +7317,11 @@ function wait(
     );
 
 
+
+
 }
+
+
 
 
 // ============================================================
@@ -4953,10 +7342,14 @@ function wait(
 // ============================================================
 
 
+
+
 const BOSS_ROOM_GATE_CELLS = [
     { x: 19, y: 16 },
     { x: 16, y: 17 }
 ];
+
+
 
 
 // Solo questi due attraversamenti dall'esterno verso l'interno
@@ -4971,12 +7364,20 @@ function isRestrictedBossGateEntry(fromX, fromY, toX, toY) {
 }
 
 
+
+
 let bossRoomAccessUnlocked =
     false;
 
 
+
+
 let bossRoomAccessExpiresAt =
     null;
+
+
+
+
 
 
 
@@ -4986,15 +7387,25 @@ let bossRoomAccessExpiresAt =
 // ============================================================
 
 
+
+
 async function loadBossRoomAccess() {
+
+
 
 
     bossRoomAccessUnlocked =
         false;
 
 
+
+
     bossRoomAccessExpiresAt =
         null;
+
+
+
+
 
 
 
@@ -5009,7 +7420,13 @@ async function loadBossRoomAccess() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         const {
@@ -5027,10 +7444,18 @@ async function loadBossRoomAccess() {
 
 
 
+
+
+
+
         if (error) {
 
 
+
+
             throw error;
+
+
 
 
         }
@@ -5038,9 +7463,17 @@ async function loadBossRoomAccess() {
 
 
 
+
+
+
+
         bossRoomAccessUnlocked =
             data?.unlocked ===
             true;
+
+
+
+
 
 
 
@@ -5055,7 +7488,13 @@ async function loadBossRoomAccess() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -5066,18 +7505,32 @@ async function loadBossRoomAccess() {
 
 
 
+
+
+
+
         bossRoomAccessUnlocked =
             false;
+
+
 
 
         bossRoomAccessExpiresAt =
             null;
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -5087,13 +7540,19 @@ async function loadBossRoomAccess() {
 // ============================================================
 
 
+
+
 function unlockBossRoomAccess(
     cycleExpiresAt
 ) {
 
 
+
+
     bossRoomAccessUnlocked =
         true;
+
+
 
 
     bossRoomAccessExpiresAt =
@@ -5106,10 +7565,20 @@ function unlockBossRoomAccess(
 
 
 
+
+
+
+
     updateFogOfWar();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -5119,10 +7588,14 @@ function unlockBossRoomAccess(
 // ============================================================
 
 
+
+
 function isBossRoomGateCell(
     x,
     y
 ) {
+
+
 
 
     return BOSS_ROOM_GATE_CELLS.some(
@@ -5132,7 +7605,13 @@ function isBossRoomGateCell(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -5147,7 +7626,11 @@ function isBossRoomGateCell(
 // ============================================================
 
 
+
+
 function hasBossRoomAccess() {
+
+
 
 
     if (
@@ -5156,10 +7639,18 @@ function hasBossRoomAccess() {
     ) {
 
 
+
+
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5169,14 +7660,24 @@ function hasBossRoomAccess() {
     ) {
 
 
+
+
         bossRoomAccessUnlocked =
             false;
+
+
 
 
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5186,6 +7687,10 @@ function hasBossRoomAccess() {
             bossRoomAccessExpiresAt
         )
             .getTime();
+
+
+
+
 
 
 
@@ -5200,15 +7705,23 @@ function hasBossRoomAccess() {
     ) {
 
 
+
+
         bossRoomAccessUnlocked =
             false;
+
+
 
 
         bossRoomAccessExpiresAt =
             null;
 
 
+
+
         return false;
+
+
 
 
     }
@@ -5216,10 +7729,20 @@ function hasBossRoomAccess() {
 
 
 
+
+
+
+
     return true;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -5229,7 +7752,11 @@ function hasBossRoomAccess() {
 // ============================================================
 
 
+
+
 function closeBossRoomGatePrompt() {
+
+
 
 
     const overlay =
@@ -5240,13 +7767,25 @@ function closeBossRoomGatePrompt() {
 
 
 
+
+
+
+
     if (overlay) {
+
+
 
 
         overlay.remove();
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5255,7 +7794,13 @@ function closeBossRoomGatePrompt() {
         false;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -5265,7 +7810,11 @@ function closeBossRoomGatePrompt() {
 // ============================================================
 
 
+
+
 function openBossRoomGatePrompt() {
+
+
 
 
     if (
@@ -5276,10 +7825,18 @@ function openBossRoomGatePrompt() {
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5288,8 +7845,14 @@ function openBossRoomGatePrompt() {
         true;
 
 
+
+
     movementQueue.length =
         0;
+
+
+
+
 
 
 
@@ -5302,12 +7865,22 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     overlay.id =
         "boss-room-gate-overlay";
 
 
+
+
     overlay.className =
         "combat-event-overlay";
+
+
+
+
 
 
 
@@ -5320,8 +7893,16 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     modal.className =
         "combat-event-modal";
+
+
+
+
 
 
 
@@ -5332,9 +7913,13 @@ function openBossRoomGatePrompt() {
         </div>
 
 
+
+
         <h2>
             PORTA CHIUSA
         </h2>
+
+
 
 
         <p>
@@ -5342,10 +7927,14 @@ function openBossRoomGatePrompt() {
         </p>
 
 
+
+
         <div class="combat-event-warning">
             Sembra necessaria una parola d'ordine per poter accedere
             a questa zona.
         </div>
+
+
 
 
         <div
@@ -5362,6 +7951,8 @@ function openBossRoomGatePrompt() {
             >
 
 
+
+
             <div
                 id="boss-room-gate-code-error"
                 style="min-height:22px; margin-top:8px; text-align:center;"
@@ -5369,7 +7960,11 @@ function openBossRoomGatePrompt() {
         </div>
 
 
+
+
         <div class="combat-event-buttons">
+
+
 
 
             <button
@@ -5381,6 +7976,8 @@ function openBossRoomGatePrompt() {
             </button>
 
 
+
+
             <button
                 id="boss-room-gate-code-button"
                 type="button"
@@ -5390,8 +7987,14 @@ function openBossRoomGatePrompt() {
             </button>
 
 
+
+
         </div>
     `;
+
+
+
+
 
 
 
@@ -5403,9 +8006,17 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     document.body.appendChild(
         overlay
     );
+
+
+
+
 
 
 
@@ -5418,10 +8029,18 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     const codeButton =
         document.getElementById(
             "boss-room-gate-code-button"
         );
+
+
+
+
 
 
 
@@ -5434,10 +8053,18 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     const codeInput =
         document.getElementById(
             "boss-room-gate-code-input"
         );
+
+
+
+
 
 
 
@@ -5450,8 +8077,16 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
     let submitting =
         false;
+
+
+
+
 
 
 
@@ -5461,7 +8096,11 @@ function openBossRoomGatePrompt() {
     // ========================================================
 
 
+
+
     async function submitBossRoomCode() {
+
+
 
 
         if (
@@ -5472,10 +8111,18 @@ function openBossRoomGatePrompt() {
         ) {
 
 
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -5490,23 +8137,41 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
         if (!enteredCode) {
 
 
+
+
             if (codeError) {
+
+
 
 
                 codeError.textContent =
                     "Inserisci la parola d'ordine.";
 
 
+
+
             }
+
+
 
 
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -5517,18 +8182,32 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
         if (codeButton) {
+
+
 
 
             codeButton.disabled =
                 true;
 
 
+
+
             codeButton.textContent =
                 "VERIFICA...";
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -5536,11 +8215,19 @@ function openBossRoomGatePrompt() {
         if (codeInput) {
 
 
+
+
             codeInput.disabled =
                 true;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -5548,8 +8235,12 @@ function openBossRoomGatePrompt() {
         if (codeError) {
 
 
+
+
             codeError.textContent =
                 "";
+
+
 
 
         }
@@ -5557,7 +8248,13 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
         try {
+
+
 
 
             const {
@@ -5571,6 +8268,8 @@ function openBossRoomGatePrompt() {
                             character.id,
 
 
+
+
                         p_password:
                             enteredCode
                     }
@@ -5579,13 +8278,25 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             if (error) {
+
+
 
 
                 throw error;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -5595,10 +8306,14 @@ function openBossRoomGatePrompt() {
             // ====================================================
 
 
+
+
             if (
                 data?.correct ===
                 true
             ) {
+
+
 
 
                 unlockBossRoomAccess(
@@ -5608,7 +8323,15 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                 closeBossRoomGatePrompt();
+
+
+
+
 
 
 
@@ -5620,7 +8343,13 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                 return;
+
+
 
 
             }
@@ -5628,9 +8357,15 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             // ====================================================
             // PASSWORD ERRATA: 7 DANNI
             // ====================================================
+
+
 
 
             const newHealth =
@@ -5644,8 +8379,16 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             character.current_hp =
                 newHealth;
+
+
+
+
 
 
 
@@ -5655,13 +8398,23 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             try {
+
+
 
 
                 await updateMyPresence();
 
 
+
+
             } catch (presenceError) {
+
+
 
 
                 console.warn(
@@ -5670,7 +8423,13 @@ function openBossRoomGatePrompt() {
                 );
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -5682,6 +8441,10 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             if (
                 data?.dead ===
                 true ||
@@ -5689,14 +8452,24 @@ function openBossRoomGatePrompt() {
             ) {
 
 
+
+
                 if (codeError) {
+
+
 
 
                     codeError.textContent =
                         "Parola d'ordine errata. Subisci 7 danni. I tuoi PF scendono a 0.";
 
 
+
+
                 }
+
+
+
+
 
 
 
@@ -5707,10 +8480,16 @@ function openBossRoomGatePrompt() {
                     async () => {
 
 
+
+
                         closeBossRoomGatePrompt();
 
 
+
+
                         try {
+
+
 
 
                             const temporalCoinActivated =
@@ -5719,20 +8498,34 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                             if (temporalCoinActivated) {
+
+
 
 
                                 eventLocked =
                                     false;
 
 
+
+
                                 return;
+
+
 
 
                             }
 
 
+
+
                         } catch (temporalCoinError) {
+
+
 
 
                             console.error(
@@ -5741,16 +8534,24 @@ function openBossRoomGatePrompt() {
                             );
 
 
+
+
                             setMessage(
                                 "Errore durante il controllo della Moneta Temporale."
                             );
+
+
 
 
                             eventLocked =
                                 false;
 
 
+
+
                             return;
+
+
 
 
                         }
@@ -5758,7 +8559,13 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                         await handleCharacterDeath();
+
+
 
 
                     },
@@ -5768,10 +8575,20 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -5779,11 +8596,19 @@ function openBossRoomGatePrompt() {
             if (codeError) {
 
 
+
+
                 codeError.textContent =
                     `Parola d'ordine errata. Subisci 7 danni. PF rimasti: ${newHealth}.`;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -5792,8 +8617,12 @@ function openBossRoomGatePrompt() {
                 "";
 
 
+
+
             codeInput.disabled =
                 false;
+
+
 
 
             codeInput.focus();
@@ -5801,7 +8630,13 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
         } catch (error) {
+
+
 
 
             console.error(
@@ -5812,14 +8647,26 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
             if (codeError) {
+
+
 
 
                 codeError.textContent =
                     "Errore durante la verifica. Riprova.";
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -5827,11 +8674,17 @@ function openBossRoomGatePrompt() {
             if (codeInput) {
 
 
+
+
                 codeInput.disabled =
                     false;
 
 
+
+
                 codeInput.focus();
+
+
 
 
             }
@@ -5839,11 +8692,21 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
         } finally {
+
+
 
 
             submitting =
                 false;
+
+
+
+
 
 
 
@@ -5856,21 +8719,35 @@ function openBossRoomGatePrompt() {
             ) {
 
 
+
+
                 codeButton.disabled =
                     false;
+
+
 
 
                 codeButton.textContent =
                     "SBLOCCA";
 
 
+
+
             }
+
+
 
 
         }
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5880,7 +8757,11 @@ function openBossRoomGatePrompt() {
     // ========================================================
 
 
+
+
     if (closeButton) {
+
+
 
 
         closeButton.addEventListener(
@@ -5889,7 +8770,13 @@ function openBossRoomGatePrompt() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5899,12 +8786,18 @@ function openBossRoomGatePrompt() {
     // ========================================================
 
 
+
+
     if (codeButton) {
+
+
 
 
         codeButton.addEventListener(
             "click",
             async () => {
+
+
 
 
                 if (
@@ -5914,8 +8807,12 @@ function openBossRoomGatePrompt() {
                 ) {
 
 
+
+
                     codePanel.style.display =
                         "block";
+
+
 
 
                     codeButton.textContent =
@@ -5924,10 +8821,18 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                     if (codeInput) {
 
 
+
+
                         codeInput.focus();
+
+
 
 
                     }
@@ -5935,7 +8840,13 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                     return;
+
+
 
 
                 }
@@ -5943,14 +8854,26 @@ function openBossRoomGatePrompt() {
 
 
 
+
+
+
+
                 await submitBossRoomCode();
+
+
 
 
             }
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -5960,12 +8883,18 @@ function openBossRoomGatePrompt() {
     // ========================================================
 
 
+
+
     if (codeInput) {
+
+
 
 
         codeInput.addEventListener(
             "keydown",
             async event => {
+
+
 
 
                 if (
@@ -5974,23 +8903,39 @@ function openBossRoomGatePrompt() {
                 ) {
 
 
+
+
                     event.preventDefault();
+
+
 
 
                     await submitBossRoomCode();
 
 
+
+
                 }
+
+
 
 
             }
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -6008,6 +8953,8 @@ function openBossRoomGatePrompt() {
 // ============================================================
 
 
+
+
 function doesSightSegmentCrossCell(
     startX,
     startY,
@@ -6018,14 +8965,20 @@ function doesSightSegmentCrossCell(
 ) {
 
 
+
+
     const x0 = Number(startX) + 0.5;
     const y0 = Number(startY) + 0.5;
     const x1 = Number(targetX) + 0.5;
     const y1 = Number(targetY) + 0.5;
 
 
+
+
     const dx = x1 - x0;
     const dy = y1 - y0;
+
+
 
 
     const minX = Number(cellX);
@@ -6034,8 +8987,12 @@ function doesSightSegmentCrossCell(
     const maxY = Number(cellY) + 1;
 
 
+
+
     let tMin = 0;
     let tMax = 1;
+
+
 
 
     const checks = [
@@ -6046,10 +9003,16 @@ function doesSightSegmentCrossCell(
     ];
 
 
+
+
     for (const [p, q] of checks) {
 
 
+
+
         if (Math.abs(p) < 1e-12) {
+
+
 
 
             if (q < 0) {
@@ -6057,13 +9020,21 @@ function doesSightSegmentCrossCell(
             }
 
 
+
+
             continue;
+
+
 
 
         }
 
 
+
+
         const r = q / p;
+
+
 
 
         if (p < 0) {
@@ -6073,12 +9044,18 @@ function doesSightSegmentCrossCell(
         }
 
 
+
+
         if (tMin > tMax) {
             return false;
         }
 
 
+
+
     }
+
+
 
 
     return true;
@@ -6087,10 +9064,16 @@ function doesSightSegmentCrossCell(
 
 
 
+
+
+
+
 function isHiddenBehindClosedBossGate(
     targetX,
     targetY
 ) {
+
+
 
 
     if (
@@ -6102,8 +9085,12 @@ function isHiddenBehindClosedBossGate(
     }
 
 
+
+
     return BOSS_ROOM_GATE_CELLS.some(
         gate => {
+
+
 
 
             // Anche la cella del varco chiuso deve essere
@@ -6119,9 +9106,15 @@ function isHiddenBehindClosedBossGate(
             );
 
 
+
+
         }
     );
 }
+
+
+
+
 
 
 
@@ -6138,10 +9131,14 @@ function isHiddenBehindClosedBossGate(
 // ============================================================
 
 
+
+
 function isCombatEventCellOccupied(
     visibleX,
     visibleY
 ) {
+
+
 
 
     if (
@@ -6152,10 +9149,18 @@ function isCombatEventCellOccupied(
     ) {
 
 
+
+
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -6164,9 +9169,13 @@ function isCombatEventCellOccupied(
         combatEvent => {
 
 
+
+
             // Se eventi.js espone uno stato dinamico
             // dell'evento (es. Boss in cooldown),
             // una pedina non disponibile NON occupa la casella.
+
+
 
 
             if (
@@ -6179,10 +9188,18 @@ function isCombatEventCellOccupied(
             ) {
 
 
+
+
                 return false;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -6196,8 +9213,12 @@ function isCombatEventCellOccupied(
             );
 
 
+
+
         }
     );
+
+
 
 
 }
@@ -6205,9 +9226,15 @@ function isCombatEventCellOccupied(
 
 
 
+
+
+
+
 // ============================================================
 // CONTROLLO CASELLA ACCESSIBILE
 // ============================================================
+
+
 
 
 function canMoveTo(x,y) {
@@ -6219,12 +9246,18 @@ function canMoveTo(x,y) {
 }
 
 
+
+
 // ============================================================
 // REALTIME MULTIPLAYER
 // ============================================================
 
 
+
+
 async function setupRealtimeMultiplayer() {
+
+
 
 
     if (
@@ -6233,6 +9266,10 @@ async function setupRealtimeMultiplayer() {
     ) {
         return;
     }
+
+
+
+
 
 
 
@@ -6252,9 +9289,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     // ========================================================
     // PRESENCE SYNC
     // ========================================================
+
+
 
 
     dungeonChannel.on(
@@ -6265,6 +9308,8 @@ async function setupRealtimeMultiplayer() {
         () => {
 
 
+
+
             // Presence serve solo a sapere chi è online.
             // Non ribroadcastiamo e non rimuoviamo token durante sync.
             syncOnlinePlayers();
@@ -6272,8 +9317,14 @@ async function setupRealtimeMultiplayer() {
             refreshDungeonTradeAdjacencyState();
 
 
+
+
         }
     );
+
+
+
+
 
 
 
@@ -6283,10 +9334,14 @@ async function setupRealtimeMultiplayer() {
     // ========================================================
 
 
+
+
     dungeonChannel.on(
         "presence",
         { event: "join" },
         ({ newPresences }) => {
+
+
 
 
             (newPresences || []).forEach(
@@ -6299,9 +9354,13 @@ async function setupRealtimeMultiplayer() {
                     }
 
 
+
+
                     updateRemotePlayer(presence);
                 }
             );
+
+
 
 
             renderDungeonOnlinePlayers();
@@ -6311,9 +9370,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     // ========================================================
     // PRESENCE LEAVE
     // ========================================================
+
+
 
 
     dungeonChannel.on(
@@ -6322,7 +9387,11 @@ async function setupRealtimeMultiplayer() {
         ({ leftPresences }) => {
 
 
+
+
             const state = dungeonChannel.presenceState();
+
+
 
 
             (leftPresences || []).forEach(
@@ -6330,9 +9399,13 @@ async function setupRealtimeMultiplayer() {
                     const id = presence?.character_id;
 
 
+
+
                     if (!id || id === character.id) {
                         return;
                     }
+
+
 
 
                     const stillOnline =
@@ -6344,12 +9417,18 @@ async function setupRealtimeMultiplayer() {
                         );
 
 
+
+
                     if (stillOnline) {
                         return;
                     }
 
 
+
+
                     const token = otherPlayerTokens.get(id);
+
+
 
 
                     if (token) {
@@ -6357,10 +9436,14 @@ async function setupRealtimeMultiplayer() {
                     }
 
 
+
+
                     otherPlayerTokens.delete(id);
                     otherPlayers.delete(id);
                 }
             );
+
+
 
 
             renderDungeonOnlinePlayers();
@@ -6372,9 +9455,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     // ========================================================
     // MOVIMENTO ALTRI GIOCATORI
     // ========================================================
+
+
 
 
     dungeonChannel.on(
@@ -6385,8 +9474,14 @@ async function setupRealtimeMultiplayer() {
         message => {
 
 
+
+
             const data =
                 message.payload;
+
+
+
+
 
 
 
@@ -6394,6 +9489,10 @@ async function setupRealtimeMultiplayer() {
             if (!data) {
                 return;
             }
+
+
+
+
 
 
 
@@ -6408,7 +9507,13 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
             console.log("[RT DUNGEON] RX player-move", data.character_id, data.x, data.y);
+
+
 
 
             updateRemotePlayer(
@@ -6416,8 +9521,14 @@ async function setupRealtimeMultiplayer() {
             );
 
 
+
+
         }
     );
+
+
+
+
 
 
 
@@ -6427,6 +9538,8 @@ async function setupRealtimeMultiplayer() {
     // ========================================================
 
 
+
+
     dungeonChannel.on(
         "broadcast",
         { event: "dungeon-trade-request" },
@@ -6434,6 +9547,8 @@ async function setupRealtimeMultiplayer() {
             handleDungeonTradeRequestBroadcast(message?.payload);
         }
     );
+
+
 
 
     dungeonChannel.on(
@@ -6447,9 +9562,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     // ========================================================
     // CHAT
     // ========================================================
+
+
 
 
     dungeonChannel.on(
@@ -6460,8 +9581,14 @@ async function setupRealtimeMultiplayer() {
         message => {
 
 
+
+
             const data =
                 message.payload;
+
+
+
+
 
 
 
@@ -6473,9 +9600,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
             addFloorChatMessage(
                 data
             );
+
+
 
 
         }
@@ -6484,9 +9617,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     // ========================================================
     // CURA REMOTA
     // ========================================================
+
+
 
 
     dungeonChannel.on(
@@ -6497,8 +9636,14 @@ async function setupRealtimeMultiplayer() {
         message => {
 
 
+
+
             const data =
                 message.payload;
+
+
+
+
 
 
 
@@ -6510,14 +9655,22 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
             // Se siamo noi il bersaglio,
             // aggiorniamo immediatamente i PF.
+
+
 
 
             if (
                 data.target_character_id ===
                 character.id
             ) {
+
+
 
 
                 character.current_hp =
@@ -6528,7 +9681,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
                 updateCharacterPanel();
+
+
+
+
 
 
 
@@ -6538,11 +9699,19 @@ async function setupRealtimeMultiplayer() {
                 );
 
 
+
+
             }
+
+
 
 
         }
     );
+
+
+
+
 
 
 
@@ -6552,6 +9721,8 @@ async function setupRealtimeMultiplayer() {
     // ========================================================
 
 
+
+
     await new Promise(
         (
             resolve,
@@ -6559,8 +9730,12 @@ async function setupRealtimeMultiplayer() {
         ) => {
 
 
+
+
             dungeonChannel.subscribe(
                 async status => {
+
+
 
 
                     console.log(
@@ -6571,10 +9746,16 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
                     if (
                         status ===
                         "SUBSCRIBED"
                     ) {
+
+
 
 
                         realtimeReady =
@@ -6583,7 +9764,13 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
                         try {
+
+
 
 
                             await dungeonChannel.track(
@@ -6593,7 +9780,15 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
                             resolve();
+
+
+
+
 
 
 
@@ -6601,15 +9796,25 @@ async function setupRealtimeMultiplayer() {
                         } catch (error) {
 
 
+
+
                             reject(
                                 error
                             );
 
 
+
+
                         }
 
 
+
+
                     }
+
+
+
+
 
 
 
@@ -6620,6 +9825,8 @@ async function setupRealtimeMultiplayer() {
                     ) {
 
 
+
+
                         reject(
                             new Error(
                                 "Errore nel canale realtime."
@@ -6627,11 +9834,17 @@ async function setupRealtimeMultiplayer() {
                         );
 
 
+
+
                     }
+
+
 
 
                 }
             );
+
+
 
 
         }
@@ -6640,10 +9853,20 @@ async function setupRealtimeMultiplayer() {
 
 
 
+
+
+
+
     syncOnlinePlayers();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -6653,18 +9876,28 @@ async function setupRealtimeMultiplayer() {
 // ============================================================
 
 
+
+
 function getMyPresenceData() {
 
 
+
+
     return {
+
+
 
 
         character_id:
             character.id,
 
 
+
+
         user_id:
             currentUser.id,
+
+
 
 
         name:
@@ -6672,21 +9905,31 @@ function getMyPresenceData() {
             "Avventuriero",
 
 
+
+
         token:
             character.token ||
             "token_1.png",
+
+
 
 
         x:
             playerX,
 
 
+
+
         y:
             playerY,
 
 
+
+
         current_hp:
     character.current_hp,
+
+
 
 
 active_combat_id:
@@ -6694,8 +9937,12 @@ active_combat_id:
     null,
 
 
+
+
 in_combat:
     !!character.active_combat_id,
+
+
 
 
 online_at:
@@ -6703,10 +9950,18 @@ online_at:
                 .toISOString()
 
 
+
+
     };
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -6716,7 +9971,11 @@ online_at:
 // ============================================================
 
 
+
+
 async function updateMyPresence() {
+
+
 
 
     if (
@@ -6730,7 +9989,13 @@ async function updateMyPresence() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         await dungeonChannel.track(
@@ -6740,7 +10005,13 @@ async function updateMyPresence() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -6749,10 +10020,18 @@ async function updateMyPresence() {
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -6762,7 +10041,11 @@ async function updateMyPresence() {
 // ============================================================
 
 
+
+
 async function broadcastMyState() {
+
+
 
 
     if (
@@ -6776,28 +10059,46 @@ async function broadcastMyState() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         console.log("[RT DUNGEON] TX player-move", character.id, playerX, playerY);
 
 
+
+
         await dungeonChannel.send({
+
+
 
 
             type:
                 "broadcast",
 
 
+
+
             event:
                 "player-move",
+
+
 
 
             payload: {
 
 
+
+
                 character_id:
                     character.id,
+
+
 
 
                 name:
@@ -6805,21 +10106,31 @@ async function broadcastMyState() {
                     "Avventuriero",
 
 
+
+
                 token:
                     character.token ||
                     "token_1.png",
+
+
 
 
                 x:
                     playerX,
 
 
+
+
                 y:
                     playerY,
 
 
+
+
                 current_hp:
     character.current_hp,
+
+
 
 
 active_combat_id:
@@ -6827,11 +10138,17 @@ active_combat_id:
     null,
 
 
+
+
 in_combat:
     !!character.active_combat_id
 
 
+
+
             }
+
+
 
 
         });
@@ -6839,7 +10156,13 @@ in_combat:
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -6848,10 +10171,18 @@ in_combat:
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -6861,7 +10192,11 @@ in_combat:
 // ============================================================
 
 
+
+
 function renderDungeonOnlinePlayers() {
+
+
 
 
     const container =
@@ -6870,15 +10205,21 @@ function renderDungeonOnlinePlayers() {
         );
 
 
+
+
     if (!container) {
         return;
     }
+
+
 
 
     if (
         !dungeonChannel ||
         !character
     ) {
+
+
 
 
         container.innerHTML =
@@ -6889,24 +10230,36 @@ function renderDungeonOnlinePlayers() {
             `;
 
 
+
+
         return;
     }
+
+
 
 
     const state =
         dungeonChannel.presenceState();
 
 
+
+
     const playersById =
         new Map();
+
+
 
 
     Object.values(state).forEach(
         presences => {
 
 
+
+
             presences.forEach(
                 presence => {
+
+
 
 
                     if (
@@ -6915,14 +10268,20 @@ function renderDungeonOnlinePlayers() {
                     ) {
 
 
+
+
                         return;
                     }
+
+
 
 
                     const old =
                         playersById.get(
                             presence.character_id
                         );
+
+
 
 
                     if (
@@ -6938,6 +10297,8 @@ function renderDungeonOnlinePlayers() {
                     ) {
 
 
+
+
                         playersById.set(
                             presence.character_id,
                             presence
@@ -6949,6 +10310,8 @@ function renderDungeonOnlinePlayers() {
     );
 
 
+
+
     if (
         character.id &&
         !playersById.has(
@@ -6957,11 +10320,15 @@ function renderDungeonOnlinePlayers() {
     ) {
 
 
+
+
         playersById.set(
             character.id,
             getMyPresenceData()
         );
     }
+
+
 
 
     const players =
@@ -6975,9 +10342,13 @@ function renderDungeonOnlinePlayers() {
                 ) => {
 
 
+
+
                     const aIsMe =
                         a.character_id ===
                             character.id;
+
+
 
 
                     const bIsMe =
@@ -6985,13 +10356,19 @@ function renderDungeonOnlinePlayers() {
                             character.id;
 
 
+
+
                     if (aIsMe !== bIsMe) {
+
+
 
 
                         return aIsMe
                             ? -1
                             : 1;
                     }
+
+
 
 
                     return String(
@@ -7008,9 +10385,13 @@ function renderDungeonOnlinePlayers() {
             );
 
 
+
+
     if (
         players.length === 0
     ) {
+
+
 
 
         container.innerHTML =
@@ -7021,15 +10402,23 @@ function renderDungeonOnlinePlayers() {
             `;
 
 
+
+
         return;
     }
+
+
 
 
     container.replaceChildren();
 
 
+
+
     players.forEach(
         player => {
+
+
 
 
             const row =
@@ -7038,8 +10427,12 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             row.className =
                 "dungeon-online-row";
+
+
 
 
             const image =
@@ -7048,8 +10441,12 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             image.className =
                 "dungeon-online-token";
+
+
 
 
             image.src =
@@ -7060,9 +10457,13 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             image.alt =
                 player.name ||
                 "Personaggio";
+
+
 
 
             const info =
@@ -7071,8 +10472,12 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             info.className =
                 "dungeon-online-info";
+
+
 
 
             const name =
@@ -7081,13 +10486,19 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             name.className =
                 "dungeon-online-name";
+
+
 
 
             const isMe =
                 player.character_id ===
                     character.id;
+
+
 
 
             name.textContent =
@@ -7101,15 +10512,21 @@ function renderDungeonOnlinePlayers() {
                 }`;
 
 
+
+
             const status =
                 document.createElement(
                     "div"
                 );
 
 
+
+
             const inCombat =
                 player.in_combat === true ||
                 !!player.active_combat_id;
+
+
 
 
             status.className =
@@ -7121,10 +10538,14 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             status.textContent =
                 inCombat
                     ? "⚔ In combattimento"
                     : "Nel dungeon";
+
+
 
 
             const dot =
@@ -7133,8 +10554,12 @@ function renderDungeonOnlinePlayers() {
                 );
 
 
+
+
             dot.className =
                 "dungeon-online-dot";
+
+
 
 
             info.append(
@@ -7143,11 +10568,15 @@ function renderDungeonOnlinePlayers() {
             );
 
 
+
+
             row.append(
                 image,
                 info,
                 dot
             );
+
+
 
 
             container.appendChild(
@@ -7160,17 +10589,29 @@ function renderDungeonOnlinePlayers() {
 
 
 
+
+
+
+
 // ============================================================
 // SINCRONIZZA GIOCATORI ONLINE
 // ============================================================
 
 
+
+
 function syncOnlinePlayers() {
+
+
 
 
     if (!dungeonChannel) {
         return;
     }
+
+
+
+
 
 
 
@@ -7181,8 +10622,16 @@ function syncOnlinePlayers() {
 
 
 
+
+
+
+
     const onlineIds =
         new Set();
+
+
+
+
 
 
 
@@ -7193,8 +10642,12 @@ function syncOnlinePlayers() {
         presences => {
 
 
+
+
             presences.forEach(
                 presence => {
+
+
 
 
                     const id =
@@ -7203,9 +10656,17 @@ function syncOnlinePlayers() {
 
 
 
+
+
+
+
                     if (!id) {
                         return;
                     }
+
+
+
+
 
 
 
@@ -7220,9 +10681,17 @@ function syncOnlinePlayers() {
 
 
 
+
+
+
+
                     onlineIds.add(
                         id
                     );
+
+
+
+
 
 
 
@@ -7232,12 +10701,20 @@ function syncOnlinePlayers() {
                     );
 
 
+
+
                 }
             );
 
 
+
+
         }
     );
+
+
+
+
 
 
 
@@ -7248,24 +10725,40 @@ function syncOnlinePlayers() {
 
 
 
+
+
+
+
     // Se Cura è attiva, aggiorniamo
     // immediatamente i bersagli disponibili.
+
+
 
 
     if (healModeActive) {
 
 
+
+
         renderHealRange();
 
 
+
+
         updateHealTargets();
+
+
 
 
     }
 renderFogOfWar();
 
 
+
+
 updateRemoteTokensVisibility();
+
+
 
 
 renderDungeonOnlinePlayers();
@@ -7275,14 +10768,22 @@ renderDungeonOnlinePlayers();
 
 
 
+
+
+
+
 // ============================================================
 // AGGIORNA GIOCATORE REMOTO
 // ============================================================
 
 
+
+
 function updateRemotePlayer(
     data
 ) {
+
+
 
 
     if (
@@ -7291,6 +10792,10 @@ function updateRemotePlayer(
     ) {
         return;
     }
+
+
+
+
 
 
 
@@ -7305,6 +10810,10 @@ function updateRemotePlayer(
 
 
 
+
+
+
+
     const x =
         Number(
             data.x
@@ -7313,10 +10822,18 @@ function updateRemotePlayer(
 
 
 
+
+
+
+
     const y =
         Number(
             data.y
         );
+
+
+
+
 
 
 
@@ -7331,10 +10848,18 @@ function updateRemotePlayer(
 
 
 
+
+
+
+
     const oldData =
         otherPlayers.get(
             data.character_id
         ) || {};
+
+
+
+
 
 
 
@@ -7344,11 +10869,17 @@ function updateRemotePlayer(
     {
 
 
+
+
         ...oldData,
+
+
 
 
         character_id:
             data.character_id,
+
+
 
 
         name:
@@ -7357,18 +10888,26 @@ function updateRemotePlayer(
             "Avventuriero",
 
 
+
+
         token:
             data.token ||
             oldData.token ||
             "token_1.png",
 
 
+
+
         x:
             x,
 
 
+
+
         y:
             y,
+
+
 
 
         current_hp:
@@ -7377,10 +10916,14 @@ function updateRemotePlayer(
                 : oldData.current_hp,
 
 
+
+
         active_combat_id:
             data.active_combat_id !== undefined
                 ? data.active_combat_id
                 : oldData.active_combat_id,
+
+
 
 
         in_combat:
@@ -7389,8 +10932,14 @@ function updateRemotePlayer(
                 : !!oldData.in_combat
 
 
+
+
     }
 );
+
+
+
+
 
 
 
@@ -7402,23 +10951,39 @@ function updateRemotePlayer(
 updateRemoteTokensVisibility();
 
 
+
+
     renderDungeonOnlinePlayers();
+
+
 
 
     renderDungeonTradeNearbyPlayers();
     refreshDungeonTradeAdjacencyState();
 
 
+
+
     if (healModeActive) {
+
+
 
 
         updateHealTargets();
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -7428,9 +10993,13 @@ updateRemoteTokensVisibility();
 // ============================================================
 
 
+
+
 function showOtherPlayerToken(
     characterId
 ) {
+
+
 
 
     const map =
@@ -7441,9 +11010,17 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     if (!map) {
         return;
     }
+
+
+
+
 
 
 
@@ -7456,9 +11033,17 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     if (!player) {
         return;
     }
+
+
+
+
 
 
 
@@ -7471,7 +11056,13 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     if (!token) {
+
+
 
 
         token =
@@ -7482,14 +11073,26 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         token.className =
             "dungeon-player-token other-player-token";
 
 
 
 
+
+
+
+
         token.dataset.characterId =
             characterId;
+
+
+
+
 
 
 
@@ -7502,9 +11105,17 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         token.appendChild(
             image
         );
+
+
+
+
 
 
 
@@ -7517,8 +11128,16 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         label.className =
             "other-player-name";
+
+
+
+
 
 
 
@@ -7530,12 +11149,20 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         // Cura tramite click sul token.
+
+
 
 
         token.addEventListener(
             "click",
             async event => {
+
+
 
 
                 if (!healModeActive) {
@@ -7545,7 +11172,15 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
                 event.stopPropagation();
+
+
+
+
 
 
 
@@ -7555,8 +11190,14 @@ function showOtherPlayerToken(
                 );
 
 
+
+
             }
         );
+
+
+
+
 
 
 
@@ -7568,13 +11209,23 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         otherPlayerTokens.set(
             characterId,
             token
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7587,6 +11238,10 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     const label =
         token.querySelector(
             ".other-player-name"
@@ -7595,7 +11250,13 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     if (image) {
+
+
 
 
         image.src =
@@ -7608,11 +11269,21 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
         image.alt =
             player.name;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7620,17 +11291,25 @@ function showOtherPlayerToken(
     if (label) {
 
 
+
+
         label.textContent =
             player.name;
 
 
+
+
     }
+
+
 
 
     if (
     player.in_combat ||
     player.active_combat_id
 ) {
+
+
 
 
     token.classList.add(
@@ -7640,11 +11319,19 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     token.title =
         `${player.name} — IN COMBATTIMENTO`;
 
 
+
+
 } else {
+
+
 
 
     token.classList.remove(
@@ -7654,11 +11341,19 @@ function showOtherPlayerToken(
 
 
 
+
+
+
+
     token.title =
         player.name;
 
 
+
+
 }
+
+
 
 
 token.classList.toggle(
@@ -7669,10 +11364,16 @@ token.classList.toggle(
 
 
 
+
+
+
+
 token.title =
     player.in_combat
         ? `${player.name} - IN COMBATTIMENTO`
         : player.name;
+
+
 
 
     positionTokenElement(
@@ -7682,7 +11383,13 @@ token.title =
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -7692,13 +11399,21 @@ token.title =
 // ============================================================
 
 
+
+
 function setupDungeonActions() {
+
+
 
 
     const healButton =
         document.getElementById(
             "dungeon-heal-button"
         );
+
+
+
+
 
 
 
@@ -7711,10 +11426,18 @@ function setupDungeonActions() {
 
 
 
+
+
+
+
     const manaPotionButton =
         document.getElementById(
             "dungeon-mana-potion-button"
         );
+
+
+
+
 
 
 
@@ -7724,7 +11447,11 @@ function setupDungeonActions() {
     // ========================================================
 
 
+
+
     if (healButton) {
+
+
 
 
         healButton.addEventListener(
@@ -7732,26 +11459,44 @@ function setupDungeonActions() {
             () => {
 
 
+
+
                 if (healModeActive) {
+
+
 
 
                     deactivateHealMode();
 
 
+
+
                 } else {
+
+
 
 
                     activateHealMode();
 
 
+
+
                 }
+
+
 
 
             }
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7761,12 +11506,18 @@ function setupDungeonActions() {
     // ========================================================
 
 
+
+
     if (healthPotionButton) {
+
+
 
 
         healthPotionButton.addEventListener(
             "click",
             async () => {
+
+
 
 
                 if (
@@ -7778,7 +11529,15 @@ function setupDungeonActions() {
 
 
 
+
+
+
+
                 deactivateHealMode();
+
+
+
+
 
 
 
@@ -7788,11 +11547,19 @@ function setupDungeonActions() {
                 );
 
 
+
+
             }
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7802,12 +11569,18 @@ function setupDungeonActions() {
     // ========================================================
 
 
+
+
     if (manaPotionButton) {
+
+
 
 
         manaPotionButton.addEventListener(
             "click",
             async () => {
+
+
 
 
                 if (
@@ -7819,7 +11592,15 @@ function setupDungeonActions() {
 
 
 
+
+
+
+
                 deactivateHealMode();
+
+
+
+
 
 
 
@@ -7829,11 +11610,19 @@ function setupDungeonActions() {
                 );
 
 
+
+
             }
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7843,12 +11632,18 @@ function setupDungeonActions() {
     // ========================================================
 
 
+
+
     if (tokenElement) {
+
+
 
 
         tokenElement.addEventListener(
             "click",
             async event => {
+
+
 
 
                 if (!healModeActive) {
@@ -7858,7 +11653,15 @@ function setupDungeonActions() {
 
 
 
+
+
+
+
                 event.stopPropagation();
+
+
+
+
 
 
 
@@ -7866,8 +11669,12 @@ function setupDungeonActions() {
                 await castHealOnSelf();
 
 
+
+
             }
         );
+
+
 
 
     }
@@ -7875,10 +11682,20 @@ function setupDungeonActions() {
 
 
 
+
+
+
+
     updateDungeonActionAvailability();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -7888,12 +11705,20 @@ function setupDungeonActions() {
 // ============================================================
 
 
+
+
 function updateDungeonActionAvailability() {
+
+
 
 
     if (!character) {
         return;
     }
+
+
+
+
 
 
 
@@ -7904,12 +11729,20 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     const currentPF =
         character.current_hp === null ||
         character.current_hp === undefined
 
 
+
+
             ? stats.maxHealth
+
+
 
 
             : Number(
@@ -7919,17 +11752,29 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     const currentPM =
         character.current_pm === null ||
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
                 character.current_pm
             );
+
+
+
+
 
 
 
@@ -7942,17 +11787,31 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     if (healButton) {
 
 
+
+
         // Cura costa 2 PM.
+
+
 
 
         healButton.disabled =
             currentPM < 2;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -7965,10 +11824,18 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     const manaPotion =
         findDungeonPotion(
             "mana"
         );
+
+
+
+
 
 
 
@@ -7981,6 +11848,10 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     const manaButton =
         document.getElementById(
             "dungeon-mana-potion-button"
@@ -7989,7 +11860,13 @@ function updateDungeonActionAvailability() {
 
 
 
+
+
+
+
     if (healthButton) {
+
+
 
 
         healthButton.disabled =
@@ -7997,7 +11874,13 @@ function updateDungeonActionAvailability() {
             currentPF >= stats.maxHealth;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8005,12 +11888,20 @@ function updateDungeonActionAvailability() {
     if (manaButton) {
 
 
+
+
         manaButton.disabled =
             !manaPotion ||
             currentPM >= stats.maxMana;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8019,7 +11910,13 @@ function updateDungeonActionAvailability() {
     updateDungeonGiornoPagaAvailability();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8029,7 +11926,11 @@ function updateDungeonActionAvailability() {
 // ============================================================
 
 
+
+
 function updateDungeonConsumables() {
+
+
 
 
     const healthPotion =
@@ -8040,10 +11941,18 @@ function updateDungeonConsumables() {
 
 
 
+
+
+
+
     const manaPotion =
         findDungeonPotion(
             "mana"
         );
+
+
+
+
 
 
 
@@ -8062,6 +11971,10 @@ function updateDungeonConsumables() {
 
 
 
+
+
+
+
     setText(
         "dungeon-mana-potion-count",
         `x${
@@ -8076,12 +11989,22 @@ function updateDungeonConsumables() {
 
 
 
+
+
+
+
     updateFruitConsumable();
     updateSpatialCoinPia();
     updateDungeonActionAvailability();
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8096,14 +12019,20 @@ function updateDungeonConsumables() {
 // ============================================================
 
 
+
+
 function findDungeonPotion(
     type
 ) {
 
 
+
+
     return characterInventory.find(
         entry => {
             if (entry.item?.id === 'frutto_carnoso') return false;
+
+
 
 
             if (
@@ -8118,10 +12047,16 @@ function findDungeonPotion(
 
 
 
+
+
+
+
             if (
                 type ===
                 "health"
             ) {
+
+
 
 
                 return (
@@ -8131,7 +12066,13 @@ function findDungeonPotion(
                 ) > 0;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -8142,6 +12083,8 @@ function findDungeonPotion(
             ) {
 
 
+
+
                 return (
                     Number(
                         entry.item.heal_pm
@@ -8149,7 +12092,13 @@ function findDungeonPotion(
                 ) > 0;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -8157,11 +12106,19 @@ function findDungeonPotion(
             return false;
 
 
+
+
         }
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8171,9 +12128,13 @@ function findDungeonPotion(
 // ============================================================
 
 
+
+
 async function useDungeonPotion(
     type
 ) {
+
+
 
 
     const potion =
@@ -8184,7 +12145,13 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
     if (!potion) {
+
+
 
 
         setMessage(
@@ -8196,10 +12163,20 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8210,12 +12187,20 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
     const oldPF =
         character.current_hp === null ||
         character.current_hp === undefined
 
 
+
+
             ? stats.maxHealth
+
+
 
 
             : Number(
@@ -8225,17 +12210,29 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
     const oldPM =
         character.current_pm === null ||
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
                 character.current_pm
             );
+
+
+
+
 
 
 
@@ -8246,8 +12243,16 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
     let newPM =
         oldPM;
+
+
+
+
 
 
 
@@ -8258,10 +12263,14 @@ async function useDungeonPotion(
     ) {
 
 
+
+
         if (
             oldPF >=
             stats.maxHealth
         ) {
+
+
 
 
             setMessage(
@@ -8269,10 +12278,18 @@ async function useDungeonPotion(
             );
 
 
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8289,7 +12306,13 @@ async function useDungeonPotion(
             );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8300,10 +12323,14 @@ async function useDungeonPotion(
     ) {
 
 
+
+
         if (
             oldPM >=
             stats.maxMana
         ) {
+
+
 
 
             setMessage(
@@ -8311,10 +12338,18 @@ async function useDungeonPotion(
             );
 
 
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8331,7 +12366,13 @@ async function useDungeonPotion(
             );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8339,10 +12380,14 @@ async function useDungeonPotion(
     try {
 
 
+
+
         // ----------------------------------------------------
         // Usiamo l'RPC già esistente del progetto.
         // L'RPC gestisce la diminuzione della quantità.
         // ----------------------------------------------------
+
+
 
 
         const {
@@ -8359,13 +12404,25 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
         if (rpcError) {
+
+
 
 
             throw rpcError;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8375,7 +12432,13 @@ async function useDungeonPotion(
         // ----------------------------------------------------
 
 
+
+
         const updateData = {};
+
+
+
+
 
 
 
@@ -8386,18 +12449,30 @@ async function useDungeonPotion(
         ) {
 
 
+
+
             updateData.current_hp =
                 newPF;
 
 
+
+
         } else {
+
+
 
 
             updateData.current_pm =
                 newPM;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8418,13 +12493,25 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
         if (error) {
+
+
 
 
             throw error;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8435,18 +12522,30 @@ async function useDungeonPotion(
         ) {
 
 
+
+
             character.current_hp =
                 newPF;
 
 
+
+
         } else {
+
+
 
 
             character.current_pm =
                 newPM;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -8456,10 +12555,20 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
         updateCharacterPanel();
 
 
+
+
         updateMyPresence();
+
+
+
+
 
 
 
@@ -8470,12 +12579,18 @@ async function useDungeonPotion(
         ) {
 
 
+
+
             setMessage(
                 `Bevi una Pozione di Vita e recuperi ${newPF - oldPF} PF.`
             );
 
 
+
+
         } else {
+
+
 
 
             setMessage(
@@ -8483,12 +12598,20 @@ async function useDungeonPotion(
             );
 
 
+
+
         }
 
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -8499,15 +12622,27 @@ async function useDungeonPotion(
 
 
 
+
+
+
+
         setMessage(
             "Non è stato possibile utilizzare la pozione."
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8517,12 +12652,18 @@ async function useDungeonPotion(
 // ============================================================
 
 
+
+
 function activateHealMode() {
+
+
 
 
     if (!character) {
         return;
     }
+
+
 
 
     if (
@@ -8532,19 +12673,31 @@ function activateHealMode() {
 ) {
 
 
+
+
     setMessage(
         "Il personaggio non conosce Cura."
     );
 
 
+
+
     return;
+
+
 
 
 }
 
 
+
+
     const stats =
         getDungeonCalculatedStats();
+
+
+
+
 
 
 
@@ -8554,7 +12707,11 @@ function activateHealMode() {
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
@@ -8564,9 +12721,15 @@ function activateHealMode() {
 
 
 
+
+
+
+
     if (
         currentPM < 2
     ) {
+
+
 
 
         setMessage(
@@ -8574,10 +12737,18 @@ function activateHealMode() {
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8588,8 +12759,16 @@ function activateHealMode() {
 
 
 
+
+
+
+
     movementQueue.length =
         0;
+
+
+
+
 
 
 
@@ -8602,7 +12781,13 @@ function activateHealMode() {
 
 
 
+
+
+
+
     if (button) {
+
+
 
 
         button.classList.add(
@@ -8610,7 +12795,13 @@ function activateHealMode() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8618,7 +12809,13 @@ function activateHealMode() {
     renderHealRange();
 
 
+
+
     updateHealTargets();
+
+
+
+
 
 
 
@@ -8628,7 +12825,13 @@ function activateHealMode() {
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8638,11 +12841,19 @@ function activateHealMode() {
 // ============================================================
 
 
+
+
 function deactivateHealMode() {
+
+
 
 
     healModeActive =
         false;
+
+
+
+
 
 
 
@@ -8655,7 +12866,13 @@ function deactivateHealMode() {
 
 
 
+
+
+
+
     if (button) {
+
+
 
 
         button.classList.remove(
@@ -8663,7 +12880,13 @@ function deactivateHealMode() {
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8671,7 +12894,13 @@ function deactivateHealMode() {
     clearHealRange();
 
 
+
+
     clearHealTargets();
+
+
+
+
 
 
 
@@ -8681,7 +12910,13 @@ function deactivateHealMode() {
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8699,10 +12934,18 @@ function deactivateHealMode() {
 // ============================================================
 
 
+
+
 function renderHealRange() {
 
 
+
+
     clearHealRange();
+
+
+
+
 
 
 
@@ -8718,10 +12961,18 @@ function renderHealRange() {
 
 
 
+
+
+
+
     const map =
         document.getElementById(
             "dungeon-map"
         );
+
+
+
+
 
 
 
@@ -8733,8 +12984,16 @@ function renderHealRange() {
 
 
 
+
+
+
+
     const rect =
         map.getBoundingClientRect();
+
+
+
+
 
 
 
@@ -8749,9 +13008,17 @@ function renderHealRange() {
 
 
 
+
+
+
+
     const cellWidth =
         rect.width /
         MAP_COLUMNS;
+
+
+
+
 
 
 
@@ -8763,11 +13030,17 @@ function renderHealRange() {
 
 
 
+
+
+
+
     for (
         let dy = -1;
         dy <= 1;
         dy++
     ) {
+
+
 
 
         for (
@@ -8777,6 +13050,8 @@ function renderHealRange() {
         ) {
 
 
+
+
             const x =
                 playerX +
                 dx;
@@ -8784,9 +13059,17 @@ function renderHealRange() {
 
 
 
+
+
+
+
             const y =
                 playerY +
                 dy;
+
+
+
+
 
 
 
@@ -8803,10 +13086,18 @@ function renderHealRange() {
 
 
 
+
+
+
+
             const element =
                 document.createElement(
                     "div"
                 );
+
+
+
+
 
 
 
@@ -8817,8 +13108,16 @@ function renderHealRange() {
 
 
 
+
+
+
+
             element.style.left =
                 `${x * cellWidth}px`;
+
+
+
+
 
 
 
@@ -8829,14 +13128,26 @@ function renderHealRange() {
 
 
 
+
+
+
+
             element.style.width =
                 `${cellWidth}px`;
 
 
 
 
+
+
+
+
             element.style.height =
                 `${cellHeight}px`;
+
+
+
+
 
 
 
@@ -8848,18 +13159,32 @@ function renderHealRange() {
 
 
 
+
+
+
+
             healRangeElements.push(
                 element
             );
 
 
+
+
         }
+
+
 
 
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8869,14 +13194,22 @@ function renderHealRange() {
 // ============================================================
 
 
+
+
 function clearHealRange() {
+
+
 
 
     healRangeElements.forEach(
         element => {
 
 
+
+
             element.remove();
+
+
 
 
         }
@@ -8885,11 +13218,21 @@ function clearHealRange() {
 
 
 
+
+
+
+
     healRangeElements =
         [];
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8899,10 +13242,14 @@ function clearHealRange() {
 // ============================================================
 
 
+
+
 function isInHealRange(
     x,
     y
 ) {
+
+
 
 
     if (
@@ -8911,6 +13258,10 @@ function isInHealRange(
     ) {
         return false;
     }
+
+
+
+
 
 
 
@@ -8924,6 +13275,10 @@ function isInHealRange(
 
 
 
+
+
+
+
     const dy =
         Math.abs(
             Number(y) -
@@ -8933,8 +13288,14 @@ function isInHealRange(
 
 
 
+
+
+
+
     // Distanza Chebyshev 1:
     // comprende ortogonali e diagonali.
+
+
 
 
     return (
@@ -8943,7 +13304,13 @@ function isInHealRange(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -8953,10 +13320,18 @@ function isInHealRange(
 // ============================================================
 
 
+
+
 function updateHealTargets() {
 
 
+
+
     clearHealTargets();
+
+
+
+
 
 
 
@@ -8968,12 +13343,20 @@ function updateHealTargets() {
 
 
 
+
+
+
+
     // --------------------------------------------------------
     // SE STESSI
     // --------------------------------------------------------
 
 
+
+
     if (tokenElement) {
+
+
 
 
         tokenElement.classList.add(
@@ -8983,11 +13366,21 @@ function updateHealTargets() {
 
 
 
+
+
+
+
         tokenElement.style.pointerEvents =
             "auto";
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -8997,8 +13390,12 @@ function updateHealTargets() {
     // --------------------------------------------------------
 
 
+
+
     otherPlayers.forEach(
         player => {
+
+
 
 
             if (
@@ -9013,10 +13410,18 @@ function updateHealTargets() {
 
 
 
+
+
+
+
             const token =
                 otherPlayerTokens.get(
                     player.character_id
                 );
+
+
+
+
 
 
 
@@ -9028,9 +13433,17 @@ function updateHealTargets() {
 
 
 
+
+
+
+
             token.classList.add(
                 "heal-target"
             );
+
+
+
+
 
 
 
@@ -9039,11 +13452,19 @@ function updateHealTargets() {
                 "auto";
 
 
+
+
         }
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -9053,10 +13474,16 @@ function updateHealTargets() {
 // ============================================================
 
 
+
+
 function clearHealTargets() {
 
 
+
+
     if (tokenElement) {
+
+
 
 
         tokenElement.classList.remove(
@@ -9066,8 +13493,14 @@ function clearHealTargets() {
 
 
 
+
+
+
+
         tokenElement.style.pointerEvents =
             "";
+
+
 
 
     }
@@ -9075,8 +13508,14 @@ function clearHealTargets() {
 
 
 
+
+
+
+
     otherPlayerTokens.forEach(
         token => {
+
+
 
 
             token.classList.remove(
@@ -9086,15 +13525,27 @@ function clearHealTargets() {
 
 
 
+
+
+
+
             token.style.pointerEvents =
                 "";
+
+
 
 
         }
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -9104,12 +13555,20 @@ function clearHealTargets() {
 // ============================================================
 
 
+
+
 async function castHealOnSelf() {
+
+
 
 
     if (!healModeActive) {
         return;
     }
+
+
+
+
 
 
 
@@ -9120,17 +13579,29 @@ async function castHealOnSelf() {
 
 
 
+
+
+
+
     const currentPF =
         character.current_hp === null ||
         character.current_hp === undefined
 
 
+
+
             ? stats.maxHealth
+
+
 
 
             : Number(
                 character.current_hp
             );
+
+
+
+
 
 
 
@@ -9141,15 +13612,25 @@ async function castHealOnSelf() {
     ) {
 
 
+
+
         setMessage(
             "Hai già tutti i PF."
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9164,7 +13645,13 @@ async function castHealOnSelf() {
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -9174,14 +13661,22 @@ async function castHealOnSelf() {
 // ============================================================
 
 
+
+
 async function castHealOnCharacter(
     targetCharacterId
 ) {
 
 
+
+
     if (!healModeActive) {
         return;
     }
+
+
+
+
 
 
 
@@ -9194,7 +13689,13 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
     if (!target) {
+
+
 
 
         setMessage(
@@ -9202,10 +13703,18 @@ async function castHealOnCharacter(
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9218,15 +13727,25 @@ async function castHealOnCharacter(
     ) {
 
 
+
+
         setMessage(
             "Il bersaglio è fuori dal raggio di Cura."
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9239,7 +13758,11 @@ async function castHealOnCharacter(
     // --------------------------------------------------------
 
 
+
+
     try {
+
+
 
 
         const {
@@ -9263,13 +13786,25 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         if (error) {
+
+
 
 
             throw error;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9277,12 +13812,18 @@ async function castHealOnCharacter(
         if (!targetCharacter) {
 
 
+
+
             setMessage(
                 "Il bersaglio non è più disponibile."
             );
 
 
+
+
             return;
+
+
 
 
         }
@@ -9290,9 +13831,15 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         // Per il bersaglio remoto il massimo PF preciso
         // può dipendere dall'equipaggiamento.
         // Recuperiamo quindi anche il suo equipaggiamento.
+
+
 
 
         const {
@@ -9303,6 +13850,8 @@ async function castHealOnCharacter(
                 .from("character_inventory")
                 .select(`
                     equipped_slot,
+
+
 
 
                     item:items (
@@ -9322,10 +13871,18 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         if (inventoryError) {
 
 
+
+
             throw inventoryError;
+
+
 
 
         }
@@ -9333,8 +13890,16 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         let constitutionBonus =
             0;
+
+
+
+
 
 
 
@@ -9346,14 +13911,22 @@ async function castHealOnCharacter(
             entry => {
 
 
+
+
                 constitutionBonus +=
                     Number(
                         entry.item?.costituzione_bonus
                     ) || 0;
 
 
+
+
             }
         );
+
+
+
+
 
 
 
@@ -9376,6 +13949,10 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         const targetMaxHealth =
             Math.ceil(
                 5 *
@@ -9386,17 +13963,29 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         const targetCurrentHealth =
             targetCharacter.current_hp === null ||
             targetCharacter.current_hp === undefined
 
 
+
+
                 ? targetMaxHealth
+
+
 
 
                 : Number(
                     targetCharacter.current_hp
                 );
+
+
+
+
 
 
 
@@ -9407,15 +13996,25 @@ async function castHealOnCharacter(
         ) {
 
 
+
+
             setMessage(
                 `${targetCharacter.nome || "Il bersaglio"} ha già tutti i PF.`
             );
 
 
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9433,7 +14032,13 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -9444,12 +14049,20 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
         setMessage(
             "Non è stato possibile curare il bersaglio."
         );
 
 
+
+
     }
+
+
 
 
 }
@@ -9457,9 +14070,15 @@ async function castHealOnCharacter(
 
 
 
+
+
+
+
 // ============================================================
 // ESEGUE CURA
 // ============================================================
+
+
 
 
 async function executeHeal(
@@ -9471,9 +14090,15 @@ async function executeHeal(
 ) {
 
 
+
+
     if (!character) {
         return;
     }
+
+
+
+
 
 
 
@@ -9484,12 +14109,20 @@ async function executeHeal(
 
 
 
+
+
+
+
     const currentMana =
         character.current_pm === null ||
         character.current_pm === undefined
 
 
+
+
             ? stats.maxMana
+
+
 
 
             : Number(
@@ -9499,9 +14132,15 @@ async function executeHeal(
 
 
 
+
+
+
+
     if (
         currentMana < 2
     ) {
+
+
 
 
         setMessage(
@@ -9511,13 +14150,25 @@ async function executeHeal(
 
 
 
+
+
+
+
         deactivateHealMode();
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9529,6 +14180,8 @@ async function executeHeal(
     // ========================================================
 
 
+
+
     const level =
         Number(
             character.livello
@@ -9537,9 +14190,17 @@ async function executeHeal(
 
 
 
+
+
+
+
     const healAmount =
         stats.intelligenza +
         level;
+
+
+
+
 
 
 
@@ -9554,9 +14215,17 @@ async function executeHeal(
 
 
 
+
+
+
+
     const actualHeal =
         newHealth -
         targetCurrentHealth;
+
+
+
+
 
 
 
@@ -9566,15 +14235,25 @@ async function executeHeal(
     ) {
 
 
+
+
         setMessage(
             `${targetName} ha già tutti i PF.`
         );
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9583,8 +14262,14 @@ async function executeHeal(
     // non per il normale movimento.
 
 
+
+
     eventLocked =
         true;
+
+
+
+
 
 
 
@@ -9595,12 +14280,20 @@ async function executeHeal(
 
 
 
+
+
+
+
     try {
+
+
 
 
         // ----------------------------------------------------
         // 1. AGGIORNA BERSAGLIO
         // ----------------------------------------------------
+
+
 
 
         const {
@@ -9611,8 +14304,12 @@ async function executeHeal(
                 .update({
 
 
+
+
                     current_hp:
                         newHealth
+
+
 
 
                 })
@@ -9624,13 +14321,25 @@ async function executeHeal(
 
 
 
+
+
+
+
         if (healError) {
+
+
 
 
             throw healError;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9640,11 +14349,17 @@ async function executeHeal(
         // ----------------------------------------------------
 
 
+
+
         const newMana =
             Math.max(
                 0,
                 currentMana - 2
             );
+
+
+
+
 
 
 
@@ -9657,8 +14372,12 @@ async function executeHeal(
                 .update({
 
 
+
+
                     current_pm:
                         newMana
+
+
 
 
                 })
@@ -9670,13 +14389,25 @@ async function executeHeal(
 
 
 
+
+
+
+
         if (manaError) {
+
+
 
 
             throw manaError;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9687,19 +14418,33 @@ async function executeHeal(
 
 
 
+
+
+
+
         // ----------------------------------------------------
         // SE ABBIAMO CURATO NOI STESSI
         // ----------------------------------------------------
 
 
+
+
         if (selfTarget) {
+
+
 
 
             character.current_hp =
                 newHealth;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9709,9 +14454,15 @@ async function executeHeal(
 
 
 
+
+
+
+
         // ----------------------------------------------------
         // BROADCAST CURA
         // ----------------------------------------------------
+
+
 
 
         if (
@@ -9720,22 +14471,34 @@ async function executeHeal(
         ) {
 
 
+
+
             dungeonChannel.send({
+
+
 
 
                 type:
                     "broadcast",
 
 
+
+
                 event:
                     "player-healed",
+
+
 
 
                 payload: {
 
 
+
+
                     caster_character_id:
                         character.id,
+
+
 
 
                     caster_name:
@@ -9743,29 +14506,47 @@ async function executeHeal(
                         "Avventuriero",
 
 
+
+
                     target_character_id:
                         targetCharacterId,
+
+
 
 
                     target_name:
                         targetName,
 
 
+
+
                     healed_amount:
                         actualHeal,
+
+
 
 
                     new_hp:
                         newHealth
 
 
+
+
                 }
+
+
 
 
             });
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9775,7 +14556,13 @@ async function executeHeal(
 
 
 
+
+
+
+
         if (selfTarget) {
+
+
 
 
             setMessage(
@@ -9783,7 +14570,11 @@ async function executeHeal(
             );
 
 
+
+
         } else {
+
+
 
 
             setMessage(
@@ -9791,7 +14582,13 @@ async function executeHeal(
             );
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -9801,13 +14598,23 @@ async function executeHeal(
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
             "Errore Cura:",
             error
         );
+
+
+
+
 
 
 
@@ -9819,14 +14626,24 @@ async function executeHeal(
 
 
 
+
+
+
+
     } finally {
+
+
 
 
         eventLocked =
             false;
 
 
+
+
     }
+
+
 
 
 }
@@ -9843,30 +14660,46 @@ async function executeHeal(
 // ============================================================
 
 
+
+
 const DUNGEON_TRAPS = {
 
 
+
+
     "11,11": {
+
+
 
 
         id:
             "blade_corridor",
 
 
+
+
         name:
             "LAMA",
+
+
 
 
         defenseStat:
             "destrezza",
 
 
+
+
         defenseLabel:
             "DES",
 
 
+
+
         message:
             "Una lama affilata attraversa il corridoio da muro a muro."
+
+
 
 
     },
@@ -9874,33 +14707,55 @@ const DUNGEON_TRAPS = {
 
 
 
+
+
+
+
     "9,15": {
+
+
 
 
         id:
             "acid_vapor",
 
 
+
+
         name:
             "VAPORE ACIDO",
+
+
 
 
         defenseStat:
             "resistenza",
 
 
+
+
         defenseLabel:
             "RES",
+
+
 
 
         message:
             "Dal pavimento una nube di vapore acido ti investe."
 
 
+
+
     }
 
 
+
+
 };
+
+
+
+
 
 
 
@@ -9917,7 +14772,11 @@ const DUNGEON_TRAPS = {
 // ============================================================
 
 
+
+
 async function checkDungeonCellEvent() {
+
+
 
 
     if (
@@ -9926,7 +14785,11 @@ async function checkDungeonCellEvent() {
     ) {
 
 
+
+
         return false;
+
+
 
 
     }
@@ -9934,8 +14797,16 @@ async function checkDungeonCellEvent() {
 
 
 
+
+
+
+
     const coordinateKey =
         `${Number(playerX)},${Number(playerY)}`;
+
+
+
+
 
 
 
@@ -9948,13 +14819,25 @@ async function checkDungeonCellEvent() {
 
 
 
+
+
+
+
     if (!dungeonTrap) {
+
+
 
 
         return false;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -9968,6 +14851,10 @@ async function checkDungeonCellEvent() {
 
 
 
+
+
+
+
     await triggerTrapEvent(
         dungeonTrap
     );
@@ -9975,10 +14862,20 @@ async function checkDungeonCellEvent() {
 
 
 
+
+
+
+
     return true;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -10005,9 +14902,13 @@ async function checkDungeonCellEvent() {
 // ============================================================
 
 
+
+
 async function triggerTrapEvent(
     dungeonTrap
 ) {
+
+
 
 
     if (
@@ -10017,10 +14918,18 @@ async function triggerTrapEvent(
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -10031,8 +14940,16 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
     movementQueue.length =
         0;
+
+
+
+
 
 
 
@@ -10040,9 +14957,13 @@ async function triggerTrapEvent(
     try {
 
 
+
+
         // ====================================================
         // COOLDOWN GLOBALE TRAPPOLA - 15 MINUTI
         // ====================================================
+
+
 
 
         const {
@@ -10056,6 +14977,8 @@ async function triggerTrapEvent(
                         dungeonTrap.id,
 
 
+
+
                     p_character_id:
                         character.id
                 }
@@ -10064,13 +14987,25 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         if (trapTriggerError) {
+
+
 
 
             throw trapTriggerError;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -10083,8 +15018,14 @@ async function triggerTrapEvent(
         ) {
 
 
+
+
             eventLocked =
                 false;
+
+
+
+
 
 
 
@@ -10096,10 +15037,20 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -10112,10 +15063,18 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         const defense =
             getDungeonEffectiveAttribute(
                 dungeonTrap.defenseStat
             );
+
+
+
+
 
 
 
@@ -10129,9 +15088,17 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         const trapResult =
             roll -
             luck;
+
+
+
+
 
 
 
@@ -10146,8 +15113,16 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         const stats =
             getDungeonCalculatedStats();
+
+
+
+
 
 
 
@@ -10157,7 +15132,11 @@ async function triggerTrapEvent(
             character.current_hp === undefined
 
 
+
+
                 ? stats.maxHealth
+
+
 
 
                 : Math.max(
@@ -10173,12 +15152,20 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         const newHealth =
             Math.max(
                 0,
                 oldHealth -
                 damage
             );
+
+
+
+
 
 
 
@@ -10190,8 +15177,12 @@ async function triggerTrapEvent(
                     dungeonTrap.id,
 
 
+
+
                 coordinate:
                     `${playerX},${playerY}`,
+
+
 
 
                 roll,
@@ -10199,8 +15190,12 @@ async function triggerTrapEvent(
                 trapResult,
 
 
+
+
                 defenseStat:
                     dungeonTrap.defenseStat,
+
+
 
 
                 defense,
@@ -10213,14 +15208,22 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         // ====================================================
         // NESSUN DANNO
         // ====================================================
 
 
+
+
         if (
             damage <= 0
         ) {
+
+
 
 
             setMessage(
@@ -10230,55 +15233,85 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
             openTrapResultPrompt({
+
+
 
 
                 title:
                     dungeonTrap.name,
 
 
+
+
                 message:
                     dungeonTrap.message,
+
+
 
 
                 roll:
                     roll,
 
 
+
+
                 luck:
                     luck,
+
+
 
 
                 trapResult:
                     trapResult,
 
 
+
+
                 defenseLabel:
                     dungeonTrap.defenseLabel,
+
+
 
 
                 defense:
                     defense,
 
 
+
+
                 damage:
                     0,
+
+
 
 
                 currentHealth:
                     oldHealth,
 
 
+
+
                 maxHealth:
                     stats.maxHealth,
+
+
 
 
                 avoided:
                     true,
 
 
+
+
                 lethal:
                     false
+
+
 
 
             });
@@ -10286,10 +15319,20 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
             return;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -10303,8 +15346,14 @@ async function triggerTrapEvent(
         // ====================================================
 
 
+
+
         character.current_hp =
             newHealth;
+
+
+
+
 
 
 
@@ -10314,9 +15363,17 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         setMessage(
             `La trappola ti colpisce: perdi ${damage} PF.`
         );
+
+
+
+
 
 
 
@@ -10329,8 +15386,12 @@ async function triggerTrapEvent(
                 .update({
 
 
+
+
                     current_hp:
                         newHealth
+
+
 
 
                 })
@@ -10342,13 +15403,23 @@ async function triggerTrapEvent(
                     ({ error }) => {
 
 
+
+
                         if (error) {
+
+
 
 
                             throw error;
 
 
+
+
                         }
+
+
+
+
 
 
 
@@ -10357,10 +15428,14 @@ async function triggerTrapEvent(
                         updateMyPresence();
 
 
+
+
                     }
                 )
                 .catch(
                     error => {
+
+
 
 
                         console.error(
@@ -10369,8 +15444,14 @@ async function triggerTrapEvent(
                         );
 
 
+
+
                     }
                 );
+
+
+
+
 
 
 
@@ -10378,56 +15459,84 @@ async function triggerTrapEvent(
         openTrapResultPrompt({
 
 
+
+
             title:
                 dungeonTrap.name,
+
+
 
 
             message:
                 dungeonTrap.message,
 
 
+
+
             roll:
                 roll,
+
+
 
 
             luck:
                 luck,
 
 
+
+
             trapResult:
                 trapResult,
+
+
 
 
             defenseLabel:
                 dungeonTrap.defenseLabel,
 
 
+
+
             defense:
                 defense,
+
+
 
 
             damage:
                 damage,
 
 
+
+
             currentHealth:
                 newHealth,
+
+
 
 
             maxHealth:
                 stats.maxHealth,
 
 
+
+
             avoided:
                 false,
+
+
 
 
             lethal:
                 newHealth <= 0,
 
 
+
+
             savePromise:
                 trapSavePromise
+
+
 
 
         });
@@ -10435,13 +15544,23 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
             "Errore trappola:",
             error
         );
+
+
+
+
 
 
 
@@ -10453,14 +15572,26 @@ async function triggerTrapEvent(
 
 
 
+
+
+
+
         eventLocked =
             false;
+
+
 
 
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -10470,9 +15601,13 @@ async function triggerTrapEvent(
 // ============================================================
 
 
+
+
 function openTrapResultPrompt(
     result
 ) {
+
+
 
 
     const oldOverlay =
@@ -10483,13 +15618,25 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
     if (oldOverlay) {
+
+
 
 
         oldOverlay.remove();
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -10502,14 +15649,26 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
     overlay.id =
         "trap-event-overlay";
 
 
 
 
+
+
+
+
     overlay.className =
         "combat-event-overlay";
+
+
+
+
 
 
 
@@ -10522,8 +15681,16 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
     modal.className =
         "combat-event-modal";
+
+
+
+
 
 
 
@@ -10532,7 +15699,11 @@ function openTrapResultPrompt(
         result.avoided
 
 
+
+
             ? "RIESCI A EVITARE LA TRAPPOLA"
+
+
 
 
             : `SUBISCI ${result.damage} DANNI`;
@@ -10540,12 +15711,20 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
     modal.innerHTML = `
+
+
 
 
         <div class="combat-event-icon">
             ⚠
         </div>
+
+
 
 
         <h2>
@@ -10555,6 +15734,8 @@ function openTrapResultPrompt(
         </h2>
 
 
+
+
         <p>
             ${escapeTrapHtml(
                 result.message
@@ -10562,7 +15743,11 @@ function openTrapResultPrompt(
         </p>
 
 
+
+
         <div class="combat-event-warning">
+
+
 
 
             <div>
@@ -10571,10 +15756,14 @@ function openTrapResultPrompt(
             </div>
 
 
+
+
             <div>
                 <strong>LCK:</strong>
                 ${result.luck}
             </div>
+
+
 
 
             <div>
@@ -10582,6 +15771,8 @@ function openTrapResultPrompt(
                 ${result.roll} - ${result.luck}
                 = ${result.trapResult}
             </div>
+
+
 
 
             <div>
@@ -10592,7 +15783,11 @@ function openTrapResultPrompt(
             </div>
 
 
+
+
             <br>
+
+
 
 
             <div>
@@ -10604,6 +15799,8 @@ function openTrapResultPrompt(
             </div>
 
 
+
+
             <div>
                 Vita:
                 ${result.currentHealth}
@@ -10612,10 +15809,16 @@ function openTrapResultPrompt(
             </div>
 
 
+
+
         </div>
 
 
+
+
         <div class="combat-event-buttons">
+
+
 
 
             <button
@@ -10627,8 +15830,14 @@ function openTrapResultPrompt(
             </button>
 
 
+
+
         </div>
     `;
+
+
+
+
 
 
 
@@ -10640,9 +15849,17 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
     document.body.appendChild(
         overlay
     );
+
+
+
+
 
 
 
@@ -10656,7 +15873,13 @@ function openTrapResultPrompt(
             async () => {
 
 
+
+
                 overlay.remove();
+
+
+
+
 
 
 
@@ -10667,6 +15890,8 @@ function openTrapResultPrompt(
                 ) {
 
 
+
+
                     // In caso di morte aspettiamo solo che il danno
                     // sia stato persistito prima di archiviare/eliminare.
                     if (
@@ -10674,7 +15899,11 @@ function openTrapResultPrompt(
                     ) {
 
 
+
+
                         await result.savePromise;
+
+
 
 
                     }
@@ -10682,7 +15911,13 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
                     try {
+
+
 
 
                         const temporalCoinActivated =
@@ -10691,20 +15926,34 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
                         if (temporalCoinActivated) {
+
+
 
 
                             eventLocked =
                                 false;
 
 
+
+
                             return;
+
+
 
 
                         }
 
 
+
+
                     } catch (temporalCoinError) {
+
+
 
 
                         console.error(
@@ -10713,16 +15962,24 @@ function openTrapResultPrompt(
                         );
 
 
+
+
                         setMessage(
                             "Errore durante il controllo della Moneta Temporale."
                         );
+
+
 
 
                         eventLocked =
                             false;
 
 
+
+
                         return;
+
+
 
 
                     }
@@ -10730,13 +15987,25 @@ function openTrapResultPrompt(
 
 
 
+
+
+
+
                     await handleCharacterDeath();
+
+
 
 
                     return;
 
 
+
+
                 }
+
+
+
+
 
 
 
@@ -10747,11 +16016,19 @@ function openTrapResultPrompt(
                     false;
 
 
+
+
             }
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -10761,9 +16038,13 @@ function openTrapResultPrompt(
 // ============================================================
 
 
+
+
 function escapeTrapHtml(
     value
 ) {
+
+
 
 
     return String(
@@ -10791,7 +16072,13 @@ function escapeTrapHtml(
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -10808,7 +16095,11 @@ function escapeTrapHtml(
 // ============================================================
 
 
+
+
 async function tryConsumeTemporalCoinAfterDamage() {
+
+
 
 
     if (
@@ -10817,6 +16108,10 @@ async function tryConsumeTemporalCoinAfterDamage() {
     ) {
         return false;
     }
+
+
+
+
 
 
 
@@ -10832,6 +16127,8 @@ async function tryConsumeTemporalCoinAfterDamage() {
                     character.id,
 
 
+
+
                 p_combat_id:
                     null
             }
@@ -10840,9 +16137,17 @@ async function tryConsumeTemporalCoinAfterDamage() {
 
 
 
+
+
+
+
     if (error) {
         throw error;
     }
+
+
+
+
 
 
 
@@ -10857,10 +16162,18 @@ async function tryConsumeTemporalCoinAfterDamage() {
 
 
 
+
+
+
+
     character.current_hp =
         Number(
             data.current_hp
         ) || 0;
+
+
+
+
 
 
 
@@ -10873,12 +16186,22 @@ async function tryConsumeTemporalCoinAfterDamage() {
 
 
 
+
+
+
+
     // La moneta è stata rimossa dal DB: riallineiamo inventario,
     // bonus, pannello e Presence.
     await loadCharacterEquipment();
 
 
+
+
     updateCharacterPanel();
+
+
+
+
 
 
 
@@ -10895,9 +16218,15 @@ async function tryConsumeTemporalCoinAfterDamage() {
 
 
 
+
+
+
+
     setMessage(
         "La Moneta Temporale si frantuma: il tempo si riavvolge e torni al massimo di PF e PM."
     );
+
+
 
 
 // ============================================================
@@ -10905,13 +16234,21 @@ async function tryConsumeTemporalCoinAfterDamage() {
 // ============================================================
 
 
+
+
 eventLocked = false;
+
+
 
 
 movementQueue.length = 0;
 
 
+
+
 movementQueueRunning = false;
+
+
 
 
 // Evita che un elemento del popup appena chiuso
@@ -10923,10 +16260,18 @@ if (
 }
 
 
+
+
     return true;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -10936,7 +16281,11 @@ if (
 // ============================================================
 
 
+
+
 async function handleCharacterDeath() {
+
+
 
 
     if (
@@ -10949,14 +16298,26 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
     eventLocked =
         true;
 
 
 
 
+
+
+
+
     movementQueue.length =
         0;
+
+
+
+
 
 
 
@@ -10968,9 +16329,15 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
     // ========================================================
     // RIMUOVE PRESENCE
     // ========================================================
+
+
 
 
     if (
@@ -10979,13 +16346,21 @@ async function handleCharacterDeath() {
     ) {
 
 
+
+
         try {
+
+
 
 
             await dungeonChannel.untrack();
 
 
+
+
         } catch (error) {
+
+
 
 
             console.error(
@@ -10994,10 +16369,18 @@ async function handleCharacterDeath() {
             );
 
 
+
+
         }
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11007,7 +16390,11 @@ async function handleCharacterDeath() {
     // ========================================================
 
 
+
+
     try {
+
+
 
 
         const {
@@ -11024,9 +16411,17 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
         if (error) {
             throw error;
         }
+
+
+
+
 
 
 
@@ -11037,13 +16432,23 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
         window.location.href =
             "../../morte.html";
 
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -11054,15 +16459,25 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
         showError(
             "Errore durante la gestione della morte."
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
 
 
 // ============================================================
@@ -11072,12 +16487,22 @@ async function handleCharacterDeath() {
 
 
 
+
+
+
+
 // ============================================================
 // INIZIALIZZAZIONE
 // ============================================================
 
 
+
+
 function setupFogOfWar() { /* Nebbia del dungeon Piano 1 non applicabile qui. */ }
+
+
+
+
 
 
 
@@ -11087,7 +16512,11 @@ function setupFogOfWar() { /* Nebbia del dungeon Piano 1 non applicabile qui. */
 // ============================================================
 
 
+
+
 function loadExploredCellsFromCharacter() {
+
+
 
 
     exploredCells.clear();
@@ -11095,8 +16524,16 @@ function loadExploredCellsFromCharacter() {
 
 
 
+
+
+
+
     const stored =
         character?.fog_explored;
+
+
+
+
 
 
 
@@ -11108,10 +16545,18 @@ function loadExploredCellsFromCharacter() {
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11120,16 +16565,26 @@ function loadExploredCellsFromCharacter() {
         cell => {
 
 
+
+
             if (
                 !Array.isArray(cell) ||
                 cell.length < 2
             ) {
 
 
+
+
                 return;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -11142,10 +16597,18 @@ function loadExploredCellsFromCharacter() {
 
 
 
+
+
+
+
             const y =
                 Number(
                     cell[1]
                 );
+
+
+
+
 
 
 
@@ -11160,6 +16623,8 @@ function loadExploredCellsFromCharacter() {
             ) {
 
 
+
+
                 exploredCells.add(
                     fogCellKey(
                         x,
@@ -11168,14 +16633,24 @@ function loadExploredCellsFromCharacter() {
                 );
 
 
+
+
             }
+
+
 
 
         }
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11185,7 +16660,13 @@ function loadExploredCellsFromCharacter() {
 // ============================================================
 
 
+
+
 function updateFogOfWar() { /* Nebbia Piano Ia da integrare nella fase successiva. */ }
+
+
+
+
 
 
 
@@ -11195,7 +16676,11 @@ function updateFogOfWar() { /* Nebbia Piano Ia da integrare nella fase successiv
 // ============================================================
 
 
+
+
 function calculateVisibleCells() {
+
+
 
 
     const visible =
@@ -11204,8 +16689,16 @@ function calculateVisibleCells() {
 
 
 
+
+
+
+
     const radius =
         getVisionRadius();
+
+
+
+
 
 
 
@@ -11217,6 +16710,8 @@ function calculateVisibleCells() {
     ) {
 
 
+
+
         for (
             let x = 0;
             x < MAP_COLUMNS;
@@ -11224,9 +16719,15 @@ function calculateVisibleCells() {
         ) {
 
 
+
+
             const dx =
                 x -
                 playerX;
+
+
+
+
 
 
 
@@ -11238,7 +16739,13 @@ function calculateVisibleCells() {
 
 
 
+
+
+
+
             // Zona di visione circolare.
+
+
 
 
             if (
@@ -11250,10 +16757,18 @@ function calculateVisibleCells() {
             ) {
 
 
+
+
                 continue;
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -11268,6 +16783,8 @@ function calculateVisibleCells() {
             ) {
 
 
+
+
                 visible.add(
                     fogCellKey(
                         x,
@@ -11276,10 +16793,16 @@ function calculateVisibleCells() {
                 );
 
 
+
+
             }
 
 
+
+
         }
+
+
 
 
     }
@@ -11287,7 +16810,13 @@ function calculateVisibleCells() {
 
 
 
+
+
+
+
     // La casella del PG è sempre visibile.
+
+
 
 
     visible.add(
@@ -11300,10 +16829,20 @@ function calculateVisibleCells() {
 
 
 
+
+
+
+
     return visible;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11316,16 +16855,28 @@ function calculateVisibleCells() {
 // ============================================================
 
 
+
+
 function getVisionRadius() {
+
+
 
 
     if (!character) {
 
 
+
+
         return 5;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11334,7 +16885,13 @@ function getVisionRadius() {
         .movement;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11344,10 +16901,14 @@ function getVisionRadius() {
 // ============================================================
 
 
+
+
 function getDungeonCellValue(
     x,
     y
 ) {
+
+
 
 
     if (
@@ -11362,10 +16923,18 @@ function getDungeonCellValue(
     ) {
 
 
+
+
         return null;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11377,9 +16946,17 @@ function getDungeonCellValue(
 
 
 
+
+
+
+
     const jsonY =
         y +
         GRID_OFFSET_Y;
+
+
+
+
 
 
 
@@ -11397,10 +16974,18 @@ function getDungeonCellValue(
     ) {
 
 
+
+
         return null;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11417,6 +17002,10 @@ function getDungeonCellValue(
 
 
 
+
+
+
+
     return Number.isFinite(
         value
     )
@@ -11424,7 +17013,13 @@ function getDungeonCellValue(
         : null;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11432,6 +17027,8 @@ function getDungeonCellValue(
 // ============================================================
 // LINEA DI VISTA
 // ============================================================
+
+
 
 
 function hasLineOfSight(
@@ -11442,16 +17039,26 @@ function hasLineOfSight(
 ) {
 
 
+
+
     if (
         startX === targetX &&
         startY === targetY
     ) {
 
 
+
+
         return true;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11462,10 +17069,14 @@ function hasLineOfSight(
     // il varco, soprattutto sulle diagonali.
 
 
+
+
     if (
         !hasBossRoomAccess() &&
         BOSS_ROOM_GATE_CELLS.some(
             gate => {
+
+
 
 
                 return doesSightSegmentCrossCell(
@@ -11478,11 +17089,17 @@ function hasLineOfSight(
                 );
 
 
+
+
             }
         )
     ) {
         return false;
     }
+
+
+
+
 
 
 
@@ -11498,6 +17115,10 @@ function hasLineOfSight(
 
 
 
+
+
+
+
     // Non controlliamo:
     //
     // - la casella iniziale
@@ -11507,6 +17128,8 @@ function hasLineOfSight(
     // ma ciò che si trova dietro al muro no.
 
 
+
+
     for (
         let i = 1;
         i < line.length - 1;
@@ -11514,8 +17137,14 @@ function hasLineOfSight(
     ) {
 
 
+
+
         const cell =
             line[i];
+
+
+
+
 
 
 
@@ -11528,10 +17157,16 @@ function hasLineOfSight(
         ) {
 
 
+
+
             return false;
 
 
+
+
         }
+
+
 
 
     }
@@ -11539,10 +17174,20 @@ function hasLineOfSight(
 
 
 
+
+
+
+
     return true;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11556,6 +17201,8 @@ function hasLineOfSight(
 // ============================================================
 
 
+
+
 function getGridLine(
     x0,
     y0,
@@ -11564,8 +17211,14 @@ function getGridLine(
 ) {
 
 
+
+
     const cells =
         [];
+
+
+
+
 
 
 
@@ -11576,10 +17229,16 @@ function getGridLine(
     ) {
 
 
+
+
         const last =
             cells[
                 cells.length - 1
             ];
+
+
+
+
 
 
 
@@ -11591,16 +17250,26 @@ function getGridLine(
         ) {
 
 
+
+
             cells.push({
                 x,
                 y
             });
 
 
+
+
         }
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11611,8 +17280,16 @@ function getGridLine(
 
 
 
+
+
+
+
     let y =
         y0;
+
+
+
+
 
 
 
@@ -11625,6 +17302,10 @@ function getGridLine(
 
 
 
+
+
+
+
     const dx =
         x1 -
         x0;
@@ -11632,9 +17313,17 @@ function getGridLine(
 
 
 
+
+
+
+
     const dy =
         y1 -
         y0;
+
+
+
+
 
 
 
@@ -11647,10 +17336,18 @@ function getGridLine(
 
 
 
+
+
+
+
     const stepY =
         Math.sign(
             dy
         );
+
+
+
+
 
 
 
@@ -11663,10 +17360,18 @@ function getGridLine(
 
 
 
+
+
+
+
     const absDy =
         Math.abs(
             dy
         );
+
+
+
+
 
 
 
@@ -11679,10 +17384,18 @@ function getGridLine(
 
 
 
+
+
+
+
     const tDeltaY =
         absDy === 0
             ? Infinity
             : 1 / absDy;
+
+
+
+
 
 
 
@@ -11695,10 +17408,18 @@ function getGridLine(
 
 
 
+
+
+
+
     let tMaxY =
         absDy === 0
             ? Infinity
             : 0.5 / absDy;
+
+
+
+
 
 
 
@@ -11709,13 +17430,21 @@ function getGridLine(
 
 
 
+
+
+
+
     while (
         x !== x1 ||
         y !== y1
     ) {
 
 
+
+
         // Passaggio perfettamente diagonale.
+
+
 
 
         if (
@@ -11727,6 +17456,8 @@ function getGridLine(
         ) {
 
 
+
+
             const sideX =
                 x +
                 stepX;
@@ -11734,9 +17465,17 @@ function getGridLine(
 
 
 
+
+
+
+
             const sideY =
                 y +
                 stepY;
+
+
+
+
 
 
 
@@ -11749,10 +17488,18 @@ function getGridLine(
 
 
 
+
+
+
+
             addCell(
                 x,
                 sideY
             );
+
+
+
+
 
 
 
@@ -11763,8 +17510,16 @@ function getGridLine(
 
 
 
+
+
+
+
             y =
                 sideY;
+
+
+
+
 
 
 
@@ -11777,8 +17532,16 @@ function getGridLine(
 
 
 
+
+
+
+
             tMaxX +=
                 tDeltaX;
+
+
+
+
 
 
 
@@ -11789,10 +17552,20 @@ function getGridLine(
 
 
 
+
+
+
+
             continue;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -11803,14 +17576,24 @@ function getGridLine(
         ) {
 
 
+
+
             x +=
                 stepX;
 
 
 
 
+
+
+
+
             tMaxX +=
                 tDeltaX;
+
+
+
+
 
 
 
@@ -11823,10 +17606,20 @@ function getGridLine(
 
 
 
+
+
+
+
             continue;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -11837,8 +17630,16 @@ function getGridLine(
 
 
 
+
+
+
+
         tMaxY +=
             tDeltaY;
+
+
+
+
 
 
 
@@ -11849,7 +17650,13 @@ function getGridLine(
         );
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11857,7 +17664,13 @@ function getGridLine(
     return cells;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -11867,14 +17680,20 @@ function getGridLine(
 // ============================================================
 
 
+
+
 function isVisionBlockingCell(
     x,
     y
 ) {
 
 
+
+
     // I varchi della stanza Boss bloccano anche la visuale
     // finché questo personaggio non possiede l'accesso.
+
+
 
 
     if (
@@ -11887,10 +17706,18 @@ function isVisionBlockingCell(
     ) {
 
 
+
+
         return true;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11904,15 +17731,27 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     if (
         value === null
     ) {
 
 
+
+
         return true;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -11921,12 +17760,18 @@ function isVisionBlockingCell(
     // bloccano la visuale.
 
 
+
+
     if (
         value === 0
     ) {
 
 
+
+
         return true;
+
+
 
 
     }
@@ -11934,9 +17779,17 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     const bits =
         dungeonData.cell_bit ||
         {};
+
+
+
+
 
 
 
@@ -11949,10 +17802,18 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     const PERIMETER =
         Number(
             bits.perimeter
         ) || 16;
+
+
+
+
 
 
 
@@ -11965,10 +17826,18 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     const LOCKED =
         Number(
             bits.locked
         ) || 262144;
+
+
+
+
 
 
 
@@ -11981,6 +17850,10 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     const PORTCULLIS =
         Number(
             bits.portcullis
@@ -11989,31 +17862,55 @@ function isVisionBlockingCell(
 
 
 
+
+
+
+
     return (
+
+
 
 
         (value & BLOCK) !== 0 ||
 
 
+
+
         (value & PERIMETER) !== 0 ||
+
+
 
 
         (value & DOOR) !== 0 ||
 
 
+
+
         (value & LOCKED) !== 0 ||
+
+
 
 
         (value & SECRET) !== 0 ||
 
 
+
+
         (value & PORTCULLIS) !== 0
+
+
 
 
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -12023,16 +17920,28 @@ function isVisionBlockingCell(
 // ============================================================
 
 
+
+
 function renderFogOfWar() {
+
+
 
 
     if (!fogCanvas) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -12045,10 +17954,18 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     const image =
         document.getElementById(
             "dungeon-map-image"
         );
+
+
+
+
 
 
 
@@ -12059,10 +17976,18 @@ function renderFogOfWar() {
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -12073,8 +17998,16 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     const containerRect =
         map.getBoundingClientRect();
+
+
+
+
 
 
 
@@ -12085,7 +18018,11 @@ function renderFogOfWar() {
     ) {
 
 
+
+
         return;
+
+
 
 
     }
@@ -12093,9 +18030,17 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     const pixelRatio =
         window.devicePixelRatio ||
         1;
+
+
+
+
 
 
 
@@ -12109,11 +18054,19 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     fogCanvas.style.top =
         `${
             mapRect.top -
             containerRect.top
         }px`;
+
+
+
+
 
 
 
@@ -12124,8 +18077,16 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     fogCanvas.style.height =
         `${mapRect.height}px`;
+
+
+
+
 
 
 
@@ -12142,6 +18103,10 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     fogCanvas.height =
         Math.max(
             1,
@@ -12154,6 +18119,10 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     const context =
         fogCanvas.getContext(
             "2d"
@@ -12162,13 +18131,25 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     if (!context) {
+
+
 
 
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -12185,12 +18166,20 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     context.clearRect(
         0,
         0,
         mapRect.width,
         mapRect.height
     );
+
+
+
+
 
 
 
@@ -12202,9 +18191,17 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
     const cellHeight =
         mapRect.height /
         MAP_ROWS;
+
+
+
+
 
 
 
@@ -12216,11 +18213,15 @@ function renderFogOfWar() {
     ) {
 
 
+
+
         for (
             let x = 0;
             x < MAP_COLUMNS;
             x++
         ) {
+
+
 
 
             const key =
@@ -12232,9 +18233,15 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
             // Dietro a un varco Boss ancora chiuso:
             // nero pieno anche se la cella era già stata
             // esplorata in precedenza.
+
+
 
 
             if (
@@ -12245,8 +18252,12 @@ function renderFogOfWar() {
             ) {
 
 
+
+
                 context.fillStyle =
                     "rgba(0, 0, 0, 1)";
+
+
 
 
                 context.fillRect(
@@ -12257,7 +18268,11 @@ function renderFogOfWar() {
                 );
 
 
+
+
                 continue;
+
+
 
 
             }
@@ -12265,7 +18280,13 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
             // Visibile in questo momento.
+
+
 
 
             if (
@@ -12275,7 +18296,11 @@ function renderFogOfWar() {
             ) {
 
 
+
+
                 continue;
+
+
 
 
             }
@@ -12283,7 +18308,13 @@ function renderFogOfWar() {
 
 
 
+
+
+
+
             // Già visitata ma non visibile ora.
+
+
 
 
             if (
@@ -12293,24 +18324,40 @@ function renderFogOfWar() {
             ) {
 
 
+
+
                 context.fillStyle =
                     "rgba(0, 0, 0, 0.62)";
+
+
 
 
             }
 
 
+
+
             // Mai esplorata.
 
 
+
+
             else {
+
+
 
 
                 context.fillStyle =
                     "rgba(0, 0, 0, 1)";
 
 
+
+
             }
+
+
+
+
 
 
 
@@ -12318,9 +18365,13 @@ function renderFogOfWar() {
             context.fillRect(
 
 
+
+
                 x *
                 cellWidth -
                 0.5,
+
+
 
 
                 y *
@@ -12328,24 +18379,40 @@ function renderFogOfWar() {
                 0.5,
 
 
+
+
                 cellWidth +
                 1,
+
+
 
 
                 cellHeight +
                 1
 
 
+
+
             );
+
+
 
 
         }
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -12355,10 +18422,14 @@ function renderFogOfWar() {
 // ============================================================
 
 
+
+
 function isCellCurrentlyVisible(
     x,
     y
 ) {
+
+
 
 
     return visibleCells.has(
@@ -12369,7 +18440,13 @@ function isCellCurrentlyVisible(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -12379,7 +18456,11 @@ function isCellCurrentlyVisible(
 // ============================================================
 
 
+
+
 function updateRemoteTokensVisibility() {
+
+
 
 
     for (
@@ -12391,6 +18472,8 @@ function updateRemoteTokensVisibility() {
     ) {
 
 
+
+
         const player =
             otherPlayers.get(
                 characterId
@@ -12399,7 +18482,13 @@ function updateRemoteTokensVisibility() {
 
 
 
+
+
+
+
         if (!player) {
+
+
 
 
             token.style.display =
@@ -12408,10 +18497,20 @@ function updateRemoteTokensVisibility() {
 
 
 
+
+
+
+
             continue;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -12422,10 +18521,18 @@ function updateRemoteTokensVisibility() {
         token.style.display = "flex";
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -12435,7 +18542,11 @@ function updateRemoteTokensVisibility() {
 // ============================================================
 
 
+
+
 function queueFogExplorationSave() {
+
+
 
 
     if (
@@ -12444,10 +18555,18 @@ function queueFogExplorationSave() {
     ) {
 
 
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -12473,8 +18592,16 @@ function queueFogExplorationSave() {
 
 
 
+
+
+
+
     character.fog_explored =
         snapshot;
+
+
+
+
 
 
 
@@ -12484,10 +18611,14 @@ function queueFogExplorationSave() {
     // stato di esplorazione più recente.
 
 
+
+
     fogSavePromise =
         fogSavePromise
             .then(
                 async () => {
+
+
 
 
                     const {
@@ -12500,8 +18631,12 @@ function queueFogExplorationSave() {
                             .update({
 
 
+
+
                                 fog_explored:
                                     snapshot
+
+
 
 
                             })
@@ -12513,7 +18648,13 @@ function queueFogExplorationSave() {
 
 
 
+
+
+
+
                     if (error) {
+
+
 
 
                         console.error(
@@ -12522,7 +18663,11 @@ function queueFogExplorationSave() {
                         );
 
 
+
+
                     }
+
+
 
 
                 }
@@ -12531,17 +18676,27 @@ function queueFogExplorationSave() {
                 error => {
 
 
+
+
                     console.error(
                         "Errore coda nebbia:",
                         error
                     );
 
 
+
+
                 }
             );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -12551,16 +18706,24 @@ function queueFogExplorationSave() {
 // ============================================================
 
 
+
+
 function fogCellKey(
     x,
     y
 ) {
 
 
+
+
     return `${x},${y}`;
 
 
+
+
 }
+
+
 
 
 // ============================================================
@@ -12570,6 +18733,8 @@ function fogCellKey(
 // ============================================================
 
 
+
+
 let dungeonTradeCurrentId = null;
 let dungeonTradeInviteId = null;
 let dungeonTradeBusy = false;
@@ -12577,29 +18742,43 @@ let dungeonTradePollTimer = null;
 let dungeonTradeSelectedCharacterId = null;
 
 
+
+
 function setupDungeonTradeUi() {
     document.getElementById("dungeon-trade-add-item")
         ?.addEventListener("click", addSelectedDungeonTradeItem);
+
+
 
 
     document.getElementById("dungeon-trade-confirm")
         ?.addEventListener("click", confirmCurrentDungeonTrade);
 
 
+
+
     document.getElementById("dungeon-trade-cancel")
         ?.addEventListener("click", cancelCurrentDungeonTrade);
+
+
 
 
     document.getElementById("dungeon-trade-accept")
         ?.addEventListener("click", acceptDungeonTradeInvite);
 
 
+
+
     document.getElementById("dungeon-trade-decline")
         ?.addEventListener("click", declineDungeonTradeInvite);
 
 
+
+
     document.getElementById("dungeon-trade-item-select")
         ?.addEventListener("change", updateDungeonTradeQuantityLimit);
+
+
 
 
     renderDungeonTradeNearbyPlayers();
@@ -12607,13 +18786,19 @@ function setupDungeonTradeUi() {
 }
 
 
+
+
 function isDungeonTradeInteractionOpen() {
     return false;
 }
 
 
+
+
 function isDungeonTradeAdjacent(player) {
     if (!player) return false;
+
+
 
 
     const distance =
@@ -12621,8 +18806,12 @@ function isDungeonTradeAdjacent(player) {
         Math.abs(Number(playerY) - Number(player.y));
 
 
+
+
     return distance === 1;
 }
+
+
 
 
 function getAdjacentDungeonTradePlayers() {
@@ -12636,13 +18825,19 @@ function getAdjacentDungeonTradePlayers() {
 }
 
 
+
+
 function renderDungeonTradeNearbyPlayers() {
     const container = document.getElementById("dungeon-trade-nearby-players");
     if (!container) return;
 
 
+
+
     const players = getAdjacentDungeonTradePlayers();
     container.replaceChildren();
+
+
 
 
     if (!players.length) {
@@ -12654,10 +18849,14 @@ function renderDungeonTradeNearbyPlayers() {
     }
 
 
+
+
     players.forEach(player => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "dungeon-trade-nearby-player";
+
+
 
 
         if (player.character_id === dungeonTradeSelectedCharacterId) {
@@ -12665,15 +18864,21 @@ function renderDungeonTradeNearbyPlayers() {
         }
 
 
+
+
         const image = document.createElement("img");
         image.src = "../../immagini/token/" + (player.token || "token_1.png");
         image.alt = player.name || "Personaggio";
+
+
 
 
         const text = document.createElement("span");
         const name = document.createElement("strong");
         name.textContent = player.name || "Avventuriero";
         const state = document.createElement("small");
+
+
 
 
         if (dungeonTradeInviteId && player.character_id === dungeonTradeSelectedCharacterId) {
@@ -12685,8 +18890,12 @@ function renderDungeonTradeNearbyPlayers() {
         }
 
 
+
+
         text.append(name, state);
         button.append(image, text);
+
+
 
 
         button.addEventListener("click", () => selectDungeonTradePlayer(player.character_id));
@@ -12695,8 +18904,12 @@ function renderDungeonTradeNearbyPlayers() {
 }
 
 
+
+
 async function selectDungeonTradePlayer(characterId) {
     if (dungeonTradeBusy) return;
+
+
 
 
     const player = otherPlayers.get(characterId);
@@ -12707,16 +18920,22 @@ async function selectDungeonTradePlayer(characterId) {
     }
 
 
+
+
     if (player.in_combat || player.active_combat_id) {
         setMessage("Non puoi scambiare con un personaggio in combattimento.");
         return;
     }
 
 
+
+
     // Se esiste già uno scambio con questo giocatore, mostralo.
     const existing = await findDungeonTradeWithCharacter(characterId);
     if (existing) {
         dungeonTradeSelectedCharacterId = characterId;
+
+
 
 
         if (existing.status === "pending" && existing.character_b_id === character.id) {
@@ -12731,9 +18950,13 @@ async function selectDungeonTradePlayer(characterId) {
         }
 
 
+
+
         renderDungeonTradeNearbyPlayers();
         return;
     }
+
+
 
 
     if (dungeonTradeCurrentId || dungeonTradeInviteId) {
@@ -12742,12 +18965,18 @@ async function selectDungeonTradePlayer(characterId) {
     }
 
 
+
+
     await openDungeonTradeForRemotePlayer(characterId);
 }
 
 
+
+
 async function findDungeonTradeWithCharacter(characterId) {
     if (!character) return null;
+
+
 
 
     const { data, error } = await db
@@ -12760,14 +18989,20 @@ async function findDungeonTradeWithCharacter(characterId) {
         .maybeSingle();
 
 
+
+
     if (error) {
         console.warn("Errore ricerca scambio esistente:", error);
         return null;
     }
 
 
+
+
     return data || null;
 }
+
+
 
 
 async function openDungeonTradeForRemotePlayer(characterId) {
@@ -12778,8 +19013,12 @@ async function openDungeonTradeForRemotePlayer(characterId) {
     }
 
 
+
+
     dungeonTradeBusy = true;
     dungeonTradeSelectedCharacterId = characterId;
+
+
 
 
     try {
@@ -12789,11 +19028,17 @@ async function openDungeonTradeForRemotePlayer(characterId) {
         );
 
 
+
+
         if (error) throw error;
+
+
 
 
         dungeonTradeCurrentId = data;
         dungeonTradeInviteId = null;
+
+
 
 
         setDungeonTradePanelEnabled(true);
@@ -12802,12 +19047,16 @@ async function openDungeonTradeForRemotePlayer(characterId) {
         clearDungeonTradeOffers();
 
 
+
+
         await sendDungeonTradeBroadcast("dungeon-trade-request", {
             trade_id: data,
             from_character_id: character.id,
             from_name: character.nome || "Avventuriero",
             to_character_id: characterId
         });
+
+
 
 
         startDungeonTradePolling();
@@ -12823,8 +19072,12 @@ async function openDungeonTradeForRemotePlayer(characterId) {
 }
 
 
+
+
 async function sendDungeonTradeBroadcast(event, payload) {
     if (!dungeonChannel || !realtimeReady) return;
+
+
 
 
     try {
@@ -12835,15 +19088,23 @@ async function sendDungeonTradeBroadcast(event, payload) {
 }
 
 
+
+
 function handleDungeonTradeRequestBroadcast(payload) {
     if (!payload || payload.to_character_id !== character?.id) return;
+
+
 
 
     const remote = otherPlayers.get(payload.from_character_id);
     if (!remote || !isDungeonTradeAdjacent(remote)) return;
 
 
+
+
     if (dungeonTradeCurrentId || dungeonTradeInviteId) return;
+
+
 
 
     dungeonTradeInviteId = payload.trade_id;
@@ -12851,6 +19112,8 @@ function handleDungeonTradeRequestBroadcast(payload) {
     showDungeonTradePendingInvite({ id: payload.trade_id });
     renderDungeonTradeNearbyPlayers();
 }
+
+
 
 
 function showDungeonTradePendingInvite() {
@@ -12863,12 +19126,18 @@ function showDungeonTradePendingInvite() {
 }
 
 
+
+
 async function acceptDungeonTradeInvite() {
     if (!dungeonTradeInviteId || dungeonTradeBusy) return;
 
 
+
+
     dungeonTradeBusy = true;
     const tradeId = dungeonTradeInviteId;
+
+
 
 
     try {
@@ -12876,14 +19145,20 @@ async function acceptDungeonTradeInvite() {
         if (error) throw error;
 
 
+
+
         dungeonTradeInviteId = null;
         dungeonTradeCurrentId = tradeId;
+
+
 
 
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
             trade_id: tradeId,
             kind: "accepted"
         });
+
+
 
 
         await refreshDungeonTradeState();
@@ -12897,12 +19172,18 @@ async function acceptDungeonTradeInvite() {
 }
 
 
+
+
 async function declineDungeonTradeInvite() {
     if (!dungeonTradeInviteId || dungeonTradeBusy) return;
 
 
+
+
     dungeonTradeBusy = true;
     const tradeId = dungeonTradeInviteId;
+
+
 
 
     try {
@@ -12910,10 +19191,14 @@ async function declineDungeonTradeInvite() {
         if (error) throw error;
 
 
+
+
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
+
+
 
 
         resetDungeonTradeState("Richiesta rifiutata.");
@@ -12926,16 +19211,22 @@ async function declineDungeonTradeInvite() {
 }
 
 
+
+
 function setDungeonTradePanelEnabled(enabled) {
     document.getElementById("dungeon-trade-inline-panel")
         ?.classList.toggle("disabled", !enabled);
 }
 
 
+
+
 function setDungeonTradeOtherName(name) {
     const el = document.getElementById("dungeon-trade-other-name");
     if (el) el.textContent = name || "ALTRO GIOCATORE";
 }
+
+
 
 
 function setDungeonTradeControlsForStatus(status) {
@@ -12948,9 +19239,13 @@ function setDungeonTradeControlsForStatus(status) {
     const decline = document.getElementById("dungeon-trade-decline");
 
 
+
+
     const active = status === "active";
     const pendingReceived = status === "pending-received";
     const hasTrade = status !== "idle";
+
+
 
 
     if (select) select.disabled = !active;
@@ -12962,8 +19257,12 @@ function setDungeonTradeControlsForStatus(status) {
     if (decline) decline.hidden = !pendingReceived;
 
 
+
+
     if (active) populateDungeonTradeInventorySelect();
 }
+
+
 
 
 function clearDungeonTradeOffers() {
@@ -12973,6 +19272,8 @@ function clearDungeonTradeOffers() {
             el.innerHTML = '<div class="dungeon-trade-empty">Nessun oggetto offerto.</div>';
         }
     });
+
+
 
 
     ["dungeon-trade-my-confirmed", "dungeon-trade-other-confirmed"].forEach(id => {
@@ -12985,12 +19286,16 @@ function clearDungeonTradeOffers() {
 }
 
 
+
+
 function resetDungeonTradePanel() {
     setDungeonTradePanelEnabled(false);
     setDungeonTradeOtherName("ALTRO GIOCATORE");
     setDungeonTradeStatus("Seleziona un giocatore adiacente.");
     setDungeonTradeControlsForStatus("idle");
     clearDungeonTradeOffers();
+
+
 
 
     const select = document.getElementById("dungeon-trade-item-select");
@@ -13004,19 +19309,27 @@ function resetDungeonTradePanel() {
 }
 
 
+
+
 function populateDungeonTradeInventorySelect() {
     const select = document.getElementById("dungeon-trade-item-select");
     if (!select) return;
+
+
 
 
     const previous = select.value;
     select.replaceChildren();
 
 
+
+
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Scegli un oggetto...";
     select.appendChild(placeholder);
+
+
 
 
     characterInventory
@@ -13032,13 +19345,19 @@ function populateDungeonTradeInventorySelect() {
         });
 
 
+
+
     if ([...select.options].some(option => option.value === previous)) {
         select.value = previous;
     }
 
 
+
+
     updateDungeonTradeQuantityLimit();
 }
+
+
 
 
 function updateDungeonTradeQuantityLimit() {
@@ -13047,13 +19366,19 @@ function updateDungeonTradeQuantityLimit() {
     if (!select || !input) return;
 
 
+
+
     const option = select.selectedOptions?.[0];
     const entry = characterInventory.find(row => row.id === select.value);
     const max = Number(option?.dataset?.quantity) || 1;
 
 
+
+
     input.max = String(max);
     input.value = String(Math.min(Math.max(1, Number(input.value) || 1), max));
+
+
 
 
     if (entry?.equipped_slot) {
@@ -13065,12 +19390,18 @@ function updateDungeonTradeQuantityLimit() {
 }
 
 
+
+
 async function addSelectedDungeonTradeItem() {
     if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
 
 
+
+
     const select = document.getElementById("dungeon-trade-item-select");
     const input = document.getElementById("dungeon-trade-item-quantity");
+
+
 
 
     if (!select?.value) {
@@ -13079,8 +19410,12 @@ async function addSelectedDungeonTradeItem() {
     }
 
 
+
+
     const quantity = Number(input?.value) || 1;
     dungeonTradeBusy = true;
+
+
 
 
     try {
@@ -13090,6 +19425,8 @@ async function addSelectedDungeonTradeItem() {
             p_quantity: quantity
         });
         if (error) throw error;
+
+
 
 
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
@@ -13106,9 +19443,13 @@ async function addSelectedDungeonTradeItem() {
 }
 
 
+
+
 async function removeDungeonTradeItem(tradeItemId) {
     if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
     dungeonTradeBusy = true;
+
+
 
 
     try {
@@ -13116,6 +19457,8 @@ async function removeDungeonTradeItem(tradeItemId) {
             p_trade_item_id: tradeItemId
         });
         if (error) throw error;
+
+
 
 
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
@@ -13132,8 +19475,12 @@ async function removeDungeonTradeItem(tradeItemId) {
 }
 
 
+
+
 async function refreshDungeonTradeState() {
     if (!dungeonTradeCurrentId || !character) return;
+
+
 
 
     const { data: trade, error: tradeError } = await db
@@ -13143,10 +19490,14 @@ async function refreshDungeonTradeState() {
         .maybeSingle();
 
 
+
+
     if (tradeError) {
         console.warn("Errore lettura scambio:", tradeError);
         return;
     }
+
+
 
 
     if (!trade) {
@@ -13155,10 +19506,14 @@ async function refreshDungeonTradeState() {
     }
 
 
+
+
     if (trade.status === "cancelled") {
         resetDungeonTradeState("Lo scambio è stato annullato.");
         return;
     }
+
+
 
 
     if (trade.status === "completed") {
@@ -13168,15 +19523,21 @@ async function refreshDungeonTradeState() {
     }
 
 
+
+
     const otherCharacterId = trade.character_a_id === character.id
         ? trade.character_b_id
         : trade.character_a_id;
+
+
 
 
     dungeonTradeSelectedCharacterId = otherCharacterId;
     const remote = otherPlayers.get(otherCharacterId);
     setDungeonTradeOtherName(remote?.name || "ALTRO GIOCATORE");
     setDungeonTradePanelEnabled(true);
+
+
 
 
     if (trade.status === "pending") {
@@ -13189,6 +19550,8 @@ async function refreshDungeonTradeState() {
         }
 
 
+
+
         setDungeonTradeControlsForStatus("pending-sent");
         setDungeonTradeStatus(`Richiesta inviata a ${remote?.name || "giocatore"}. In attesa che accetti...`);
         renderDungeonTradeNearbyPlayers();
@@ -13196,13 +19559,19 @@ async function refreshDungeonTradeState() {
     }
 
 
+
+
     dungeonTradeInviteId = null;
     setDungeonTradeControlsForStatus("active");
+
+
 
 
     if (remote && !isDungeonTradeAdjacent(remote)) {
         setDungeonTradeStatus("Vi siete allontanati: riavvicinatevi per confermare.", true);
     }
+
+
 
 
     // Dettagli offerta via RPC server-side: il partecipante vede i nomi
@@ -13213,10 +19582,14 @@ async function refreshDungeonTradeState() {
     );
 
 
+
+
     if (itemsError) {
         console.warn("Errore lettura dettagli oggetti scambio:", itemsError);
         return;
     }
+
+
 
 
     const tradeItems = (tradeItemDetails || []).map(row => ({
@@ -13225,6 +19598,8 @@ async function refreshDungeonTradeState() {
         inventory_id: row.inventory_id,
         quantity: row.trade_quantity
     }));
+
+
 
 
     const inventoryById = new Map(
@@ -13245,9 +19620,13 @@ async function refreshDungeonTradeState() {
     );
 
 
+
+
     renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote);
     renderDungeonTradeNearbyPlayers();
 }
+
+
 
 
 function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
@@ -13256,12 +19635,18 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
     const confirmButton = document.getElementById("dungeon-trade-confirm");
 
 
+
+
     setDungeonTradeOtherName(remote?.name || "ALTRO GIOCATORE");
+
+
 
 
     const render = (container, ownerId, editable) => {
         if (!container) return;
         container.replaceChildren();
+
+
 
 
         const rows = tradeItems.filter(row => row.owner_character_id === ownerId);
@@ -13274,15 +19659,21 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
         }
 
 
+
+
         rows.forEach(row => {
             const inv = inventoryById.get(row.inventory_id);
             const card = document.createElement("div");
             card.className = "dungeon-trade-offer-row";
 
 
+
+
             const label = document.createElement("span");
             label.textContent = `${inv?.item?.name || "Oggetto"} ×${row.quantity}`;
             card.appendChild(label);
+
+
 
 
             if (editable) {
@@ -13296,13 +19687,19 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
             }
 
 
+
+
             container.appendChild(card);
         });
     };
 
 
+
+
     const myConfirmed = trade.character_a_id === character.id ? trade.a_confirmed : trade.b_confirmed;
     const otherConfirmed = trade.character_a_id === character.id ? trade.b_confirmed : trade.a_confirmed;
+
+
 
 
     render(mine, character.id, true);
@@ -13312,8 +19709,12 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
     );
 
 
+
+
     const myState = document.getElementById("dungeon-trade-my-confirmed");
     const otherState = document.getElementById("dungeon-trade-other-confirmed");
+
+
 
 
     if (myState) {
@@ -13322,16 +19723,22 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
     }
 
 
+
+
     if (otherState) {
         otherState.textContent = otherConfirmed ? "CONFERMATO ✓" : "NON CONFERMATO";
         otherState.classList.toggle("confirmed", !!otherConfirmed);
     }
 
 
+
+
     if (confirmButton) {
         confirmButton.disabled = !!myConfirmed;
         confirmButton.textContent = myConfirmed ? "CONFERMATO" : "CONFERMA";
     }
+
+
 
 
     if (myConfirmed && !otherConfirmed) {
@@ -13344,12 +19751,18 @@ function renderDungeonTradeOffers(trade, tradeItems, inventoryById, remote) {
 }
 
 
+
+
 async function confirmCurrentDungeonTrade() {
     if (!dungeonTradeCurrentId || dungeonTradeBusy) return;
 
 
+
+
     const tradeId = dungeonTradeCurrentId;
     dungeonTradeBusy = true;
+
+
 
 
     try {
@@ -13359,10 +19772,14 @@ async function confirmCurrentDungeonTrade() {
         if (error) throw error;
 
 
+
+
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
             trade_id: tradeId,
             kind: data?.completed ? "completed" : "confirmed"
         });
+
+
 
 
         if (data?.completed) {
@@ -13370,6 +19787,8 @@ async function confirmCurrentDungeonTrade() {
             resetDungeonTradeState("Scambio completato.");
             return;
         }
+
+
 
 
         await refreshDungeonTradeState();
@@ -13383,6 +19802,8 @@ async function confirmCurrentDungeonTrade() {
 }
 
 
+
+
 async function cancelCurrentDungeonTrade() {
     const tradeId = dungeonTradeCurrentId || dungeonTradeInviteId;
     if (!tradeId || dungeonTradeBusy) {
@@ -13391,7 +19812,11 @@ async function cancelCurrentDungeonTrade() {
     }
 
 
+
+
     dungeonTradeBusy = true;
+
+
 
 
     try {
@@ -13399,10 +19824,14 @@ async function cancelCurrentDungeonTrade() {
         if (error) throw error;
 
 
+
+
         await sendDungeonTradeBroadcast("dungeon-trade-update", {
             trade_id: tradeId,
             kind: "cancelled"
         });
+
+
 
 
         resetDungeonTradeState("Scambio annullato.");
@@ -13415,8 +19844,12 @@ async function cancelCurrentDungeonTrade() {
 }
 
 
+
+
 function handleDungeonTradeUpdateBroadcast(payload) {
     if (!payload?.trade_id) return;
+
+
 
 
     if (payload.kind === "cancelled") {
@@ -13427,10 +19860,14 @@ function handleDungeonTradeUpdateBroadcast(payload) {
     }
 
 
+
+
     if (payload.trade_id === dungeonTradeCurrentId) {
         refreshDungeonTradeState();
         return;
     }
+
+
 
 
     if (payload.trade_id === dungeonTradeInviteId && payload.kind === "accepted") {
@@ -13442,6 +19879,8 @@ function handleDungeonTradeUpdateBroadcast(payload) {
 }
 
 
+
+
 function setDungeonTradeStatus(text, error = false) {
     const status = document.getElementById("dungeon-trade-status");
     if (!status) return;
@@ -13450,10 +19889,14 @@ function setDungeonTradeStatus(text, error = false) {
 }
 
 
+
+
 function startDungeonTradePolling() {
     stopDungeonTradePolling();
     dungeonTradePollTimer = window.setInterval(() => refreshDungeonTradeState(), 1500);
 }
+
+
 
 
 function stopDungeonTradePolling() {
@@ -13462,6 +19905,8 @@ function stopDungeonTradePolling() {
         dungeonTradePollTimer = null;
     }
 }
+
+
 
 
 function resetDungeonTradeState(message = "") {
@@ -13475,6 +19920,8 @@ function resetDungeonTradeState(message = "") {
 }
 
 
+
+
 function refreshDungeonTradeAdjacencyState() {
     if (!dungeonTradeSelectedCharacterId) return;
     const remote = otherPlayers.get(dungeonTradeSelectedCharacterId);
@@ -13486,8 +19933,12 @@ function refreshDungeonTradeAdjacencyState() {
 }
 
 
+
+
 async function recoverDungeonTradeState() {
     if (!character) return;
+
+
 
 
     try {
@@ -13501,10 +19952,14 @@ async function recoverDungeonTradeState() {
             .maybeSingle();
 
 
+
+
         if (error || !data) {
             renderDungeonTradeNearbyPlayers();
             return;
         }
+
+
 
 
         const otherId = data.character_a_id === character.id
@@ -13512,7 +19967,11 @@ async function recoverDungeonTradeState() {
             : data.character_a_id;
 
 
+
+
         dungeonTradeSelectedCharacterId = otherId;
+
+
 
 
         if (data.status === "pending" && data.character_b_id === character.id) {
@@ -13523,6 +19982,8 @@ async function recoverDungeonTradeState() {
             await refreshDungeonTradeState();
             startDungeonTradePolling();
         }
+
+
 
 
         renderDungeonTradeNearbyPlayers();
@@ -13536,12 +19997,22 @@ async function recoverDungeonTradeState() {
 
 
 
+
+
+
+
+
+
 // ============================================================
 // NOTE
 // ============================================================
 
 
+
+
 function setupNotes() {
+
+
 
 
     const notes =
@@ -13552,10 +20023,18 @@ function setupNotes() {
 
 
 
+
+
+
+
     const button =
         document.getElementById(
             "save-notes-button"
         );
+
+
+
+
 
 
 
@@ -13571,9 +20050,17 @@ function setupNotes() {
 
 
 
+
+
+
+
     notes.value =
         character.notes ||
         "";
+
+
+
+
 
 
 
@@ -13583,8 +20070,14 @@ function setupNotes() {
         async () => {
 
 
+
+
             button.disabled =
                 true;
+
+
+
+
 
 
 
@@ -13595,8 +20088,16 @@ function setupNotes() {
 
 
 
+
+
+
+
             button.textContent =
                 "SALVATAGGIO...";
+
+
+
+
 
 
 
@@ -13604,8 +20105,14 @@ function setupNotes() {
             try {
 
 
+
+
                 const newNotes =
                     notes.value;
+
+
+
+
 
 
 
@@ -13627,9 +20134,17 @@ function setupNotes() {
 
 
 
+
+
+
+
                 if (error) {
                     throw error;
                 }
+
+
+
+
 
 
 
@@ -13640,13 +20155,23 @@ function setupNotes() {
 
 
 
+
+
+
+
                 button.textContent =
                     "SALVATO ✓";
 
 
 
 
+
+
+
+
             } catch (error) {
+
+
 
 
                 console.error(
@@ -13657,8 +20182,16 @@ function setupNotes() {
 
 
 
+
+
+
+
                 button.textContent =
                     "ERRORE";
+
+
+
+
 
 
 
@@ -13666,8 +20199,12 @@ function setupNotes() {
             } finally {
 
 
+
+
                 setTimeout(
                     () => {
+
+
 
 
                         button.textContent =
@@ -13676,8 +20213,14 @@ function setupNotes() {
 
 
 
+
+
+
+
                         button.disabled =
                             false;
+
+
 
 
                     },
@@ -13685,11 +20228,17 @@ function setupNotes() {
                 );
 
 
+
+
             }
+
+
 
 
         }
     );
+
+
 
 
 }
@@ -13697,9 +20246,15 @@ function setupNotes() {
 
 
 
+
+
+
+
 // ============================================================
 // ALTEZZA CHAT = ALTEZZA MAPPA
 // ============================================================
+
+
 
 
 function syncDungeonChatHeightWithMap() {
@@ -13723,12 +20278,20 @@ function syncDungeonChatHeightWithMap() {
 
 
 
+
+
+
+
 // ============================================================
 // CHAT
 // ============================================================
 
 
+
+
 function setupFloorChat() {
+
+
 
 
     const input =
@@ -13737,10 +20300,14 @@ function setupFloorChat() {
         );
 
 
+
+
     const button =
         document.getElementById(
             "floor-chat-send"
         );
+
+
 
 
     if (
@@ -13749,6 +20316,8 @@ function setupFloorChat() {
     ) {
         return;
     }
+
+
 
 
     button.addEventListener(
@@ -13761,9 +20330,13 @@ function setupFloorChat() {
     );
 
 
+
+
     input.addEventListener(
         "keydown",
         async event => {
+
+
 
 
             if (
@@ -13773,6 +20346,8 @@ function setupFloorChat() {
             }
 
 
+
+
             if (
                 event.shiftKey
             ) {
@@ -13780,7 +20355,11 @@ function setupFloorChat() {
             }
 
 
+
+
             event.preventDefault();
+
+
 
 
             await sendFloorChatMessage(
@@ -13793,12 +20372,20 @@ function setupFloorChat() {
 
 
 
+
+
+
+
 // ============================================================
 // CARICA STORICO CHAT
 // ============================================================
 
 
+
+
 async function loadFloorChatHistory() {
+
+
 
 
     const container =
@@ -13807,12 +20394,18 @@ async function loadFloorChatHistory() {
         );
 
 
+
+
     if (!container) {
         return;
     }
 
 
+
+
     try {
+
+
 
 
         const {
@@ -13846,16 +20439,24 @@ async function loadFloorChatHistory() {
                 );
 
 
+
+
         if (error) {
             throw error;
         }
 
 
+
+
         renderedFloorChatMessageIds.clear();
+
+
 
 
         container.innerHTML =
             "";
+
+
 
 
         const rows =
@@ -13864,9 +20465,13 @@ async function loadFloorChatHistory() {
                 : [];
 
 
+
+
         if (
             rows.length === 0
         ) {
+
+
 
 
             container.innerHTML =
@@ -13877,36 +20482,54 @@ async function loadFloorChatHistory() {
                 `;
 
 
+
+
             return;
         }
+
+
 
 
         rows.forEach(
             row => {
 
 
+
+
                 addFloorChatMessage(
                     {
+
+
 
 
                         id:
                             row.id,
 
 
+
+
                         character_id:
                             row.character_id,
+
+
 
 
                         name:
                             row.sender_name,
 
 
+
+
                         text:
                             row.message_text,
 
 
+
+
                         timestamp:
                             row.created_at
+
+
 
 
                     },
@@ -13916,7 +20539,11 @@ async function loadFloorChatHistory() {
         );
 
 
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -13929,14 +20556,22 @@ async function loadFloorChatHistory() {
 
 
 
+
+
+
+
 // ============================================================
 // INVIA CHAT
 // ============================================================
 
 
+
+
 async function sendFloorChatMessage(
     input
 ) {
+
+
 
 
     if (
@@ -13948,8 +20583,12 @@ async function sendFloorChatMessage(
     }
 
 
+
+
     const messageText =
         input.value.trim();
+
+
 
 
     if (!messageText) {
@@ -13957,15 +20596,23 @@ async function sendFloorChatMessage(
     }
 
 
+
+
     const originalValue =
         input.value;
+
+
 
 
     input.value =
         "";
 
 
+
+
     try {
+
+
 
 
         const {
@@ -13979,16 +20626,24 @@ async function sendFloorChatMessage(
                 .insert({
 
 
+
+
                     floor_id:
                         DUNGEON_CHAT_FLOOR_ID,
+
+
 
 
                     character_id:
                         character.id,
 
 
+
+
                     user_id:
                         currentUser.id,
+
+
 
 
                     sender_name:
@@ -13996,8 +20651,12 @@ async function sendFloorChatMessage(
                         "Avventuriero",
 
 
+
+
                     message_text:
                         messageText
+
+
 
 
                 })
@@ -14011,20 +20670,30 @@ async function sendFloorChatMessage(
                 .single();
 
 
+
+
         if (error) {
             throw error;
         }
 
 
+
+
         const message = {
+
+
 
 
             id:
                 savedMessage.id,
 
 
+
+
             character_id:
                 savedMessage.character_id,
+
+
 
 
             name:
@@ -14033,9 +20702,13 @@ async function sendFloorChatMessage(
                 "Avventuriero",
 
 
+
+
             text:
                 savedMessage.message_text ||
                 messageText,
+
+
 
 
             timestamp:
@@ -14044,12 +20717,18 @@ async function sendFloorChatMessage(
                     .toISOString()
 
 
+
+
         };
+
+
 
 
         addFloorChatMessage(
             message
         );
+
+
 
 
         if (
@@ -14058,28 +20737,44 @@ async function sendFloorChatMessage(
         ) {
 
 
+
+
             try {
 
 
+
+
                 await dungeonChannel.send({
+
+
 
 
                     type:
                         "broadcast",
 
 
+
+
                     event:
                         "floor-chat",
+
+
 
 
                     payload:
                         message
 
 
+
+
                 });
 
 
+
+
             } catch (broadcastError) {
+
+
 
 
                 console.error(
@@ -14090,7 +20785,11 @@ async function sendFloorChatMessage(
         }
 
 
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -14099,8 +20798,12 @@ async function sendFloorChatMessage(
         );
 
 
+
+
         input.value =
             originalValue;
+
+
 
 
         setMessage(
@@ -14112,9 +20815,15 @@ async function sendFloorChatMessage(
 
 
 
+
+
+
+
 // ============================================================
 // MOSTRA CHAT
 // ============================================================
+
+
 
 
 function addFloorChatMessage(
@@ -14123,9 +20832,13 @@ function addFloorChatMessage(
 ) {
 
 
+
+
     if (!message) {
         return;
     }
+
+
 
 
     const container =
@@ -14134,9 +20847,13 @@ function addFloorChatMessage(
         );
 
 
+
+
     if (!container) {
         return;
     }
+
+
 
 
     const messageId =
@@ -14145,6 +20862,8 @@ function addFloorChatMessage(
                 message.id
             )
             : null;
+
+
 
 
     if (
@@ -14157,7 +20876,11 @@ function addFloorChatMessage(
     }
 
 
+
+
     if (messageId) {
+
+
 
 
         renderedFloorChatMessageIds.add(
@@ -14166,15 +20889,21 @@ function addFloorChatMessage(
     }
 
 
+
+
     const placeholder =
         container.querySelector(
             ".chat-placeholder"
         );
 
 
+
+
     if (placeholder) {
         placeholder.remove();
     }
+
+
 
 
     const row =
@@ -14183,8 +20912,12 @@ function addFloorChatMessage(
         );
 
 
+
+
     row.className =
         "floor-chat-message";
+
+
 
 
     if (
@@ -14195,11 +20928,15 @@ function addFloorChatMessage(
     }
 
 
+
+
     if (
         character &&
         message.character_id ===
         character.id
     ) {
+
+
 
 
         row.classList.add(
@@ -14208,19 +20945,27 @@ function addFloorChatMessage(
     }
 
 
+
+
     const name =
         document.createElement(
             "strong"
         );
 
 
+
+
     name.className =
         "floor-chat-name";
+
+
 
 
     name.textContent =
         message.name ||
         "Avventuriero";
+
+
 
 
     const textElement =
@@ -14229,13 +20974,19 @@ function addFloorChatMessage(
         );
 
 
+
+
     textElement.className =
         "floor-chat-text";
+
+
 
 
     textElement.textContent =
         message.text ||
         "";
+
+
 
 
     row.append(
@@ -14247,7 +20998,11 @@ function addFloorChatMessage(
     );
 
 
+
+
     if (fromHistory) {
+
+
 
 
         // Lo storico è già ordinato:
@@ -14257,7 +21012,11 @@ function addFloorChatMessage(
         );
 
 
+
+
     } else {
+
+
 
 
         // I nuovi messaggi entrano sempre in cima.
@@ -14266,12 +21025,20 @@ function addFloorChatMessage(
         );
 
 
+
+
     }
+
+
 
 
     container.scrollTop =
         0;
 }
+
+
+
+
 
 
 
@@ -14290,7 +21057,11 @@ function addFloorChatMessage(
 // ============================================================
 
 
+
+
 async function refreshDungeonCharacter() {
+
+
 
 
     if (
@@ -14304,11 +21075,21 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         const currentCharacterId =
             character.id;
+
+
+
+
 
 
 
@@ -14333,9 +21114,17 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
         if (error) {
             throw error;
         }
+
+
+
+
 
 
 
@@ -14347,13 +21136,23 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
         // ====================================================
         // CONSERVIAMO POSIZIONE LOCALE
         // ====================================================
 
 
+
+
         const localX =
             playerX;
+
+
+
+
 
 
 
@@ -14364,8 +21163,16 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
         character =
             data;
+
+
+
+
 
 
 
@@ -14375,8 +21182,14 @@ async function refreshDungeonCharacter() {
         // alla posizione visiva attuale.
 
 
+
+
         character.dungeon_x =
             localX;
+
+
+
+
 
 
 
@@ -14387,7 +21200,15 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
         await loadCharacterEquipment();
+
+
+
+
 
 
 
@@ -14397,7 +21218,13 @@ async function refreshDungeonCharacter() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -14406,10 +21233,18 @@ async function refreshDungeonCharacter() {
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14419,10 +21254,18 @@ async function refreshDungeonCharacter() {
 // ============================================================
 
 
+
+
 function startDungeonCharacterRefresh() {
 
 
+
+
     stopDungeonCharacterRefresh();
+
+
+
+
 
 
 
@@ -14432,7 +21275,11 @@ function startDungeonCharacterRefresh() {
             async () => {
 
 
+
+
                 await refreshDungeonCharacter();
+
+
 
 
             },
@@ -14440,7 +21287,13 @@ function startDungeonCharacterRefresh() {
         );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14450,7 +21303,11 @@ function startDungeonCharacterRefresh() {
 // ============================================================
 
 
+
+
 function stopDungeonCharacterRefresh() {
+
+
 
 
     if (
@@ -14462,9 +21319,17 @@ function stopDungeonCharacterRefresh() {
 
 
 
+
+
+
+
     clearInterval(
         dungeonCharacterRefreshInterval
     );
+
+
+
+
 
 
 
@@ -14473,7 +21338,13 @@ function stopDungeonCharacterRefresh() {
         null;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14483,9 +21354,13 @@ function stopDungeonCharacterRefresh() {
 // ============================================================
 
 
+
+
 document.addEventListener(
     "visibilitychange",
     async () => {
+
+
 
 
         if (
@@ -14498,7 +21373,15 @@ document.addEventListener(
 
 
 
+
+
+
+
         await refreshDungeonCharacter();
+
+
+
+
 
 
 
@@ -14508,14 +21391,24 @@ document.addEventListener(
         );
 
 
+
+
         repositionAllTokens();
+
+
 
 
         updateFogOfWar();
 
 
+
+
     }
 );
+
+
+
+
 
 
 
@@ -14525,12 +21418,20 @@ document.addEventListener(
 // ============================================================
 
 
+
+
 window.addEventListener(
     "focus",
     async () => {
 
 
+
+
         await refreshDungeonCharacter();
+
+
+
+
 
 
 
@@ -14540,14 +21441,24 @@ window.addEventListener(
         );
 
 
+
+
         repositionAllTokens();
+
+
 
 
         updateFogOfWar();
 
 
+
+
     }
 );
+
+
+
+
 
 
 
@@ -14557,15 +21468,23 @@ window.addEventListener(
 // ============================================================
 
 
+
+
 function setMessage(
     text
 ) {
+
+
 
 
     const element =
         document.getElementById(
             "dungeon-message"
         );
+
+
+
+
 
 
 
@@ -14577,9 +21496,17 @@ function setMessage(
 
 
 
+
+
+
+
     element.classList.remove(
         "error"
     );
+
+
+
+
 
 
 
@@ -14588,7 +21515,13 @@ function setMessage(
         text;
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14598,14 +21531,22 @@ function setMessage(
 // ============================================================
 
 
+
+
 function showError(
     text
 ) {
 
 
+
+
     console.error(
         text
     );
+
+
+
+
 
 
 
@@ -14618,11 +21559,21 @@ function showError(
 
 
 
+
+
+
+
     if (element) {
+
+
 
 
         element.textContent =
             text;
+
+
+
+
 
 
 
@@ -14634,10 +21585,20 @@ function showError(
 
 
 
+
+
+
+
         return;
 
 
+
+
     }
+
+
+
+
 
 
 
@@ -14647,7 +21608,13 @@ function showError(
     );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14657,7 +21624,11 @@ function showError(
 // ============================================================
 
 
+
+
 async function savePositionBeforeExit() {
+
+
 
 
     if (
@@ -14671,7 +21642,13 @@ async function savePositionBeforeExit() {
 
 
 
+
+
+
+
     try {
+
+
 
 
         await db
@@ -14679,12 +21656,18 @@ async function savePositionBeforeExit() {
             .update({
 
 
+
+
                 dungeon_x:
                     playerX,
 
 
+
+
                 dungeon_y:
                     playerY
+
+
 
 
             })
@@ -14696,7 +21679,13 @@ async function savePositionBeforeExit() {
 
 
 
+
+
+
+
     } catch (error) {
+
+
 
 
         console.error(
@@ -14705,10 +21694,18 @@ async function savePositionBeforeExit() {
         );
 
 
+
+
     }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -14723,9 +21720,13 @@ async function savePositionBeforeExit() {
 // ============================================================
 
 
+
+
 document.addEventListener(
     "click",
     async event => {
+
+
 
 
         const exitButton =
@@ -14736,9 +21737,17 @@ document.addEventListener(
 
 
 
+
+
+
+
         if (!exitButton) {
             return;
         }
+
+
+
+
 
 
 
@@ -14751,6 +21760,10 @@ document.addEventListener(
 
 
 
+
+
+
+
         if (!href) {
             return;
         }
@@ -14758,7 +21771,15 @@ document.addEventListener(
 
 
 
+
+
+
+
         event.preventDefault();
+
+
+
+
 
 
 
@@ -14769,10 +21790,20 @@ document.addEventListener(
 
 
 
+
+
+
+
         await flushPositionSave();
 
 
+
+
         await savePositionBeforeExit();
+
+
+
+
 
 
 
@@ -14781,8 +21812,14 @@ document.addEventListener(
             href;
 
 
+
+
     }
 );
+
+
+
+
 
 
 
@@ -14792,12 +21829,20 @@ document.addEventListener(
 // ============================================================
 
 
+
+
 window.addEventListener(
     "beforeunload",
     () => {
 
 
+
+
         stopDungeonCharacterRefresh();
+
+
+
+
 
 
 
@@ -14806,7 +21851,11 @@ window.addEventListener(
         // lo annulliamo.
 
 
+
+
         if (positionSaveTimer) {
+
+
 
 
             clearTimeout(
@@ -14814,11 +21863,19 @@ window.addEventListener(
             );
 
 
+
+
             positionSaveTimer =
                 null;
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -14828,19 +21885,29 @@ window.addEventListener(
         // ====================================================
 
 
+
+
         if (
             dungeonChannel &&
             realtimeReady
         ) {
 
 
+
+
             try {
+
+
 
 
                 dungeonChannel.untrack();
 
 
+
+
             } catch (error) {
+
+
 
 
                 console.error(
@@ -14849,10 +21916,18 @@ window.addEventListener(
                 );
 
 
+
+
             }
 
 
+
+
         }
+
+
+
+
 
 
 
@@ -14862,10 +21937,16 @@ window.addEventListener(
         // ====================================================
 
 
+
+
         if (dungeonChannel) {
 
 
+
+
             try {
+
+
 
 
                 db.removeChannel(
@@ -14873,7 +21954,11 @@ window.addEventListener(
                 );
 
 
+
+
             } catch (error) {
+
+
 
 
                 console.error(
@@ -14882,10 +21967,16 @@ window.addEventListener(
                 );
 
 
+
+
             }
 
 
+
+
         }
+
+
 
 
     }
@@ -14894,9 +21985,15 @@ window.addEventListener(
 
 
 
+
+
+
+
 // ============================================================
 // FINE DUNGEON.JS
 // ============================================================
+
+
 
 
 /* FRUTTO CARNOSO — CONSUMABILE DINAMICO IN DUNGEON */
@@ -14971,6 +22068,7 @@ async function useFruitConsumable() {
     }
 }
 
+
 // ============================================================
 // PIANO IA — ZOOM E NEBBIA (la griglia e il layout restano invariati)
 // ============================================================
@@ -14979,8 +22077,11 @@ let piaFogReady = false;
 let piaMaster = false;
 let piaNoFog = false;
 let piaVisited = new Set();
+// Chiave d'esplorazione limitata all'ultimo reset del Piano I.
+let piaFogStorageKey = null;
 let piaFogElement = null;
 let piaLastFogPosition = '';
+
 
 // Celle visibili adesso, separate dallo storico esplorato.
 let piaVisibleNow = new Set();
@@ -15019,7 +22120,7 @@ function piaRevealAroundPlayer() {
         }
     }
     if (changed) {
-        try { localStorage.setItem('palazzo:piano-Ia:fog:' + character.id, JSON.stringify([...piaVisited])); }
+        try { if (piaFogStorageKey) localStorage.setItem(piaFogStorageKey, JSON.stringify([...piaVisited])); }
         catch (_) { /* Storage opzionale */ }
     }
 }
@@ -15038,6 +22139,7 @@ function piaRenderFog() {
         }
     }
 }
+
 
 async function setupPiaZoomAndExploration() {
     const map = document.getElementById('dungeon-map');
@@ -15059,16 +22161,35 @@ async function setupPiaZoomAndExploration() {
     document.getElementById('pia-zoom-reset').addEventListener('click', () => setZoom(13));
     document.getElementById('pia-zoom-full').addEventListener('click', () => setZoom(81));
 
+
     piaFogElement = document.createElement('canvas');
     piaFogElement.id = 'pia-fog-overlay';
     piaFogElement.width = MAP_COLUMNS;
     piaFogElement.height = MAP_ROWS;
     piaFogElement.setAttribute('aria-hidden', 'true');
     map.appendChild(piaFogElement);
+    // La nebbia appartiene al ciclo attuale, non a tutta la vita del personaggio.
+    // La data autorevole arriva da Supabase. I dati del vecchio formato non si riutilizzano.
+    piaVisited = new Set();
+    piaVisibleNow = new Set();
+    piaLastFogPosition = '';
+    piaFogStorageKey = null;
     try {
-        const stored = JSON.parse(localStorage.getItem(`palazzo:piano-Ia:fog:${character.id}`) || '[]');
+        const { data: cycle, error: cycleError } = await db.rpc('piano_i_cycle_status');
+        if (cycleError) throw cycleError;
+        const resetAt = cycle?.last_reset_at;
+        const resetTimestamp = resetAt ? Date.parse(resetAt) : NaN;
+        if (!Number.isFinite(resetTimestamp)) throw new Error('Ultimo reset Piano I non disponibile');
+        piaFogStorageKey = 'palazzo:piano-Ia:fog:' + character.id + ':reset:' + resetTimestamp;
+        const stored = JSON.parse(localStorage.getItem(piaFogStorageKey) || '[]');
         if (Array.isArray(stored)) piaVisited = new Set(stored.filter(v => typeof v === 'string'));
-    } catch (_) { piaVisited = new Set(); }
+    } catch (error) {
+        // In caso di errore non mostrare la vecchia mappa sbloccata:
+        // l'esplorazione resta volatile fino al prossimo caricamento riuscito.
+        console.warn('Impossibile verificare il ciclo della nebbia Piano Ia:', error);
+        piaVisited = new Set();
+        piaFogStorageKey = null;
+    }
     // I controlli Master vengono mostrati solo dopo verifica del ruolo sul server.
     try {
         if (currentUser?.id) {
@@ -15091,6 +22212,9 @@ async function setupPiaZoomAndExploration() {
 
 
 
+
+
+
 // ============================================================
 // PIANO I-A — EVENTI E INCONTRI ROTANTI (compatibilità RPC preesistenti)
 // Modulo isolato: nessuna modifica alla logica del Piano 1.
@@ -15107,6 +22231,7 @@ const PIA_COMBAT_FAMILIES = Object.freeze({
     dinosauri: ['🦖','Dinosauri Selvaggi'],
     miconidi: ['🍄','Miconidi Tossici']
 });
+
 
 function piaCombatDialog(title, description, actionLabel = 'COMBATTI') {
     return new Promise(resolve => {
@@ -15338,6 +22463,8 @@ function piaCombatStart() {
 }
 
 
+
+
 // ============================================================
 // PIANO IA — FRUTTO CARNOSO + PASSAGGIO E ACCAMPAMENTO
 // Interazioni collegate alle RPC originali. Indipendente dai combat.
@@ -15509,6 +22636,7 @@ function piaSpecialStart(){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){piaSpecialRefreshFruit();piaSpecialCampRefresh()}});
 }
 
+
 // ============================================================
 // PIANO I-A — MONETA SPAZIALE
 // Usa l'RPC atomica che consuma 1 moneta e teletrasporta alla Base.
@@ -15609,6 +22737,7 @@ function openSpatialCoinPiaPrompt() {
     cancel.focus();
 }
 
+
 function updateSpatialCoinPia() {
     const button = ensureSpatialCoinPiaButton();
     if (!button) return;
@@ -15618,4 +22747,3 @@ function updateSpatialCoinPia() {
     button.style.display = count ? '' : 'none';
     button.disabled = spatialCoinPiaBusy || !count || !character || !!character.active_combat_id;
 }
-

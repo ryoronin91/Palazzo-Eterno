@@ -1,33 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 
+
 <head>
 
+
     <meta charset="UTF-8">
+
 
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
 
+
     <title>
         Palazzo Eterno - Piano I - Giungla Bassa
     </title>
+
+
 
 
     <!-- =====================================================
          CSS
     ====================================================== -->
 
+
     <link
         rel="stylesheet"
         href="../../css/style.css"
     >
 
+
     <link
         rel="stylesheet"
         href="css/piano-Ia.css?v=map2"
     >
+
 
     <style>
         .dungeon-player-coordinates {
@@ -38,16 +47,19 @@
             opacity: 0.8;
         }
 
+
         /* =====================================================
            CAMERA DUNGEON
            Visuale: 13x13 celle = PG + raggio 6
         ====================================================== */
+
 
         .dungeon-map-frame {
             position: relative !important;
             overflow: hidden !important;
             aspect-ratio: 1 / 1;
         }
+
 
         .dungeon-map {
             position: absolute !important;
@@ -59,6 +71,7 @@
             will-change: transform;
         }
 
+
         .dungeon-map-image {
             width: 100% !important;
             height: 100% !important;
@@ -67,32 +80,47 @@
     </style>
 
 
+
+
     <!-- =====================================================
          SUPABASE
     ====================================================== -->
 
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
 <script src="../../js/config.js?v=10"></script>
+
 
 </head>
 
 
+
+
 <body>
+
+
 
 
     <!-- =====================================================
          PAGINA DUNGEON
     ====================================================== -->
 
+
     <main class="dungeon-page">
+
+
 
 
         <!-- =================================================
              HEADER
         ================================================== -->
 
+
         <header class="dungeon-header">
+
+
 
 
             <a
@@ -103,7 +131,10 @@
             </a>
 
 
+
+
             <div class="dungeon-volume-control">
+
 
                 <button
                     id="dungeon-volume-button"
@@ -115,6 +146,7 @@
                 >
                     🔊
                 </button>
+
 
                 <div
                     id="dungeon-volume-popover"
@@ -132,6 +164,7 @@
                         aria-label="Volume musica"
                     >
 
+
                     <span
                         id="dungeon-volume-value"
                         class="dungeon-volume-value"
@@ -140,20 +173,28 @@
                     </span>
                 </div>
 
+
             </div>
 
 
+
+
             <div class="dungeon-title-block">
+
 
                 <h1>
                     PALAZZO ETERNO
                 </h1>
 
+
                 <div class="dungeon-floor-title">
                     PIANO I - Giungla Bassa
                 </div>
 
+
             </div>
+
+
 
 
             <div
@@ -164,7 +205,12 @@
             </div>
 
 
+
+
         </header>
+
+
+
 
 
 
@@ -172,7 +218,10 @@
              LAYOUT PRINCIPALE
         ================================================== -->
 
+
         <section class="dungeon-layout">
+
+
 
 
             <!-- =============================================
@@ -180,7 +229,10 @@
                  CHAT + ONLINE + TOP 5
             ============================================== -->
 
+
             <aside class="dungeon-chat-column">
+
+
 
 
                 <!-- =============================================
@@ -189,19 +241,30 @@
 
 
 
+
+
+
                 <!-- =============================================
                      ONLINE + TOP 5
                 ============================================== -->
 
 
+
+
                     <section class="dungeon-panel dungeon-chat-panel">
+
+
 
 
                         <div class="dungeon-panel-title">
 
+
                             CHAT
 
+
                         </div>
+
+
 
 
                         <div
@@ -209,16 +272,24 @@
                             class="floor-chat-messages"
                         >
 
+
                             <div class="chat-placeholder">
+
 
                                 Nessun messaggio.
 
+
                             </div>
+
 
                         </div>
 
 
+
+
                         <div class="floor-chat-controls">
+
+
 
 
                             <input
@@ -231,6 +302,8 @@
                             >
 
 
+
+
                             <button
                                 id="floor-chat-send"
                                 class="floor-chat-send"
@@ -241,19 +314,28 @@
                             </button>
 
 
+
+
                         </div>
+
+
 
 
                     </section>
 
+
                 <div class="dungeon-social-column">
+
+
 
 
                     <section class="dungeon-panel dungeon-online-panel">
 
+
                         <div class="dungeon-panel-title">
                             PERSONAGGI ONLINE
                         </div>
+
 
                         <div
                             id="dungeon-online-list"
@@ -264,14 +346,19 @@
                             </div>
                         </div>
 
+
                     </section>
+
+
 
 
                 <section class="dungeon-panel dungeon-leaderboard-panel">
 
+
                     <div class="dungeon-panel-title">
                         RISONANZA · TOP 5
                     </div>
+
 
                     <div
                         id="dungeon-leaderboard-list"
@@ -282,7 +369,12 @@
                         </div>
                     </div>
 
+
                 </section>
+
+
+
+
 
 
 
@@ -290,7 +382,12 @@
                 </div>
 
 
+
+
             </aside>
+
+
+
 
 
 
@@ -299,7 +396,10 @@
                  MAPPA
             ============================================== -->
 
+
             <section class="dungeon-map-column">
+
+
 
 
                 <div class="pia-map-toolbar" aria-label="Controlli visuale mappa">
@@ -310,7 +410,10 @@
                     <label id="pia-master-exploration" hidden><input type="checkbox" id="pia-master-no-fog"> Esplorazione (Master)</label>
                 </div>
 
+
                 <div class="dungeon-map-frame">
+
+
 
 
                     <div
@@ -319,10 +422,13 @@
                     >
 
 
+
+
                         <!--
                             L'immagine della mappa rimane
                             separata dai token.
                         -->
+
 
                         <img
                             id="dungeon-map-image"
@@ -346,52 +452,74 @@
 
 
 
+
+
+
                         <!--
                             I token vengono inseriti qui
                             dal JavaScript.
                         -->
 
 
+
+
                     </div>
 
 
+
+
                 </div>
+
+
 
 
                 <!-- =========================================
                      COMANDI
                 ========================================== -->
 
+
                 <div class="dungeon-map-footer">
 
 
+
+
                     <div class="movement-help">
+
 
                         <span class="movement-key">
                             W
                         </span>
 
+
                         <span class="movement-key">
                             A
                         </span>
 
+
                         <span class="movement-key">
                             S
                         </span>
+
 
                         <span class="movement-key">
                             D
                         </span>
 
 
+
+
                         <span class="movement-description">
+
 
                             Muoviti con WASD, frecce
                             o clicca una casella adiacente.
 
+
                         </span>
 
+
                     </div>
+
 
                     <div
                         id="dungeon-player-coordinates"
@@ -401,10 +529,17 @@
                     </div>
 
 
+
+
                 </div>
 
 
+
+
             </section>
+
+
+
 
 
 
@@ -412,17 +547,24 @@
                  DESTRA
             ============================================== -->
 
+
             <aside class="dungeon-character-column">
+
+
 
 
                 <!-- =========================================
                      BLOCCO PERSONAGGIO
                 ========================================== -->
 
+
                 <section class="dungeon-character-summary">
 
 
+
+
                     <!-- NOME -->
+
 
                     <div class="dungeon-character-heading">
                         <div
@@ -436,18 +578,27 @@
 
 
 
+
+
+
                     <!-- =====================================
                          PARTE SUPERIORE
                     ====================================== -->
 
+
                     <div class="character-summary-top">
+
+
 
 
                         <!-- ===============================
                              RITRATTO
                         ================================ -->
 
+
                         <div class="character-portrait-wrapper">
+
+
 
 
                             <img
@@ -459,13 +610,19 @@
                             >
 
 
+
+
                         </div>
+
+
+
 
 
 
                         <!-- ===============================
                              APRI SCHEDA
                         ================================ -->
+
 
                         <a
                             href="../../scheda.html"
@@ -475,7 +632,12 @@
                         </a>
 
 
+
+
                     </div>
+
+
+
 
 
 
@@ -483,7 +645,10 @@
                          STATISTICHE
                     ====================================== -->
 
+
                     <div class="quick-section">
+
+
 
 
                         <div class="quick-section-title">
@@ -491,16 +656,23 @@
                         </div>
 
 
+
+
                         <div class="quick-stat-grid">
+
+
 
 
                             <!-- ATT -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     ATT
                                 </span>
+
 
                                 <strong
                                     id="attack-display"
@@ -509,16 +681,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- DIF -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     DIF
                                 </span>
+
 
                                 <strong
                                     id="defense-display"
@@ -527,16 +705,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- VITA -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     VITA
                                 </span>
+
 
                                 <strong
                                     id="health-display"
@@ -545,16 +729,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- MANA -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     MANA
                                 </span>
+
 
                                 <strong
                                     id="mana-display"
@@ -563,16 +753,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- MOV -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     MOV
                                 </span>
+
 
                                 <strong
                                     id="movement-display"
@@ -581,16 +777,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- CRT -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     CRT
                                 </span>
+
 
                                 <strong
                                     id="critical-display"
@@ -599,13 +801,21 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                         </div>
 
 
+
+
                     </div>
+
+
+
 
 
 
@@ -613,7 +823,10 @@
                          ATTRIBUTI
                     ====================================== -->
 
+
                     <div class="quick-section">
+
+
 
 
                         <div class="quick-section-title">
@@ -621,16 +834,23 @@
                         </div>
 
 
+
+
                         <div class="quick-stat-grid">
+
+
 
 
                             <!-- FOR -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     FOR
                                 </span>
+
 
                                 <strong
                                     id="forza-display"
@@ -639,16 +859,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- RES -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     RES
                                 </span>
+
 
                                 <strong
                                     id="resistenza-display"
@@ -657,16 +883,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- COS -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     COS
                                 </span>
+
 
                                 <strong
                                     id="costituzione-display"
@@ -675,16 +907,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- INT -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     INT
                                 </span>
+
 
                                 <strong
                                     id="intelligenza-display"
@@ -693,16 +931,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- DES -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     DES
                                 </span>
+
 
                                 <strong
                                     id="destrezza-display"
@@ -711,16 +955,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                             <!-- LCK -->
 
+
                             <div class="quick-stat">
+
 
                                 <span class="quick-stat-label">
                                     LCK
                                 </span>
+
 
                                 <strong
                                     id="fortuna-display"
@@ -729,13 +979,22 @@
                                     -
                                 </strong>
 
+
                             </div>
+
+
 
 
                         </div>
 
 
+
+
                     </div>
+
+
+
+
 
 
 
@@ -744,6 +1003,7 @@
                          SCAMBIO TRA GIOCATORI
                     ====================================== -->
 
+
                     <section class="dungeon-trade-inline-section">
                         <div class="quick-section-title">GIOCATORI VICINI</div>
                         <div id="dungeon-trade-nearby-players" class="dungeon-trade-nearby-list">
@@ -751,13 +1011,16 @@
                         </div>
                     </section>
 
+
                     <section class="dungeon-trade-inline-section">
                         <div class="quick-section-title">SCAMBIO</div>
+
 
                         <div id="dungeon-trade-inline-panel" class="dungeon-trade-inline-panel disabled">
                             <div id="dungeon-trade-status" class="dungeon-trade-inline-status">
                                 Seleziona un giocatore adiacente.
                             </div>
+
 
                             <div class="dungeon-trade-inline-grid">
                                 <div class="dungeon-trade-inline-side">
@@ -766,6 +1029,7 @@
                                     <div id="dungeon-trade-my-offer" class="dungeon-trade-offer-list"></div>
                                 </div>
 
+
                                 <div class="dungeon-trade-inline-side">
                                     <div id="dungeon-trade-other-name" class="dungeon-trade-inline-side-title">ALTRO GIOCATORE</div>
                                     <div id="dungeon-trade-other-confirmed" class="dungeon-trade-confirm-state">NON CONFERMATO</div>
@@ -773,11 +1037,13 @@
                                 </div>
                             </div>
 
+
                             <div class="dungeon-trade-add-box">
                                 <select id="dungeon-trade-item-select" class="dungeon-trade-select" aria-label="Oggetto da offrire" disabled></select>
                                 <input id="dungeon-trade-item-quantity" class="dungeon-trade-quantity" type="number" min="1" value="1" aria-label="Quantità da offrire" disabled>
                                 <button id="dungeon-trade-add-item" class="dungeon-trade-button compact" type="button" disabled>AGGIUNGI</button>
                             </div>
+
 
                             <div class="dungeon-trade-inline-actions">
                                 <button id="dungeon-trade-decline" class="dungeon-trade-button secondary" type="button" hidden>RIFIUTA</button>
@@ -788,11 +1054,13 @@
                         </div>
                     </section>
 
+
                     <!--
                         Manteniamo questo elemento nascosto
                         per compatibilità con eventuale codice
                         precedente.
                     -->
+
 
                     <span
                         id="character-level"
@@ -802,13 +1070,20 @@
                     </span>
 
 
+
+
                     <span
                         id="character-name-panel"
                         hidden
                     ></span>
 
 
+
+
                 </section>
+
+
+
 
 
 
@@ -816,7 +1091,11 @@
                      SEPARATORE
                 ========================================== -->
 
+
                 <div class="dungeon-side-divider"></div>
+
+
+
 
 
 
@@ -824,27 +1103,39 @@
                      AZIONI + NOTE
                 ========================================== -->
 
+
                 <section class="dungeon-action-column">
+
+
 
 
                     <!-- =====================================
                          ABILITÀ / CONSUMABILI
                     ====================================== -->
 
+
                     <div class="dungeon-actions-panel">
+
+
 
 
                         <div class="dungeon-actions-title">
 
+
                             ABILITÀ / CONSUMABILI
 
+
                         </div>
+
+
+
 
 
 
                         <!-- ===============================
                              SLOT 1 - CURA
                         ================================ -->
+
 
                         <button
                             id="dungeon-heal-button"
@@ -854,31 +1145,44 @@
                         >
 
 
+
+
                             <span class="action-card-icon">
                                 ✦
                             </span>
 
 
+
+
                             <span class="action-card-content">
+
 
                                 <strong>
                                     CURA
                                 </strong>
 
+
                                 <small>
                                     2 PM
                                 </small>
 
+
                             </span>
+
+
 
 
                         </button>
 
 
 
+
+
+
                         <!-- ===============================
                              SLOT 2 - POZIONE VITA
                         ================================ -->
+
 
                         <button
                             id="dungeon-health-potion-button"
@@ -888,16 +1192,22 @@
                         >
 
 
+
+
                             <span class="action-card-icon">
                                 ♥
                             </span>
 
 
+
+
                             <span class="action-card-content">
+
 
                                 <strong>
                                     POZIONE DI VITA
                                 </strong>
+
 
                                 <small
                                     id="dungeon-health-potion-count"
@@ -905,16 +1215,23 @@
                                     x0
                                 </small>
 
+
                             </span>
+
+
 
 
                         </button>
 
 
 
+
+
+
                         <!-- ===============================
                              SLOT 3 - POZIONE MANA
                         ================================ -->
+
 
                         <button
                             id="dungeon-mana-potion-button"
@@ -924,16 +1241,22 @@
                         >
 
 
+
+
                             <span class="action-card-icon">
                                 ◆
                             </span>
 
 
+
+
                             <span class="action-card-content">
+
 
                                 <strong>
                                     POZIONE DI MANA
                                 </strong>
+
 
                                 <small
                                     id="dungeon-mana-potion-count"
@@ -941,10 +1264,16 @@
                                     x0
                                 </small>
 
+
                             </span>
 
 
+
+
                         </button>
+
+
+
 
 
 
@@ -952,7 +1281,10 @@
                              PAGINAZIONE
                         ================================ -->
 
+
                         <div class="dungeon-action-pagination">
+
+
 
 
                             <button
@@ -966,12 +1298,16 @@
                             </button>
 
 
+
+
                             <span
                                 id="dungeon-actions-page"
                                 class="action-page-number"
                             >
                                 1
                             </span>
+
+
 
 
                             <button
@@ -985,10 +1321,17 @@
                             </button>
 
 
+
+
                         </div>
 
 
+
+
                     </div>
+
+
+
 
 
 
@@ -996,14 +1339,21 @@
                          NOTE
                     ====================================== -->
 
+
                     <div class="dungeon-notes-panel">
+
+
 
 
                         <div class="dungeon-actions-title">
 
+
                             NOTE
 
+
                         </div>
+
+
 
 
                         <textarea
@@ -1012,6 +1362,8 @@
                             maxlength="3000"
                             placeholder="Scrivi qui le tue note..."
                         ></textarea>
+
+
 
 
                         <button
@@ -1023,19 +1375,32 @@
                         </button>
 
 
+
+
                     </div>
+
+
 
 
                 </section>
 
 
+
+
             </aside>
+
+
 
 
         </section>
 
 
+
+
     </main>
+
+
+
 
 
 
@@ -1078,12 +1443,16 @@
          SCRIPT
     ====================================================== -->
 
-    <script src="js/piano-Ia.js?v=fruitcamp1"></script>
+
+    <script src="js/piano-Ia.js?v=cyclefog20261106"></script>
+
 
     <script src="../../js/map-sidebar-layout.js?v=1"></script>
+
 
     <script src="js/mietitore-floor-token.js?v=2"></script>
     <script src="js/piano-i-countdown.js?v=2"></script>
 </body>
+
 
 </html>
