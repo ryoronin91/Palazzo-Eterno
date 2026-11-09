@@ -1,43 +1,32 @@
-# Palazzo Eterno — Custode 1.0
+# Palazzo Eterno — Custode 1.1
 
-## Struttura
+## Cartelle
 
-```text
-custode/
-  custode.py
-  requirements.txt
-  README.md
-.github/
-  workflows/
-    custode-weekly.yml
-```
+- `custode/custode.py`, `custode/requirements.txt`, `custode/permissions.sql`, `custode/README.md`
+- `.github/workflows/custode-weekly.yml` (GitHub Actions richiede questo percorso esterno)
 
-GitHub Actions riconosce i workflow esclusivamente in `.github/workflows/`; non può eseguirli se sono soltanto nella cartella `custode/`. Tutta la logica del programma rimane in `custode/`.
+## Protezioni
 
-## Cosa fa
-
-- Ogni lunedì alle 04:17 UTC (05:17 in Italia in inverno, 06:17 in estate); avvio manuale tramite Actions.
-- Scansione dei file JavaScript, HTML, CSS e SQL (controlli euristici: debug, `innerHTML`, rischi di riferimenti a service-role, file lunghi; `node --check` per JS sotto 200 KB).
-- Analisi database: 30 tabelle più grandi e tabelle `public` senza RLS.
-- La **sola** tabella autorizzata alla pulizia è `public.combat_enemy_turn_state`: massimo 250 righe per esecuzione, se collegate a sessioni terminate con `status IN ('victory','defeat')` ed `ended_at` antecedente a 30 giorni.
-- Report Markdown e JSON scaricabili dagli artifact di GitHub Actions (90 giorni).
-
-**Non elimina:** sessioni combattimento, loot, oggetti, personaggi, progressi, chat, audit, sonda economica o altri dati.
+- Analisi codice e database una volta a settimana, lunedì alle 04:17 UTC.
+- Sola lettura per impostazione predefinita (`CUSTODE_DELETE_ENABLED` assente o `false`).
+- Simulazione forzata con il parametro manuale `dry_run=true`.
+- Solo due tabelle autorizzate: `public.combat_enemy_turn_state` e `public.combat_enemy_last_seen`.
+- Solo sessioni `victory` o `defeat` con `updated_at` vecchio di almeno 7 giorni, e `ended_at` non recente se valorizzato. Questo risolve il fatto che la maggioranza delle sessioni concluse ha `ended_at=NULL`.
+- Massimo 250 righe eliminate per tabella e per esecuzione, transazioni separate, lock e statement timeout.
+- **NON elimina** sessioni, entità, loot, oro, chat, progressi, boss, arene, missioni, achievement o personaggi.
+- L'utente `custode_reader` non può cancellare nulla senza i due GRANT DELETE commentati in `permissions.sql`.
 
 ## Installazione
 
-1. Caricare sul repository **mantenendo esattamente l'alberatura** illustrata sopra. Il file YAML esterno alla cartella `custode` è indispensabile per la pianificazione.
-2. In GitHub → `Settings` → `Secrets and variables` → `Actions` → `Secrets`, configurare `CUSTODE_DATABASE_URL`. Deve essere una connessione PostgreSQL con TLS (`sslmode=require`), usata solo lato server, con privilegi minimi: `SELECT` sui cataloghi e sulle tabelle consultate, `DELETE` solo su `public.combat_enemy_turn_state`.
-3. In GitHub → `Actions` → `Palazzo Eterno Custode` → `Run workflow`, impostare **dry_run = true**. Verificare `custode-report/report.md` nell'artifact.
-4. Verificare backup/ripristino e risultati del dry run. Solo allora impostare in `Actions` → `Variables` la variabile `CUSTODE_DELETE_ENABLED` a `true`. In assenza di questa variabile, o se vale `false`, non si cancella nulla.
-5. Un avvio manuale con `dry_run = true` non cancella mai righe, anche se la variabile precedente è `true`. Per sospendere la pulizia programmata mettere `CUSTODE_DELETE_ENABLED=false`.
+1. Sostituire i file nelle cartelle indicate. Il workflow resta in `.github/workflows`.
+2. Su Supabase SQL Editor eseguire la **FASE A** di `custode/permissions.sql`: aggiorna le policy del solo ruolo `custode_reader`, senza cambiare le policy dei giocatori e senza cancellare dati. Le righe DELETE rimangono commentate.
+3. Non cambiare il secret GitHub `CUSTODE_DATABASE_URL`, già configurato.
+4. Eseguire il workflow manualmente con `dry_run=true`; scaricare l'artifact e verificare `report.md` / `report.json`.
+5. Prima di abilitare qualsiasi cancellazione verificare un backup recuperabile e l'assenza di usi del gioco che richiedano stati IA di combattimenti terminati. Solo dopo approvazione: abilitare i due GRANT DELETE nel database e la repository variable `CUSTODE_DELETE_ENABLED=true`.
+6. **Per interrompere subito le pulizie** impostare `CUSTODE_DELETE_ENABLED=false`, oppure revocare `DELETE` all'utente dal SQL Editor.
 
-## Protezioni e limiti
+## Limitazioni importanti
 
-- Lo script non modifica codice, indici, schema SQL o policy RLS.
-- Sono protette le sessioni non concluse e quelle concluse da meno di 30 giorni.
-- La cancellazione è limitata a 250 righe con timeout e lock brevi; altre tabelle non sono autorizzate.
-- `CUSTODE_DATABASE_URL` non va mai caricato nel repository, nel frontend o nei report.
-- Gli artifact non sono un registro immutabile e il backup va predisposto prima di abilitare il `DELETE`.
-- Le segnalazioni del codice sono controlli statici: non certificano assenza di vulnerabilità o errori.
-- I permessi DB effettivi devono essere verificati prima della prima esecuzione. Il workflow senza secret esegue solo l'analisi del codice.
+La ricostruzione del tempo di fine usa `updated_at` perché 1.541 sessioni concluse risultano prive di `ended_at`. Se il codice del gioco riutilizza o aggiorna sessioni già concluse, mantenere le cancellazioni disattivate finché non è verificato questo comportamento.
+
+Le segnalazioni statiche sono euristiche. Nessuna modifica automatica di sorgenti, struttura SQL, policy RLS o dati persistenti. La tabella `combat_enemy_turn_state` ha RLS disabilitata già prima di Custode: problema di sicurezza separato, che va corretto studiando le policy del gioco. La tabella con RLS attiva `combat_enemy_last_seen` usa una policy di sola lettura per Custode; la policy DELETE è predisposta, commentata, nella FASE B di permissions.sql (non disabilitare RLS). Il ruolo SQL con LOGIN è distinto dai ruoli client anon/authenticated.

@@ -18,7 +18,7 @@ jobs:
     env:
       CUSTODE_DATABASE_URL: ${{ secrets.CUSTODE_DATABASE_URL }}
       CUSTODE_DELETE_ENABLED: ${{ vars.CUSTODE_DELETE_ENABLED == 'true' }}
-      CUSTODE_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+      CUSTODE_DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.dry_run && 'true' || 'false') }}
     steps:
       - uses: actions/checkout@v4
         with:
