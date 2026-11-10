@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Palazzo Eterno Custode 1.1: static checks and narrow, opt-in cleanup."""
+"""Custode 2.0: audits and suggestions only. No write SQL or write APIs."""
 from __future__ import annotations
 import collections
-from datetime import datetime, timezone
+import datetime as dt
 import json
 import os
 from pathlib import Path
@@ -11,145 +11,175 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'custode-report'
+SKIP = {'.git', '.github', 'node_modules', 'custode-report', 'dist', 'build', '__pycache__'}
 EXT = {'.js', '.mjs', '.cjs', '.html', '.css', '.sql'}
-SKIP = {'.git', 'node_modules', 'custode-report', 'dist', 'build', '__pycache__'}
-RETENTION_DAYS = 7
-BATCH_LIMIT = 250
-
-# Explicit, immutable whitelist. No config-provided SQL identifiers.
-CLEANUP = {
-    'combat_enemy_turn_state': 'id',
-    'combat_enemy_last_seen': 'ctid',  # no id column exists in this table
-}
+MAX_READ_BYTES = 1_500_000
 
 
-def audit_code():
-    totals = collections.Counter()
-    findings = []
-    long_files = []
+def issue(category, priority, target, finding, recommendation, verification):
+    return dict(category=category, priority=priority, target=target,
+                finding=finding, proposal=recommendation, verification=verification,
+                applied=False)
+
+
+def code_audit():
+    counts, findings, largest = collections.Counter(), [], []
     for path in ROOT.rglob('*'):
-        if not path.is_file() or path.suffix.lower() not in EXT or set(path.relative_to(ROOT).parts) & SKIP:
+        if not path.is_file() or path.suffix.lower() not in EXT:
             continue
-        name = str(path.relative_to(ROOT))
+        relative = path.relative_to(ROOT)
+        if set(relative.parts) & SKIP:
+            continue
+        name = relative.as_posix()
+        size = path.stat().st_size
+        counts[path.suffix.lower()] += 1
+        if size > MAX_READ_BYTES:
+            findings.append(issue('code', 'medium', name, f'File oltre {MAX_READ_BYTES} byte',
+                                  'Misurare responsabilita e valutare una divisione in moduli.',
+                                  'Test delle pagine e degli import dopo il refactoring.'))
+            continue
         try:
-            size = path.stat().st_size
-            if size > 1_500_000:
-                findings.append({'severity': 'info', 'file': name, 'note': f'File oltre limite lettura ({size} byte)'})
-                continue
             content = path.read_text(encoding='utf-8')
         except (OSError, UnicodeError):
-            findings.append({'severity': 'info', 'file': name, 'note': 'Lettura saltata'})
+            findings.append(issue('code', 'low', name, 'Lettura del file non riuscita',
+                                  'Verificare codifica del file.', 'Ripetere scansione.'))
             continue
-        totals[path.suffix.lower()] += 1
         lines = content.count('\n') + 1
-        if lines > 1200:
-            long_files.append({'file': name, 'lines': lines})
+        if lines >= 1200:
+            largest.append({'file': name, 'lines': lines, 'bytes': size})
+            if lines >= 3000:
+                findings.append(issue('maintainability', 'medium', name,
+                                      f'{lines} righe nello stesso file',
+                                      'Proporre estrazione modulare delle funzioni correlate, senza cambiare comportamento.',
+                                      'Regressione su combattimento, dungeon, NPC e salvataggio.'))
         if path.suffix.lower() in {'.js', '.mjs', '.cjs'}:
-            for pattern, note in [
-                (r'\b(?:console\.log|debugger)\b', 'Debug residuo da verificare'),
-                (r'\binnerHTML\s*=', 'innerHTML: verificare sanitizzazione'),
-                (r'\b(?:SUPABASE_SERVICE_ROLE_KEY|service_role)\b', 'Possibile riferimento a credenziali privilegiate'),
-            ]:
-                if re.search(pattern, content, re.I):
-                    findings.append({'severity': 'review', 'file': name, 'note': note})
+            checks = [
+                (r'\bdebugger\s*;', 'debugger presente', 'Rimuovere solo dopo aver verificato che non sia necessario.'),
+                (r'\bconsole\.log\s*\(', 'Possibili log di debug', 'Valutare se sostituirli con logging condizionale.'),
+                (r'\.innerHTML\s*=', 'Assegnazione a innerHTML', 'Verificare sanitizzazione e considerare textContent per testo semplice.'),
+                (r'\b(?:SUPABASE_SERVICE_ROLE_KEY|service_role)\b', 'Riferimento a privilegi elevati', 'Verificare che nessuna chiave segreta sia nel codice frontend.'),
+            ]
+            for pattern, message, proposal in checks:
+                occurrences = len(re.findall(pattern, content, re.I))
+                if occurrences:
+                    priority = 'high' if 'privilegi' in message else 'medium' if 'innerHTML' in message else 'low'
+                    findings.append(issue('code', priority, name, f'{message} ({occurrences} occorrenze)', proposal,
+                                          'Revisione manuale del contesto e test funzionali.'))
             if size < 200_000:
                 try:
-                    check = subprocess.run(['node', '--check', str(path)], capture_output=True, text=True, timeout=8)
+                    check = subprocess.run(['node', '--check', str(path)], capture_output=True, text=True, timeout=10)
                     if check.returncode:
-                        findings.append({'severity': 'review', 'file': name, 'note': 'Sintassi JavaScript: ' + check.stderr[-250:]})
+                        findings.append(issue('code', 'high', name, 'Controllo sintattico Node non superato',
+                                              'Esaminare la sintassi con il contesto del modulo/browser.',
+                                              'Ripetere node --check e test nel browser.'))
                 except (FileNotFoundError, subprocess.TimeoutExpired):
                     pass
-    return {'files_by_type': dict(totals), 'findings': findings[:300],
-            'large_file_candidates': sorted(long_files, key=lambda x: -x['lines'])[:80]}
+    return {'files_by_extension': dict(counts), 'largest_code_files': sorted(largest, key=lambda x:-x['lines'])[:40],
+            'findings': findings}
 
 
-def audit_db(url, dry_run, enabled):
-    if not url:
-        return {'status': 'not_configured', 'message': 'CUSTODE_DATABASE_URL non configurato'}
+def database_audit(database_url):
+    if not database_url:
+        return {'status':'not_configured', 'message':'CUSTODE_DATABASE_URL non configurato', 'findings':[]}
     import psycopg
     from psycopg.rows import dict_row
-    result = {'status': 'ok', 'retention_days': RETENTION_DAYS, 'batch_limit_per_table': BATCH_LIMIT,
-              'mode': 'delete' if enabled and not dry_run else 'dry-run', 'cleanup': []}
-    with psycopg.connect(url, connect_timeout=10, row_factory=dict_row) as conn:
+    result = {'status':'ok', 'findings':[]}
+    # Read-only at the PostgreSQL transaction level, independent of workflow flags.
+    with psycopg.connect(database_url, connect_timeout=12, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute('SET statement_timeout = 15000')
-            cur.execute("SELECT schemaname,relname,n_live_tup,n_dead_tup,pg_total_relation_size(relid) AS bytes FROM pg_stat_user_tables WHERE schemaname IN ('public','game_private') ORDER BY pg_total_relation_size(relid) DESC LIMIT 30")
+            cur.execute('SET TRANSACTION READ ONLY')
+            cur.execute('SET LOCAL statement_timeout = 20000')
+            cur.execute('''SELECT schemaname, relname, n_live_tup, n_dead_tup,
+                           pg_total_relation_size(relid) AS bytes
+                           FROM pg_stat_user_tables
+                           WHERE schemaname IN ('public','game_private')
+                           ORDER BY pg_total_relation_size(relid) DESC LIMIT 40''')
             result['largest_tables'] = cur.fetchall()
-            cur.execute("SELECT n.nspname AS schema_name,c.relname AS table_name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname='public' AND NOT c.relrowsecurity ORDER BY c.relname")
+            cur.execute('''SELECT n.nspname AS schema_name, c.relname AS table_name
+                           FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                           WHERE c.relkind IN ('r','p') AND n.nspname='public'
+                           AND NOT c.relrowsecurity ORDER BY c.relname''')
             result['public_rls_disabled'] = cur.fetchall()
-            for table in CLEANUP:
-                cur.execute(f"""SELECT count(*) AS n FROM public.{table} t
-                    JOIN public.combat_sessions s ON s.id=t.combat_id
-                    WHERE s.status IN ('victory','defeat')
-                      AND s.updated_at IS NOT NULL
-                      AND s.updated_at < now() - make_interval(days => %s)
-                      AND (s.ended_at IS NULL OR s.ended_at < now() - make_interval(days => %s))""",
-                    (RETENTION_DAYS, RETENTION_DAYS))
-                result['cleanup'].append({'table': 'public.' + table, 'eligible': cur.fetchone()['n'], 'deleted': 0})
+            for table in result['public_rls_disabled']:
+                result['findings'].append(issue('security', 'high',
+                        table['schema_name']+'.'+table['table_name'], 'RLS disabilitata in schema esposto',
+                        'Esaminare GRANT e percorsi del gioco; preparare policy RLS prima di abilitarla.',
+                        'Test lettura/scrittura con ruoli anon, authenticated e funzioni RPC.'))
+            # Rows are merely counted. The query cannot delete records.
+            result['retention_candidates'] = []
+            for table in ('combat_enemy_turn_state', 'combat_enemy_last_seen'):
+                cur.execute(f'''SELECT count(*) AS n FROM public.{table} t
+                       JOIN public.combat_sessions s ON s.id=t.combat_id
+                       WHERE s.status IN ('victory','defeat')
+                         AND s.updated_at IS NOT NULL
+                         AND s.updated_at < now() - interval '7 days'
+                         AND (s.ended_at IS NULL OR s.ended_at < now() - interval '7 days')''')
+                n = cur.fetchone()['n']
+                result['retention_candidates'].append({'table':'public.'+table, 'rows':n, 'proposed_retention_days':7})
+                if n:
+                    result['findings'].append(issue('retention', 'medium', 'public.'+table,
+                        f'{n} righe associate a sessioni concluse e non aggiornate da oltre 7 giorni',
+                        'Valutare eliminazione solo dopo approvazione, controllo dipendenze e backup manuale.',
+                        'Controllare premi, missioni e testare una cancellazione limitata in transazione.'))
+            cur.execute('''SELECT conrelid::regclass::text AS table_name, conname,
+                          pg_get_constraintdef(oid) AS definition
+                          FROM pg_constraint WHERE contype='f' AND connamespace='public'::regnamespace
+                          ORDER BY conrelid::regclass::text, conname''')
+            result['foreign_keys'] = cur.fetchall()
+            result['findings'].append(issue('performance','low','database',
+                f"{len(result['foreign_keys'])} vincoli di chiave esterna rilevati (non necessariamente problematici)",
+                'Controllare indici sulle chiavi esterne e piani EXPLAIN delle query piu usate; non creare indici indiscriminatamente.',
+                'Confrontare EXPLAIN (ANALYZE, BUFFERS) in ambiente di test.'))
         conn.rollback()
-        if enabled and not dry_run:
-            for item in result['cleanup']:
-                table = item['table'].split('.')[-1]
-                identifier = CLEANUP[table]
-                # Only whitelisted names from CLEANUP ever enter these SQL fragments.
-                with conn.transaction():
-                    with conn.cursor() as cur:
-                        cur.execute('SET LOCAL lock_timeout = 2000')
-                        cur.execute('SET LOCAL statement_timeout = 15000')
-                        cur.execute(f"""WITH targets AS (
-                            SELECT t.{identifier} AS target_key FROM public.{table} t
-                            JOIN public.combat_sessions s ON s.id=t.combat_id
-                            WHERE s.status IN ('victory','defeat')
-                              AND s.updated_at IS NOT NULL
-                              AND s.updated_at < now() - make_interval(days => %s)
-                              AND (s.ended_at IS NULL OR s.ended_at < now() - make_interval(days => %s))
-                            ORDER BY s.updated_at, t.{identifier}
-                            LIMIT %s FOR UPDATE OF t SKIP LOCKED
-                        ) DELETE FROM public.{table} t USING targets x, public.combat_sessions s
-                          WHERE t.{identifier}=x.target_key AND s.id=t.combat_id
-                            AND s.status IN ('victory','defeat')
-                            AND s.updated_at IS NOT NULL
-                            AND s.updated_at < now() - make_interval(days => %s)
-                            AND (s.ended_at IS NULL OR s.ended_at < now() - make_interval(days => %s))
-                        RETURNING 1""", (RETENTION_DAYS, RETENTION_DAYS, BATCH_LIMIT, RETENTION_DAYS, RETENTION_DAYS))
-                        item['deleted'] = len(cur.fetchall())
     return result
 
 
+def render(report):
+    db, code = report['database'], report['code']
+    findings = code['findings'] + db.get('findings', [])
+    priority = {'high':0,'medium':1,'low':2}
+    findings.sort(key=lambda f:(priority.get(f['priority'],9), f['category'], f['target']))
+    report['proposals'] = findings
+    lines = ['# Palazzo Eterno — Custode 2.0', '', f"Esecuzione UTC: {report['created_utc']}",
+             '', '> **SOLO PROPOSTE.** Nessun file, schema, dato o permesso e stato modificato.', '',
+             '## Riepilogo', f"- File scansionati: {sum(code['files_by_extension'].values())}",
+             f"- Proposte: {len(findings)}", f"- Stato database: {db['status']}", '', '## Proposte (da approvare)']
+    for i, f in enumerate(findings[:100], 1):
+        lines += ['', f"### {i}. [{f['priority'].upper()}] {f['target']}",
+                  f"- Categoria: {f['category']}", f"- Osservazione: {f['finding']}",
+                  f"- Proposta: {f['proposal']}", f"- Verifica prima di applicare: {f['verification']}"]
+    if len(findings) > 100:
+        lines += ['', f'Ulteriori {len(findings)-100} proposte nel report.json.']
+    lines += ['', '## File lunghi (candidati a refactoring)']
+    for f in code['largest_code_files'][:20]:
+        lines.append(f"- `{f['file']}`: {f['lines']} righe")
+    lines += ['', '## Regole di conservazione proposte — NON APPLICATE']
+    for item in db.get('retention_candidates',[]):
+        lines.append(f"- `{item['table']}`: {item['rows']} candidate, soglia {item['proposed_retention_days']} giorni")
+    if db['status'] != 'ok':
+        lines.append(f"- Database: {db.get('message','consultare report.json')}")
+    lines += ['', '## Processo di approvazione',
+              '1. Leggere e discutere una proposta.',
+              '2. Preparare un backup manuale prima di eventuali modifiche.',
+              '3. Applicare le modifiche fuori da Custode solo dopo consenso esplicito.',
+              '4. Ripetere i test e confrontare i risultati.', '']
+    return '\n'.join(lines)
+
+
 def main():
-    now = datetime.now(timezone.utc).isoformat()
-    enabled = os.getenv('CUSTODE_DELETE_ENABLED', 'false').lower() == 'true'
-    dry_run = os.getenv('CUSTODE_DRY_RUN', 'true').lower() != 'false'
-    report = {'version': '1.1', 'time_utc': now, 'code': audit_code()}
+    report = {'version':'2.0', 'mode':'proposal-only', 'created_utc':dt.datetime.now(dt.timezone.utc).isoformat(),
+              'code':code_audit()}
     try:
-        report['database'] = audit_db(os.getenv('CUSTODE_DATABASE_URL', ''), dry_run, enabled)
+        report['database'] = database_audit(os.getenv('CUSTODE_DATABASE_URL',''))
     except Exception as exc:
-        # Avoid logging credentials or connection strings, including in errors.
-        report['database'] = {'status': 'error', 'message': type(exc).__name__,
-                              'details': 'Controllare i log GitHub Actions; non pubblicare credenziali'}
-    db = report['database']
-    code = report['code']
-    lines = [f'# Palazzo Eterno — Custode {report["version"]}', '', f'Esecuzione (UTC): {now}',
-             '', '## Codice', f'File analizzati: {sum(code["files_by_type"].values())}',
-             f'Segnalazioni: {len(code["findings"])}',
-             f'File lunghi: {len(code["large_file_candidates"])}', '',
-             '## Database', f'Stato: {db["status"]}']
-    if db['status'] == 'ok':
-        lines += [f'Modalità: {db["mode"]}', f'Tabelle senza RLS: {len(db["public_rls_disabled"])}']
-        for item in db['cleanup']:
-            lines.append(f'- {item["table"]}: {item["eligible"]} candidate, {item["deleted"]} eliminate')
-        lines.append('')
-        lines.extend('- ' + x['schema_name'] + '.' + x['table_name'] for x in db['public_rls_disabled'])
-    else:
-        lines.append(db.get('message', ''))
-    lines += ['', '## Protezioni',
-              'Sessioni, entità, loot, premi, missioni, chat e dati giocatori non vengono eliminati.',
-              'Le dimensioni includono indici e possono non diminuire immediatamente dopo DELETE.']
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str), encoding='utf-8')
-    (OUT / 'report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    print('\n'.join(lines))
-    if db['status'] == 'error':
+        # No credentials, connection URI or raw DB error text in public artifacts.
+        report['database'] = {'status':'error', 'message':type(exc).__name__, 'findings':[]}
+    text = render(report)
+    OUT.mkdir(exist_ok=True)
+    (OUT/'report.md').write_text(text,encoding='utf-8')
+    (OUT/'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str),encoding='utf-8')
+    print('\n'.join(text.splitlines()[:20]))
+    if report['database']['status']=='error':
         raise SystemExit(1)
 
 

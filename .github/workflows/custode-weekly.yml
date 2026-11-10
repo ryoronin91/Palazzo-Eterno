@@ -1,52 +1,19 @@
-name: Palazzo Eterno Custode
+name: Palazzo Eterno Custode - Proposte
 on:
   schedule:
     - cron: '17 4 * * 1'
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Simula senza cancellare dati'
-        type: boolean
-        default: true
-        required: true
 permissions:
   contents: read
 concurrency:
-  group: custode-production
+  group: custode-proposals
   cancel-in-progress: false
 jobs:
-  backup:
+  analyze:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    env:
-      CUSTODE_BACKUP_DATABASE_URL: ${{ secrets.CUSTODE_BACKUP_DATABASE_URL }}
-      CUSTODE_AGE_RECIPIENT: ${{ vars.CUSTODE_AGE_RECIPIENT }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Installa cifratura age
-        run: sudo apt-get update && sudo apt-get install -y age
-      - name: Esporta, controlla e cifra il backup
-        run: bash custode/backup.sh
-      - name: Conserva SOLO il backup cifrato
-        uses: actions/upload-artifact@v4
-        with:
-          name: custode-backup-${{ github.run_number }}
-          path: custode-backup/*.age*
-          if-no-files-found: error
-          retention-days: 90
-  audit:
-    needs: backup
-    if: ${{ always() }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       CUSTODE_DATABASE_URL: ${{ secrets.CUSTODE_DATABASE_URL }}
-      # Deletion is authorized ONLY after backup success, a restore drill,
-      # a separate verified off-site copy and explicit opt-in.
-      CUSTODE_DELETE_ENABLED: ${{ needs.backup.result == 'success' && vars.CUSTODE_DELETE_ENABLED == 'true' && vars.CUSTODE_RESTORE_TESTED == 'true' && vars.CUSTODE_OFFSITE_BACKUP_CONFIRMED == 'true' }}
-      CUSTODE_DRY_RUN: ${{ github.event_name != 'schedule' && inputs.dry_run && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,13 +23,13 @@ jobs:
           python-version: '3.12'
       - name: Installa dipendenze
         run: python -m pip install --disable-pip-version-check -r custode/requirements.txt
-      - name: Controllo del database e del codice
+      - name: Analizza e genera proposte (sola lettura)
         run: python custode/custode.py
-      - name: Pubblica report non sensibili
+      - name: Report proposte
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: custode-report-${{ github.run_number }}
+          name: custode-proposte-${{ github.run_number }}
           path: custode-report/
           if-no-files-found: warn
           retention-days: 90
