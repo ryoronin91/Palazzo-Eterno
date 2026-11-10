@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // COMBAT-LOG.JS
 // REGISTRO DEL COMBATTIMENTO
@@ -66,7 +66,7 @@ function renderCombatLogEntry(text, entryId = null) {
     const naturalRoll = String(text).match(/\b1d10\s*\(\s*(1|10)\s*\)/i);
     const naturalLabel = naturalRoll
         ? (naturalRoll[1] === "1"
-            ? " · 1 NATURALE: FALLIMENTO AUTOMATICO!"
+            ? " · 1 NATURALE: tiro normale (nessun fallimento automatico)."
             : " · 10 NATURALE: COLPO AUTOMATICO!")
         : "";
     row.textContent = String(text) + naturalLabel;

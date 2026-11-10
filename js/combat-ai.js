@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // COMBAT-AI.JS
 // IA E MOVIMENTO DEI NEMICI
@@ -3798,6 +3798,11 @@ async function runEnemyAI(
 
 
 
+        // Consenti un nuovo tentativo al prossimo aggiornamento: altrimenti
+        // la chiave del round rimane bloccata dopo un errore temporaneo/RPC.
+        if (enemyAITurnKey === aiTurnKey) {
+            enemyAITurnKey = null;
+        }
         console.error(
             "Errore IA nemico:",
             error

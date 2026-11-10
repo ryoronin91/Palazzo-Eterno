@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PALAZZO ETERNO
 // COMBAT-UI.JS
 // TOKEN, MAPPA, PANNELLI, DRAWER, TURN ORDER, SCHEDA PG
@@ -203,6 +203,25 @@ function renderCombatTokens() {
 
 
 
+    // Le pedine vive occupano sempre la precedenza grafica sulle sagome
+    // dei Tiki morti in attesa di Rinascita. Coordinate con impronta 1x1/2x2.
+    const livingCombatEntities = Array.from(combatEntities.values()).filter(
+        candidate => candidate.status === 'alive' && Number(candidate.current_hp) > 0
+    );
+    const largeCombatEnemyIds = new Set([
+        'anchilosauro', 'allosauro_dominante', 'miconide_grande',
+        'trex', 'tiki_pietra', 'boss_tiki'
+    ]);
+    const getCombatEntityFootprintForDisplay = candidate =>
+        candidate.entity_type === 'enemy' && largeCombatEnemyIds.has(candidate.enemy_id) ? 2 : 1;
+    const rectanglesOverlapForDisplay = (a, b) => {
+        const ax = Number(a.x), ay = Number(a.y), bx = Number(b.x), by = Number(b.y);
+        const as = getCombatEntityFootprintForDisplay(a);
+        const bs = getCombatEntityFootprintForDisplay(b);
+        return ax < bx + bs && ax + as > bx && ay < by + bs && ay + as > by;
+    };
+    const renderedRebirthGhosts = [];
+
     combatEntities.forEach(
         entity => {
 
@@ -227,10 +246,17 @@ function renderCombatTokens() {
 
 
 
-            const tikiRebirth = entity.enemy_id === 'tiki_legno' || entity.enemy_id === 'tiki_pietra';
-            const isRebirthing = tikiRebirth && Number(entity.current_hp) <= 0 &&
+            const tikiRebirth = ['tiki_legno', 'tiki_pietra', 'boss_tiki'].includes(entity.enemy_id);
+            const pendingRebirth = tikiRebirth && Number(entity.current_hp) <= 0 &&
                 Array.isArray(combatEffects) && combatEffects.some(f =>
                     f.target_entity_id === entity.id && f.effect_type === 'tiki_rebirth' && Number(f.remaining_rounds) > 0);
+            // Se il punto di morte è stato occupato, non disegnare un token
+            // fantasma sopra un personaggio vivo (o sopra un altro fantasma).
+            const ghostOverlaps = pendingRebirth &&
+                (livingCombatEntities.some(living => rectanglesOverlapForDisplay(entity, living)) ||
+                 renderedRebirthGhosts.some(ghost => rectanglesOverlapForDisplay(entity, ghost)));
+            const isRebirthing = pendingRebirth && !ghostOverlaps;
+            if (isRebirthing) renderedRebirthGhosts.push(entity);
             if (
                 !isRebirthing && (entity.status !== "alive" || Number(entity.current_hp) <= 0)
             ) {
