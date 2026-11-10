@@ -4967,7 +4967,7 @@ async function icEggRefresh(){
 async function icEggCollect(){
     const egg=icEggState.egg;
     if(!egg||icEggState.busy)return;
-    if(Math.abs(playerX-Number(egg.x))+Math.abs(playerY-Number(egg.y))>1){
+    if(Math.max(Math.abs(playerX-Number(egg.x)),Math.abs(playerY-Number(egg.y)))>1){
         setMessage('Avvicinati all’uovo smarrito.');return;
     }
     if(!await icEggDialog())return;
