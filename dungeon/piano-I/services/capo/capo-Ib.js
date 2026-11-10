@@ -112,8 +112,12 @@
       $('capo-quest-count').textContent = capped + ' / 5';
       $('capo-progress-fill').style.width = capped * 20 + '%';
       $('capo-progress').setAttribute('aria-valuenow', String(capped));
-      $('capo-pass-status').textContent = count >= 2 ? 'Requisito raggiunto — consegna da attivare' : 'Mancano ' + (2-count) + ' missioni';
-      label.textContent = 'Progresso del ciclo attuale del Piano I.';
+      $('capo-pass-status').textContent = count >= 2
+        ? 'SBLOCCATO — lasciapassare aggiunto automaticamente nella borsa del personaggio. Non devi ritirarlo.'
+        : 'Mancano ' + (2-count) + ' missioni · al completamento verrà aggiunto automaticamente alla borsa.';
+      label.textContent = count >= 2
+        ? 'Lasciapassare Scagliagrigia: ricompensa automatica già assegnata alla borsa dopo la seconda missione.'
+        : 'Progresso del ciclo attuale del Piano I.';
       await loadBraci();
     } catch (e) {
       if (label) label.textContent = 'Impossibile caricare il progresso: ' + (e.message || 'errore');
