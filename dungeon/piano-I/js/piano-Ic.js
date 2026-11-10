@@ -5118,6 +5118,7 @@ function icCombatRender(){
         el.style.opacity=slot.status==='engaged'?'0.65':'1';
     }
     for(const [id,el] of icCombat.tokens)if(!ids.has(id)){el.remove();icCombat.tokens.delete(id);}
+    icUpdateEncounterTokenVisibility();
     const count=document.getElementById('ic-encounter-count');
     if(count)count.textContent=`Incontri: ${ids.size}/18`;
 }
@@ -5175,6 +5176,7 @@ function icTikiBossPreviewRender(){
  token.style.display=icTikiBossPreview.visible?'block':'none';
  token.style.left=((31.5)/MAP_COLUMNS*100)+'%';token.style.top=((40.5)/MAP_ROWS*100)+'%';
  token.style.width=(100/MAP_COLUMNS*1.6)+'%';token.style.height=(100/MAP_ROWS*1.6)+'%';
+ icUpdateEncounterTokenVisibility();
 }
 async function icTikiBossPreviewEnter(){
  if(icTikiBossPreview.busy||!icTikiBossPreview.visible)return;
@@ -15433,6 +15435,39 @@ function icSetZoom(v){
 let icFogOverlay = null;
 let icMasterExploration = false;
 let icFogVisited = new Set();
+// Salvataggio separato per PG, piano e ciclo di reset corrente.
+let icFogStorageKey = null;
+function icSaveFogVisited() {
+    if (!icFogStorageKey) return;
+    try { localStorage.setItem(icFogStorageKey, JSON.stringify([...icFogVisited])); }
+    catch (error) { console.warn('[Piano Ic] Memoria nebbia non salvata:', error); }
+}
+function icEncounterVisibleAt(x, y) {
+    if (icMasterExploration) return true;
+    if (!icFogOverlay || !Number.isInteger(playerX) || !Number.isInteger(playerY)) return false;
+    return Math.max(Math.abs(x-playerX), Math.abs(y-playerY)) <= CAMERA_RADIUS &&
+        icHasClearSight(x,y);
+}
+function icUpdateEncounterTokenVisibility() {
+    if (typeof icCombat !== 'undefined' && icCombat?.tokens) {
+        for (const [id, token] of icCombat.tokens) {
+            const slot = icCombat.slots.get(id);
+            const visible = !!slot && icEncounterVisibleAt(Number(slot.x),Number(slot.y));
+            token.style.visibility = visible ? 'visible' : 'hidden';
+            token.style.pointerEvents = visible ? '' : 'none';
+            token.setAttribute('aria-hidden', String(!visible));
+            if (!visible && token === document.activeElement) token.blur();
+        }
+    }
+    if (typeof icTikiBossPreview !== 'undefined' && icTikiBossPreview?.token) {
+        const token = icTikiBossPreview.token;
+        const visible = icTikiBossPreview.visible && icEncounterVisibleAt(icTikiBossPreview.x,icTikiBossPreview.y);
+        token.style.visibility = visible ? 'visible' : 'hidden';
+        token.style.pointerEvents = visible ? '' : 'none';
+        token.setAttribute('aria-hidden', String(!visible));
+        if (!visible && token === document.activeElement) token.blur();
+    }
+}
 // Queste celle sono percorribili, ma la loro vegetazione interrompe la visuale.
 const IC_SIGHT_ONLY_BLOCKERS = new Set(['8,35', '5,38', '1,30']);
 // Movimento e linea di visuale sono regole separate: un muro non e` attraversabile,
@@ -15479,20 +15514,24 @@ function icRenderFog() {
     const context = icFogOverlay.getContext('2d');
     if (!context) return;
     context.clearRect(0, 0, MAP_COLUMNS, MAP_ROWS);
+    icUpdateEncounterTokenVisibility();
     if (icMasterExploration) return;
+    let fogChanged = false;
     const hasPlayer = Number.isInteger(playerX) && Number.isInteger(playerY);
     for (let y = 0; y < MAP_ROWS; y++) {
         for (let x = 0; x < MAP_COLUMNS; x++) {
             const inRange = hasPlayer && Math.max(Math.abs(x-playerX),Math.abs(y-playerY)) <= CAMERA_RADIUS;
             const visible = inRange && icHasClearSight(x, y);
             if (visible) {
-                icFogVisited.add(x + ',' + y);
+                const key = x + ',' + y;
+                if (!icFogVisited.has(key)) { icFogVisited.add(key); fogChanged = true; }
                 continue;
             }
             context.fillStyle = icFogVisited.has(x+','+y) ? 'rgba(3,13,6,0.54)' : 'rgba(2,9,4,0.96)';
             context.fillRect(x,y,1,1);
         }
     }
+    if (fogChanged) icSaveFogVisited();
 }
 async function setupPiaZoomAndExploration(){
  document.getElementById('pia-zoom-out')?.addEventListener('click',()=>icSetZoom(icVisibleCells+2));
@@ -15508,6 +15547,29 @@ async function setupPiaZoomAndExploration(){
    icFogOverlay.height = MAP_ROWS;
    icFogOverlay.setAttribute('aria-hidden', 'true');
    map.appendChild(icFogOverlay);
+ }
+ // Il reset del Piano I viene letto da Supabase: non si riusa la nebbia
+ // di un ciclo precedente. In caso di RPC non disponibile si mantiene
+ // soltanto l'esplorazione della pagina corrente, senza dati obsoleti.
+ icFogVisited = new Set();
+ icFogStorageKey = null;
+ try {
+   if (!character?.id) throw new Error('Personaggio non disponibile');
+   const {data:cycle,error:cycleError} = await db.rpc('piano_i_cycle_status');
+   if (cycleError) throw cycleError;
+   const resetAt = Date.parse(cycle?.last_reset_at || '');
+   if (!Number.isFinite(resetAt)) throw new Error('Reset Piano I non disponibile');
+   icFogStorageKey = 'palazzo:piano-Ic:fog:' + character.id + ':reset:' + resetAt;
+   const stored = JSON.parse(localStorage.getItem(icFogStorageKey) || '[]');
+   if (Array.isArray(stored)) {
+     icFogVisited = new Set(stored.filter(value =>
+       typeof value === 'string' && /^\d+,\d+$/.test(value) &&
+       Number(value.split(',')[0]) < MAP_COLUMNS && Number(value.split(',')[1]) < MAP_ROWS));
+   }
+ } catch (error) {
+   console.warn('[Piano Ic] Esplorazione volatile, ciclo non verificato:',error);
+   icFogVisited = new Set();
+   icFogStorageKey = null;
  }
  const label = document.getElementById('pia-master-exploration');
  const checkbox = document.getElementById('pia-master-no-fog');

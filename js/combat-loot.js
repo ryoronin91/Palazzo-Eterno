@@ -1346,7 +1346,12 @@ function setupVictoryExitButton() {
 
 
                                 active_combat_id:
-                                    null
+                                    null,
+
+                                // Arena del Campione: il PG deve restare nel Villaggio Scagliagrigia.
+                                ...(combatSession?.encounter_id === "scagliagrigia_arena"
+                                    ? { current_location: "dungeon_Ib" }
+                                    : {})
 
 
                             })
@@ -1374,6 +1379,10 @@ function setupVictoryExitButton() {
                     currentCharacter.active_combat_id =
                         null;
 
+                    if (combatSession?.encounter_id === "scagliagrigia_arena") {
+                        currentCharacter.current_location = "dungeon_Ib";
+                    }
+
 
                 }
 
@@ -1387,6 +1396,7 @@ function setupVictoryExitButton() {
 
                 if (
                     combatDungeonChannel &&
+                    combatSession?.encounter_id !== "scagliagrigia_arena" &&
                     currentCharacter &&
                     currentUser
                 ) {
@@ -1460,6 +1470,10 @@ function setupVictoryExitButton() {
                     error
                 );
 
+                // Non navigare se il DB non ha registrato correttamente l’uscita.
+                alert("Impossibile completare l’uscita dal combattimento. Riprova.");
+                return;
+
 
             }
 
@@ -1474,8 +1488,8 @@ function setupVictoryExitButton() {
             // motore combat del dungeon, ma al termine devono
             // riportare il PG alla Base.
             //
-            // Tutti gli altri encounter mantengono il comportamento
-            // precedente e tornano al Piano 1 del dungeon.
+            // L’Arena del Campione ritorna al Villaggio Scagliagrigia.
+            // Gli altri incontri mantengono la destinazione precedente.
             // ====================================================
 
 
@@ -1499,6 +1513,8 @@ function setupVictoryExitButton() {
             const returnPage =
                 masterObserverMode
                     ? "master.html"
+                    : combatSession?.encounter_id === "scagliagrigia_arena"
+                    ? "dungeon/piano-I/piano-Ib.html"
                     : isGuardCombat
                     ? (combatSession?.status === "victory"
                         ? "dungeon/piano-I/piano-Ib.html"

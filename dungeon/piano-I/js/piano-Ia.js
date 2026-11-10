@@ -22124,12 +22124,29 @@ function piaRevealAroundPlayer() {
         catch (_) { /* Storage opzionale */ }
     }
 }
+// I segnalini di incontri e boss devono seguire la visuale attuale,
+// non la memoria delle caselle esplorate. I controlli Master restano validi.
+function piaUpdateCombatTokenVisibility() {
+    if (typeof piaCombat === 'undefined' || !piaCombat?.tokens) return;
+    const unrestricted = piaMaster && piaNoFog;
+    for (const token of piaCombat.tokens.values()) {
+        const x = Number(token.dataset.fogX);
+        const y = Number(token.dataset.fogY);
+        const visible = unrestricted || (piaFogReady && Number.isInteger(x) &&
+            Number.isInteger(y) && piaVisibleNow.has(x + ',' + y));
+        token.style.visibility = visible ? 'visible' : 'hidden';
+        token.style.pointerEvents = visible ? '' : 'none';
+        token.setAttribute('aria-hidden', String(!visible));
+        if (!visible && token === document.activeElement) token.blur();
+    }
+}
 function piaRenderFog() {
     if (!piaFogReady || !piaFogElement) return;
     piaRevealAroundPlayer();
     const ctx = piaFogElement.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, MAP_COLUMNS, MAP_ROWS);
+    piaUpdateCombatTokenVisibility();
     if (piaMaster && piaNoFog) return;
     for (let y = 0; y < MAP_ROWS; y++) {
         for (let x = 0; x < MAP_COLUMNS; x++) {
@@ -22275,12 +22292,15 @@ function piaCombatNotice(message,error=false) {
 function piaCombatPoint(el,x,y) {
     const map=document.getElementById('dungeon-map');
     if(!map || !el)return;
+    el.dataset.fogX = String(x);
+    el.dataset.fogY = String(y);
     // Relativi alla mappa intera, anche con zoom massimo o camera spostata.
     el.style.left=((x+.5)/MAP_COLUMNS*100)+'%';
     el.style.top=((y+.5)/MAP_ROWS*100)+'%';
     el.style.width=(100/MAP_COLUMNS*1.2)+'%';
     el.style.height=(100/MAP_ROWS*1.2)+'%';
     el.style.fontSize=`clamp(11px, ${Math.max(11,Math.min(22,map.offsetWidth/MAP_COLUMNS*0.92))}px, 22px)`;
+    piaUpdateCombatTokenVisibility();
 }
 function piaCombatMakeToken(id,icon,cls,title,fn) {
     let el=piaCombat.tokens.get(id);
