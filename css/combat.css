@@ -3055,3 +3055,15 @@
 .combat-token-status--armor { background: #254d96; color: #d9eeff; }
 .combat-token-status--sharp { background: #267345; color: #d3ffda; }
 .combat-token-status--speed { background: #80602b; color: #ffe4a4; }
+
+/* Palazzo Eterno: fix pulsante EQUIPAGGIAMENTO in combat */
+#combat-action-equipment {
+    min-width: 0;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 9px;
+    line-height: 1.25;
+    padding-inline: 4px;
+}
+
