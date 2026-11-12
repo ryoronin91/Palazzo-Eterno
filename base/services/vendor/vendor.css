@@ -2112,3 +2112,44 @@ input {
     text-align: center;
     white-space: normal;
 }
+
+/* FILTRI MERCE - compatibili con il layout esistente */
+.vendor-category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 0 12px 10px;
+    flex: none;
+    max-height: 125px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-dark) transparent;
+}
+.vendor-category-tab {
+    flex: 0 1 auto;
+    min-width: 0;
+    border: 1px solid var(--gold-dark);
+    border-radius: 4px;
+    background: var(--panel-deep);
+    color: var(--muted);
+    padding: 7px 9px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .025em;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+.vendor-category-tab:hover,
+.vendor-category-tab:focus-visible {
+    color: var(--ivory);
+    border-color: var(--gold-bright);
+}
+.vendor-category-tab[aria-pressed="true"] {
+    background: var(--gold-dark);
+    color: var(--ivory);
+    border-color: var(--gold-bright);
+}
+@media (max-width: 760px) {
+    .vendor-category-tabs { max-height: 110px; padding: 0 10px 8px; }
+    .vendor-category-tab { font-size: 9px; padding: 6px 7px; }
+}

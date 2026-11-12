@@ -289,6 +289,14 @@ let characterInventory =
 let vendorItems =
     [];
 
+// Oggetti del Piano I vendibili soltanto dopo lo sblocco della missione.
+// I permessi sono letti da Supabase, non calcolati dal browser.
+const PIANO_I_MISSION_STOCK = new Set([
+    'spada_pietra', 'lancia_pietra', 'scudo_tartaruga', 'sciabola_mietitore',
+    'piuma_allosauro', 'frutto_carnoso',
+    'coscia_uccello_stigio', 'foglia_nutriente', 'funghetto'
+]);
+
 // Lo sblocco è verificato sul server, non sul browser.
 let berserkQuestUnlocked = false;
 
@@ -571,6 +579,27 @@ async function loadVendorItems() {
                 row =>
                     row?.item
             );
+
+    // Filtro Piano I integrato: la merce delle missioni compare solo se
+    // Supabase conferma lo sblocco. In caso di errore resta nascosta.
+    let pianoIUnlocked = new Set();
+    try {
+        const { data: unlocks, error: unlockError } =
+            await db.rpc('get_piano_i_vendor_unlocks');
+        if (unlockError) throw unlockError;
+        if (!Array.isArray(unlocks)) {
+            throw new Error('Risposta sblocco vendor non valida');
+        }
+        pianoIUnlocked = new Set(unlocks);
+    } catch (unlockError) {
+        console.warn(
+            'Mano di Scimmia: verifica sblocchi I Ora non riuscita:',
+            unlockError
+        );
+    }
+    vendorItems = vendorItems.filter(row =>
+        !PIANO_I_MISSION_STOCK.has(row.item_id) || pianoIUnlocked.has(row.item_id)
+    );
 }
 
 // Verifica sicura della missione una tantum; se la RPC non è disponibile,
@@ -589,6 +618,117 @@ async function loadBerserkQuestUnlock() {
 // ============================================================
 // RENDER MERCE VENDOR
 // ============================================================
+
+
+// ============================================================
+// FILTRI CATALOGO VENDOR - SOLO INTERFACCIA
+// Nessuna modifica a sblocchi, prezzi, acquisti o vendite.
+// ============================================================
+let vendorCatalogCategory = "tutti";
+
+function getVendorCatalogCategory(row) {
+    const item = row?.item || {};
+    const id = String(item.id || row?.item_id || "").toLowerCase();
+    const type = String(item.item_type || "").toLowerCase();
+    const slot = String(item.equip_slot || "").toLowerCase();
+    const name = String(item.name || "").toLowerCase();
+
+    // Le ricompense missione vengono riconosciute prima del tipo fisico.
+    if (id === "ascia_berserk") return "quest";
+    // Scagliagrigia carica alcune scorte senza item_type: riconoscile per ID.
+    if (["frutto_carnoso", "coscia_uccello_stigio", "foglia_nutriente", "funghetto", "legname", "dente_rex", "piuma_raptor", "pelle_dinosauro", "scaglie_resistenti"].includes(id)) return "materiali";
+    if (id === "piuma_allosauro") return "accessori";
+    if (id === "scudo_tartaruga") return "armature";
+    if (item.grants_ability_id || type === "scroll" || type === "pergamena" || /pergamena/.test(name)) return "pergamene";
+    if (type === "weapon" || type === "arma" || ["weapon", "main_hand", "off_hand_weapon", "two_handed"].includes(slot) || /^(spada|lancia|ascia|sciabola|arco|pugnale|mazza)\b/.test(name)) return "armi";
+    if (type === "armor" || type === "armour" || type === "armatura" || ["armor", "body", "shield"].includes(slot) || /^(armatura|scudo|elmo|corazza)\b/.test(name)) return "armature";
+    if (type === "accessory" || type === "accessorio" || ["accessory", "ring", "amulet"].includes(slot)) return "accessori";
+    if (["consumable", "consumabile", "potion"].includes(type) || Number(item.heal_pf) > 0 || Number(item.heal_pm) > 0 || /^(pozione|elisir|moneta temporale|moneta spaziale)\b/.test(name)) return "consumabili";
+    if (["material", "materiale", "resource", "risorsa", "loot"].includes(type)) return "materiali";
+    return "altro";
+}
+
+function updateVendorCatalogFilters() {
+    const toolbar = document.getElementById("vendor-category-tabs");
+    const stock = document.querySelector(".vendor-stock");
+    if (!toolbar || !stock) return;
+
+    const categories = [
+        ["tutti", "TUTTI"],
+        ["armi", "ARMI"],
+        ["armature", "ARMATURE"],
+        ["accessori", "ACCESSORI"],
+        ["consumabili", "CONSUMABILI"],
+        ["materiali", "MATERIALI"],
+        ["pergamene", "PERGAMENE"],
+        ["quest", "OGGETTI QUEST"],
+        ["altro", "ALTRO"]
+    ];
+    const byItemId = new Map(vendorItems.map(row => [String(row?.item?.id || row?.item_id || ""), row]));
+    const articles = Array.from(stock.querySelectorAll(".vendor-stock-item"));
+    const available = new Set();
+    articles.forEach(article => {
+        const row = byItemId.get(String(article.dataset.itemId || ""));
+        // In caso di oggetti nuovi senza categoria, restano nel catalogo.
+        const category = row ? getVendorCatalogCategory(row) : "altro";
+        article.dataset.catalogCategory = category;
+        available.add(category);
+    });
+
+    if (vendorCatalogCategory !== "tutti" && !available.has(vendorCatalogCategory)) {
+        vendorCatalogCategory = "tutti";
+    }
+
+    toolbar.replaceChildren();
+    categories.filter(([id]) => id === "tutti" || available.has(id)).forEach(([id, label]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "vendor-category-tab";
+        button.dataset.category = id;
+        button.textContent = label;
+        button.setAttribute("aria-pressed", id === vendorCatalogCategory ? "true" : "false");
+        toolbar.appendChild(button);
+    });
+
+    toolbar.onclick = event => {
+        const button = event.target.closest("button[data-category]");
+        if (!button || !toolbar.contains(button)) return;
+        vendorCatalogCategory = button.dataset.category;
+        applyVendorCatalogCategory();
+    };
+    applyVendorCatalogCategory();
+}
+
+function applyVendorCatalogCategory() {
+    const toolbar = document.getElementById("vendor-category-tabs");
+    const stock = document.querySelector(".vendor-stock");
+    if (!stock) return;
+    let groupLabel = null;
+    let groupArticles = [];
+    const flushGroup = () => {
+        if (groupLabel) {
+            groupLabel.style.display = groupArticles.some(article => article.style.display !== "none") ? "" : "none";
+        }
+    };
+    for (const child of stock.children) {
+        if (child.classList.contains("vendor-category-divider")) {
+            flushGroup();
+            groupLabel = child;
+            groupArticles = [];
+        } else if (child.classList.contains("vendor-stock-item")) {
+            const visible = vendorCatalogCategory === "tutti" || child.dataset.catalogCategory === vendorCatalogCategory;
+            child.style.display = visible ? "" : "none";
+            groupArticles.push(child);
+        }
+    }
+    flushGroup();
+    if (toolbar) toolbar.querySelectorAll("button[data-category]").forEach(button => {
+        const selected = button.dataset.category === vendorCatalogCategory;
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    // Ogni cambio categoria riparte dall'inizio dell'elenco.
+    stock.scrollTop = 0;
+}
 
 function renderVendorItems() {
     const container =
@@ -832,6 +972,8 @@ function renderVendorItems() {
 
     container.innerHTML =
         html;
+
+    updateVendorCatalogFilters();
 
     const gold = getVendorGoldBalance();
 
