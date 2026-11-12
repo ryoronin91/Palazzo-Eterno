@@ -1,4 +1,4 @@
-﻿// ============================================================
+﻿﻿// ============================================================
 // PALAZZO ETERNO
 // MASTER.JS
 // ============================================================
@@ -10434,6 +10434,10 @@ function renderMasterControlCooldowns() {
 
 const masterFloorChannels = new Map();
 const masterFloorConnected = new Map();
+// Canale condiviso da js/config.js: include Ia, Ib, Ic, Id, Base e Orologio.
+const MASTER_GLOBAL_PRESENCE_CHANNEL = "palazzo-eterno-online-globale-v1";
+let masterGlobalPresenceChannel = null;
+let masterGlobalPresenceConnected = false;
 let masterRosterExtrasLastLoaded = 0;
 let masterGlobalLoadBusy = false;
 
@@ -10690,7 +10694,9 @@ function updateOnlineCounter() {
 
 function syncPresencePlayers() {
     onlinePlayers.clear();
+    // Le presenze locali conservano le coordinate della mappa Base/Piano 1.
     for (const [floor, channel] of masterFloorChannels) {
+        if (!masterFloorConnected.get(floor)) continue;
         let state = {};
         try { state = channel.presenceState() || {}; }
         catch (error) { console.warn("Presence Master", floor, error); }
@@ -10704,12 +10710,59 @@ function syncPresencePlayers() {
             });
         });
     }
+    // Il canale globale copre anche la Giungla Alta e le altre aree.
+    // Non usiamo le sue coordinate per disegnare token sulla mappa del Piano 1.
+    if (masterGlobalPresenceConnected && masterGlobalPresenceChannel) {
+        let state = {};
+        try { state = masterGlobalPresenceChannel.presenceState() || {}; }
+        catch (error) { console.warn("Presence globale Master", error); }
+        Object.values(state).forEach(presences => {
+            (presences || []).forEach(presence => {
+                if (!presence?.character_id) return;
+                const previous = onlinePlayers.get(presence.character_id);
+                // Mantieni i dati locali, quando disponibili, ma considera online
+                // anche chi è registrato soltanto nella Presence globale.
+                if (!previous) {
+                    onlinePlayers.set(presence.character_id, {
+                        ...presence,
+                        nome: presence.nome || presence.name || "Avventuriero",
+                        master_floor: "global"
+                    });
+                }
+            });
+        });
+    }
     masterControlAllPlayers = masterControlAllPlayers.map(character => masterBuildCharacter(character));
     updateMasterSelectedFloorPlayers();
     updatePlayerList();
     updateOnlineCounter();
     renderActiveMasterCombats();
     updateMasterChatPresenceLabels();
+}
+
+// Sottoscrizione in sola lettura: il Master non pubblica una Presence di PG.
+async function setupMasterGlobalPresence() {
+    if (masterGlobalPresenceChannel) return;
+    const channel = db.channel(MASTER_GLOBAL_PRESENCE_CHANNEL);
+    masterGlobalPresenceChannel = channel;
+    channel.on("presence", { event: "sync" }, syncPresencePlayers);
+    channel.on("presence", { event: "join" }, syncPresencePlayers);
+    channel.on("presence", { event: "leave" }, syncPresencePlayers);
+    await new Promise(resolve => {
+        let settled = false;
+        const finish = () => { if (!settled) { settled = true; resolve(); } };
+        channel.subscribe(status => {
+            if (status === "SUBSCRIBED") {
+                masterGlobalPresenceConnected = true;
+                syncPresencePlayers();
+                finish();
+            } else if (["CLOSED", "CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+                masterGlobalPresenceConnected = false;
+                syncPresencePlayers();
+                finish();
+            }
+        });
+    });
 }
 
 
@@ -10766,11 +10819,11 @@ async function setupRealtime() {
             });
         });
     });
-    await Promise.all(jobs);
+    await Promise.all([...jobs, setupMasterGlobalPresence()]);
     dungeonChannel = masterFloorChannels.get(masterViewFloor) || null;
     realtimeReady = [...masterFloorConnected.values()].some(Boolean);
     syncPresencePlayers();
-    showMessage(realtimeReady ? "Monitoraggio Base e Piano 1 attivo." : "Connessione realtime non disponibile.");
+    showMessage(realtimeReady ? "Monitoraggio Base, Piano 1 e presenze globali attivo." : "Connessione realtime locale non disponibile.");
 }
 
 
@@ -11070,6 +11123,11 @@ function renderMasterControlCombats() {
 window.addEventListener("beforeunload", () => {
     for (const channel of masterFloorChannels.values()) db.removeChannel(channel);
     masterFloorChannels.clear();
+    if (masterGlobalPresenceChannel) {
+        db.removeChannel(masterGlobalPresenceChannel);
+        masterGlobalPresenceChannel = null;
+        masterGlobalPresenceConnected = false;
+    }
 });
 
 
