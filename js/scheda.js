@@ -4170,3 +4170,169 @@ function showMessage(
     );
 
 }
+// ============================================================
+// CAMPANELLA - RISPOSTE PRIVATE AI TICKET
+// Database: player_ticket_replies. Nessuna pubblicazione automatica.
+// ============================================================
+(() => {
+    'use strict';
+    const $ = id => document.getElementById(id);
+    let replies = [];
+    let characterId = null;
+    let lastFocus = null;
+    let refreshInFlight = false;
+
+    const formatDate = value => {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('it-IT', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    };
+
+    const unreadCount = () => replies.filter(row => !row.read_at).length;
+
+    function updateBadge() {
+        const badge = $('sheet-ticket-unread');
+        const button = $('sheet-ticket-bell');
+        if (!badge || !button) return;
+        const count = unreadCount();
+        badge.hidden = count === 0;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        button.setAttribute('aria-label', count
+            ? `Risposte alle segnalazioni: ${count} non lette`
+            : 'Apri le risposte alle segnalazioni');
+    }
+
+    function render() {
+        const list = $('sheet-ticket-list');
+        if (!list) return;
+        list.replaceChildren();
+        if (!replies.length) {
+            const empty = document.createElement('p');
+            empty.className = 'sheet-ticket-empty';
+            empty.textContent = 'Non ci sono ancora risposte alle tue segnalazioni.';
+            list.appendChild(empty);
+            return;
+        }
+        for (const reply of replies) {
+            const card = document.createElement('article');
+            card.className = 'sheet-ticket-card' + (reply.read_at ? '' : ' is-unread');
+            const header = document.createElement('div');
+            header.className = 'sheet-ticket-card-header';
+            const title = document.createElement('h3');
+            title.textContent = reply.title;
+            const date = document.createElement('time');
+            date.className = 'sheet-ticket-date';
+            date.textContent = formatDate(reply.created_at);
+            date.dateTime = reply.created_at;
+            header.append(title, date);
+            const message = document.createElement('p');
+            message.className = 'sheet-ticket-message';
+            message.textContent = reply.message;
+            card.append(header, message);
+            if (!reply.read_at) {
+                const actions = document.createElement('div');
+                actions.className = 'sheet-ticket-actions';
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'sheet-ticket-read';
+                button.textContent = 'SEGNA COME LETTA';
+                button.addEventListener('click', async () => {
+                    button.disabled = true;
+                    try {
+                        const { data, error } = await supabaseClient.rpc('mark_my_ticket_reply_read', {
+                            p_reply_id: reply.id
+                        });
+                        if (error) throw error;
+                        if (!data) throw new Error('La risposta non è accessibile.');
+                        reply.read_at = new Date().toISOString();
+                        updateBadge();
+                        render();
+                    } catch (error) {
+                        console.warn('[TICKET] Lettura non registrata:', error);
+                        button.disabled = false;
+                        button.textContent = 'RIPROVA';
+                    }
+                });
+                actions.appendChild(button);
+                card.appendChild(actions);
+            }
+            list.appendChild(card);
+        }
+    }
+
+    async function refresh() {
+        if (!characterId || refreshInFlight) return;
+        refreshInFlight = true;
+        try {
+            const { data, error } = await supabaseClient.from('player_ticket_replies')
+                .select('id,title,message,created_at,read_at')
+                .eq('character_id', characterId)
+                .order('created_at', { ascending: false })
+                .limit(100);
+            if (error) throw error;
+            replies = data || [];
+            updateBadge();
+            if (!$('sheet-ticket-modal').hidden) render();
+        } catch (error) {
+            console.warn('[TICKET] Impossibile leggere le risposte:', error);
+            if (!$('sheet-ticket-modal').hidden) {
+                const list = $('sheet-ticket-list');
+                list.textContent = 'Risposte temporaneamente non disponibili. Riprova riaprendo la campanella.';
+            }
+        } finally {
+            refreshInFlight = false;
+        }
+    }
+
+    function close() {
+        $('sheet-ticket-modal').hidden = true;
+        document.removeEventListener('keydown', handleKeys);
+        if (lastFocus && lastFocus.isConnected) lastFocus.focus();
+    }
+
+    function handleKeys(event) {
+        if (event.key === 'Escape') { close(); return; }
+        if (event.key !== 'Tab') return;
+        const dialog = document.querySelector('.sheet-ticket-dialog');
+        const focusables = [...dialog.querySelectorAll('button:not(:disabled)')];
+        if (!focusables.length) return;
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const bell = $('sheet-ticket-bell');
+        const modal = $('sheet-ticket-modal');
+        if (!bell || !modal) return;
+        bell.addEventListener('click', () => {
+            lastFocus = document.activeElement;
+            modal.hidden = false;
+            render();
+            $('sheet-ticket-close').focus();
+            document.addEventListener('keydown', handleKeys);
+            refresh();
+        });
+        $('sheet-ticket-close').addEventListener('click', close);
+        modal.querySelector('[data-ticket-close]').addEventListener('click', close);
+        // Usa l'account autenticato: il client non conosce mai le risposte di altri PG.
+        try {
+            const { data: auth, error: authError } = await supabaseClient.auth.getUser();
+            if (authError || !auth?.user) return;
+            const { data, error } = await supabaseClient.from('characters')
+                .select('id').eq('user_id', auth.user.id).maybeSingle();
+            if (error || !data?.id) return;
+            characterId = data.id;
+            await refresh();
+        } catch (error) {
+            console.warn('[TICKET] Avvio non riuscito:', error);
+        }
+        window.setInterval(() => { if (!document.hidden) refresh(); }, 45000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+    });
+})();

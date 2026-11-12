@@ -19,7 +19,7 @@
 
     <link
         rel="stylesheet"
-        href="css/scheda.css?v=6"
+        href="css/scheda.css?v=7-ticket"
     >
 
     <link
@@ -131,6 +131,14 @@
                         ENTRA DA MASTER
                     </a>
 
+
+                    <!-- Risposte private ai ticket inviati dal personaggio -->
+                    <button id="sheet-ticket-bell" class="button secondary sheet-ticket-bell" type="button"
+                            aria-label="Apri le risposte alle segnalazioni" aria-haspopup="dialog"
+                            aria-controls="sheet-ticket-modal" title="Risposte alle segnalazioni">
+                        <span aria-hidden="true">🔔</span>
+                        <span id="sheet-ticket-unread" class="sheet-ticket-unread" hidden>0</span>
+                    </button>
 
                     <button
                         id="feedback-open-button"
@@ -714,6 +722,23 @@
     </main>
 
 
+    <!-- Risposte private alle segnalazioni (nessuna modifica alla bacheca pubblica) -->
+    <div id="sheet-ticket-modal" class="sheet-ticket-modal" hidden>
+        <div class="sheet-ticket-backdrop" data-ticket-close></div>
+        <section class="sheet-ticket-dialog" role="dialog" aria-modal="true"
+                 aria-labelledby="sheet-ticket-title" tabindex="-1">
+            <div class="sheet-ticket-heading">
+                <h2 id="sheet-ticket-title">RISPOSTE ALLE TUE SEGNALAZIONI</h2>
+                <button id="sheet-ticket-close" type="button" class="button secondary"
+                        aria-label="Chiudi le risposte">✕</button>
+            </div>
+            <p class="sheet-ticket-intro">Qui trovi le risposte degli Artefici del Palazzo ai ticket che hai inviato.</p>
+            <div id="sheet-ticket-list" class="sheet-ticket-list" aria-live="polite">
+                <p class="sheet-ticket-empty">Caricamento risposte...</p>
+            </div>
+        </section>
+    </div>
+
     <!-- =======================================================
          BUG & SUGGERIMENTI
     ======================================================== -->
@@ -792,7 +817,7 @@
 
     <script src="js/config.js"></script>
 
-    <script src="js/scheda.js?v=22-current-location"></script>
+    <script src="js/scheda.js?v=23-ticket-bell"></script>
     <script src="js/braci-scintilla-status.js?v=1"></script>
 
     <script src="js/scheda-feedback.js?v=1"></script>

@@ -2328,3 +2328,28 @@ body {
     .sheet-gold-card { padding: 14px; }
     .sheet-gold-coin { width: 26px; height: 26px; flex-basis: 26px; }
 }
+
+/* ============================================================
+   RISPOSTE PERSONALI AI TICKET - CAMPANELLA
+   ============================================================ */
+.sheet-ticket-bell { position:relative; display:inline-flex; align-items:center; justify-content:center; min-width:43px; min-height:39px; padding:7px 9px; }
+.sheet-ticket-unread { position:absolute; top:-7px; right:-7px; min-width:19px; height:19px; padding:0 5px; border-radius:20px; background:#b54c3c; border:1px solid #f1bd84; color:white; font:700 11px/18px system-ui,sans-serif; text-align:center; }
+.sheet-ticket-unread[hidden], .sheet-ticket-modal[hidden] { display:none !important; }
+.sheet-ticket-modal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:14px; box-sizing:border-box; }
+.sheet-ticket-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.82); }
+.sheet-ticket-dialog { position:relative; width:min(610px,100%); max-height:min(80vh,750px); overflow:hidden; display:flex; flex-direction:column; padding:22px; box-sizing:border-box; border:1px solid #a88242; border-radius:12px; background:#171411; box-shadow:0 20px 70px #000b; color:#eee2cf; }
+.sheet-ticket-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sheet-ticket-heading h2 { margin:0; font-size:clamp(15px,3vw,21px); color:#e2bc73; letter-spacing:.05em; }
+.sheet-ticket-intro { font-size:13px; opacity:.75; line-height:1.5; }
+.sheet-ticket-list { min-height:60px; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; gap:10px; }
+.sheet-ticket-card { padding:13px; border-radius:8px; border:1px solid #59462e; background:#231e17; }
+.sheet-ticket-card.is-unread { border-color:#d8a95f; background:#302517; }
+.sheet-ticket-card-header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:7px; align-items:center; }
+.sheet-ticket-card h3 { margin:0; font-size:15px; color:#e8c780; }
+.sheet-ticket-date { color:#b2a18a; font-size:11px; }
+.sheet-ticket-message { margin:10px 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.6; }
+.sheet-ticket-actions { display:flex; justify-content:flex-end; }
+.sheet-ticket-read { padding:5px 9px; border:1px solid #9a773b; border-radius:5px; background:#302619; color:#efdcbb; cursor:pointer; font-size:12px; }
+.sheet-ticket-read:hover { background:#4a3620; }
+.sheet-ticket-empty { text-align:center; color:#b9a78d; font-size:13px; padding:18px 8px; }
+@media(max-width:650px) { .sheet-ticket-dialog { max-height:88vh; padding:15px; } .sheet-ticket-bell { min-height:38px; } }
